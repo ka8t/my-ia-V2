@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MY-IA — Votre IA Privée</title>
+    <link rel="stylesheet" href="assets/doc-style.css">
+    <style>
+        /* Styles spécifiques landing page */
+        .hero-section {
+            text-align: center;
+            padding: 60px 40px;
+            background: linear-gradient(135deg, #1e3a5f 0%, #0d9488 100%);
+            color: white;
+            border-radius: 16px;
+            margin-bottom: 40px;
+        }
+        .hero-section h2 {
+            font-size: 42px;
+            margin-bottom: 16px;
+            font-weight: 800;
+        }
+        .hero-section .tagline {
+            font-size: 20px;
+            opacity: 0.9;
+            margin-bottom: 30px;
+        }
+        .hero-badges {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .hero-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-weight: 600;
+            backdrop-filter: blur(4px);
+        }
+
+        .big-number {
+            font-size: 48px;
+            font-weight: 800;
+            color: var(--primary);
+            line-height: 1;
+        }
+        .big-label {
+            font-size: 14px;
+            color: var(--gray-600);
+            margin-top: 8px;
+        }
+
+        .icon-large {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .benefit-card {
+            text-align: center;
+            padding: 32px 24px;
+        }
+        .benefit-card h3 {
+            margin: 0 0 12px 0;
+            justify-content: center;
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 0;
+            border: 1px solid var(--gray-200);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .comparison-grid > div {
+            padding: 16px;
+            text-align: center;
+            border-bottom: 1px solid var(--gray-100);
+        }
+        .comparison-grid > div:nth-child(5n) {
+            background: var(--success-light);
+            font-weight: 600;
+        }
+        .comparison-header {
+            background: var(--gray-800) !important;
+            color: white !important;
+            font-weight: 700 !important;
+            font-size: 13px;
+        }
+
+        .target-card {
+            border-left: 4px solid var(--accent);
+            padding-left: 20px;
+        }
+        .target-card h4 {
+            color: var(--accent);
+            margin-bottom: 8px;
+        }
+
+        .cta-section {
+            text-align: center;
+            padding: 48px;
+            background: linear-gradient(135deg, var(--primary-lighter) 0%, var(--accent-light) 100%);
+            border-radius: 16px;
+            margin: 40px 0;
+        }
+        .cta-section h2 {
+            font-size: 28px;
+            margin-bottom: 16px;
+        }
+        .cta-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-top: 24px;
+            flex-wrap: wrap;
+        }
+        .cta-btn {
+            padding: 14px 32px;
+            border-radius: 8px;
+            font-weight: 700;
+            text-decoration: none;
+            transition: transform 0.2s;
+        }
+        .cta-btn:hover { transform: translateY(-2px); }
+        .cta-primary {
+            background: var(--primary);
+            color: white;
+        }
+        .cta-secondary {
+            background: white;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+
+        .quote-card {
+            position: relative;
+            padding: 24px 24px 24px 48px;
+        }
+        .quote-card::before {
+            content: '"';
+            position: absolute;
+            left: 16px;
+            top: 8px;
+            font-size: 48px;
+            color: var(--accent);
+            font-family: Georgia, serif;
+        }
+        .quote-source {
+            margin-top: 12px;
+            font-weight: 700;
+            color: var(--gray-800);
+        }
+
+        .vs-table td:first-child { font-weight: 600; }
+        .check { color: var(--success); font-size: 20px; }
+        .cross { color: var(--danger); font-size: 20px; }
+
+        /* Charts CSS */
+        .chart-container {
+            margin: 24px 0;
+        }
+        .bar-chart {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .bar-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--gray-100);
+        }
+        .bar-group:last-child { border-bottom: none; }
+        .bar-group-label {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--gray-800);
+            margin-bottom: 8px;
+        }
+        .bar-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .bar-label {
+            width: 80px;
+            font-size: 12px;
+            color: var(--gray-600);
+            flex-shrink: 0;
+        }
+        .bar-track {
+            flex: 1;
+            height: 28px;
+            background: var(--gray-100);
+            border-radius: 6px;
+            position: relative;
+            overflow: visible;
+        }
+        .bar-fill {
+            height: 100%;
+            border-radius: 6px;
+            min-width: 8px;
+        }
+        .bar-fill.cloud { background: linear-gradient(90deg, #ef4444, #dc2626); }
+        .bar-fill.myia { background: linear-gradient(90deg, #22c55e, #16a34a); }
+
+        .bar-value {
+            width: 100px;
+            font-size: 14px;
+            font-weight: 700;
+            flex-shrink: 0;
+            text-align: right;
+        }
+        .bar-value.cloud { color: #dc2626; }
+        .bar-value.myia { color: #16a34a; }
+
+        .chart-legend {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid var(--gray-200);
+            font-size: 13px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .legend-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+        }
+        .legend-dot.cloud { background: #ef4444; }
+        .legend-dot.myia { background: #22c55e; }
+
+        /* Donut chart */
+        .donut-container {
+            display: flex;
+            justify-content: center;
+            gap: 48px;
+            flex-wrap: wrap;
+            margin: 24px 0;
+        }
+        .donut-item {
+            text-align: center;
+        }
+        .donut {
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 12px;
+        }
+        .donut-inner {
+            width: 90px;
+            height: 90px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+        .donut-value {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--gray-800);
+        }
+        .donut-label {
+            font-size: 11px;
+            color: var(--gray-500);
+        }
+        .donut-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--gray-700);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>MY-IA</h1>
+        <p class="subtitle">L'IA qui garde vos secrets</p>
+    </div>
+
+    <div class="page">
+
+        <!-- HERO -->
+        <div class="hero-section">
+            <h2>Votre IA, Vos Données, Votre Contrôle</h2>
+            <p class="tagline">L'alternative souveraine à ChatGPT pour les professionnels</p>
+            <div class="hero-badges">
+                <span class="hero-badge">🔒 100% Local</span>
+                <span class="hero-badge">💰 0€/mois</span>
+                <span class="hero-badge">📄 Vos Documents</span>
+                <span class="hero-badge">✅ RGPD Natif</span>
+            </div>
+        </div>
+
+        <!-- LE PROBLÈME -->
+        <section class="section">
+            <h2>⚠️ Le Problème</h2>
+            <div class="cards">
+                <div class="card benefit-card">
+                    <div class="icon-large">🇺🇸</div>
+                    <h3>Vos données aux USA</h3>
+                    <p>ChatGPT, Claude, Copilot... tout est stocké sur des serveurs américains.</p>
+                </div>
+                <div class="card benefit-card">
+                    <div class="icon-large">💸</div>
+                    <h3>20€/mois/utilisateur</h3>
+                    <p>Abonnements qui s'accumulent. 10 utilisateurs = 2 400€/an.</p>
+                </div>
+                <div class="card benefit-card">
+                    <div class="icon-large">🚫</div>
+                    <h3>Documents limités</h3>
+                    <p>Impossible d'indexer vos contrats, procédures, bases de connaissances.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- LA SOLUTION -->
+        <section class="section">
+            <h2>✨ La Solution MY-IA</h2>
+            <div class="cards">
+                <div class="card benefit-card">
+                    <div class="icon-large">🏠</div>
+                    <h3>Chez Vous</h3>
+                    <p>Votre serveur, votre machine. Rien ne sort de votre réseau.</p>
+                </div>
+                <div class="card benefit-card">
+                    <div class="icon-large">📚</div>
+                    <h3>Vos Documents</h3>
+                    <p>Uploadez tout. L'IA répond en citant vos sources.</p>
+                </div>
+                <div class="card benefit-card">
+                    <div class="icon-large">♾️</div>
+                    <h3>Sans Limite</h3>
+                    <p>Utilisateurs illimités. Pas d'abonnement. Coût = électricité.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- COMPARATIF VISUEL -->
+        <section class="section">
+            <h2>📊 Comparatif</h2>
+            <div class="comparison-grid">
+                <div class="comparison-header"></div>
+                <div class="comparison-header">ChatGPT</div>
+                <div class="comparison-header">Claude</div>
+                <div class="comparison-header">Copilot</div>
+                <div class="comparison-header">MY-IA</div>
+
+                <div><strong>Données</strong></div>
+                <div>🇺🇸 USA</div>
+                <div>🇺🇸 USA</div>
+                <div>🇺🇸 USA</div>
+                <div>🏠 Chez vous</div>
+
+                <div><strong>Coût/mois</strong></div>
+                <div>20€</div>
+                <div>20€</div>
+                <div>22€</div>
+                <div>0€</div>
+
+                <div><strong>Multi-users</strong></div>
+                <div>Payant</div>
+                <div>Payant</div>
+                <div>Payant</div>
+                <div>Inclus</div>
+
+                <div><strong>Vos docs</strong></div>
+                <div><span class="cross">✗</span></div>
+                <div>Limité</div>
+                <div><span class="cross">✗</span></div>
+                <div><span class="check">✓</span> Illimité</div>
+
+                <div><strong>Hors-ligne</strong></div>
+                <div><span class="cross">✗</span></div>
+                <div><span class="cross">✗</span></div>
+                <div><span class="cross">✗</span></div>
+                <div><span class="check">✓</span></div>
+
+                <div><strong>RGPD</strong></div>
+                <div><span class="cross">✗</span></div>
+                <div><span class="cross">✗</span></div>
+                <div><span class="cross">✗</span></div>
+                <div><span class="check">✓</span></div>
+            </div>
+        </section>
+
+        <!-- CHIFFRES CLÉS -->
+        <section class="section">
+            <h2>📈 En Chiffres</h2>
+            <div class="cards">
+                <div class="card benefit-card">
+                    <div class="big-number">100%</div>
+                    <div class="big-label">Données locales</div>
+                </div>
+                <div class="card benefit-card">
+                    <div class="big-number">0€</div>
+                    <div class="big-label">Par utilisateur/mois</div>
+                </div>
+                <div class="card benefit-card">
+                    <div class="big-number">∞</div>
+                    <div class="big-label">Documents indexables</div>
+                </div>
+                <div class="card benefit-card">
+                    <div class="big-number">5min</div>
+                    <div class="big-label">Installation Docker</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CE QUE ÇA FAIT -->
+        <section class="section">
+            <h2>🎯 Ce que MY-IA fait pour vous</h2>
+            <div class="cards">
+                <div class="card">
+                    <div class="card-title">💬 Chat intelligent</div>
+                    <div class="card-text">Posez vos questions. L'IA répond en s'appuyant sur VOS documents.</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">📄 Tous vos fichiers</div>
+                    <div class="card-text">PDF, Word, Excel, images... Tout est indexé et interrogeable.</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">🎤 Dictée vocale</div>
+                    <div class="card-text">Parlez, l'IA transcrit. 100% local, pas d'envoi vers le cloud.</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">👥 Multi-utilisateurs</div>
+                    <div class="card-text">Toute l'équipe accède à la même base de connaissances.</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">🔍 Sources citées</div>
+                    <div class="card-text">Chaque réponse indique d'où vient l'information.</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">⚙️ Administration</div>
+                    <div class="card-text">Dashboard, gestion utilisateurs, audit complet.</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CAS D'USAGE PAR SECTEUR -->
+        <section class="section">
+            <h2>💡 Cas d'usage</h2>
+            <div class="cards">
+                <div class="card target-card">
+                    <h4>Juridique</h4>
+                    <p><strong>Exemple :</strong> Indexer des centaines de contrats et retrouver n'importe quelle clause en secondes. Le secret professionnel est garanti car rien ne quitte votre serveur.</p>
+                </div>
+                <div class="card target-card">
+                    <h4>Santé</h4>
+                    <p><strong>Exemple :</strong> Constituer une base de connaissances médicales (publications, protocoles) interrogeable sans compromettre la confidentialité des données.</p>
+                </div>
+                <div class="card target-card">
+                    <h4>Industrie & PME</h4>
+                    <p><strong>Exemple :</strong> Centraliser fiches techniques, procédures qualité et rapports pour que toute l'équipe y accède. Pas d'abonnement par utilisateur.</p>
+                </div>
+                <div class="card target-card">
+                    <h4>Secteur Public</h4>
+                    <p><strong>Exemple :</strong> Déployer une IA souveraine pour les agents, avec audit complet et conformité RGPD native. Aucune donnée externalisée.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ROI -->
+        <section class="section">
+            <h2>💰 Rentabilité immédiate</h2>
+
+            <h3>Coût des solutions cloud</h3>
+            <div class="cards">
+                <div class="card benefit-card">
+                    <div class="big-number">20€</div>
+                    <div class="big-label">par utilisateur / mois</div>
+                    <p style="margin-top:12px; font-size:13px;">ChatGPT Plus, Claude Pro, Copilot...</p>
+                </div>
+                <div class="card benefit-card">
+                    <div class="big-number">240€</div>
+                    <div class="big-label">par utilisateur / an</div>
+                    <p style="margin-top:12px; font-size:13px;">20€ × 12 mois</p>
+                </div>
+                <div class="card benefit-card">
+                    <div class="big-number">∞</div>
+                    <div class="big-label">coût qui augmente</div>
+                    <p style="margin-top:12px; font-size:13px;">+1 utilisateur = +240€/an</p>
+                </div>
+            </div>
+
+            <h3>Coût MY-IA</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Poste</th>
+                        <th>Coût</th>
+                        <th>Détail</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Logiciel MY-IA</td>
+                        <td><span class="badge badge-success">0 €</span></td>
+                        <td>Open source, licence libre</td>
+                    </tr>
+                    <tr>
+                        <td>Modèles IA (Ollama)</td>
+                        <td><span class="badge badge-success">0 €</span></td>
+                        <td>Mistral, Llama, Gemma... gratuits</td>
+                    </tr>
+                    <tr>
+                        <td>Utilisateurs supplémentaires</td>
+                        <td><span class="badge badge-success">0 €</span></td>
+                        <td>Illimité, pas de licence par siège</td>
+                    </tr>
+                    <tr>
+                        <td>Hébergement (option A)</td>
+                        <td><span class="badge badge-success">0 €</span></td>
+                        <td>Sur votre machine existante</td>
+                    </tr>
+                    <tr>
+                        <td>Hébergement (option B)</td>
+                        <td>30-50 €/mois</td>
+                        <td>VPS dédié (OVH, Scaleway, Hetzner...)</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Comparaison annuelle</h3>
+
+            <!-- Graphique barres comparatif -->
+            <div class="chart-container">
+                <div class="bar-chart">
+                    <div class="bar-group">
+                        <div class="bar-group-label">10 utilisateurs</div>
+                        <div class="bar-row">
+                            <div class="bar-label">Cloud</div>
+                            <div class="bar-track"><div class="bar-fill cloud" style="width: 10%;"></div></div>
+                            <div class="bar-value cloud">2 400 €</div>
+                        </div>
+                        <div class="bar-row">
+                            <div class="bar-label">MY-IA</div>
+                            <div class="bar-track"><div class="bar-fill myia" style="width: 2%;"></div></div>
+                            <div class="bar-value myia">480 €</div>
+                        </div>
+                    </div>
+                    <div class="bar-group">
+                        <div class="bar-group-label">25 utilisateurs</div>
+                        <div class="bar-row">
+                            <div class="bar-label">Cloud</div>
+                            <div class="bar-track"><div class="bar-fill cloud" style="width: 25%;"></div></div>
+                            <div class="bar-value cloud">6 000 €</div>
+                        </div>
+                        <div class="bar-row">
+                            <div class="bar-label">MY-IA</div>
+                            <div class="bar-track"><div class="bar-fill myia" style="width: 2.5%;"></div></div>
+                            <div class="bar-value myia">600 €</div>
+                        </div>
+                    </div>
+                    <div class="bar-group">
+                        <div class="bar-group-label">50 utilisateurs</div>
+                        <div class="bar-row">
+                            <div class="bar-label">Cloud</div>
+                            <div class="bar-track"><div class="bar-fill cloud" style="width: 50%;"></div></div>
+                            <div class="bar-value cloud">12 000 €</div>
+                        </div>
+                        <div class="bar-row">
+                            <div class="bar-label">MY-IA</div>
+                            <div class="bar-track"><div class="bar-fill myia" style="width: 2.5%;"></div></div>
+                            <div class="bar-value myia">600 €</div>
+                        </div>
+                    </div>
+                    <div class="bar-group">
+                        <div class="bar-group-label">100 utilisateurs</div>
+                        <div class="bar-row">
+                            <div class="bar-label">Cloud</div>
+                            <div class="bar-track"><div class="bar-fill cloud" style="width: 100%;"></div></div>
+                            <div class="bar-value cloud">24 000 €</div>
+                        </div>
+                        <div class="bar-row">
+                            <div class="bar-label">MY-IA</div>
+                            <div class="bar-track"><div class="bar-fill myia" style="width: 3.75%;"></div></div>
+                            <div class="bar-value myia">900 €</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-legend">
+                    <div class="legend-item"><div class="legend-dot cloud"></div> ChatGPT / Claude (20€/user/mois)</div>
+                    <div class="legend-item"><div class="legend-dot myia"></div> MY-IA (VPS seul)</div>
+                </div>
+            </div>
+
+            <!-- Donuts économies -->
+            <h3>Économies réalisées</h3>
+            <div class="donut-container">
+                <div class="donut-item">
+                    <div class="donut" style="background: conic-gradient(#0d9488 0% 80%, #e5e7eb 80% 100%);">
+                        <div class="donut-inner">
+                            <div class="donut-value">80%</div>
+                            <div class="donut-label">économie</div>
+                        </div>
+                    </div>
+                    <div class="donut-title">10 utilisateurs</div>
+                </div>
+                <div class="donut-item">
+                    <div class="donut" style="background: conic-gradient(#0d9488 0% 90%, #e5e7eb 90% 100%);">
+                        <div class="donut-inner">
+                            <div class="donut-value">90%</div>
+                            <div class="donut-label">économie</div>
+                        </div>
+                    </div>
+                    <div class="donut-title">25 utilisateurs</div>
+                </div>
+                <div class="donut-item">
+                    <div class="donut" style="background: conic-gradient(#0d9488 0% 95%, #e5e7eb 95% 100%);">
+                        <div class="donut-inner">
+                            <div class="donut-value">95%</div>
+                            <div class="donut-label">économie</div>
+                        </div>
+                    </div>
+                    <div class="donut-title">50 utilisateurs</div>
+                </div>
+                <div class="donut-item">
+                    <div class="donut" style="background: conic-gradient(#0d9488 0% 96%, #e5e7eb 96% 100%);">
+                        <div class="donut-inner">
+                            <div class="donut-value">96%</div>
+                            <div class="donut-label">économie</div>
+                        </div>
+                    </div>
+                    <div class="donut-title">100 utilisateurs</div>
+                </div>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Équipe</th>
+                        <th>ChatGPT/Claude</th>
+                        <th>MY-IA (VPS)</th>
+                        <th>MY-IA (existant)</th>
+                        <th>Économie max</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>5 utilisateurs</strong></td>
+                        <td>1 200 €/an</td>
+                        <td>~480 €/an</td>
+                        <td>0 €</td>
+                        <td><span class="badge badge-success">1 200 €</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>10 utilisateurs</strong></td>
+                        <td>2 400 €/an</td>
+                        <td>~480 €/an</td>
+                        <td>0 €</td>
+                        <td><span class="badge badge-success">2 400 €</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>25 utilisateurs</strong></td>
+                        <td>6 000 €/an</td>
+                        <td>~600 €/an</td>
+                        <td>0 €</td>
+                        <td><span class="badge badge-success">6 000 €</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>50 utilisateurs</strong></td>
+                        <td>12 000 €/an</td>
+                        <td>~600 €/an</td>
+                        <td>0 €</td>
+                        <td><span class="badge badge-success">12 000 €</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>100 utilisateurs</strong></td>
+                        <td>24 000 €/an</td>
+                        <td>~900 €/an</td>
+                        <td>0 €</td>
+                        <td><span class="badge badge-success">24 000 €</span></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Support professionnel (optionnel)</h3>
+
+            <div class="cards">
+                <div class="card">
+                    <div class="card-title">Essentiel — 150 €/mois</div>
+                    <div class="card-text">
+                        <ul style="margin:0; padding-left:20px; font-size:13px;">
+                            <li>Support email (réponse sous 48h ouvrées)</li>
+                            <li>Jusqu'à <strong>5 tickets/mois</strong></li>
+                            <li>Mises à jour et correctifs de sécurité</li>
+                            <li>Accès documentation technique</li>
+                            <li>1 session de support distant (30 min/mois)</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Business — 300 €/mois</div>
+                    <div class="card-text">
+                        <ul style="margin:0; padding-left:20px; font-size:13px;">
+                            <li>Support email prioritaire (réponse sous 24h)</li>
+                            <li><strong>Tickets illimités</strong></li>
+                            <li>Assistance téléphonique (horaires bureau)</li>
+                            <li>Monitoring proactif de votre instance</li>
+                            <li>Rapport mensuel de santé</li>
+                            <li>2 sessions de support distant (1h/mois)</li>
+                            <li>Accès anticipé aux nouvelles fonctionnalités</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Enterprise — Sur devis</div>
+                    <div class="card-text">
+                        <ul style="margin:0; padding-left:20px; font-size:13px;">
+                            <li><strong>SLA garanti</strong> (99.5% disponibilité)</li>
+                            <li>Interlocuteur technique dédié</li>
+                            <li>Support téléphonique étendu (8h-20h)</li>
+                            <li>Évolutions et intégrations sur mesure</li>
+                            <li>Audit sécurité annuel inclus</li>
+                            <li>Formation équipe incluse (1 jour/an)</li>
+                            <li>Comité de suivi trimestriel</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <p style="font-size:13px; color: var(--gray-600);">
+                <strong>Base de calcul :</strong> Taux horaire 75€/h. Essentiel ≈ 2h/mois, Business ≈ 4h/mois + outils monitoring.
+            </p>
+
+            <h3>Coût total avec support</h3>
+
+            <!-- Graphique barres avec support -->
+            <div class="chart-container">
+                <div class="bar-chart">
+                    <div class="bar-group">
+                        <div class="bar-group-label">10 utilisateurs</div>
+                        <div class="bar-row">
+                            <div class="bar-label">Cloud</div>
+                            <div class="bar-track"><div class="bar-fill cloud" style="width: 10%;"></div></div>
+                            <div class="bar-value cloud">2 400 €</div>
+                        </div>
+                        <div class="bar-row">
+                            <div class="bar-label">MY-IA</div>
+                            <div class="bar-track"><div class="bar-fill myia" style="width: 9.5%;"></div></div>
+                            <div class="bar-value myia">2 280 €</div>
+                        </div>
+                    </div>
+                    <div class="bar-group">
+                        <div class="bar-group-label">25 utilisateurs</div>
+                        <div class="bar-row">
+                            <div class="bar-label">Cloud</div>
+                            <div class="bar-track"><div class="bar-fill cloud" style="width: 25%;"></div></div>
+                            <div class="bar-value cloud">6 000 €</div>
+                        </div>
+                        <div class="bar-row">
+                            <div class="bar-label">MY-IA</div>
+                            <div class="bar-track"><div class="bar-fill myia" style="width: 10%;"></div></div>
+                            <div class="bar-value myia">2 400 €</div>
+                        </div>
+                    </div>
+                    <div class="bar-group">
+                        <div class="bar-group-label">50 utilisateurs</div>
+                        <div class="bar-row">
+                            <div class="bar-label">Cloud</div>
+                            <div class="bar-track"><div class="bar-fill cloud" style="width: 50%;"></div></div>
+                            <div class="bar-value cloud">12 000 €</div>
+                        </div>
+                        <div class="bar-row">
+                            <div class="bar-label">MY-IA</div>
+                            <div class="bar-track"><div class="bar-fill myia" style="width: 10%;"></div></div>
+                            <div class="bar-value myia">2 400 €</div>
+                        </div>
+                    </div>
+                    <div class="bar-group">
+                        <div class="bar-group-label">100 utilisateurs</div>
+                        <div class="bar-row">
+                            <div class="bar-label">Cloud</div>
+                            <div class="bar-track"><div class="bar-fill cloud" style="width: 100%;"></div></div>
+                            <div class="bar-value cloud">24 000 €</div>
+                        </div>
+                        <div class="bar-row">
+                            <div class="bar-label">MY-IA</div>
+                            <div class="bar-track"><div class="bar-fill myia" style="width: 11.25%;"></div></div>
+                            <div class="bar-value myia">2 700 €</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-legend">
+                    <div class="legend-item"><div class="legend-dot cloud"></div> ChatGPT / Claude (20€/user/mois)</div>
+                    <div class="legend-item"><div class="legend-dot myia"></div> MY-IA + Support Essentiel</div>
+                </div>
+            </div>
+
+            <!-- Donuts économies avec support -->
+            <div class="donut-container">
+                <div class="donut-item">
+                    <div class="donut" style="background: conic-gradient(#0d9488 0% 5%, #e5e7eb 5% 100%);">
+                        <div class="donut-inner">
+                            <div class="donut-value">5%</div>
+                            <div class="donut-label">économie</div>
+                        </div>
+                    </div>
+                    <div class="donut-title">10 users</div>
+                    <div style="font-size:12px; color:var(--gray-500);">+ souveraineté</div>
+                </div>
+                <div class="donut-item">
+                    <div class="donut" style="background: conic-gradient(#0d9488 0% 60%, #e5e7eb 60% 100%);">
+                        <div class="donut-inner">
+                            <div class="donut-value">60%</div>
+                            <div class="donut-label">économie</div>
+                        </div>
+                    </div>
+                    <div class="donut-title">25 users</div>
+                    <div style="font-size:12px; color:var(--success);">3 600€/an</div>
+                </div>
+                <div class="donut-item">
+                    <div class="donut" style="background: conic-gradient(#0d9488 0% 80%, #e5e7eb 80% 100%);">
+                        <div class="donut-inner">
+                            <div class="donut-value">80%</div>
+                            <div class="donut-label">économie</div>
+                        </div>
+                    </div>
+                    <div class="donut-title">50 users</div>
+                    <div style="font-size:12px; color:var(--success);">9 600€/an</div>
+                </div>
+                <div class="donut-item">
+                    <div class="donut" style="background: conic-gradient(#0d9488 0% 89%, #e5e7eb 89% 100%);">
+                        <div class="donut-inner">
+                            <div class="donut-value">89%</div>
+                            <div class="donut-label">économie</div>
+                        </div>
+                    </div>
+                    <div class="donut-title">100 users</div>
+                    <div style="font-size:12px; color:var(--success);">21 300€/an</div>
+                </div>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Équipe</th>
+                        <th>ChatGPT/Claude</th>
+                        <th>MY-IA + Support Essentiel</th>
+                        <th>Économie</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>10 utilisateurs</strong></td>
+                        <td>2 400 €/an</td>
+                        <td>2 280 €/an</td>
+                        <td><span class="badge badge-success">120 €</span> + souveraineté</td>
+                    </tr>
+                    <tr>
+                        <td><strong>25 utilisateurs</strong></td>
+                        <td>6 000 €/an</td>
+                        <td>2 400 €/an</td>
+                        <td><span class="badge badge-success">3 600 €</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>50 utilisateurs</strong></td>
+                        <td>12 000 €/an</td>
+                        <td>2 400 €/an</td>
+                        <td><span class="badge badge-success">9 600 €</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>100 utilisateurs</strong></td>
+                        <td>24 000 €/an</td>
+                        <td>2 700 €/an</td>
+                        <td><span class="badge badge-success">21 300 €</span></td>
+                    </tr>
+                </tbody>
+            </table>
+            <p><small>Calcul : VPS (~40€/mois) + Support Essentiel (150€/mois) = 190€/mois = 2 280€/an</small></p>
+
+            <div class="callout callout-success">
+                <span class="callout-icon">📈</span>
+                <div>
+                    <strong>Rentable dès 10 utilisateurs</strong><br>
+                    Même avec un support professionnel, MY-IA reste moins cher que les solutions cloud.<br>
+                    Et surtout : vos données restent chez vous.
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA -->
+        <div class="cta-section">
+            <h2>Prêt à reprendre le contrôle ?</h2>
+            <p>Vos données vous appartiennent. Passez à l'action.</p>
+            <div class="cta-buttons">
+                <a href="#" class="cta-btn cta-primary">Demander une démo</a>
+                <a href="MY-IA-Technico-Commercial.html" class="cta-btn cta-secondary">Fiche technique</a>
+            </div>
+        </div>
+
+        <footer>
+            <p><em>MY-IA — L'IA privée pour les professionnels exigeants</em></p>
+        </footer>
+    </div>
+</body>
+</html>

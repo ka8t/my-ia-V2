@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MY-IA &mdash; Personnalisation</title>
+  <link rel="stylesheet" href="../assets/doc-style.css">
+</head>
+<body>
+
+<!-- ==================== HEADER ==================== -->
+<div class="header">
+  <div class="page">
+    <div class="header-icon">&#x1F3A8;</div>
+    <div>
+      <h1>Guide de personnalisation</h1>
+      <div class="subtitle">
+        Adaptez MY-IA aux besoins sp&eacute;cifiques de votre client : branding, comportement IA, int&eacute;grations.
+      </div>
+      <div class="meta">
+        <span>&#x23F1; 20 min</span>
+        <span>D&eacute;veloppeur</span>
+        <span>v2.0</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+
+<!-- Navigation -->
+<div class="callout callout-info">
+  <span class="callout-icon">&#x1F3E0;</span>
+  <span><a href="../index.html">&larr; Retour &agrave; l'accueil</a> &nbsp;|&nbsp; <a href="architecture.html">Architecture</a> &nbsp;|&nbsp; <a href="api.html">API</a> &nbsp;|&nbsp; <a href="deploiement.html">D&eacute;ploiement</a></span>
+</div>
+
+<!-- ==================== TOC ==================== -->
+<div class="toc">
+  <h2>Sommaire</h2>
+  <div class="toc-grid">
+    <a href="#branding" class="toc-item"><span class="toc-number">1</span>Branding &amp; apparence</a>
+    <a href="#theme" class="toc-item"><span class="toc-number">2</span>Th&egrave;me personnalis&eacute;</a>
+    <a href="#ia" class="toc-item"><span class="toc-number">3</span>Comportement de l'IA</a>
+    <a href="#modes" class="toc-item"><span class="toc-number">4</span>Modes de conversation</a>
+    <a href="#sources" class="toc-item"><span class="toc-number">5</span>Sources de donn&eacute;es</a>
+    <a href="#integrations" class="toc-item"><span class="toc-number">6</span>Int&eacute;grations</a>
+    <a href="#i18n" class="toc-item"><span class="toc-number">7</span>Internationalisation</a>
+    <a href="#multitenant" class="toc-item"><span class="toc-number">8</span>Multi-tenant</a>
+  </div>
+</div>
+
+<!-- ==================== BRANDING ==================== -->
+<div class="section" id="branding">
+  <div class="section-header">
+    <div class="section-icon icon-blue">&#x1F3A8;</div>
+    <div><h2>1. Branding &amp; apparence</h2></div>
+  </div>
+
+  <p>La personnalisation du branding se fait enti&egrave;rement via l'interface admin, sans toucher au code.</p>
+
+  <h3><span class="h3-dot dot-blue"></span> Configuration via l'admin</h3>
+  <p>Acc&eacute;dez &agrave; <strong>Configuration &gt; G&eacute;n&eacute;ral</strong> pour modifier :</p>
+
+  <table>
+    <thead><tr><th>Param&egrave;tre</th><th>Description</th><th>Recommandation</th></tr></thead>
+    <tbody>
+      <tr><td>Nom de l'application</td><td>Affich&eacute; dans l'en-t&ecirc;te et le titre</td><td>Nom court et m&eacute;morable</td></tr>
+      <tr><td>Logo principal</td><td>En-t&ecirc;te de l'application</td><td>PNG/SVG transparent, 200x50px</td></tr>
+      <tr><td>Favicon</td><td>Ic&ocirc;ne du navigateur</td><td>ICO/PNG carr&eacute;, 32x32 ou 64x64</td></tr>
+      <tr><td>Description</td><td>Sous-titre de la page de connexion</td><td>1-2 phrases descriptives</td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-blue"></span> Personnalisation des textes</h3>
+
+  <p>Les textes de l'interface sont personnalisables via les fichiers de traduction :</p>
+
+  <pre><code>UI-SHARED/locales/
+&#x251C;&#x2500;&#x2500; fr.json    # Fran&ccedil;ais
+&#x2514;&#x2500;&#x2500; en.json    # Anglais</code></pre>
+
+  <p>Pour personnaliser un texte, modifiez la cl&eacute; correspondante :</p>
+
+  <pre><code>// fr.json
+{
+  "app_welcome_title": "Bienvenue chez Acme Corp",
+  "app_welcome_subtitle": "Votre assistant intelligent",
+  "chat_placeholder": "Comment puis-je vous aider ?"
+}</code></pre>
+
+  <div class="callout callout-info">
+    <span class="callout-icon">&#x1F4A1;</span>
+    <span><strong>Conseil :</strong> Cr&eacute;ez une copie des fichiers de traduction et adaptez les cl&eacute;s &agrave; votre client.</span>
+  </div>
+</div>
+
+<!-- ==================== THEME ==================== -->
+<div class="section" id="theme">
+  <div class="section-header">
+    <div class="section-icon icon-teal">&#x1F3A8;</div>
+    <div><h2>2. Th&egrave;me personnalis&eacute;</h2></div>
+  </div>
+
+  <p>Le th&egrave;me visuel est d&eacute;fini par des variables CSS dans <code>UI-SHARED/css/base/variables.css</code>.</p>
+
+  <h3><span class="h3-dot dot-teal"></span> Palette de couleurs</h3>
+
+  <pre><code>/* UI-SHARED/css/base/variables.css */
+:root {
+  /* Couleurs principales */
+  --primary: #1e3a5f;           /* Bleu fonc&eacute; */
+  --primary-light: #2d5a8e;     /* Bleu clair */
+  --primary-dark: #152a45;      /* Bleu tr&egrave;s fonc&eacute; */
+
+  /* Couleur d'accent */
+  --accent: #0d9488;            /* Turquoise */
+  --accent-light: #14b8a6;
+  --accent-dark: #0a7570;
+
+  /* Arri&egrave;re-plans */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --bg-tertiary: #f1f5f9;
+
+  /* Texte */
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --text-muted: #94a3b8;
+
+  /* &Eacute;tats */
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #3b82f6;
+}</code></pre>
+
+  <h3><span class="h3-dot dot-teal"></span> Adaptation pour un client</h3>
+
+  <p>Pour appliquer la charte graphique d'un client :</p>
+
+  <div class="vflow">
+    <div class="vflow-step active">
+      <div class="step-title">1. R&eacute;cup&eacute;rer la charte graphique</div>
+      <div class="step-desc">Couleur principale, couleur secondaire, police de caract&egrave;res</div>
+    </div>
+    <div class="vflow-step active">
+      <div class="step-title">2. Modifier les variables CSS</div>
+      <div class="step-desc">Remplacer les valeurs dans <code>variables.css</code></div>
+    </div>
+    <div class="vflow-step active">
+      <div class="step-title">3. T&eacute;l&eacute;charger le logo</div>
+      <div class="step-desc">Via l'interface admin (<strong>Configuration &gt; G&eacute;n&eacute;ral</strong>)</div>
+    </div>
+    <div class="vflow-step">
+      <div class="step-title">4. Valider visuellement</div>
+      <div class="step-desc">V&eacute;rifier le rendu en mode clair et sombre</div>
+    </div>
+  </div>
+
+  <h3><span class="h3-dot dot-teal"></span> Mode sombre</h3>
+
+  <p>Le mode sombre est support&eacute; nativement. Les variables sont surcharg&eacute;es automatiquement :</p>
+
+  <pre><code>/* Mode sombre */
+[data-theme="dark"] {
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+}</code></pre>
+
+  <div class="callout callout-success">
+    <span class="callout-icon">&#x2705;</span>
+    <span>Les utilisateurs peuvent choisir leur th&egrave;me (clair/sombre/syst&egrave;me) dans leurs pr&eacute;f&eacute;rences.</span>
+  </div>
+</div>
+
+<!-- ==================== IA ==================== -->
+<div class="section" id="ia">
+  <div class="section-header">
+    <div class="section-icon icon-green">&#x1F9E0;</div>
+    <div><h2>3. Comportement de l'IA</h2></div>
+  </div>
+
+  <p>Le comportement de l'IA est enti&egrave;rement configurable via l'interface admin.</p>
+
+  <h3><span class="h3-dot dot-green"></span> Prompt syst&egrave;me global</h3>
+  <p>Acc&eacute;dez &agrave; <strong>Configuration &gt; Chat</strong> pour d&eacute;finir le prompt syst&egrave;me par d&eacute;faut :</p>
+
+  <pre><code>Tu es un assistant professionnel pour [Nom Entreprise].
+
+R&egrave;gles de comportement :
+- Tu r&eacute;ponds toujours en fran&ccedil;ais.
+- Tu cites tes sources quand tu utilises des documents.
+- Tu restes professionnel et courtois.
+- Si tu ne connais pas la r&eacute;ponse, dis-le clairement.
+- Tu ne donnes jamais d'informations confidentielles.
+
+Contexte entreprise :
+[Description de l'entreprise, secteur d'activit&eacute;, informations cl&eacute;s]</code></pre>
+
+  <h3><span class="h3-dot dot-green"></span> Param&egrave;tres du mod&egrave;le LLM</h3>
+
+  <table>
+    <thead><tr><th>Param&egrave;tre</th><th>Plage</th><th>Effet</th><th>Recommandation</th></tr></thead>
+    <tbody>
+      <tr><td>Temp&eacute;rature</td><td>0.0 &ndash; 1.0</td><td>Cr&eacute;ativit&eacute; des r&eacute;ponses</td><td>0.3 (factuel) &ndash; 0.7 (cr&eacute;atif)</td></tr>
+      <tr><td>Top P</td><td>0.0 &ndash; 1.0</td><td>Diversit&eacute; du vocabulaire</td><td>0.9 (recommand&eacute;)</td></tr>
+      <tr><td>Max tokens</td><td>100 &ndash; 4096</td><td>Longueur max des r&eacute;ponses</td><td>1024 (d&eacute;taill&eacute;), 512 (concis)</td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-green"></span> Param&egrave;tres RAG</h3>
+
+  <table>
+    <thead><tr><th>Param&egrave;tre</th><th>D&eacute;faut</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td>Top K</td><td>5</td><td>Nombre de passages remont&eacute;s par recherche</td></tr>
+      <tr><td>Seuil de similarit&eacute;</td><td>0.7</td><td>Score minimum pour inclure un passage</td></tr>
+      <tr><td>Inclure sources</td><td>Oui</td><td>Afficher les documents cit&eacute;s</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-warning">
+    <span class="callout-icon">&#x26A0;&#xFE0F;</span>
+    <span><strong>Attention :</strong> Un Top K trop &eacute;lev&eacute; peut diluer le contexte et d&eacute;grader la qualit&eacute; des r&eacute;ponses.</span>
+  </div>
+</div>
+
+<!-- ==================== MODES ==================== -->
+<div class="section" id="modes">
+  <div class="section-header">
+    <div class="section-icon icon-purple">&#x1F4AC;</div>
+    <div><h2>4. Modes de conversation</h2></div>
+  </div>
+
+  <p>Les modes de conversation permettent de cr&eacute;er des assistants sp&eacute;cialis&eacute;s avec des comportements diff&eacute;rents.</p>
+
+  <h3><span class="h3-dot dot-purple"></span> Cas d'usage</h3>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-title">&#x1F4BC; Mode RH</div>
+      <div class="card-text">
+        <strong>Prompt :</strong> "Tu es un expert RH..."<br>
+        <strong>Collections :</strong> Documents RH, proc&eacute;dures<br>
+        <strong>Temp&eacute;rature :</strong> 0.3 (pr&eacute;cis)
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F4CA; Mode Commercial</div>
+      <div class="card-text">
+        <strong>Prompt :</strong> "Tu aides les commerciaux..."<br>
+        <strong>Collections :</strong> Catalogues, tarifs, CRM<br>
+        <strong>Temp&eacute;rature :</strong> 0.5 (&eacute;quilibr&eacute;)
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x2699;&#xFE0F; Mode Technique</div>
+      <div class="card-text">
+        <strong>Prompt :</strong> "Tu es un expert technique..."<br>
+        <strong>Collections :</strong> Documentation, specs<br>
+        <strong>Temp&eacute;rature :</strong> 0.2 (tr&egrave;s pr&eacute;cis)
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F393; Mode Formation</div>
+      <div class="card-text">
+        <strong>Prompt :</strong> "Tu es un formateur..."<br>
+        <strong>Collections :</strong> Supports, tutoriels<br>
+        <strong>Temp&eacute;rature :</strong> 0.6 (p&eacute;dagogique)
+      </div>
+    </div>
+  </div>
+
+  <h3><span class="h3-dot dot-purple"></span> Cr&eacute;ation via l'admin</h3>
+
+  <p>Dans <strong>Configuration &gt; Modes de conversation</strong> :</p>
+
+  <div class="vflow">
+    <div class="vflow-step active">
+      <div class="step-title">1. Nom et description</div>
+      <div class="step-desc">Identifiant clair pour les utilisateurs</div>
+    </div>
+    <div class="vflow-step active">
+      <div class="step-title">2. Prompt sp&eacute;cifique</div>
+      <div class="step-desc">Instructions de comportement pour ce mode</div>
+    </div>
+    <div class="vflow-step active">
+      <div class="step-title">3. Collections associ&eacute;es</div>
+      <div class="step-desc">S&eacute;lectionner les sources de donn&eacute;es pertinentes</div>
+    </div>
+    <div class="vflow-step">
+      <div class="step-title">4. Param&egrave;tres LLM</div>
+      <div class="step-desc">Temp&eacute;rature, max tokens, etc.</div>
+    </div>
+  </div>
+
+  <h3><span class="h3-dot dot-purple"></span> Cr&eacute;ation via l'API</h3>
+
+  <pre><code>POST /api/admin/modes
+{
+  "name": "mode-technique",
+  "display_name": "Assistant Technique",
+  "description": "Pour les questions techniques",
+  "system_prompt": "Tu es un expert technique...",
+  "temperature": 0.2,
+  "max_tokens": 2048,
+  "collection_ids": ["uuid1", "uuid2"],
+  "is_default": false
+}</code></pre>
+</div>
+
+<!-- ==================== SOURCES ==================== -->
+<div class="section" id="sources">
+  <div class="section-header">
+    <div class="section-icon icon-amber">&#x1F310;</div>
+    <div><h2>5. Sources de donn&eacute;es</h2></div>
+  </div>
+
+  <p>MY-IA peut int&eacute;grer des sources de donn&eacute;es externes en plus des documents upload&eacute;s.</p>
+
+  <h3><span class="h3-dot dot-amber"></span> Types de sources</h3>
+
+  <table>
+    <thead><tr><th>Type</th><th>Usage</th><th>Configuration</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge badge-primary">Site web</span></td><td>Indexer un site complet</td><td>URL racine, profondeur de crawl, filtres</td></tr>
+      <tr><td><span class="badge badge-success">API REST</span></td><td>Donn&eacute;es dynamiques</td><td>URL endpoint, headers d'auth, mapping</td></tr>
+      <tr><td><span class="badge badge-purple">Base SQL</span></td><td>Interroger une BDD</td><td>Connection string, requ&ecirc;tes SQL</td></tr>
+      <tr><td><span class="badge badge-warning">RSS/Atom</span></td><td>Flux d'actualit&eacute;s</td><td>URL du flux, fr&eacute;quence de refresh</td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-amber"></span> Configuration d'un crawl web</h3>
+
+  <p>Via l'admin (<strong>Gestion &gt; Sources</strong>) :</p>
+
+  <pre><code>{
+  "type": "web",
+  "url": "https://docs.entreprise.com",
+  "config": {
+    "max_depth": 3,
+    "include_patterns": ["/docs/*", "/faq/*"],
+    "exclude_patterns": ["/api/*", "/admin/*"],
+    "respect_robots_txt": true,
+    "rate_limit_ms": 500
+  }
+}</code></pre>
+
+  <h3><span class="h3-dot dot-amber"></span> Cr&eacute;er un connecteur personnalis&eacute;</h3>
+
+  <p>Pour ajouter un nouveau type de source, impl&eacute;mentez l'interface de base :</p>
+
+  <pre><code># app/features/sources/connectors/custom.py
+from app.features.sources.connectors.base import BaseConnector
+
+class CustomConnector(BaseConnector):
+    """Connecteur personnalis&eacute; pour [service]."""
+
+    async def fetch_content(self) -> list[dict]:
+        """R&eacute;cup&egrave;re le contenu de la source."""
+        # Votre logique de r&eacute;cup&eacute;ration
+        return [
+            {"content": "...", "metadata": {"url": "..."}}
+        ]
+
+    async def validate_config(self) -> bool:
+        """Valide la configuration du connecteur."""
+        # V&eacute;rifier les param&egrave;tres requis
+        return True
+
+    async def test_connection(self) -> dict:
+        """Teste la connexion &agrave; la source."""
+        return {"status": "ok", "message": "Connect&eacute;"}</code></pre>
+
+  <div class="callout callout-info">
+    <span class="callout-icon">&#x1F4A1;</span>
+    <span><strong>Indexation :</strong> Les sources sont r&eacute;-index&eacute;es selon la fr&eacute;quence configur&eacute;e (quotidien, hebdomadaire, etc.).</span>
+  </div>
+</div>
+
+<!-- ==================== INTEGRATIONS ==================== -->
+<div class="section" id="integrations">
+  <div class="section-header">
+    <div class="section-icon icon-red">&#x1F517;</div>
+    <div><h2>6. Int&eacute;grations</h2></div>
+  </div>
+
+  <h3><span class="h3-dot dot-red"></span> Webhooks</h3>
+  <p>MY-IA peut notifier des syst&egrave;mes externes via webhooks :</p>
+
+  <ul class="feature-list">
+    <li><strong>Nouvelle conversation</strong> &mdash; D&eacute;clench&eacute; quand un utilisateur d&eacute;marre un chat</li>
+    <li><strong>Document upload&eacute;</strong> &mdash; Quand un document est ajout&eacute; et index&eacute;</li>
+    <li><strong>Utilisateur cr&eacute;&eacute;</strong> &mdash; Inscription d'un nouvel utilisateur</li>
+    <li><strong>Erreur syst&egrave;me</strong> &mdash; Pour alerter en cas de probl&egrave;me</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-red"></span> SSO / SAML</h3>
+  <p>Int&eacute;grez l'authentification de votre client (Azure AD, Okta, Google, etc.) :</p>
+
+  <pre><code># Configuration OAuth2 dans .env
+OAUTH_PROVIDER=azure
+OAUTH_CLIENT_ID=your-client-id
+OAUTH_CLIENT_SECRET=your-secret
+OAUTH_TENANT_ID=your-tenant-id
+OAUTH_REDIRECT_URI=https://myia.client.com/auth/callback</code></pre>
+
+  <h3><span class="h3-dot dot-red"></span> Embed dans une application</h3>
+  <p>Int&eacute;grez MY-IA dans une application existante :</p>
+
+  <div class="two-cols">
+    <div>
+      <p><strong>Option 1 : iframe</strong></p>
+      <pre><code>&lt;iframe
+  src="https://myia.client.com/embed/chat"
+  width="400"
+  height="600"
+  frameborder="0"
+&gt;&lt;/iframe&gt;</code></pre>
+    </div>
+    <div>
+      <p><strong>Option 2 : Widget JS</strong></p>
+      <pre><code>&lt;script src="https://myia.client.com/widget.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  MyIA.init({
+    apiUrl: 'https://myia.client.com/api',
+    token: 'user-token'
+  });
+&lt;/script&gt;</code></pre>
+    </div>
+  </div>
+
+  <h3><span class="h3-dot dot-red"></span> Int&eacute;gration MCP</h3>
+  <p>MY-IA supporte le protocole <strong>Model Context Protocol</strong> pour s'int&eacute;grer avec des outils AI :</p>
+
+  <pre><code># Configuration MCP server
+{
+  "mcpServers": {
+    "myia": {
+      "command": "myia-mcp-server",
+      "args": ["--api-url", "https://myia.client.com/api"]
+    }
+  }
+}</code></pre>
+</div>
+
+<!-- ==================== I18N ==================== -->
+<div class="section" id="i18n">
+  <div class="section-header">
+    <div class="section-icon icon-blue">&#x1F30D;</div>
+    <div><h2>7. Internationalisation</h2></div>
+  </div>
+
+  <p>MY-IA supporte plusieurs langues avec un syst&egrave;me de traduction simple.</p>
+
+  <h3><span class="h3-dot dot-blue"></span> Langues disponibles</h3>
+
+  <table>
+    <thead><tr><th>Langue</th><th>Code</th><th>Fichier</th><th>Statut</th></tr></thead>
+    <tbody>
+      <tr><td>Fran&ccedil;ais</td><td>fr</td><td><code>locales/fr.json</code></td><td><span class="badge badge-success">Complet</span></td></tr>
+      <tr><td>Anglais</td><td>en</td><td><code>locales/en.json</code></td><td><span class="badge badge-success">Complet</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-blue"></span> Ajouter une nouvelle langue</h3>
+
+  <div class="vflow">
+    <div class="vflow-step active">
+      <div class="step-title">1. Copier le fichier de r&eacute;f&eacute;rence</div>
+      <div class="step-desc"><code>cp UI-SHARED/locales/fr.json UI-SHARED/locales/es.json</code></div>
+    </div>
+    <div class="vflow-step active">
+      <div class="step-title">2. Traduire toutes les cl&eacute;s</div>
+      <div class="step-desc">Conserver la structure, traduire les valeurs</div>
+    </div>
+    <div class="vflow-step active">
+      <div class="step-title">3. Enregistrer la langue</div>
+      <div class="step-desc">Ajouter dans <code>UI-SHARED/js/services/i18n.js</code></div>
+    </div>
+    <div class="vflow-step">
+      <div class="step-title">4. Tester</div>
+      <div class="step-desc">V&eacute;rifier toutes les pages et fonctionnalit&eacute;s</div>
+    </div>
+  </div>
+
+  <h3><span class="h3-dot dot-blue"></span> Structure des fichiers</h3>
+
+  <pre><code>// locales/fr.json
+{
+  "_comment_general": "=== Textes g&eacute;n&eacute;raux ===",
+  "app_name": "MY-IA",
+  "app_welcome": "Bienvenue",
+
+  "_comment_chat": "=== Interface de chat ===",
+  "chat_placeholder": "Posez votre question...",
+  "chat_send": "Envoyer",
+
+  "_comment_errors": "=== Messages d'erreur ===",
+  "error_generic": "Une erreur est survenue"
+}</code></pre>
+
+  <div class="callout callout-info">
+    <span class="callout-icon">&#x1F4A1;</span>
+    <span><strong>Utilisation :</strong> Dans le code JS, utilisez <code>t('chat_placeholder')</code> pour afficher la traduction.</span>
+  </div>
+</div>
+
+<!-- ==================== MULTI-TENANT ==================== -->
+<div class="section" id="multitenant">
+  <div class="section-header">
+    <div class="section-icon icon-green">&#x1F3E2;</div>
+    <div><h2>8. D&eacute;ploiement multi-client</h2></div>
+  </div>
+
+  <p>Deux approches pour d&eacute;ployer MY-IA pour plusieurs clients :</p>
+
+  <div class="two-cols">
+    <div>
+      <h3><span class="h3-dot dot-green"></span> Option 1 : Instances s&eacute;par&eacute;es</h3>
+      <ul class="checklist">
+        <li class="done">Isolation compl&egrave;te des donn&eacute;es</li>
+        <li class="done">Personnalisation totale par client</li>
+        <li class="done">Performances garanties</li>
+        <li class="done">Mises &agrave; jour ind&eacute;pendantes</li>
+        <li>Co&ucirc;t infrastructure plus &eacute;lev&eacute;</li>
+        <li>Maintenance multiple</li>
+      </ul>
+    </div>
+    <div>
+      <h3><span class="h3-dot dot-purple"></span> Option 2 : Multi-tenant</h3>
+      <ul class="checklist">
+        <li class="done">Mutualisation des ressources</li>
+        <li class="done">Maintenance centralis&eacute;e</li>
+        <li class="done">Co&ucirc;t r&eacute;duit</li>
+        <li>Isolation logique (tenant_id)</li>
+        <li>Personnalisation limit&eacute;e</li>
+        <li>Risque de noisy neighbor</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3><span class="h3-dot dot-amber"></span> Recommandations</h3>
+
+  <table>
+    <thead><tr><th>Sc&eacute;nario</th><th>Approche</th><th>Justification</th></tr></thead>
+    <tbody>
+      <tr><td>Grands comptes (&gt;100 users)</td><td>Instance d&eacute;di&eacute;e</td><td>Performances et s&eacute;curit&eacute;</td></tr>
+      <tr><td>PME (10-100 users)</td><td>Instance d&eacute;di&eacute;e</td><td>Isolation des donn&eacute;es</td></tr>
+      <tr><td>D&eacute;mo / POC</td><td>Multi-tenant</td><td>Co&ucirc;t r&eacute;duit</td></tr>
+      <tr><td>SaaS grand public</td><td>Multi-tenant</td><td>Scalabilit&eacute;</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-info">
+    <span class="callout-icon">&#x1F4A1;</span>
+    <span><strong>Architecture multi-tenant :</strong> Les donn&eacute;es sont s&eacute;par&eacute;es par <code>tenant_id</code> dans PostgreSQL et par pr&eacute;fixe dans ChromaDB.</span>
+  </div>
+</div>
+
+<!-- ==================== FOOTER ==================== -->
+<div class="footer">
+  MY-IA &mdash; Guide de personnalisation &mdash; v2.0 &mdash; <a href="../index.html">Retour &agrave; l'accueil</a>
+</div>
+
+</div>
+
+</body>
+</html>

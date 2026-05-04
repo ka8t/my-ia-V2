@@ -1,0 +1,63 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+.venv/
+venv/
+env/
+ENV/
+
+# Pytest / coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+
+# Mypy / Ruff
+.mypy_cache/
+.ruff_cache/
+.dmypy.json
+
+# Env / secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# Docker / data
+data/
+logs/
+storage/
+chroma_data/
+postgres_data/
+models/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Audit / cache
+.sca-cache/
+audit-reports/audit-datas/
+
+# Node (au cas où on garde des outils JS — eslint, prettier)
+node_modules/
+package-lock.json
+
+# Build / dist artifacts
+*.log
+*.pid

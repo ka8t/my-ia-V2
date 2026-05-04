@@ -1,0 +1,2762 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MY-IA &mdash; TODO</title>
+  <link rel="stylesheet" href="assets/doc-style.css">
+</head>
+<body>
+
+<!-- ==================== HEADER ==================== -->
+<div class="header">
+  <div class="page">
+    <div class="header-icon">&#x1F4CB;</div>
+    <div>
+      <h1>MY-IA &mdash; TODO</h1>
+      <div class="subtitle">
+        Suivi de l'&eacute;volution du projet MY-IA. T&acirc;ches organis&eacute;es par priorit&eacute; avec statut mis &agrave; jour au fil de l'avancement.
+      </div>
+      <div class="meta">
+        <span>Version 1.19.0</span>
+        <span>18 f&eacute;vrier 2026</span>
+        <span>24 sections</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+
+<!-- ==================== TABLE OF CONTENTS ==================== -->
+<div class="toc" id="toc">
+  <h2>Table des mati&egrave;res</h2>
+  <div class="toc-grid">
+    <a href="#s1"><span class="toc-num">1</span> &Eacute;tat actuel du projet</a>
+    <a href="#s2"><span class="toc-num">2</span> Interface de Chat Web</a>
+    <a href="#s3"><span class="toc-num">3</span> Syst&egrave;me d'Ingestion v2</a>
+    <a href="#s4"><span class="toc-num">4</span> Tests</a>
+    <a href="#s5"><span class="toc-num">5</span> Monitoring</a>
+    <a href="#s6"><span class="toc-num">6</span> M&eacute;moire conversationnelle</a>
+    <a href="#s7"><span class="toc-num">7</span> S&eacute;curit&eacute; en production</a>
+    <a href="#s8"><span class="toc-num">8</span> Optimisations</a>
+    <a href="#s9"><span class="toc-num">9</span> Features additionnelles</a>
+    <a href="#s10"><span class="toc-num">10</span> DevOps</a>
+    <a href="#s11"><span class="toc-num">11</span> Backlog &amp; Notes</a>
+    <a href="#s12"><span class="toc-num">12</span> Refactoring DRY</a>
+    <a href="#s13"><span class="toc-num">13</span> Refactoring DEBUG scripts shell</a>
+    <a href="#s14"><span class="toc-num">14</span> Refonte du syst&egrave;me de Logs</a>
+    <a href="#s15"><span class="toc-num">15</span> Audit &amp; Nettoyage code mort</a>
+    <a href="#s16"><span class="toc-num">16</span> Script de d&eacute;ploiement universel</a>
+    <a href="#s17"><span class="toc-num">17</span> Externalisation templates HTML/SVG</a>
+    <a href="#s18"><span class="toc-num">18</span> Migration Ollama vers llama.cpp</a>
+    <a href="#s19"><span class="toc-num">19</span> Personnalisation &amp; White-labeling</a>
+    <a href="#s20"><span class="toc-num">20</span> Unification des Sources de Donn&eacute;es</a>
+    <a href="#s21"><span class="toc-num">21</span> Audit Admin/Syst&egrave;me</a>
+    <a href="#s22"><span class="toc-num">22</span> Corpus &amp; Permissions</a>
+    <a href="#s23"><span class="toc-num">23</span> SMTP &amp; Gestion des Mails</a>
+    <a href="#s24"><span class="toc-num">24</span> Commercial &amp; Marketing</a>
+  </div>
+</div>
+
+<!-- ==================== LEGENDE ==================== -->
+<div class="callout callout-info">
+  <span class="callout-icon">&#x1F4A1;</span>
+  <span>
+    <strong>L&eacute;gende des statuts :</strong>
+    <span class="badge badge-warning">&#x23F3; &Agrave; faire</span>
+    <span class="badge badge-accent">&#x1F6A7; En cours</span>
+    <span class="badge badge-success">&#x2705; Termin&eacute;</span>
+    <span class="badge badge-danger">&#x274C; Abandonn&eacute;</span>
+  </span>
+</div>
+
+<!-- ==================== SECTION 1 ==================== -->
+<div class="section" id="s1">
+  <div class="section-header">
+    <div class="section-icon icon-blue">&#x1F4CA;</div>
+    <div><h2>&Eacute;tat actuel du projet <span class="section-num">&mdash; Section 1</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <p><strong>Date de derni&egrave;re mise &agrave; jour :</strong> 18 f&eacute;vrier 2026</p>
+
+  <h3><span class="h3-dot dot-green"></span> Analyse globale</h3>
+
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Architecture de base : Ollama/llama.cpp + ChromaDB + FastAPI + PostgreSQL</li>
+    <li><span class="check-done">&#x2705;</span> Documentation compl&egrave;te restructur&eacute;e (docs/admin, docs/client, docs/technique, docs/commercial)</li>
+    <li><span class="check-done">&#x2705;</span> Scripts de setup, backup, restore, d&eacute;ploiement (deploy.sh remote)</li>
+    <li><span class="check-done">&#x2705;</span> Endpoints API fonctionnels (/chat, /assistant, /chat/stream, /upload/v2)</li>
+    <li><span class="check-done">&#x2705;</span> Syst&egrave;me d'ingestion v2 multi-formats (13 formats : PDF, DOCX, XLSX, PPTX, TXT, MD, HTML, JSONL, CSV, images avec OCR)</li>
+    <li><span class="check-done">&#x2705;</span> Chunking s&eacute;mantique avec LangChain + Parsing intelligent avec Unstructured.io</li>
+    <li><span class="check-done">&#x2705;</span> D&eacute;duplication automatique (SHA256) et m&eacute;tadonn&eacute;es enrichies (11 champs)</li>
+    <li><span class="check-done">&#x2705;</span> Hot reload activ&eacute; pour d&eacute;veloppement rapide</li>
+    <li><span class="check-done">&#x2705;</span> Rate limiting et m&eacute;triques Prometheus</li>
+    <li><span class="check-done">&#x2705;</span> Interface de chat web avec upload de fichiers (frontend/ - https://localhost:3000)</li>
+    <li><span class="check-done">&#x2705;</span> <strong>Tests complets</strong> : 99 tests unitaires + 27 tests E2E API (bash)</li>
+    <li><span class="check-done">&#x2705;</span> Logging structur&eacute; (Option A : JSON, 5 cat&eacute;gories, persistance BDD, alerting, backoffice)</li>
+    <li><span class="check-done">&#x2705;</span> <strong>RAG optimis&eacute;</strong> : Configuration top_k/max_context_items adapt&eacute;e aux petits mod&egrave;les</li>
+    <li><span class="check-done">&#x2705;</span> <strong>Multi-langue</strong> : Rappel de langue pour forcer les r&eacute;ponses en fran&ccedil;ais (gemma2:2b)</li>
+    <li><span class="check-done">&#x2705;</span> <strong>Bootstrap config</strong> : Configuration 100% en BDD avec BOOTSTRAP_FROM_DB</li>
+    <li><span class="check-todo">&#x2B1C;</span> Gestion de la m&eacute;moire conversationnelle (partielle)</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-teal"></span> R&eacute;alisations r&eacute;centes (17-18 f&eacute;vrier 2026)</h3>
+  <div class="cards">
+    <div class="card">
+      <div class="card-title">&#x1F6E0;&#xFE0F; Fix banner indexation &#x2705;</div>
+      <div class="card-text">
+        Correction de l'affichage du nom de document dans la banner de progression (affichait l'ID au lieu du nom). Mapping <code>name</code> &rarr; <code>document_name</code> dans <code>ReindexManager</code>.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x23F0; Auto-logout inactivit&eacute; &#x2705;</div>
+      <div class="card-text">
+        D&eacute;connexion automatique apr&egrave;s 30 minutes d'inactivit&eacute;. Refresh token automatique dans UI-BACK.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F465; Module admin users &#x2705;</div>
+      <div class="card-text">
+        Am&eacute;lioration approbation utilisateurs, tooltips, formulaire. Correction des permissions et cache SQLAlchemy.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F4DD; Plan mode Chatbot/Assistant &#x23F3;</div>
+      <div class="card-text">
+        Exploration du syst&egrave;me de chat pour impl&eacute;menter la d&eacute;tection automatique du style de r&eacute;ponse (conversationnel vs formel).
+      </div>
+    </div>
+  </div>
+
+  <h3><span class="h3-dot dot-blue"></span> R&eacute;alisations (15-16 f&eacute;vrier 2026)</h3>
+  <div class="cards">
+    <div class="card">
+      <div class="card-title">&#x1F3A8; Templates Admin UI &#x2705;</div>
+      <div class="card-text">
+        Refactoring complet : tout le HTML inline supprim&eacute; des 8 modules admin (sources, logs, users, audit, documents, validation, conversations, collections). Utilisation exclusive de <code>Templates.render()</code>.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F4E6; Split system.js &#x2705;</div>
+      <div class="card-text">
+        Fichier monolithique de 4300 lignes d&eacute;coup&eacute; en 13 sous-modules sp&eacute;cialis&eacute;s (llm.js, rag.js, smtp.js, geo.js, etc.). Fichier principal r&eacute;duit &agrave; 185 lignes.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x2B07;&#xFE0F; T&eacute;l&eacute;chargement LLM &#x2705;</div>
+      <div class="card-text">
+        Syst&egrave;me de t&eacute;l&eacute;chargement avec polling : progression en temps r&eacute;el, annulation, suppression fichiers partiels. Support GGUF et Ollama.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F6E0;&#xFE0F; Corrections diverses &#x2705;</div>
+      <div class="card-text">
+        SMTP config save, ic&ocirc;nes manquantes, CSS tooltip, routes nginx VPS, autocomplete login, harmonisation credentials tests.
+      </div>
+    </div>
+  </div>
+
+  <h3><span class="h3-dot dot-blue"></span> R&eacute;alisations ant&eacute;rieures (f&eacute;vrier 2026)</h3>
+  <div class="cards">
+    <div class="card">
+      <div class="card-title">&#x1F9EA; Tests E2E complets &#x2705;</div>
+      <div class="card-text">
+        27 tests E2E en bash couvrant onboarding, documents RAG, config admin, et sessions chat. Infrastructure de test avec g&eacute;n&eacute;ration de rapports JSON.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F4BC; Documentation commerciale &#x2705;</div>
+      <div class="card-text">
+        Pitch deck et page de pr&eacute;sentation commerciale (docs/commercial). Comparatif avec ChatGPT Enterprise et solutions SaaS.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x2699;&#xFE0F; Optimisation RAG &#x2705;</div>
+      <div class="card-text">
+        Configuration top_k=5 et max_context_items=10 pour petits mod&egrave;les (gemma2:2b). Rappel de langue automatique pour r&eacute;ponses en fran&ccedil;ais.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F4DA; Restructuration docs &#x2705;</div>
+      <div class="card-text">
+        Organisation claire : admin/, client/, technique/, commercial/. Index avec 4 profils (Utilisateur, Admin, D&eacute;veloppeur, D&eacute;cideur).
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SECTION 2 ==================== -->
+<div class="section" id="s2">
+  <div class="section-header">
+    <div class="section-icon icon-green">&#x1F4AC;</div>
+    <div><h2>Interface de Chat Web <span class="section-num">&mdash; Section 2 &mdash; PRIORIT&Eacute; HAUTE</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <p>
+    <span class="badge badge-success">&#x2705; Termin&eacute;</span>
+    <strong>R&eacute;pertoire :</strong> <code>frontend/</code> &mdash;
+    <strong>URL :</strong> http://localhost:3000 &mdash;
+    <strong>Date :</strong> 27 novembre 2025
+  </p>
+
+  <h3><span class="h3-dot dot-green"></span> 2.1 Interface utilisateur moderne &#x2705;</h3>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Design responsive type ChatGPT/Claude (sidebar, zone chat, input markdown, mode dark/light)</li>
+    <li><span class="check-done">&#x2705;</span> Composants HTML/CSS/JS vanilla : ChatMessage, ChatInput, ConversationList, SourcesPanel, SettingsPanel</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-green"></span> 2.2 Fonctionnalit&eacute;s core</h3>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Streaming des r&eacute;ponses en temps r&eacute;el</li>
+    <li><span class="check-done">&#x2705;</span> Support markdown avec syntax highlighting (marked.js + highlight.js)</li>
+    <li><span class="check-done">&#x2705;</span> Copier le texte d'un message</li>
+    <li><span class="check-done">&#x2705;</span> R&eacute;g&eacute;n&eacute;rer une r&eacute;ponse</li>
+    <li><span class="check-done">&#x2705;</span> &Eacute;diter et renvoyer un message</li>
+    <li><span class="check-done">&#x2705;</span> Stop generation (annuler une r&eacute;ponse en cours)</li>
+    <li><span class="check-done">&#x2705;</span> Upload de fichiers (13 formats support&eacute;s avec ingestion v2)</li>
+    <li><span class="check-done">&#x2705;</span> Affichage des sources utilis&eacute;es par le RAG</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-teal"></span> 2.3 Gestion des conversations</h3>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Cr&eacute;er nouvelle conversation</li>
+    <li><span class="check-done">&#x2705;</span> Sauvegarder automatiquement (localStorage)</li>
+    <li><span class="check-done">&#x2705;</span> Renommer les conversations (automatique bas&eacute; sur 1er message)</li>
+    <li><span class="check-done">&#x2705;</span> Supprimer les conversations</li>
+    <li><span class="check-todo">&#x2B1C;</span> Rechercher dans l'historique (recherche plein texte)</li>
+    <li><span class="check-todo">&#x2B1C;</span> Organisation par th&eacute;matiques ou dossiers (type Chatbox)</li>
+    <li><span class="check-todo">&#x2B1C;</span> Export conversation (JSON, Markdown, PDF)</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-green"></span> 2.4 Param&egrave;tres utilisateur &#x2705;</h3>
+  <ul class="checklist">
+    <li><span class="check-todo">&#x2B1C;</span> Choix du mod&egrave;le (si plusieurs mod&egrave;les Ollama disponibles)</li>
+    <li><span class="check-done">&#x2705;</span> <strong>Biblioth&egrave;que de prompts / Templates</strong> &mdash; s&eacute;lection de r&ocirc;les pr&eacute;-configur&eacute;s par l'admin (modes de conversation avec system_prompt)</li>
+    <li><span class="check-done">&#x2705;</span> Ajuster les param&egrave;tres RAG (TOP_K, etc.)</li>
+    <li><span class="check-done">&#x2705;</span> Choix entre ChatBot et Assistant</li>
+    <li><span class="check-done">&#x2705;</span> Th&egrave;me (dark/light)</li>
+    <li><span class="check-todo">&#x2B1C;</span> Raccourcis clavier personnalisables</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-green"></span> 2.5 Int&eacute;gration backend &#x2705;</h3>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Streaming via fetch API et ReadableStream</li>
+    <li><span class="check-done">&#x2705;</span> API REST pour CRUD conversations (local storage pour l'instant)</li>
+    <li><span class="check-done">&#x2705;</span> Gestion des sessions/auth (si multi-users)</li>
+    <li><span class="check-done">&#x2705;</span> Upload de documents pour enrichir la base de connaissance</li>
+    <li><span class="check-done">&#x2705;</span> Voir les statistiques (nombre de requ&ecirc;tes, tokens utilis&eacute;s)</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-green"></span> 2.6 Stack technique &#x2705;</h3>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> <strong>HTML5 + CSS3 + JavaScript vanilla</strong> (choix final)</li>
+    <li><span class="check-done">&#x2705;</span> marked.js pour le rendu markdown</li>
+    <li><span class="check-done">&#x2705;</span> highlight.js pour syntax highlighting</li>
+    <li><span class="check-done">&#x2705;</span> fetch API pour les requ&ecirc;tes HTTP</li>
+    <li><span class="check-done">&#x2705;</span> localStorage pour persistence</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-green"></span> 2.7 D&eacute;ploiement &#x2705;</h3>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Dockerfile pour le frontend (Nginx Alpine)</li>
+    <li><span class="check-done">&#x2705;</span> Ajout du service dans docker-compose.yml (port 3000)</li>
+    <li><span class="check-done">&#x2705;</span> Configuration Nginx pour servir le frontend</li>
+    <li><span class="check-done">&#x2705;</span> README.md d&eacute;di&eacute; au frontend</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-green"></span> 2.8 Mode conversationnel vocal (STT + TTS) &#x2705;</h3>
+  <p>
+    Boucle vocale compl&egrave;te : d&eacute;tection de fin de parole &rarr; transcription &rarr; envoi au RAG &rarr; lecture vocale de la r&eacute;ponse.
+    <br><strong>Modules :</strong> <code>UI-SHARED/js/modules/speech.js</code>, <code>UI-SHARED/js/modules/tts.js</code>
+  </p>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Frontend : d&eacute;tection du silence via Web Audio API (analyser RMS)</li>
+    <li><span class="check-done">&#x2705;</span> Frontend : arr&ecirc;t automatique de l'enregistrement apr&egrave;s silence d&eacute;tect&eacute;</li>
+    <li><span class="check-done">&#x2705;</span> Frontend : envoi automatique du texte transcrit vers le chat RAG</li>
+    <li><span class="check-done">&#x2705;</span> Frontend : restitution TTS de la r&eacute;ponse (Web Speech API natif)</li>
+    <li><span class="check-done">&#x2705;</span> Frontend : feedback visuel (indicateur d'&eacute;coute, &eacute;tat silence, lecture vocale)</li>
+    <li><span class="check-done">&#x2705;</span> Backend : pr&eacute;f&eacute;rence utilisateur <code>voice_auto_send</code> + <code>voice_tts_enabled</code></li>
+    <li><span class="check-done">&#x2705;</span> Backend : configuration admin (seuils silence, voix TTS, activation globale)</li>
+    <li><span class="check-todo">&#x2B1C;</span> Backend : endpoint TTS serveur optionnel (Piper / Coqui)</li>
+    <li><span class="check-done">&#x2705;</span> Admin UI : gestion compl&egrave;te dans l'onglet Speech</li>
+    <li><span class="check-todo">&#x2B1C;</span> Tests unitaires et int&eacute;gration</li>
+  </ul>
+</div>
+
+<!-- ==================== SECTION 3 ==================== -->
+<div class="section" id="s3">
+  <div class="section-header">
+    <div class="section-icon icon-green">&#x1F4E5;</div>
+    <div><h2>Syst&egrave;me d'Ingestion v2 <span class="section-num">&mdash; Section 3 &mdash; PRIORIT&Eacute; HAUTE</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <p>
+    <span class="badge badge-success">&#x2705; Termin&eacute;</span>
+    <strong>Fichier :</strong> <code>app/ingest_v2.py</code> &mdash;
+    <strong>Date :</strong> 20-21 d&eacute;cembre 2025
+  </p>
+
+  <h3><span class="h3-dot dot-green"></span> 3.1 Parsing intelligent &#x2705;</h3>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Unstructured.io int&eacute;gr&eacute; pour parsing avanc&eacute;</li>
+    <li><span class="check-done">&#x2705;</span> D&eacute;tection automatique du type de document</li>
+    <li><span class="check-done">&#x2705;</span> Extraction de structure (titres, sections, tables)</li>
+    <li><span class="check-done">&#x2705;</span> 3 strat&eacute;gies de parsing : fast, auto, hi_res</li>
+    <li><span class="check-done">&#x2705;</span> Support de 13 formats : PDF, DOCX, XLSX, PPTX, TXT, MD, HTML, JSONL, CSV, PNG, JPG (OCR)</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-green"></span> 3.2 Chunking s&eacute;mantique &#x2705;</h3>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> RecursiveCharacterTextSplitter de LangChain</li>
+    <li><span class="check-done">&#x2705;</span> Respect de la structure des documents</li>
+    <li><span class="check-done">&#x2705;</span> Chunk size adaptatif (1000 caract&egrave;res par d&eacute;faut)</li>
+    <li><span class="check-done">&#x2705;</span> Overlap intelligent (200 caract&egrave;res)</li>
+    <li><span class="check-done">&#x2705;</span> Pr&eacute;servation du contexte entre chunks</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-green"></span> 3.3 M&eacute;tadonn&eacute;es enrichies &#x2705;</h3>
+  <p>11 champs de m&eacute;tadonn&eacute;es vs 1 auparavant :</p>
+  <table>
+    <thead><tr><th>Champ</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>source</code></td><td>Chemin du fichier source</td></tr>
+      <tr><td><code>chunk_index</code></td><td>Position du chunk dans le document</td></tr>
+      <tr><td><code>total_chunks</code></td><td>Nombre total de chunks</td></tr>
+      <tr><td><code>doc_type</code></td><td>Type de document (pdf, docx, etc.)</td></tr>
+      <tr><td><code>created_at</code></td><td>Timestamp d'ingestion</td></tr>
+      <tr><td><code>file_size</code></td><td>Taille du fichier en octets</td></tr>
+      <tr><td><code>page_number</code></td><td>Num&eacute;ro de page (si applicable)</td></tr>
+      <tr><td><code>section</code></td><td>Section du document (si d&eacute;tect&eacute;e)</td></tr>
+      <tr><td><code>title</code></td><td>Titre du document (si d&eacute;tect&eacute;)</td></tr>
+      <tr><td><code>hash</code></td><td>Hash SHA256 du contenu</td></tr>
+      <tr><td><code>parsing_strategy</code></td><td>Strat&eacute;gie utilis&eacute;e (fast/auto/hi_res)</td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-green"></span> 3.4 D&eacute;duplication et performance &#x2705;</h3>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Hash SHA256 pour d&eacute;tecter les duplicatas</li>
+    <li><span class="check-done">&#x2705;</span> Skip automatique des documents d&eacute;j&agrave; index&eacute;s</li>
+    <li><span class="check-done">&#x2705;</span> Logs d&eacute;taill&eacute;s de l'ingestion</li>
+    <li><span class="check-done">&#x2705;</span> Gestion d'erreurs robuste (continue sur erreur)</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-green"></span> 3.5 OCR int&eacute;gr&eacute; &#x2705;</h3>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Tesseract OCR pour images et PDFs scann&eacute;s</li>
+    <li><span class="check-done">&#x2705;</span> Support PNG, JPG</li>
+    <li><span class="check-done">&#x2705;</span> D&eacute;tection automatique du texte dans les images</li>
+    <li><span class="check-done">&#x2705;</span> Qualit&eacute; configurable</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-green"></span> 3.6 API et Endpoints &#x2705;</h3>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Endpoint <code>/upload/v2</code> pour upload via API</li>
+    <li><span class="check-done">&#x2705;</span> Support multipart/form-data</li>
+    <li><span class="check-done">&#x2705;</span> S&eacute;lection de strat&eacute;gie de parsing (query param)</li>
+    <li><span class="check-done">&#x2705;</span> Upload via interface web (frontend)</li>
+    <li><span class="check-done">&#x2705;</span> Authentification API Key</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-green"></span> 3.7 Documentation &#x2705;</h3>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Guide complet : INGESTION_V2.md</li>
+    <li><span class="check-done">&#x2705;</span> Changelog d&eacute;taill&eacute; : CHANGELOG_INGESTION_V2.md</li>
+    <li><span class="check-done">&#x2705;</span> Guide d&eacute;veloppement : DEV_WORKFLOW.md</li>
+    <li><span class="check-done">&#x2705;</span> Exemples d'utilisation CLI et API</li>
+    <li><span class="check-done">&#x2705;</span> README.md mis &agrave; jour avec nouveaut&eacute;s v2</li>
+  </ul>
+</div>
+
+<!-- ==================== SECTION 4 ==================== -->
+<div class="section" id="s4">
+  <div class="section-header">
+    <div class="section-icon icon-amber">&#x1F9EA;</div>
+    <div><h2>Tests <span class="section-num">&mdash; Section 4 &mdash; PRIORIT&Eacute; HAUTE</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <p>
+    <span class="badge badge-accent">&#x1F6A7; En cours</span>
+    <strong>R&eacute;pertoire :</strong> <code>tests/</code> &mdash;
+    <strong>Mis &agrave; jour :</strong> 13 f&eacute;vrier 2026 &mdash;
+    <strong>Statistiques :</strong> 74 fichiers, 365 classes, 431+ fonctions, ~28 800 lignes
+  </p>
+
+  <h3><span class="h3-dot dot-green"></span> 4.1 Tests unitaires &#x2705;</h3>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Tests admin/ (15 fichiers, 83 classes) &mdash; users, documents, conversations, bulk, config, corpus</li>
+    <li><span class="check-done">&#x2705;</span> Tests chat/ (3 fichiers, 51 fonctions) &mdash; service, router, conversation_memory</li>
+    <li><span class="check-done">&#x2705;</span> Tests llm/ (5 fichiers, 37 fonctions) &mdash; factory, providers (Ollama + llama.cpp), compatibility</li>
+    <li><span class="check-done">&#x2705;</span> Tests sources/ (8 fichiers, 93 fonctions)</li>
+    <li><span class="check-done">&#x2705;</span> Tests logs/ (8 fichiers, 96 fonctions)</li>
+    <li><span class="check-done">&#x2705;</span> Tests geo/ (5 fichiers, 26 classes)</li>
+    <li><span class="check-done">&#x2705;</span> Tests crypto/ (2 fichiers, 48 fonctions)</li>
+    <li><span class="check-done">&#x2705;</span> Tests documents/, collections/, user/, storage/, speech/, audit/, auth/</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-green"></span> 4.2 Tests d'int&eacute;gration &#x2705;</h3>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Tests admin_documents/test_integration.py</li>
+    <li><span class="check-done">&#x2705;</span> Tests admin/test_integration_admin.py</li>
+    <li><span class="check-done">&#x2705;</span> Tests collections/test_integration.py</li>
+    <li><span class="check-done">&#x2705;</span> Tests documents/test_integration.py</li>
+    <li><span class="check-done">&#x2705;</span> Tests sources/test_integration.py</li>
+    <li><span class="check-done">&#x2705;</span> Tests logs/test_integration.py, geo/test_integration.py, audit/test_integration.py</li>
+    <li><span class="check-done">&#x2705;</span> Test end-to-end RAG complet : Ingestion &rarr; ChromaDB &rarr; Chat &rarr; R&eacute;ponse</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-green"></span> 4.2.1 Tests E2E API (Bash) &#x2705;</h3>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Infrastructure scripts/test/ (run-all-tests.sh, lib/*.sh)</li>
+    <li><span class="check-done">&#x2705;</span> test-onboarding.sh : Inscription &rarr; validation &rarr; login (6 tests)</li>
+    <li><span class="check-done">&#x2705;</span> test-document-rag.sh : Upload &rarr; indexation &rarr; chat RAG (6 tests)</li>
+    <li><span class="check-done">&#x2705;</span> test-admin-config.sh : Config LLM, prompts, users (7 tests)</li>
+    <li><span class="check-done">&#x2705;</span> test-chat-session.sh : Conversation multi-tours (8 tests)</li>
+    <li><span class="check-done">&#x2705;</span> G&eacute;n&eacute;ration rapport JSON + cleanup automatique</li>
+    <li><span class="check-done">&#x2705;</span> <strong>Total : 27 tests E2E passants</strong> (13 f&eacute;vrier 2026)</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-amber"></span> 4.3 Tests de performance &#x23F3;</h3>
+  <ul class="checklist">
+    <li><span class="check-todo">&#x2B1C;</span> Tests de charge sur les endpoints API</li>
+    <li><span class="check-todo">&#x2B1C;</span> Benchmarking du temps de r&eacute;ponse</li>
+    <li><span class="check-todo">&#x2B1C;</span> Tests de stress sur ChromaDB</li>
+    <li><span class="check-todo">&#x2B1C;</span> Tests de concurrence (multi-requ&ecirc;tes simultan&eacute;es)</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-green"></span> 4.4 Infrastructure de tests &#x2705;</h3>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Configuration pytest (pytest.ini avec coverage 20% minimum)</li>
+    <li><span class="check-done">&#x2705;</span> Fixtures compl&egrave;tes (conftest.py global + 16 conftest.py par module)</li>
+    <li><span class="check-done">&#x2705;</span> Script run-tests.sh (402 lignes, ex&eacute;cution par module)</li>
+    <li><span class="check-done">&#x2705;</span> Documentation INTEGRATION_TESTS.md</li>
+    <li><span class="check-done">&#x2705;</span> Markers pytest : unit, integration, slow, api, smoke</li>
+    <li><span class="check-done">&#x2705;</span> Coverage reports HTML + terminal</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-amber"></span> 4.5 Modules sans tests d&eacute;di&eacute;s &#x23F3;</h3>
+  <ul class="checklist">
+    <li><span class="check-todo">&#x2B1C;</span> analytics/ &mdash; M&eacute;triques et dashboard</li>
+    <li><span class="check-todo">&#x2B1C;</span> config/ &mdash; Feature flags (partiel via admin_config)</li>
+    <li><span class="check-todo">&#x2B1C;</span> conversations/ &mdash; Archivage (partiel via admin et user)</li>
+    <li><span class="check-todo">&#x2B1C;</span> health/ &mdash; M&eacute;triques sant&eacute; (minimal)</li>
+    <li><span class="check-todo">&#x2B1C;</span> preferences/ &mdash; Gestion pr&eacute;f&eacute;rences (partiel via user)</li>
+    <li><span class="check-todo">&#x2B1C;</span> system/ &mdash; Utilitaires syst&egrave;me</li>
+  </ul>
+</div>
+
+<!-- ==================== SECTION 5 ==================== -->
+<div class="section" id="s5">
+  <div class="section-header">
+    <div class="section-icon icon-amber">&#x1F4E1;</div>
+    <div><h2>Monitoring <span class="section-num">&mdash; Section 5 &mdash; PRIORIT&Eacute; HAUTE</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <p>
+    <span class="badge badge-warning">&#x23F3; &Agrave; faire</span>
+    <strong>R&eacute;pertoire :</strong> <code>monitoring/</code> (actuellement vide)
+  </p>
+
+  <h3><span class="h3-dot dot-amber"></span> 5.1 Dashboard Grafana</h3>
+  <ul class="checklist">
+    <li><span class="check-todo">&#x2B1C;</span> Configuration Grafana dans docker-compose.yml</li>
+    <li><span class="check-todo">&#x2B1C;</span> Connexion &agrave; Prometheus pour scraper les m&eacute;triques</li>
+    <li><span class="check-todo">&#x2B1C;</span> Dashboard : requ&ecirc;tes par endpoint, temps de r&eacute;ponse, taux d'erreur, CPU/RAM, documents ChromaDB, health checks</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-amber"></span> 5.2 Alerting</h3>
+  <ul class="checklist">
+    <li><span class="check-todo">&#x2B1C;</span> Configuration Alertmanager</li>
+    <li><span class="check-todo">&#x2B1C;</span> Alertes critiques : API down, Ollama/ChromaDB non disponible, temps de r&eacute;ponse, taux d'erreur, espace disque</li>
+    <li><span class="check-todo">&#x2B1C;</span> Canaux de notification (email, Slack, etc.)</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-amber"></span> 5.3 Logs centralis&eacute;s</h3>
+  <ul class="checklist">
+    <li><span class="check-todo">&#x2B1C;</span> Configuration ELK Stack ou Loki + Promtail</li>
+    <li><span class="check-todo">&#x2B1C;</span> Agr&eacute;gation des logs de tous les services</li>
+    <li><span class="check-todo">&#x2B1C;</span> Dashboard de visualisation des logs</li>
+    <li><span class="check-todo">&#x2B1C;</span> Recherche et filtrage des logs</li>
+    <li><span class="check-todo">&#x2B1C;</span> Retention policy pour les logs</li>
+  </ul>
+</div>
+
+<!-- ==================== SECTION 6 ==================== -->
+<div class="section" id="s6">
+  <div class="section-header">
+    <div class="section-icon icon-green">&#x1F4AD;</div>
+    <div><h2>M&eacute;moire conversationnelle <span class="section-num">&mdash; Section 6 &mdash; TERMIN&Eacute;</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <p>
+    <span class="badge badge-success">&#x2705; Termin&eacute;</span>
+    Impl&eacute;ment&eacute; le 1 f&eacute;vrier 2026
+  </p>
+
+  <h3><span class="h3-dot dot-green"></span> 6.1 Stockage des conversations</h3>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Backend PostgreSQL : mod&egrave;les <code>Conversation</code> et <code>Message</code> avec relations, soft delete, archivage</li>
+    <li><span class="check-done">&#x2705;</span> Sch&eacute;ma complet : session_id, user_id, messages[], created_at, updated_at, summary, sources JSON</li>
+    <li><span class="check-done">&#x2705;</span> Repository pattern : <code>ConversationRepository</code> + <code>MessageRepository</code> (CRUD complet)</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-green"></span> 6.2 Int&eacute;gration dans les endpoints</h3>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> <code>/chat</code> et <code>/chat/stream</code> injectent l'historique via <code>/api/chat</code> Ollama</li>
+    <li><span class="check-done">&#x2705;</span> Fen&ecirc;tre glissante : <code>build_conversation_window()</code> (tours + tokens)</li>
+    <li><span class="check-done">&#x2705;</span> Format Ollama : <code>[system, ...history, user]</code> avec normalisation streaming</li>
+    <li><span class="check-done">&#x2705;</span> R&eacute;trocompatibilit&eacute; : sans historique, <code>/api/generate</code> utilis&eacute; (inchang&eacute;)</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-green"></span> 6.3 Gestion avanc&eacute;e</h3>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> R&eacute;sum&eacute; automatique (<code>ConversationSummarizer</code>) quand &gt; N messages, stock&eacute; en BDD</li>
+    <li><span class="check-done">&#x2705;</span> D&eacute;tection changement de sujet (<code>TopicDetector</code>) par similarit&eacute; cosinus des embeddings</li>
+    <li><span class="check-done">&#x2705;</span> R&eacute;injection RAG : sources du dernier assistant fusionn&eacute;es avec la nouvelle recherche</li>
+    <li><span class="check-done">&#x2705;</span> 9 cl&eacute;s <code>SystemConfig</code> pour configuration fine par l'admin</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-green"></span> 6.4 Continuit&eacute; conversationnelle (approfondissement des r&eacute;ponses)</h3>
+
+  <div class="callout callout-success">
+    <strong>R&eacute;solu :</strong> l'utilisateur peut d&eacute;sormais creuser, approfondir et poser des questions
+    de suivi. Le LLM re&ccedil;oit l'historique conversationnel et les sources pertinentes. Les changements
+    de sujet sont d&eacute;tect&eacute;s automatiquement.
+  </div>
+
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Historique inject&eacute; dans le prompt LLM via <code>/api/chat</code> Ollama (Phase 1)</li>
+    <li><span class="check-done">&#x2705;</span> Questions de suivi support&eacute;es gr&acirc;ce &agrave; l'historique + <code>QueryContextualizer</code></li>
+    <li><span class="check-done">&#x2705;</span> D&eacute;tection de changement de sujet : <code>topic_changed: true</code> retourn&eacute; dans la r&eacute;ponse API (Phase 3)</li>
+    <li><span class="check-done">&#x2705;</span> Fen&ecirc;tre de contexte glissante : tours + budget tokens, configurable (Phase 2)</li>
+    <li><span class="check-done">&#x2705;</span> R&eacute;sum&eacute; automatique des conversations longues, stock&eacute; en BDD (Phase 4)</li>
+    <li><span class="check-done">&#x2705;</span> R&eacute;injection RAG : sources pr&eacute;c&eacute;dentes fusionn&eacute;es pour les questions de suivi (Phase 5)</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-teal"></span> 6.5 Configurabilit&eacute; dynamique des param&egrave;tres de m&eacute;moire &#x2705;</h3>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Harmoniser le nom de variable : renommer <code>max_history</code> &rarr; <code>max_turns</code> dans <code>QueryContextualizer</code> et passer la valeur dynamique depuis le service (cl&eacute; <code>chat.history_max_turns</code> d&eacute;j&agrave; existante en BDD)</li>
+    <li><span class="check-done">&#x2705;</span> Cr&eacute;er l'onglet <em>Chat</em> dans l'interface d'administration (Syst&egrave;me &gt; Chat) pour exposer les 9 param&egrave;tres de m&eacute;moire</li>
+    <li><span class="check-done">&#x2705;</span> Supprimer les 3 appels hardcod&eacute;s <code>max_history=5</code> dans <code>service.py</code> au profit de la valeur lue en BDD</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-blue"></span> Fichiers cr&eacute;&eacute;s/modifi&eacute;s</h3>
+  <table>
+    <thead><tr><th>Fichier</th><th>Action</th></tr></thead>
+    <tbody>
+      <tr><td><code>app/common/utils/ollama.py</code></td><td>Modifi&eacute; &mdash; param&egrave;tre <code>history</code>, endpoint <code>/api/chat</code></td></tr>
+      <tr><td><code>app/features/chat/service.py</code></td><td>Modifi&eacute; &mdash; historique, fen&ecirc;tre, r&eacute;sum&eacute;, r&eacute;injection RAG</td></tr>
+      <tr><td><code>app/features/chat/topic_detector.py</code></td><td>Cr&eacute;&eacute; &mdash; d&eacute;tection de changement de sujet</td></tr>
+      <tr><td><code>app/features/chat/summarizer.py</code></td><td>Cr&eacute;&eacute; &mdash; r&eacute;sum&eacute; automatique (fr/en)</td></tr>
+      <tr><td><code>app/features/chat/schemas.py</code></td><td>Modifi&eacute; &mdash; champ <code>topic_changed</code></td></tr>
+      <tr><td><code>app/models.py</code></td><td>Modifi&eacute; &mdash; colonne <code>summary</code> sur Conversation</td></tr>
+      <tr><td><code>app/features/conversations/repository.py</code></td><td>Modifi&eacute; &mdash; <code>get_recent_messages()</code>, <code>get_last_assistant_sources()</code></td></tr>
+      <tr><td><code>tests/chat/test_conversation_memory.py</code></td><td>Cr&eacute;&eacute; &mdash; 39 tests unitaires</td></tr>
+      <tr><td><code>app/alembic/versions/</code></td><td>4 migrations (historique, topic, r&eacute;sum&eacute;, r&eacute;injection)</td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-blue"></span> Cl&eacute;s SystemConfig</h3>
+  <table>
+    <thead><tr><th>Cl&eacute;</th><th>Type</th><th>D&eacute;faut</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>chat.history_enabled</code></td><td>bool</td><td>true</td><td>Activer l'injection de l'historique</td></tr>
+      <tr><td><code>chat.history_max_turns</code></td><td>int</td><td>5</td><td>Nombre max de tours</td></tr>
+      <tr><td><code>chat.history_max_tokens</code></td><td>int</td><td>4096</td><td>Budget tokens historique</td></tr>
+      <tr><td><code>chat.topic_detection_enabled</code></td><td>bool</td><td>true</td><td>D&eacute;tection changement de sujet</td></tr>
+      <tr><td><code>chat.topic_similarity_threshold</code></td><td>float</td><td>0.3</td><td>Seuil de similarit&eacute;</td></tr>
+      <tr><td><code>chat.summary_enabled</code></td><td>bool</td><td>true</td><td>R&eacute;sum&eacute; automatique</td></tr>
+      <tr><td><code>chat.summary_trigger_messages</code></td><td>int</td><td>10</td><td>Seuil de d&eacute;clenchement</td></tr>
+      <tr><td><code>chat.summary_max_tokens</code></td><td>int</td><td>500</td><td>Taille max du r&eacute;sum&eacute;</td></tr>
+      <tr><td><code>chat.rag_reinjection_enabled</code></td><td>bool</td><td>true</td><td>R&eacute;injection sources pr&eacute;c&eacute;dentes</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ==================== SECTION 7 ==================== -->
+<div class="section" id="s7">
+  <div class="section-header">
+    <div class="section-icon icon-red">&#x1F512;</div>
+    <div><h2>S&eacute;curit&eacute; en production <span class="section-num">&mdash; Section 7 &mdash; PRIORIT&Eacute; MOYENNE</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <p><span class="badge badge-warning">&#x23F3; &Agrave; faire</span></p>
+
+  <div class="two-cols">
+    <div>
+      <h4>6.1 Variables d'environnement</h4>
+      <ul class="checklist">
+        <li><span class="check-todo">&#x2B1C;</span> Cr&eacute;er fichier <code>.env</code> pour les secrets</li>
+        <li><span class="check-todo">&#x2B1C;</span> Retirer les mots de passe du docker-compose.yml</li>
+        <li><span class="check-todo">&#x2B1C;</span> Validation des variables au d&eacute;marrage</li>
+      </ul>
+
+      <h4>6.2 HTTPS/TLS</h4>
+      <ul class="checklist">
+        <li><span class="check-todo">&#x2B1C;</span> Reverse proxy (Nginx ou Traefik)</li>
+        <li><span class="check-todo">&#x2B1C;</span> Certificats SSL/TLS (Let's Encrypt)</li>
+        <li><span class="check-todo">&#x2B1C;</span> Redirection HTTP &rarr; HTTPS</li>
+        <li><span class="check-todo">&#x2B1C;</span> Configuration HSTS</li>
+      </ul>
+    </div>
+    <div>
+      <h4>6.3 Authentification am&eacute;lior&eacute;e</h4>
+      <ul class="checklist">
+        <li><span class="check-todo">&#x2B1C;</span> Remplacer API Key par JWT</li>
+        <li><span class="check-todo">&#x2B1C;</span> Syst&egrave;me de users/tokens</li>
+        <li><span class="check-todo">&#x2B1C;</span> Refresh tokens / R&eacute;vocation</li>
+        <li><span class="check-todo">&#x2B1C;</span> Rate limiting par utilisateur</li>
+      </ul>
+
+      <h4>6.4 Hardening</h4>
+      <ul class="checklist">
+        <li><span class="check-todo">&#x2B1C;</span> Scan de vuln&eacute;rabilit&eacute;s images Docker</li>
+        <li><span class="check-todo">&#x2B1C;</span> User non-root dans les containers</li>
+        <li><span class="check-todo">&#x2B1C;</span> Network policies restrictives</li>
+        <li><span class="check-todo">&#x2B1C;</span> Secrets management (Vault, Docker secrets)</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SECTION 8 ==================== -->
+<div class="section" id="s8">
+  <div class="section-header">
+    <div class="section-icon icon-teal">&#x26A1;</div>
+    <div><h2>Optimisations <span class="section-num">&mdash; Section 8 &mdash; PRIORIT&Eacute; MOYENNE</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <p>
+    <span class="badge badge-accent">&#x1F6A7; En cours</span>
+    (chunking s&eacute;mantique termin&eacute;)
+  </p>
+
+  <h3><span class="h3-dot dot-amber"></span> 8.1 Cache Redis &#x23F3;</h3>
+  <ul class="checklist">
+    <li><span class="check-todo">&#x2B1C;</span> Ajout de Redis dans docker-compose.yml</li>
+    <li><span class="check-todo">&#x2B1C;</span> Cache des embeddings pour requ&ecirc;tes identiques</li>
+    <li><span class="check-todo">&#x2B1C;</span> Cache des r&eacute;ponses fr&eacute;quentes</li>
+    <li><span class="check-todo">&#x2B1C;</span> TTL configurable / Invalidation &agrave; la r&eacute;indexation</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-amber"></span> 8.2 File d'attente asynchrone &#x23F3;</h3>
+  <ul class="checklist">
+    <li><span class="check-todo">&#x2B1C;</span> Celery + RabbitMQ ou Redis</li>
+    <li><span class="check-todo">&#x2B1C;</span> Traitement asynchrone des requ&ecirc;tes longues</li>
+    <li><span class="check-todo">&#x2B1C;</span> Endpoint pour soumettre/r&eacute;cup&eacute;rer une t&acirc;che</li>
+    <li><span class="check-todo">&#x2B1C;</span> Webhook de notification de fin de traitement</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-green"></span> 8.3 Am&eacute;lioration du chunking &#x2705;</h3>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Semantic chunking (RecursiveCharacterTextSplitter, LangChain)</li>
+    <li><span class="check-done">&#x2705;</span> Chunking bas&eacute; sur paragraphes/sections (Unstructured.io)</li>
+    <li><span class="check-done">&#x2705;</span> Overlap intelligent (chunk_overlap=200)</li>
+    <li><span class="check-done">&#x2705;</span> M&eacute;tadonn&eacute;es enrichies (11 champs)</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-amber"></span> 8.4 Optimisation des requ&ecirc;tes &#x23F3;</h3>
+  <ul class="checklist">
+    <li><span class="check-todo">&#x2B1C;</span> Batch processing pour l'ingestion</li>
+    <li><span class="check-todo">&#x2B1C;</span> Parall&eacute;lisation des embeddings</li>
+    <li><span class="check-todo">&#x2B1C;</span> Compression des embeddings</li>
+    <li><span class="check-todo">&#x2B1C;</span> Index HNSW optimis&eacute; dans ChromaDB</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-amber"></span> 8.5 Compactage de tokens RAG &#x23F3;</h3>
+  <p>
+    <strong>Plan d&eacute;taill&eacute; :</strong> <a href="PLAN-TOKEN-COMPACTION.html">PLAN-TOKEN-COMPACTION.html</a>
+  </p>
+  <p>
+    R&eacute;duire le nombre de tokens envoy&eacute;s au LLM tout en pr&eacute;servant l'information pertinente.
+    Permet d'augmenter <code>top_k</code> sans exploser le contexte pour les petits mod&egrave;les.
+  </p>
+  <ul class="checklist">
+    <li><span class="check-todo">&#x2B1C;</span> <strong>Phase 1 &mdash; D&eacute;duplication s&eacute;mantique</strong> : Supprimer les chunks avec similarit&eacute; &gt; 85%</li>
+    <li><span class="check-todo">&#x2B1C;</span> <strong>Phase 2 &mdash; Extraction de phrases cl&eacute;s</strong> : Garder les N phrases les plus pertinentes par chunk (TF-IDF, TextRank)</li>
+    <li><span class="check-todo">&#x2B1C;</span> <strong>Phase 3 &mdash; Interface Admin</strong> : Section de configuration dans Syst&egrave;me &gt; RAG</li>
+    <li><span class="check-todo">&#x2B1C;</span> <strong>Phase 4 &mdash; Tests &amp; m&eacute;triques</strong> : Mesurer r&eacute;duction tokens et qualit&eacute; r&eacute;ponses</li>
+  </ul>
+  <div class="callout callout-info">
+    <span class="callout-icon">&#x1F4CA;</span>
+    <span>
+      <strong>Objectifs :</strong> R&eacute;duction &gt; 30% des tokens, latence ajout&eacute;e &lt; 50ms, pas de d&eacute;gradation mesurable de la qualit&eacute;.
+    </span>
+  </div>
+</div>
+
+<!-- ==================== SECTION 9 ==================== -->
+<div class="section" id="s9">
+  <div class="section-header">
+    <div class="section-icon icon-purple">&#x1F680;</div>
+    <div><h2>Features additionnelles <span class="section-num">&mdash; Section 9 &mdash; PRIORIT&Eacute; BASSE</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <p>
+    <span class="badge badge-accent">&#x1F6A7; En cours</span>
+    (formats de fichiers termin&eacute;s)
+  </p>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-title">&#x1F465; Multi-utilisateurs &#x23F3;</div>
+      <div class="card-text">
+        Authentification multi-users, isolation des donn&eacute;es, collections ChromaDB par utilisateur/tenant, quotas, tableau de bord admin.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F310; Interface web &#x2705;</div>
+      <div class="card-text">
+        Frontend HTML/CSS/JS vanilla, chat moderne, upload 13 formats, visualisation sources RAG, historique localStorage, settings utilisateur.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F4C4; Nouveaux formats &#x2705;</div>
+      <div class="card-text">
+        CSV, DOCX, XLSX, PPTX, images avec OCR (PNG, JPG via Tesseract). Audio/Video avec transcription &agrave; venir.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F44D; Feedback syst&egrave;me &#x23F3;</div>
+      <div class="card-text">
+        Thumbs up/down, stockage des feedbacks, am&eacute;lioration RAG, fine-tuning, analytics.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F50D; Features avanc&eacute;es RAG &#x23F3;</div>
+      <div class="card-text">
+        Reranking, hybrid search (dense + sparse), multi-query retrieval, parent document retrieval, query expansion.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F916; D&eacute;tection auto Mode Chatbot/Assistant &#x23F3;</div>
+      <div class="card-text">
+        Analyse de la requ&ecirc;te utilisateur pour basculer automatiquement entre style conversationnel (chatbot) et style formel/structur&eacute; (assistant). RAG toujours actif.
+      </div>
+    </div>
+  </div>
+
+  <h3><span class="h3-dot dot-amber"></span> 9.1 D&eacute;tection automatique du mode de r&eacute;ponse &#x23F3;</h3>
+  <p>
+    <strong>Objectif :</strong> Adapter automatiquement le style de r&eacute;ponse (conversationnel vs formel) selon la nature de la question utilisateur, tout en conservant le RAG actif.
+  </p>
+
+  <div class="callout callout-info">
+    <span class="callout-icon">&#x1F4A1;</span>
+    <span>
+      <strong>Deux modes de r&eacute;ponse :</strong><br>
+      <strong>Chatbot</strong> : Style conversationnel, amical, d&eacute;contract&eacute; (salutations, questions simples, bavardage)<br>
+      <strong>Assistant</strong> : Style formel, structur&eacute;, professionnel (questions techniques, demandes d'analyse, t&acirc;ches)
+    </span>
+  </div>
+
+  <h4>Architecture propos&eacute;e</h4>
+  <ul class="checklist">
+    <li><span class="check-todo">&#x2B1C;</span> <strong>D&eacute;tection backend</strong> : Fonction <code>detect_response_style(query)</code> dans <code>rag_config.py</code></li>
+    <li><span class="check-todo">&#x2B1C;</span> <strong>Patterns de d&eacute;tection</strong> : Salutations, questions courtes, mots-cl&eacute;s formels, longueur, ponctuation</li>
+    <li><span class="check-todo">&#x2B1C;</span> <strong>System prompts dynamiques</strong> : Injection du style dans le prompt selon le mode d&eacute;tect&eacute;</li>
+    <li><span class="check-todo">&#x2B1C;</span> <strong>Override utilisateur</strong> : Toggle UI ou pr&eacute;fixe (<code>/chat</code>, <code>/assistant</code>) pour forcer un mode</li>
+    <li><span class="check-todo">&#x2B1C;</span> <strong>Pr&eacute;f&eacute;rence utilisateur</strong> : Mode par d&eacute;faut configurable en BDD (<code>user_preferences</code>)</li>
+    <li><span class="check-todo">&#x2B1C;</span> <strong>Retour API</strong> : Champ <code>response_style_used</code> dans la r&eacute;ponse streaming</li>
+  </ul>
+
+  <h4>Crit&egrave;res de d&eacute;tection</h4>
+  <div class="two-cols">
+    <div>
+      <strong>&#x2192; Mode Chatbot</strong>
+      <ul>
+        <li>Salutations : "bonjour", "salut", "&ccedil;a va", "hello"</li>
+        <li>Questions &lt; 5 mots sans mots techniques</li>
+        <li>Emojis pr&eacute;sents</li>
+        <li>Ton informel d&eacute;tect&eacute;</li>
+      </ul>
+    </div>
+    <div>
+      <strong>&#x2192; Mode Assistant</strong>
+      <ul>
+        <li>Mots-cl&eacute;s : "analyse", "compare", "explique", "d&eacute;taille"</li>
+        <li>Questions &gt; 10 mots ou techniques</li>
+        <li>Demandes de listes, tableaux, code</li>
+        <li>R&eacute;f&eacute;rence &agrave; des documents/sources</li>
+      </ul>
+    </div>
+  </div>
+
+  <h4>Fichiers &agrave; modifier</h4>
+  <ul>
+    <li><code>app/common/utils/rag_config.py</code> &mdash; Ajouter <code>detect_response_style()</code></li>
+    <li><code>app/features/chat/service.py</code> &mdash; Int&eacute;grer d&eacute;tection avant appel LLM</li>
+    <li><code>app/features/chat/schemas.py</code> &mdash; Ajouter <code>response_style</code> dans <code>ChatRequest</code>/<code>ChatResponse</code></li>
+    <li><code>app/prompts/</code> &mdash; Ajouter variantes de prompts par style</li>
+    <li><code>UI-FRONT/js/app.js</code> &mdash; Toggle UI pour override manuel</li>
+    <li><code>UI-SHARED/locales/</code> &mdash; Traductions des labels</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-amber"></span> 9.2 Workflows N8N &#x23F3;</h3>
+  <ul class="checklist">
+    <li><span class="check-todo">&#x2B1C;</span> Templates de workflows : Email Auto-responder, Document Summarizer, Slack Bot, Daily Report, Customer Support, Content Generator</li>
+    <li><span class="check-todo">&#x2B1C;</span> Documentation : guides pas-&agrave;-pas, screenshots, variables, exemples</li>
+  </ul>
+</div>
+
+<!-- ==================== SECTION 10 ==================== -->
+<div class="section" id="s10">
+  <div class="section-header">
+    <div class="section-icon icon-purple">&#x2699;&#xFE0F;</div>
+    <div><h2>DevOps <span class="section-num">&mdash; Section 10 &mdash; PRIORIT&Eacute; BASSE</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <p><span class="badge badge-warning">&#x23F3; &Agrave; faire</span></p>
+
+  <div class="two-cols">
+    <div>
+      <h4>10.1 CI/CD &#x23F3;</h4>
+      <ul class="checklist">
+        <li><span class="check-todo">&#x2B1C;</span> GitHub Actions : Linting, tests, build Docker, push registry, d&eacute;ploiement auto</li>
+        <li><span class="check-todo">&#x2B1C;</span> Environnements multiples (dev, staging, prod)</li>
+        <li><span class="check-todo">&#x2B1C;</span> Rollback automatique</li>
+      </ul>
+
+      <h4>10.2 Kubernetes &#x23F3;</h4>
+      <ul class="checklist">
+        <li><span class="check-todo">&#x2B1C;</span> Manifests K8s (Deployments, Services, ConfigMaps, Secrets)</li>
+        <li><span class="check-todo">&#x2B1C;</span> Helm charts</li>
+        <li><span class="check-todo">&#x2B1C;</span> Horizontal Pod Autoscaling</li>
+        <li><span class="check-todo">&#x2B1C;</span> Persistent Volumes / Ingress</li>
+      </ul>
+    </div>
+    <div>
+      <h4>10.3 Scripts de migration &#x23F3;</h4>
+      <ul class="checklist">
+        <li><span class="check-todo">&#x2B1C;</span> Migration ChromaDB (upgrade versions)</li>
+        <li><span class="check-todo">&#x2B1C;</span> Migration PostgreSQL (Alembic)</li>
+        <li><span class="check-todo">&#x2B1C;</span> Scripts de rollback / seed data</li>
+      </ul>
+
+      <h4>10.4 Documentation DevOps &#x23F3;</h4>
+      <ul class="checklist">
+        <li><span class="check-todo">&#x2B1C;</span> Guide de d&eacute;ploiement production</li>
+        <li><span class="check-todo">&#x2B1C;</span> Architecture haute disponibilit&eacute;</li>
+        <li><span class="check-todo">&#x2B1C;</span> Disaster recovery plan</li>
+        <li><span class="check-todo">&#x2B1C;</span> Scaling guide</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SECTION 11 ==================== -->
+<div class="section" id="s11">
+  <div class="section-header">
+    <div class="section-icon icon-purple">&#x1F4D3;</div>
+    <div><h2>Backlog &amp; Notes <span class="section-num">&mdash; Section 11</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <h3><span class="h3-dot dot-purple"></span> 11.1 Fonctionnalit&eacute;s avanc&eacute;es (Backlog)</h3>
+  <ul class="feature-list">
+    <li><strong>Multi-lingue</strong> &mdash; D&eacute;tection automatique de la langue</li>
+    <li><strong>Agents sp&eacute;cialis&eacute;s</strong> &mdash; Un agent par domaine m&eacute;tier</li>
+    <li><strong>Sources externes</strong> &mdash; RAG avec web scraping et APIs</li>
+    <li><strong>Fine-tuning</strong> &mdash; Mod&egrave;les Ollama custom</li>
+    <li><strong>A/B testing</strong> &mdash; Tester diff&eacute;rents prompts</li>
+    <li><strong>Versioning des prompts</strong> &mdash; Historique des prompts syst&egrave;me</li>
+    <li><strong>Playground</strong> &mdash; Tester diff&eacute;rents param&egrave;tres</li>
+    <li><strong>Export</strong> &mdash; Conversations en PDF, JSON</li>
+    <li><strong>Int&eacute;grations tierces</strong> &mdash; Zapier, Make, etc.</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-blue"></span> 11.2 Bonnes pratiques</h3>
+  <ol>
+    <li>Toujours &eacute;crire des tests avant de marquer une feature comme termin&eacute;e</li>
+    <li>Documenter les nouvelles features dans <code>/docs</code></li>
+    <li>Mettre &agrave; jour le README si n&eacute;cessaire</li>
+    <li>Versionner les changements (semantic versioning)</li>
+    <li>Commits atomiques et descriptifs</li>
+    <li>Code review avant merge en main</li>
+  </ol>
+
+  <h3><span class="h3-dot dot-amber"></span> 11.3 D&eacute;cisions techniques &agrave; prendre</h3>
+  <ul class="checklist">
+    <li><span class="check-todo">&#x2B1C;</span> Backend pour la m&eacute;moire conversationnelle (Redis vs PostgreSQL)</li>
+    <li><span class="check-todo">&#x2B1C;</span> Solution de monitoring (Grafana vs alternatives)</li>
+    <li><span class="check-todo">&#x2B1C;</span> Framework de tests (pytest vs unittest)</li>
+    <li><span class="check-todo">&#x2B1C;</span> Strat&eacute;gie de cache (Redis vs autre)</li>
+    <li><span class="check-todo">&#x2B1C;</span> Solution de queue (Celery+RabbitMQ vs Celery+Redis vs autre)</li>
+    <li><span class="check-todo">&#x2B1C;</span> <strong>Migration frontend</strong> &mdash; Passer de JavaScript vanilla &agrave; une architecture modulaire avec un framework (React, Vue, etc.) pour am&eacute;liorer la maintenabilit&eacute;, la scalabilit&eacute; et la testabilit&eacute; du code frontend</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-green"></span> 11.4 R&eacute;alisations r&eacute;centes (20-21 d&eacute;cembre 2025)</h3>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-title">&#x1F4E5; Syst&egrave;me d'ingestion v2 &#x2705;</div>
+      <div class="card-text">
+        Parsing intelligent (Unstructured.io, 3 strat&eacute;gies), 13 formats, chunking s&eacute;mantique (LangChain), 11 m&eacute;tadonn&eacute;es, d&eacute;duplication SHA256, OCR Tesseract, endpoint /upload/v2, documentation compl&egrave;te.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F9EA; Infrastructure de tests &#x1F6A7;</div>
+      <div class="card-text">
+        408 lignes de tests unitaires (ingest_v2), 15+ fichiers de fixtures, config pytest &agrave; jour, script de g&eacute;n&eacute;ration. Tests API en cours de refonte.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F9F9; Refactoring &#x2705;</div>
+      <div class="card-text">
+        Suppression de l'ancien syst&egrave;me (ingest.py), anciens tests retir&eacute;s, conftest.py modernis&eacute;, hot reload activ&eacute;.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SECTION 12 ==================== -->
+<div class="section" id="s12">
+  <div class="section-header">
+    <div class="section-icon icon-red">&#x2702;&#xFE0F;</div>
+    <div><h2>Refactoring DRY <span class="section-num">&mdash; Section 12 &mdash; PRIORIT&Eacute; HAUTE</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <p>
+    <span class="badge badge-success">&#x2705; Termin&eacute;</span>
+    <strong>R&eacute;sultat :</strong> ~495 lignes &eacute;limin&eacute;es (238 Python + 257 JavaScript)
+  </p>
+
+  <div class="callout callout-success">
+    <span class="callout-icon">&#x2705;</span>
+    <span>
+      <strong>Bilan final :</strong> 4 phases impl&eacute;ment&eacute;es sur 5 pr&eacute;vues. La phase 5 (adoption mixins dans les modules sp&eacute;cialis&eacute;s) a &eacute;t&eacute; analys&eacute;e et cl&ocirc;tur&eacute;e &mdash; les modules cibles (<code>users.js</code>, <code>sources.js</code>, <code>audit.js</code>, <code>validation.js</code>, <code>documents.js</code>) ont des architectures trop sp&eacute;cifiques (dual-mode bulk, function-based, full re-render) pour une adoption rentable des mixins g&eacute;n&eacute;riques. Tous les 909 tests backend passent.
+    </span>
+  </div>
+
+  <h3><span class="h3-dot dot-green"></span> 12.1 Backend Python (~238 lignes) &#x2705;</h3>
+  <ul class="checklist checklist-single">
+    <li><span class="check-done">&#x2705;</span> <strong>Phase 1</strong> &mdash; Cr&eacute;&eacute; <code>app/common/utils/query.py</code> avec <code>paginate_query()</code> et adopt&eacute; dans 9 services/repositories (~90 lignes)</li>
+    <li><span class="check-done">&#x2705;</span> <strong>Phase 2</strong> &mdash; Cr&eacute;&eacute; <code>app/common/utils/chroma_helpers.py</code> avec <code>safe_chroma_delete()</code> et <code>safe_chroma_clear()</code>, adopt&eacute; dans le service collections (~28 lignes)</li>
+    <li><span class="check-done">&#x2705;</span> <strong>Phase 3</strong> &mdash; Ajout&eacute; 3 helpers CRUD g&eacute;n&eacute;riques dans <code>app/features/admin/service.py</code> : <code>_create_named_entity</code>, <code>_update_named_entity</code>, <code>_delete_protected_entity</code>. 12 m&eacute;thodes converties en one-liners (~120 lignes)</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-green"></span> 12.2 Frontend JavaScript (~257 lignes) &#x2705;</h3>
+  <ul class="checklist checklist-single">
+    <li><span class="check-done">&#x2705;</span> <strong>Phase 4</strong> &mdash; Split de <code>content.js</code> (1787 lignes) en orchestrateur (67 lignes) + 3 sous-modules : <code>content-documents.js</code>, <code>content-conversations.js</code>, <code>content-collections.js</code> (~257 lignes &eacute;limin&eacute;es + clart&eacute; architecturale)</li>
+    <li><span class="check-done">&#x2705;</span> Adoption des 3 mixins (<code>PaginationMixin</code>, <code>BulkSelectionMixin</code>, <code>SearchableMixin</code>) dans les 3 sous-modules via <code>Object.assign()</code></li>
+    <li><span class="check-done">&#x2705;</span> Ajout de <code>response.collections</code> dans <code>normalizeListResponse()</code> de <code>api.js</code></li>
+    <li><span class="check-done">&#x274C;</span> <strong>Phase 5 (cl&ocirc;tur&eacute;e)</strong> &mdash; Analyse des 5 modules cibles : architectures trop sp&eacute;cialis&eacute;es pour adoption mixins (gain r&eacute;aliste ~30-70 lignes vs ~310 pr&eacute;vues, ratio co&ucirc;t/risque d&eacute;favorable)</li>
+  </ul>
+</div>
+
+<!-- ==================== SECTION 13 ==================== -->
+<div class="section" id="s13">
+  <div class="section-header">
+    <div class="section-icon icon-purple">&#x1F527;</div>
+    <div><h2>Refactoring DEBUG scripts shell <span class="section-num">&mdash; Section 13 &mdash; PRIORIT&Eacute; MOYENNE</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <p>
+    <span class="badge badge-warning">&#x23F3; &Agrave; faire</span>
+    <strong>Contexte :</strong> La variable <code>DEBUG</code> a &eacute;t&eacute; supprim&eacute;e du <code>.env</code> et du backend Python.
+    Tout le debug est d&eacute;sormais pilot&eacute; par la BDD via le panneau admin (Syst&egrave;me &gt; Debug).
+    Les scripts shell de d&eacute;ploiement contiennent encore de la logique et des commentaires r&eacute;f&eacute;ren&ccedil;ant <code>DEBUG=true/false</code>.
+  </p>
+
+  <h3><span class="h3-dot dot-amber"></span> 13.1 Scripts &agrave; refactoriser &#x23F3;</h3>
+
+  <table>
+    <thead><tr><th>Fichier</th><th>R&eacute;f&eacute;rences</th><th>Type</th></tr></thead>
+    <tbody>
+      <tr><td><code>scripts/start.sh</code></td><td>1</td><td>Commentaire</td></tr>
+      <tr><td><code>scripts/deploy.sh</code></td><td>2</td><td>Logique + affichage</td></tr>
+      <tr><td><code>scripts/deploy/production.sh</code></td><td>8</td><td>Logique + affichage + commentaires</td></tr>
+      <tr><td><code>scripts/lib/env.sh</code></td><td>4</td><td>G&eacute;n&eacute;ration .env + commentaires</td></tr>
+      <tr><td><code>scripts/lib/instance.sh</code></td><td>2</td><td>Affichage mode dev/prod</td></tr>
+      <tr><td><code>scripts/lib/data.sh</code></td><td>4</td><td>Affichage + logique seed</td></tr>
+      <tr><td><code>scripts/test/test-shell-scripts.sh</code></td><td>6</td><td>Tests unitaires shell</td></tr>
+      <tr><td><code>scripts/test/test-endpoints.sh</code></td><td>3</td><td>Commentaires pr&eacute;requis</td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-amber"></span> 13.2 Actions &agrave; r&eacute;aliser &#x23F3;</h3>
+  <ul class="checklist checklist-single">
+    <li><span class="check-todo">&#x2B1C;</span> <strong><code>scripts/lib/env.sh</code></strong> &mdash; Supprimer la g&eacute;n&eacute;ration de <code>DEBUG=</code> dans le <code>.env</code>. Supprimer la section &laquo;utilisateurs de test si DEBUG=true&raquo;</li>
+    <li><span class="check-todo">&#x2B1C;</span> <strong><code>scripts/deploy.sh</code></strong> &mdash; Supprimer le choix &laquo;D&eacute;veloppement (DEBUG=true)&raquo; vs &laquo;Production (DEBUG=false)&raquo;</li>
+    <li><span class="check-todo">&#x2B1C;</span> <strong><code>scripts/deploy/production.sh</code></strong> &mdash; Supprimer toute la logique de configuration <code>DEBUG</code>, les fonctions <code>configure_test_users</code> li&eacute;es &agrave; DEBUG, et les affichages conditionnels</li>
+    <li><span class="check-todo">&#x2B1C;</span> <strong><code>scripts/lib/instance.sh</code></strong> &mdash; Adapter l'affichage du mode (plus de distinction DEBUG=true/false)</li>
+    <li><span class="check-todo">&#x2B1C;</span> <strong><code>scripts/lib/data.sh</code></strong> &mdash; Adapter l'affichage et la logique de seed</li>
+    <li><span class="check-todo">&#x2B1C;</span> <strong><code>scripts/start.sh</code></strong> &mdash; Supprimer le commentaire r&eacute;f&eacute;ren&ccedil;ant DEBUG</li>
+    <li><span class="check-todo">&#x2B1C;</span> <strong><code>scripts/test/test-shell-scripts.sh</code></strong> &mdash; Adapter les tests unitaires qui testent la g&eacute;n&eacute;ration de la section DEBUG</li>
+    <li><span class="check-todo">&#x2B1C;</span> <strong><code>scripts/test/test-endpoints.sh</code></strong> &mdash; Mettre &agrave; jour les commentaires pr&eacute;requis</li>
+  </ul>
+
+  <div class="callout callout-info">
+    <span class="callout-icon">&#x1F4A1;</span>
+    <span><strong>Note :</strong> Le backend Python (<code>config.py</code>, <code>main.py</code>, <code>service.py</code>, <code>seed.py</code>, <code>entrypoint.sh</code>) et toute la documentation HTML ont d&eacute;j&agrave; &eacute;t&eacute; migr&eacute;s. Cette section concerne uniquement les scripts shell de d&eacute;ploiement et de test.</span>
+  </div>
+</div>
+
+<!-- ==================== SECTION 14 ==================== -->
+<div class="section" id="s14">
+  <div class="section-header">
+    <div class="section-icon icon-amber">&#x1F4DC;</div>
+    <div><h2>Refonte du syst&egrave;me de Logs <span class="section-num">&mdash; Section 14 &mdash; PRIORIT&Eacute; MOYENNE</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <p>
+    <span class="badge badge-success">&#x2705; Termin&eacute; (Option A)</span>
+    <strong>Contexte :</strong> Le syst&egrave;me de logging interne am&eacute;lior&eacute; (Option A) a &eacute;t&eacute; impl&eacute;ment&eacute; en 9 phases :
+    format JSON structur&eacute;, 5 cat&eacute;gories, enrichissement automatique (ContextVars), persistance BDD
+    (table <code>app_logs</code>), configuration admin par cat&eacute;gorie, visualisation backoffice,
+    r&eacute;tention automatique et alerting basique. 160 tests unitaires et d'int&eacute;gration.
+    L'Option B (ELK Stack) reste disponible pour une &eacute;volution future.
+  </p>
+
+  <h3><span class="h3-dot dot-blue"></span> 14.1 &Eacute;tat actuel</h3>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Module <code>logging</code> Python configur&eacute; dans chaque service</li>
+    <li><span class="check-done">&#x2705;</span> Sortie console (stdout) r&eacute;cup&eacute;r&eacute;e par Docker</li>
+    <li><span class="check-done">&#x2705;</span> M&eacute;triques Prometheus via <code>/metrics</code> (collect&eacute;es par <code>AccessLogMiddleware</code>)</li>
+    <li><span class="check-done">&#x2705;</span> Logs d'audit enregistr&eacute;s en BDD PostgreSQL (table <code>audit_logs</code>)</li>
+    <li><span class="check-done">&#x2705;</span> Logs technique, acc&egrave;s, s&eacute;curit&eacute;, infra persist&eacute;s en BDD (table <code>app_logs</code>)</li>
+    <li><span class="check-done">&#x2705;</span> Persistance BDD via <code>AsyncDatabaseLogHandler</code> (buffer + flush batch)</li>
+    <li><span class="check-done">&#x2705;</span> Cat&eacute;gorisation des logs (5 cat&eacute;gories : technical, access, audit, security, infra)</li>
+    <li><span class="check-done">&#x2705;</span> Format structur&eacute; JSON (<code>StructuredJSONFormatter</code>)</li>
+    <li><span class="check-todo">&#x2B1C;</span> Centralisation des logs multi-containers (n&eacute;cessite Option B &mdash; ELK)</li>
+    <li><span class="check-done">&#x2705;</span> Recherche et filtrage avanc&eacute; (backoffice admin : cat&eacute;gorie, niveau, p&eacute;riode, texte)</li>
+    <li><span class="check-done">&#x2705;</span> Visualisation des logs (module <code>content-logs.js</code> dans le backoffice)</li>
+    <li><span class="check-done">&#x2705;</span> R&eacute;tention configurable par cat&eacute;gorie + purge automatique (APScheduler)</li>
+    <li><span class="check-done">&#x2705;</span> Alerting basique sur patterns critiques (explosion d'erreurs, brute force login)</li>
+  </ul>
+
+  <!-- ---- 14.2 Cat&eacute;gories de logs ---- -->
+
+  <h3><span class="h3-dot dot-teal"></span> 14.2 Cat&eacute;gories de logs</h3>
+
+  <p>Chaque cat&eacute;gorie r&eacute;pond &agrave; un objectif distinct. Toutes doivent &ecirc;tre identifiables par un champ <code>log_category</code> dans le JSON.</p>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-title">&#x2699;&#xFE0F; Logs techniques (application)</div>
+      <div class="card-text">
+        Exceptions, erreurs m&eacute;tier, temps de r&eacute;ponse, appels &agrave; des services externes (Ollama, ChromaDB),
+        timeouts, stack traces. <strong>Objectif :</strong> debug et exploitation au quotidien.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F310; Logs d'acc&egrave;s (access logs)</div>
+      <div class="card-text">
+        Chaque requ&ecirc;te entrante/sortante : URL, m&eacute;thode HTTP, code de r&eacute;ponse, dur&eacute;e, IP source,
+        identifiant de corr&eacute;lation (<code>request_id</code>). <strong>Objectif :</strong> monitoring, capacit&eacute;, performance.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F4CB; Logs d'audit</div>
+      <div class="card-text">
+        Qui a fait quoi, quand, sur quelles donn&eacute;es : cr&eacute;ation/suppression/modification d'objets,
+        changements de droits, export de donn&eacute;es. <strong>Objectif :</strong> s&eacute;curit&eacute;, conformit&eacute; (RGPD, SOX).
+        <br><em>Champs obligatoires : sujet (qui), action (quoi), ressource (sur quoi), quand, depuis o&ugrave; (IP/appareil), motif &eacute;ventuel.</em>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F512; Logs de s&eacute;curit&eacute;</div>
+      <div class="card-text">
+        Authentifications r&eacute;ussies/&eacute;chou&eacute;es, &eacute;l&eacute;vations de privil&egrave;ges, tentatives d'acc&egrave;s interdit,
+        changements de configuration sensibles. <strong>Objectif :</strong> d&eacute;tection d'intrusions, forensics.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F4E1; Logs d'infrastructure</div>
+      <div class="card-text">
+        Sant&eacute; des serveurs/containers (CPU, m&eacute;moire, disque), red&eacute;marrages, d&eacute;ploiements,
+        &eacute;v&eacute;nements Docker. <strong>Objectif :</strong> corr&eacute;ler probl&egrave;mes applicatifs et infra.
+      </div>
+    </div>
+  </div>
+
+  <!-- ---- 14.3 Niveaux de s&eacute;v&eacute;rit&eacute; ---- -->
+
+  <h3><span class="h3-dot dot-teal"></span> 14.3 Niveaux de s&eacute;v&eacute;rit&eacute;</h3>
+
+  <p>Hi&eacute;rarchie standard &agrave; utiliser pour toutes les cat&eacute;gories de logs :</p>
+
+  <table>
+    <thead>
+      <tr><th>Niveau</th><th>Valeur</th><th>Description</th><th>Production</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="badge badge-secondary">TRACE</span></td>
+        <td>5</td>
+        <td>Flux d'ex&eacute;cution tr&egrave;s d&eacute;taill&eacute;, variables interm&eacute;diaires</td>
+        <td><span class="badge badge-danger">D&eacute;sactiv&eacute;</span></td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-info">DEBUG</span></td>
+        <td>10</td>
+        <td>Informations de diagnostic pour les d&eacute;veloppeurs</td>
+        <td><span class="badge badge-danger">D&eacute;sactiv&eacute;</span></td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-success">INFO</span></td>
+        <td>20</td>
+        <td>&Eacute;v&eacute;nements normaux importants : d&eacute;marrage service, traitement r&eacute;ussi, t&acirc;ches planifi&eacute;es</td>
+        <td><span class="badge badge-success">Actif</span></td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-warning">WARN</span></td>
+        <td>30</td>
+        <td>Anomalie potentielle non bloquante : timeout ponctuel, fallback, valeur inattendue g&eacute;r&eacute;e</td>
+        <td><span class="badge badge-success">Actif</span></td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-danger">ERROR</span></td>
+        <td>40</td>
+        <td>&Eacute;chec d'une op&eacute;ration fonctionnelle ou technique, n&eacute;cessite intervention</td>
+        <td><span class="badge badge-success">Actif</span></td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-danger">FATAL / CRITICAL</span></td>
+        <td>50</td>
+        <td>Panne critique du service : impossible de d&eacute;marrer, perte de ressource essentielle</td>
+        <td><span class="badge badge-success">Actif</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-warning">
+    <span class="callout-icon">&#x26A0;&#xFE0F;</span>
+    <span>
+      <strong>R&egrave;gle de configuration :</strong> En production, le niveau minimum doit &ecirc;tre
+      <strong>INFO</strong> pour les logs techniques/acc&egrave;s/infrastructure et <strong>WARN</strong> au minimum
+      pour les logs d'audit et de s&eacute;curit&eacute; (ces derniers sont toujours actifs, jamais filtr&eacute;s en dessous de WARN).
+      TRACE et DEBUG sont r&eacute;serv&eacute;s au d&eacute;veloppement ou &agrave; un p&eacute;rim&egrave;tre restreint activ&eacute; temporairement via l'admin.
+    </span>
+  </div>
+
+  <!-- ---- 14.4 Format structur&eacute; et contenu ---- -->
+
+  <h3><span class="h3-dot dot-teal"></span> 14.4 Format structur&eacute; et contenu</h3>
+
+  <p>Tous les logs doivent utiliser le format <strong>JSON structur&eacute;</strong> pour permettre l'indexation,
+  la recherche et la corr&eacute;lation automatique, quelle que soit l'option de stockage choisie.</p>
+
+  <h4>Champs communs (toutes cat&eacute;gories)</h4>
+  <table>
+    <thead>
+      <tr><th>Champ</th><th>Type</th><th>Description</th><th>Obligatoire</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>timestamp</code></td><td>ISO 8601</td><td>Date et heure UTC de l'&eacute;v&eacute;nement</td><td>&#x2705;</td></tr>
+      <tr><td><code>level</code></td><td>string</td><td>Niveau de s&eacute;v&eacute;rit&eacute; (TRACE &agrave; FATAL)</td><td>&#x2705;</td></tr>
+      <tr><td><code>log_category</code></td><td>string</td><td>Cat&eacute;gorie : <code>technical</code>, <code>access</code>, <code>audit</code>, <code>security</code>, <code>infra</code></td><td>&#x2705;</td></tr>
+      <tr><td><code>service</code></td><td>string</td><td>Nom du service &eacute;metteur (app, postgres, chroma, ollama, nginx)</td><td>&#x2705;</td></tr>
+      <tr><td><code>environment</code></td><td>string</td><td>Environnement (dev, staging, prod)</td><td>&#x2705;</td></tr>
+      <tr><td><code>request_id</code></td><td>UUID</td><td>Identifiant de corr&eacute;lation unique par requ&ecirc;te</td><td>&#x2705;</td></tr>
+      <tr><td><code>user_id</code></td><td>UUID</td><td>Identifiant de l'utilisateur (si authentifi&eacute;)</td><td>Si applicable</td></tr>
+      <tr><td><code>session_id</code></td><td>UUID</td><td>Identifiant de session</td><td>Si applicable</td></tr>
+      <tr><td><code>message</code></td><td>string</td><td>Message lisible de l'&eacute;v&eacute;nement</td><td>&#x2705;</td></tr>
+      <tr><td><code>context</code></td><td>object</td><td>Donn&eacute;es m&eacute;tier cl&eacute;s (IDs, param&egrave;tres, dur&eacute;es)</td><td>Recommand&eacute;</td></tr>
+    </tbody>
+  </table>
+
+  <h4>Champs sp&eacute;cifiques aux logs d'audit</h4>
+  <table>
+    <thead>
+      <tr><th>Champ</th><th>Type</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>subject</code></td><td>string</td><td>Qui &mdash; identifiant de l'acteur (user_id, admin_id, system)</td></tr>
+      <tr><td><code>action</code></td><td>string</td><td>Quoi &mdash; type d'action (create, update, delete, export, grant, revoke)</td></tr>
+      <tr><td><code>resource</code></td><td>string</td><td>Sur quoi &mdash; type et ID de la ressource affect&eacute;e</td></tr>
+      <tr><td><code>ip_address</code></td><td>string</td><td>Depuis o&ugrave; &mdash; adresse IP source</td></tr>
+      <tr><td><code>user_agent</code></td><td>string</td><td>Appareil / navigateur</td></tr>
+      <tr><td><code>reason</code></td><td>string</td><td>Pourquoi &mdash; motif ou r&eacute;f&eacute;rence ticket (optionnel)</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-danger">
+    <span class="callout-icon">&#x1F6AB;</span>
+    <span>
+      <strong>Donn&eacute;es sensibles interdites dans les logs :</strong> mots de passe, tokens JWT, cl&eacute;s API,
+      num&eacute;ros de carte bancaire, donn&eacute;es personnelles non n&eacute;cessaires. Utiliser le masquage
+      (<code>***</code>) ou l'omission syst&eacute;matique. Conformit&eacute; RGPD obligatoire.
+    </span>
+  </div>
+
+  <!-- ---- 14.5 Configuration et r&eacute;tention ---- -->
+
+  <h3><span class="h3-dot dot-teal"></span> 14.5 Configuration et r&eacute;tention</h3>
+
+  <h4>Niveaux minimums par environnement</h4>
+  <table>
+    <thead>
+      <tr><th>Environnement</th><th>Technique</th><th>Acc&egrave;s</th><th>Audit</th><th>S&eacute;curit&eacute;</th><th>Infra</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>D&eacute;veloppement</strong></td>
+        <td><span class="badge badge-info">DEBUG</span></td>
+        <td><span class="badge badge-info">DEBUG</span></td>
+        <td><span class="badge badge-success">INFO</span></td>
+        <td><span class="badge badge-success">INFO</span></td>
+        <td><span class="badge badge-info">DEBUG</span></td>
+      </tr>
+      <tr>
+        <td><strong>Staging</strong></td>
+        <td><span class="badge badge-success">INFO</span></td>
+        <td><span class="badge badge-success">INFO</span></td>
+        <td><span class="badge badge-success">INFO</span></td>
+        <td><span class="badge badge-success">INFO</span></td>
+        <td><span class="badge badge-success">INFO</span></td>
+      </tr>
+      <tr>
+        <td><strong>Production</strong></td>
+        <td><span class="badge badge-success">INFO</span></td>
+        <td><span class="badge badge-success">INFO</span></td>
+        <td><span class="badge badge-warning">WARN+</span></td>
+        <td><span class="badge badge-warning">WARN+</span></td>
+        <td><span class="badge badge-success">INFO</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h4>Politique de r&eacute;tention diff&eacute;renci&eacute;e</h4>
+  <table>
+    <thead>
+      <tr><th>Cat&eacute;gorie</th><th>R&eacute;tention courte (hot)</th><th>R&eacute;tention longue (archive)</th><th>Justification</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Technique (DEBUG/TRACE)</td><td>7 jours</td><td>&mdash;</td><td>Volume &eacute;lev&eacute;, valeur &eacute;ph&eacute;m&egrave;re</td></tr>
+      <tr><td>Technique (INFO+)</td><td>30 jours</td><td>90 jours</td><td>Diagnostic r&eacute;trospectif</td></tr>
+      <tr><td>Acc&egrave;s</td><td>30 jours</td><td>90 jours</td><td>Analyse de capacit&eacute; et performance</td></tr>
+      <tr><td><strong>Audit</strong></td><td>90 jours</td><td><strong>1 an minimum</strong></td><td>Conformit&eacute; RGPD, tra&ccedil;abilit&eacute;</td></tr>
+      <tr><td><strong>S&eacute;curit&eacute;</strong></td><td>90 jours</td><td><strong>1 an minimum</strong></td><td>Forensics, conformit&eacute;</td></tr>
+      <tr><td>Infrastructure</td><td>14 jours</td><td>60 jours</td><td>Corr&eacute;lation incidents</td></tr>
+    </tbody>
+  </table>
+
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Configurer les niveaux par cat&eacute;gorie et environnement via le panneau admin (<code>GET/PUT /api/admin/config/logging</code>)</li>
+    <li><span class="check-done">&#x2705;</span> Purge automatique selon la politique de r&eacute;tention (job APScheduler quotidien)</li>
+    <li><span class="check-done">&#x2705;</span> Activation temporaire de DEBUG/TRACE via le panneau admin (application imm&eacute;diate via <code>_runtime_overrides</code>)</li>
+  </ul>
+
+  <!-- ---- 14.6 Alerting ---- -->
+
+  <h3><span class="h3-dot dot-teal"></span> 14.6 Alerting</h3>
+
+  <p>Mettre en place des alertes automatiques sur les patterns critiques suivants :</p>
+
+  <table>
+    <thead>
+      <tr><th>Pattern</th><th>Cat&eacute;gorie</th><th>Seuil / R&egrave;gle</th><th>Action</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Explosion d'ERROR</strong></td>
+        <td>Technique</td>
+        <td>&gt; 50 ERROR en 5 min (ou +300% vs moyenne glissante)</td>
+        <td>Notification imm&eacute;diate (email, Slack)</td>
+      </tr>
+      <tr>
+        <td><strong>&Eacute;checs login r&eacute;p&eacute;t&eacute;s</strong></td>
+        <td>S&eacute;curit&eacute;</td>
+        <td>&gt; 5 &eacute;checs en 10 min pour un m&ecirc;me user ou IP</td>
+        <td>Alerte s&eacute;curit&eacute; + verrouillage temporaire du compte</td>
+      </tr>
+      <tr>
+        <td><strong>Actions critiques hors heures</strong></td>
+        <td>Audit</td>
+        <td>Suppression/modification de donn&eacute;es entre 22h et 6h</td>
+        <td>Alerte audit pour v&eacute;rification</td>
+      </tr>
+      <tr>
+        <td><strong>&Eacute;l&eacute;vation de privil&egrave;ges</strong></td>
+        <td>S&eacute;curit&eacute;</td>
+        <td>Tout changement de r&ocirc;le ou attribution de droits admin</td>
+        <td>Alerte s&eacute;curit&eacute; syst&eacute;matique</td>
+      </tr>
+      <tr>
+        <td><strong>Service indisponible</strong></td>
+        <td>Infrastructure</td>
+        <td>Health check &eacute;chou&eacute; &gt; 3 fois cons&eacute;cutives</td>
+        <td>Notification imm&eacute;diate + tentative de red&eacute;marrage</td>
+      </tr>
+      <tr>
+        <td><strong>Temps de r&eacute;ponse d&eacute;grad&eacute;</strong></td>
+        <td>Acc&egrave;s</td>
+        <td>P95 &gt; 5s sur une fen&ecirc;tre de 10 min</td>
+        <td>Alerte performance</td>
+      </tr>
+      <tr>
+        <td><strong>FATAL / CRITICAL</strong></td>
+        <td>Technique</td>
+        <td>Tout &eacute;v&eacute;nement FATAL/CRITICAL</td>
+        <td>Notification imm&eacute;diate &agrave; l'&eacute;quipe</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <ul class="checklist">
+    <li><span class="check-todo">&#x2B1C;</span> D&eacute;finir les canaux de notification externes (email, Slack, webhook) &mdash; phase ult&eacute;rieure</li>
+    <li><span class="check-done">&#x2705;</span> Seuils d'alerte d&eacute;finis (explosion &gt; 50 erreurs/5 min, brute force &gt; 5 &eacute;checs/10 min)</li>
+    <li><span class="check-todo">&#x2B1C;</span> Syst&egrave;me de d&eacute;-duplication des alertes (ne pas spammer pour un m&ecirc;me incident)</li>
+    <li><span class="check-done">&#x2705;</span> Historique des alertes consultable dans le backoffice (<code>GET /api/admin/logs/alerts</code>)</li>
+  </ul>
+
+  <!-- ---- 14.7 Comparaison des approches ---- -->
+
+  <h3><span class="h3-dot dot-teal"></span> 14.7 Comparaison des approches</h3>
+
+  <table>
+    <thead>
+      <tr><th>Crit&egrave;re</th><th>Option A &mdash; Logging interne am&eacute;lior&eacute;</th><th>Option B &mdash; ELK Stack</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>Complexit&eacute;</strong></td><td><span class="badge badge-success">Faible</span></td><td><span class="badge badge-warning">Mod&eacute;r&eacute;e &agrave; &eacute;lev&eacute;e</span></td></tr>
+      <tr><td><strong>Ressources</strong></td><td>N&eacute;gligeable</td><td>~4 Go RAM minimum (ES + Logstash + Kibana)</td></tr>
+      <tr><td><strong>Recherche</strong></td><td>Recherche BDD avec filtres avanc&eacute;s (cat&eacute;gorie, niveau, p&eacute;riode, texte)</td><td>Recherche full-text, agr&eacute;gations, filtres avanc&eacute;s</td></tr>
+      <tr><td><strong>Visualisation</strong></td><td>Backoffice admin (tableau, d&eacute;tail, export CSV)</td><td>Dashboards Kibana, graphes, alertes</td></tr>
+      <tr><td><strong>Scalabilit&eacute;</strong></td><td>Limit&eacute;e (un serveur)</td><td>Distribu&eacute;e (cluster ES)</td></tr>
+      <tr><td><strong>R&eacute;tention</strong></td><td>BDD + purge automatique par cat&eacute;gorie (APScheduler)</td><td>Index lifecycle management (ILM)</td></tr>
+      <tr><td><strong>Multi-services</strong></td><td>Logs s&eacute;par&eacute;s par container</td><td>Centralis&eacute;s, corr&eacute;l&eacute;s, filtrables</td></tr>
+      <tr><td><strong>Alerting</strong></td><td>Alertes int&eacute;gr&eacute;es (explosion erreurs, brute force) + Prometheus</td><td>Watcher / ElastAlert int&eacute;gr&eacute;</td></tr>
+      <tr><td><strong>Cat&eacute;gories de logs</strong></td><td>S&eacute;paration par cat&eacute;gorie en BDD, filtrable dynamiquement</td><td>S&eacute;paration par index, filtrable dynamiquement</td></tr>
+      <tr><td><strong>Cible</strong></td><td>D&eacute;veloppement &agrave; production (instances moyennes)</td><td>Production, &eacute;quipes, conformit&eacute;</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ---- 14.8 Option A ---- -->
+
+  <h3><span class="h3-dot dot-green"></span> 14.8 Option A &mdash; Logging interne am&eacute;lior&eacute; &#x2705;</h3>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Configuration logging centralis&eacute;e dans <code>app/core/logging.py</code> (<code>setup_logging()</code>, <code>setup_db_logging()</code>)</li>
+    <li><span class="check-done">&#x2705;</span> Format structur&eacute; JSON pour tous les services (<code>StructuredJSONFormatter</code>, conforme &sect;14.4)</li>
+    <li><span class="check-done">&#x2705;</span> Filtrage par cat&eacute;gorie via <code>CategoryFilter</code> + <code>AsyncDatabaseLogHandler</code> avec niveaux par cat&eacute;gorie</li>
+    <li><span class="check-done">&#x2705;</span> Persistance BDD avec buffer en m&eacute;moire et flush batch (remplacement des fichiers rotatifs)</li>
+    <li><span class="check-done">&#x2705;</span> R&eacute;tention diff&eacute;renci&eacute;e par cat&eacute;gorie (conforme &sect;14.5, configurable via admin)</li>
+    <li><span class="check-done">&#x2705;</span> Niveaux de log configurables par cat&eacute;gorie via la BDD admin (<code>GET/PUT /api/admin/config/logging</code>)</li>
+    <li><span class="check-done">&#x2705;</span> Enrichissement automatique : request_id, user_id, session_id via ContextVars + middlewares</li>
+    <li><span class="check-done">&#x2705;</span> Endpoints admin : <code>/api/admin/logs</code>, <code>/logs/stats</code>, <code>/logs/alerts</code>, <code>/logs/cleanup</code></li>
+    <li><span class="check-done">&#x2705;</span> Vue d&eacute;di&eacute;e dans le backoffice (<code>content-logs.js</code> : filtrage, recherche, pagination, export)</li>
+    <li><span class="check-done">&#x2705;</span> Alertes basiques : explosion d'erreurs (&gt; 50/5 min) et brute force login (&gt; 5/10 min par IP)</li>
+    <li><span class="check-done">&#x2705;</span> S&eacute;lection en masse dans le tableau logs (backend <code>POST /api/admin/logs/bulk/delete</code> + frontend <code>BulkSelectionMixin</code>)</li>
+    <li><span class="check-done">&#x2705;</span> R&eacute;ordonnancement colonnes : username en premi&egrave;re position, spinner et badge &laquo;&nbsp;En cours&nbsp;&raquo; lors de la r&eacute;indexation</li>
+    <li><span class="check-done">&#x2705;</span> Modale de d&eacute;tail des logs corrig&eacute;e (pattern <code>confirm-modal</code>)</li>
+    <li><span class="check-done">&#x2705;</span> Fix <code>BulkSelectionMixin</code> : config apr&egrave;s <code>Object.assign()</code> pour &eacute;viter l&rsquo;&eacute;crasement</li>
+    <li><span class="check-todo">&#x2B1C;</span> <strong>Purge manuelle</strong> : Bouton pour vider int&eacute;gralement la table <code>app_logs</code> avec modale de confirmation (backoffice admin)</li>
+  </ul>
+
+  <!-- ---- 14.9 Option B ---- -->
+
+  <h3><span class="h3-dot dot-amber"></span> 14.9 Option B &mdash; ELK Stack (Elastic Stack) &#x23F3;</h3>
+
+  <div class="callout callout-info">
+    <span class="callout-icon">&#x1F4A1;</span>
+    <span>
+      <strong>ELK = Elasticsearch + Logstash + Kibana</strong><br>
+      <strong>Elasticsearch</strong> &mdash; Moteur de recherche et stockage distribu&eacute; des logs<br>
+      <strong>Logstash</strong> &mdash; Pipeline d'ingestion, transformation et routage des logs<br>
+      <strong>Kibana</strong> &mdash; Interface de visualisation, dashboards et exploration des logs
+    </span>
+  </div>
+
+  <h4>Infrastructure Docker</h4>
+  <ul class="checklist">
+    <li><span class="check-todo">&#x2B1C;</span> Ajouter les services Elasticsearch, Logstash et Kibana dans <code>docker-compose.yml</code></li>
+    <li><span class="check-todo">&#x2B1C;</span> Configurer les volumes persistants pour les donn&eacute;es Elasticsearch</li>
+    <li><span class="check-todo">&#x2B1C;</span> Configurer le r&eacute;seau interne pour la communication entre services</li>
+    <li><span class="check-todo">&#x2B1C;</span> Limiter la consommation m&eacute;moire d'Elasticsearch (contrainte M1 32 Go)</li>
+  </ul>
+
+  <h4>Collecte des logs</h4>
+  <ul class="checklist">
+    <li><span class="check-todo">&#x2B1C;</span> Configurer le logging driver Docker pour envoyer les logs &agrave; Logstash</li>
+    <li><span class="check-todo">&#x2B1C;</span> Ou utiliser <strong>Filebeat</strong> (plus l&eacute;ger que Logstash) pour la collecte</li>
+    <li><span class="check-todo">&#x2B1C;</span> Collecter les logs de tous les containers : app, postgres, chroma, ollama, nginx</li>
+    <li><span class="check-todo">&#x2B1C;</span> Format JSON structur&eacute; c&ocirc;t&eacute; application Python (conforme &sect;14.4)</li>
+  </ul>
+
+  <h4>Pipeline Logstash</h4>
+  <ul class="checklist">
+    <li><span class="check-todo">&#x2B1C;</span> Filtres de parsing (grok, json, date)</li>
+    <li><span class="check-todo">&#x2B1C;</span> Enrichissement : ajout de m&eacute;tadonn&eacute;es (nom du service, environnement)</li>
+    <li><span class="check-todo">&#x2B1C;</span> Routage vers diff&eacute;rents index par cat&eacute;gorie (<code>logs-technical-*</code>, <code>logs-audit-*</code>, <code>logs-security-*</code>, etc.)</li>
+    <li><span class="check-todo">&#x2B1C;</span> Gestion des erreurs de parsing (dead letter queue)</li>
+  </ul>
+
+  <h4>Dashboards Kibana</h4>
+  <ul class="checklist">
+    <li><span class="check-todo">&#x2B1C;</span> Dashboard principal : volume de logs, r&eacute;partition par service, cat&eacute;gorie et niveau</li>
+    <li><span class="check-todo">&#x2B1C;</span> Dashboard erreurs : top erreurs, tendances, corr&eacute;lations</li>
+    <li><span class="check-todo">&#x2B1C;</span> Dashboard performance : temps de r&eacute;ponse API, requ&ecirc;tes lentes</li>
+    <li><span class="check-todo">&#x2B1C;</span> Dashboard s&eacute;curit&eacute; : &eacute;checs login, &eacute;l&eacute;vations de privil&egrave;ges, acc&egrave;s interdits</li>
+    <li><span class="check-todo">&#x2B1C;</span> Dashboard audit : actions critiques, modifications de droits, exports</li>
+    <li><span class="check-todo">&#x2B1C;</span> Alertes int&eacute;gr&eacute;es (Watcher / ElastAlert) conform&eacute;ment &agrave; &sect;14.6</li>
+  </ul>
+
+  <h4>R&eacute;tention et maintenance</h4>
+  <ul class="checklist">
+    <li><span class="check-todo">&#x2B1C;</span> Index Lifecycle Management (ILM) par cat&eacute;gorie : hot &rarr; warm &rarr; cold &rarr; delete</li>
+    <li><span class="check-todo">&#x2B1C;</span> R&eacute;tention diff&eacute;renci&eacute;e conforme &agrave; &sect;14.5 (audit/s&eacute;curit&eacute; : 1 an min)</li>
+    <li><span class="check-todo">&#x2B1C;</span> Snapshots automatiques pour sauvegarde</li>
+    <li><span class="check-todo">&#x2B1C;</span> Monitoring de la sant&eacute; du cluster Elasticsearch</li>
+  </ul>
+
+  <!-- ---- 14.10 D&eacute;cision architecturale ---- -->
+
+  <h3><span class="h3-dot dot-amber"></span> 14.10 D&eacute;cision architecturale &#x23F3;</h3>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> <strong>Choix de l'approche</strong> &mdash; Option A (logging interne am&eacute;lior&eacute;) retenue et impl&eacute;ment&eacute;e int&eacute;gralement</li>
+    <li><span class="check-done">&#x2705;</span> <strong>Approche hybride recommand&eacute;e</strong> &mdash; Option A d&eacute;ploy&eacute;e avec logs JSON structur&eacute;s et les 5 cat&eacute;gories ; migration vers ELK possible quand le volume le justifiera</li>
+    <li><span class="check-todo">&#x2B1C;</span> <strong>Alternative l&eacute;g&egrave;re</strong> &mdash; &Eacute;valuer <strong>Loki + Promtail + Grafana</strong> (d&eacute;j&agrave; mentionn&eacute; en section 5.3) comme compromis entre les deux options (moins gourmand qu'ELK, plus riche que le logging interne)</li>
+    <li><span class="check-done">&#x2705;</span> <strong>Pr&eacute;requis communs</strong> &mdash; Tous impl&eacute;ment&eacute;s : format JSON (&sect;14.4), 5 cat&eacute;gories (&sect;14.2), niveaux de s&eacute;v&eacute;rit&eacute; (&sect;14.3), r&eacute;tention diff&eacute;renci&eacute;e (&sect;14.5) et alerting (&sect;14.6)</li>
+  </ul>
+</div>
+
+<!-- ==================== SECTION 15 ==================== -->
+<div class="section" id="s15">
+  <div class="section-header">
+    <div class="section-icon icon-red">&#x1F9F9;</div>
+    <div><h2>Audit &amp; Nettoyage code mort <span class="section-num">&mdash; Section 15 &mdash; PRIORIT&Eacute; HAUTE</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <p>
+    <span class="badge badge-success">&#x2705; Termin&eacute;</span>
+    <strong>R&eacute;sultat :</strong> 845 insertions, 2345 suppressions &mdash; 27 fichiers modifi&eacute;s
+  </p>
+
+  <div class="callout callout-success">
+    <span class="callout-icon">&#x2705;</span>
+    <span>
+      <strong>Bilan :</strong> Correction du bug r&ocirc;le vide dans l&rsquo;audit, ajout de l&rsquo;audit sur les collections,
+      et suppression compl&egrave;te des modules <code>companies</code> et <code>sharepoint</code> (code mort non utilis&eacute;).
+      2 migrations Alembic appliqu&eacute;es, 9 tests d&rsquo;int&eacute;gration ajout&eacute;s.
+    </span>
+  </div>
+
+  <h3><span class="h3-dot dot-green"></span> 15.1 Fix bug r&ocirc;le audit &#x2705;</h3>
+  <ul class="checklist checklist-single">
+    <li><span class="check-done">&#x2705;</span> Eager-load <code>User.role</code> via <code>joinedload</code> cha&icirc;n&eacute; dans le repository audit</li>
+    <li><span class="check-done">&#x2705;</span> Ajout <code>user_role</code> dans la r&eacute;ponse de l&rsquo;ancien endpoint <code>GET /admin/audit</code></li>
+    <li><span class="check-done">&#x2705;</span> Ajout <code>role_name</code> dans <code>AuditUserResponse</code> pour le nouveau endpoint <code>GET /api/admin/audit</code></li>
+    <li><span class="check-done">&#x2705;</span> Frontend : fallback <code>log.user_role || log.details?.user_role</code> dans <code>audit.js</code></li>
+  </ul>
+
+  <h3><span class="h3-dot dot-green"></span> 15.2 Audit des collections &#x2705;</h3>
+  <ul class="checklist checklist-single">
+    <li><span class="check-done">&#x2705;</span> Migration Alembic : 4 nouvelles actions (<code>collection_updated</code>, <code>collection_cleared</code>, <code>bulk_collections_deleted</code>, <code>bulk_collections_cleared</code>)</li>
+    <li><span class="check-done">&#x2705;</span> <code>AuditService.log_action()</code> ajout&eacute; sur 6 endpoints write du router collections</li>
+    <li><span class="check-done">&#x2705;</span> Correction param&egrave;tre <code>resource_type</code> &rarr; <code>resource_type_name</code> (bug d&eacute;tect&eacute; par les tests)</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-green"></span> 15.3 Nettoyage Companies &amp; SharePoint &#x2705;</h3>
+  <ul class="checklist checklist-single">
+    <li><span class="check-done">&#x2705;</span> Suppression compl&egrave;te <code>app/features/companies/</code> (5 fichiers, ~717 lignes)</li>
+    <li><span class="check-done">&#x2705;</span> Suppression compl&egrave;te <code>app/features/sharepoint/</code> (4 fichiers, ~1054 lignes)</li>
+    <li><span class="check-done">&#x2705;</span> Migration Alembic : drop tables <code>sharepoint_sync_logs</code>, <code>sharepoint_configs</code>, <code>companies</code> + colonne <code>users.company_id</code></li>
+    <li><span class="check-done">&#x2705;</span> Nettoyage <code>app/models.py</code> : supprim&eacute; <code>Company</code>, <code>SharePointConfig</code>, <code>SharePointSyncLog</code>, <code>User.company_id</code></li>
+    <li><span class="check-done">&#x2705;</span> Nettoyage <code>app/main.py</code> : retir&eacute; imports et enregistrement des routers</li>
+    <li><span class="check-done">&#x2705;</span> Nettoyage <code>analytics/</code> : retir&eacute; <code>company_id</code> de repository, service, router, schemas (4 fichiers)</li>
+    <li><span class="check-done">&#x2705;</span> Nettoyage <code>audit/</code> : retir&eacute; <code>company_id</code> de router, repository, schemas (3 fichiers)</li>
+    <li><span class="check-done">&#x2705;</span> Nettoyage frontend <code>adminApi.js</code> : retir&eacute; m&eacute;thodes company analytics</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-green"></span> 15.4 Tests &#x2705;</h3>
+  <ul class="checklist checklist-single">
+    <li><span class="check-done">&#x2705;</span> 9 tests d&rsquo;int&eacute;gration dans <code>tests/audit/</code> (7 passed, 2 skipped)</li>
+    <li><span class="check-done">&#x2705;</span> Tests r&ocirc;le : v&eacute;rification <code>user_role</code> ancien endpoint + <code>role_name</code> nouveau endpoint</li>
+    <li><span class="check-done">&#x2705;</span> Tests collections : v&eacute;rification logs audit apr&egrave;s create, update, delete, clear</li>
+    <li><span class="check-done">&#x2705;</span> Tests auth : v&eacute;rification 401 sans authentification</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-green"></span> 15.5 Documentation &#x2705;</h3>
+  <ul class="checklist checklist-single">
+    <li><span class="check-done">&#x2705;</span> <code>OVERVIEW.html</code> : retir&eacute; modules sharepoint/companies, ajout&eacute; logs/speech, mis &agrave; jour tables PostgreSQL</li>
+    <li><span class="check-done">&#x2705;</span> <code>FRONTEND-API.html</code> : retir&eacute; <code>/companies</code> des endpoints analytics</li>
+    <li><span class="check-done">&#x2705;</span> <code>ADMIN.html</code> : ajout&eacute; 6 nouvelles actions audit collections</li>
+  </ul>
+</div>
+
+<!-- ==================== SECTION 16 ==================== -->
+<div class="section" id="s16">
+  <div class="section-header">
+    <div class="section-icon icon-amber">&#x1F680;</div>
+    <div><h2>Script de d&eacute;ploiement universel <span class="section-num">&mdash; Section 16 &mdash; PRIORIT&Eacute; HAUTE</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <p>
+    <span class="badge badge-accent">&#x1F6A7; En cours</span>
+    <strong>Objectif :</strong> Cr&eacute;er un script de d&eacute;ploiement complet capable d'installer et configurer
+    MY-IA avec ou sans Docker, en d&eacute;tectant l'environnement, v&eacute;rifiant/installant les pr&eacute;requis,
+    et configurant interactivement tout ce qui n&eacute;cessite une saisie manuelle.
+    Tout ce qui est possible doit &ecirc;tre stock&eacute; en BDD via les endpoints admin.
+  </p>
+
+  <div class="callout callout-info">
+    <span class="callout-icon">&#x1F4A1;</span>
+    <span>
+      <strong>Scripts existants &agrave; r&eacute;utiliser :</strong>
+      <code>start.sh</code> (7 phases, orchestrateur principal),
+      <code>deploy.sh</code> (d&eacute;ploiement simplifi&eacute; Docker-only),
+      <code>generate-env.sh</code> (g&eacute;n&eacute;ration .env),
+      <code>lib/common.sh</code> (couleurs, logs, ports, containers, confirm),
+      <code>lib/env.sh</code> (17 cat&eacute;gories de configuration, g&eacute;n&eacute;ration cl&eacute;s, identifiants PG).
+      Le nouveau script doit s'appuyer sur ces patterns et fonctions partag&eacute;es.
+    </span>
+  </div>
+
+  <!-- ---- 16.1 Pr&eacute;requis et d&eacute;tection d'environnement ---- -->
+
+  <h3><span class="h3-dot dot-green"></span> 16.1 Pr&eacute;requis et d&eacute;tection d'environnement</h3>
+
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> D&eacute;tection automatique de l'OS (macOS, Ubuntu/Debian, RHEL/CentOS, Alpine) &mdash; <code>prereqs.sh:detect_os()</code></li>
+    <li><span class="check-done">&#x2705;</span> D&eacute;tection du mode de d&eacute;ploiement (Docker disponible vs bare-metal) &mdash; <code>deploy.sh</code> phase 3</li>
+    <li><span class="check-done">&#x2705;</span> V&eacute;rification de chaque pr&eacute;requis avec version minimale requise &mdash; <code>prereqs.sh:check_prereq()</code> + <code>version_gte()</code></li>
+    <li><span class="check-done">&#x2705;</span> Proposition d'installation interactive si un pr&eacute;requis est manquant (apt, brew, dnf selon l'OS)</li>
+    <li><span class="check-done">&#x2705;</span> R&eacute;sum&eacute; synth&eacute;tique de l'environnement d&eacute;tect&eacute; avant de continuer &mdash; <code>prereqs.sh:show_environment_summary()</code></li>
+  </ul>
+
+  <h4>Pr&eacute;requis communs (les deux modes)</h4>
+  <table>
+    <thead>
+      <tr><th>Outil</th><th>Version min.</th><th>V&eacute;rification</th><th>Installation</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>bash</code></td><td>4.0+</td><td><code>bash --version</code></td><td>Pr&eacute;install&eacute;</td></tr>
+      <tr><td><code>curl</code></td><td>&mdash;</td><td><code>curl --version</code></td><td><code>apt install curl</code></td></tr>
+      <tr><td><code>openssl</code></td><td>&mdash;</td><td><code>openssl version</code></td><td><code>apt install openssl</code></td></tr>
+      <tr><td><code>git</code></td><td>2.0+</td><td><code>git --version</code></td><td><code>apt install git</code></td></tr>
+    </tbody>
+  </table>
+
+  <h4>Pr&eacute;requis mode Docker</h4>
+  <table>
+    <thead>
+      <tr><th>Outil</th><th>Version min.</th><th>V&eacute;rification</th><th>Installation</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>docker</code></td><td>20.0+</td><td><code>docker --version</code></td><td><code>curl -fsSL https://get.docker.com | sh</code></td></tr>
+      <tr><td><code>docker compose</code></td><td>2.0+</td><td><code>docker compose version</code></td><td><code>apt install docker-compose-plugin</code></td></tr>
+      <tr><td>Docker daemon</td><td>&mdash;</td><td><code>docker info</code></td><td><code>systemctl start docker</code></td></tr>
+    </tbody>
+  </table>
+
+  <h4>Pr&eacute;requis mode bare-metal</h4>
+  <table>
+    <thead>
+      <tr><th>Outil</th><th>Version min.</th><th>V&eacute;rification</th><th>Installation</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>python3</code></td><td>3.10+</td><td><code>python3 --version</code></td><td><code>apt install python3.11 python3.11-venv</code></td></tr>
+      <tr><td><code>pip</code></td><td>&mdash;</td><td><code>pip3 --version</code></td><td><code>apt install python3-pip</code></td></tr>
+      <tr><td><code>postgresql</code></td><td>15+</td><td><code>psql --version</code></td><td><code>apt install postgresql-15</code></td></tr>
+      <tr><td><code>ollama</code></td><td>&mdash;</td><td><code>ollama --version</code></td><td><code>curl -fsSL https://ollama.com/install.sh | sh</code></td></tr>
+      <tr><td><code>chromadb</code></td><td>0.4+</td><td><code>pip3 show chromadb</code></td><td><code>pip3 install chromadb</code></td></tr>
+      <tr><td><code>nginx</code></td><td>&mdash;</td><td><code>nginx -v</code></td><td><code>apt install nginx</code></td></tr>
+      <tr><td><code>node</code></td><td>18+</td><td><code>node --version</code></td><td><code>apt install nodejs</code> (optionnel, pour le frontend statique)</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ---- 16.2 Mode Docker ---- -->
+
+  <h3><span class="h3-dot dot-green"></span> 16.2 Mode Docker (refonte de deploy.sh)</h3>
+
+  <p>
+    Reprend les patterns &eacute;prouv&eacute;s de <code>start.sh</code> (7 phases) et les fonctions partag&eacute;es de
+    <code>lib/common.sh</code> et <code>lib/env.sh</code>.
+  </p>
+
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Wizard premi&egrave;re installation (nom, environnement, mots de passe, adresse serveur) &mdash; <code>deploy.sh</code> phase 4</li>
+    <li><span class="check-done">&#x2705;</span> G&eacute;n&eacute;ration <code>.env</code> compl&egrave;te via <code>generate-env.sh</code> (73 variables, 12 sections)</li>
+    <li><span class="check-done">&#x2705;</span> D&eacute;tection et r&eacute;solution des conflits de ports (<code>check_port_interactive()</code>)</li>
+    <li><span class="check-done">&#x2705;</span> Gestion des containers existants (<code>check_project_containers()</code>)</li>
+    <li><span class="check-done">&#x2705;</span> <code>docker compose up -d</code> avec options <code>--build</code> / <code>--no-cache</code></li>
+    <li><span class="check-done">&#x2705;</span> Health checks complets (API, PostgreSQL, ChromaDB, Ollama) &mdash; <code>deploy.sh</code> phase 6</li>
+    <li><span class="check-done">&#x2705;</span> T&eacute;l&eacute;chargement automatique des mod&egrave;les Ollama (LLM + embeddings) &mdash; <code>lib/ollama.sh</code></li>
+    <li><span class="check-done">&#x2705;</span> Seed BDD (r&ocirc;les, permissions, admin, audit_actions, resource_types) via <code>seed.py</code></li>
+    <li><span class="check-done">&#x2705;</span> Import donn&eacute;es g&eacute;ographiques (countries/cities) avec barre de progression SSE</li>
+    <li><span class="check-done">&#x2705;</span> Cr&eacute;ation des utilisateurs de test (mode dev uniquement)</li>
+  </ul>
+
+  <!-- ---- 16.3 Mode bare-metal ---- -->
+
+  <h3><span class="h3-dot dot-green"></span> 16.3 Mode bare-metal (sans Docker)</h3>
+
+  <p>
+    D&eacute;ploiement natif sur un serveur Linux ou macOS, sans conteneurisation.
+    Chaque service est install&eacute;, configur&eacute; et g&eacute;r&eacute; individuellement.
+  </p>
+
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Installation/v&eacute;rification PostgreSQL + cr&eacute;ation BDD, users et extensions (<code>uuid-ossp</code>) &mdash; <code>baremetal.sh:install_postgresql()</code></li>
+    <li><span class="check-done">&#x2705;</span> Installation/v&eacute;rification ChromaDB (<code>pip install</code> + service systemd) &mdash; <code>baremetal.sh:install_chromadb_native()</code></li>
+    <li><span class="check-done">&#x2705;</span> Installation/v&eacute;rification Ollama + pull mod&egrave;les LLM et embeddings &mdash; <code>baremetal.sh:install_ollama_native()</code></li>
+    <li><span class="check-done">&#x2705;</span> Cr&eacute;ation environnement virtuel Python (<code>venv</code>) + <code>pip install -r requirements.txt</code> &mdash; <code>baremetal.sh:setup_python_venv()</code></li>
+    <li><span class="check-done">&#x2705;</span> G&eacute;n&eacute;ration du fichier <code>.env</code> adapt&eacute; au mode bare-metal (URLs locales, pas de noms Docker) &mdash; <code>baremetal.sh:generate_baremetal_env()</code></li>
+    <li><span class="check-done">&#x2705;</span> Ex&eacute;cution <code>alembic upgrade head</code> pour les migrations BDD &mdash; <code>baremetal.sh:run_alembic_migrations()</code></li>
+    <li><span class="check-done">&#x2705;</span> Ex&eacute;cution <code>seed.py</code> pour le seed initial &mdash; <code>baremetal.sh:run_seed_script()</code></li>
+    <li><span class="check-done">&#x2705;</span> Cr&eacute;ation de services systemd pour chaque composant :</li>
+  </ul>
+
+  <table>
+    <thead>
+      <tr><th>Service systemd</th><th>Commande</th><th>Port</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>myia-api.service</code></td><td><code>uvicorn app.main:app --host 0.0.0.0 --port 8080</code></td><td>8080</td></tr>
+      <tr><td><code>myia-chromadb.service</code></td><td><code>chroma run --host 0.0.0.0 --port 8000</code></td><td>8000</td></tr>
+      <tr><td><code>myia-ollama.service</code></td><td><code>ollama serve</code></td><td>11434</td></tr>
+      <tr><td><code>postgresql.service</code></td><td>(syst&egrave;me)</td><td>5432</td></tr>
+    </tbody>
+  </table>
+
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Configuration nginx reverse-proxy (frontend statique + API + admin + SSE streaming) &mdash; <code>baremetal.sh:setup_nginx_reverse_proxy()</code></li>
+    <li><span class="check-done">&#x2705;</span> G&eacute;n&eacute;ration du fichier nginx depuis template <code>templates/myia-nginx.conf</code></li>
+    <li><span class="check-done">&#x2705;</span> Support HTTPS via Let's Encrypt (certbot) en mode production &mdash; <code>baremetal.sh:setup_certbot_https()</code></li>
+  </ul>
+
+  <!-- ---- 16.4 Configuration interactive ---- -->
+
+  <h3><span class="h3-dot dot-green"></span> 16.4 Configuration interactive</h3>
+
+  <p>
+    R&eacute;utilise les fonctions de <code>lib/env.sh</code> (17 cat&eacute;gories &eacute;ditables) et les patterns
+    interactifs de <code>lib/common.sh</code> (<code>confirm()</code>, <code>read_with_escape()</code>, couleurs).
+  </p>
+
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Saisie interactive uniquement pour les valeurs non-d&eacute;rivables :</li>
+  </ul>
+
+  <table>
+    <thead>
+      <tr><th>Saisie manuelle</th><th>Auto-g&eacute;n&eacute;r&eacute;</th><th>Stock&eacute; en BDD (via admin)</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Nom application</td><td>Identifiants PostgreSQL (<code>sanitize()</code>)</td><td>Niveaux de logs par cat&eacute;gorie</td></tr>
+      <tr><td>Mots de passe BDD</td><td>Cl&eacute;s JWT, API, ENCRYPTION (<code>generate_key()</code>)</td><td>R&eacute;tention des logs</td></tr>
+      <tr><td>Adresse serveur (IP/domaine)</td><td>DATABASE_URL</td><td>Configuration RAG (chunk size, overlap, top_k)</td></tr>
+      <tr><td>Choix mod&egrave;les LLM/embeddings</td><td>Noms containers/volumes</td><td>Rate limiting</td></tr>
+      <tr><td>Environnement (dev/prod)</td><td>CORS origins</td><td>Prompts syst&egrave;me</td></tr>
+      <tr><td>Protocole (http/https)</td><td>Ports (avec alternatives auto)</td><td>Pr&eacute;f&eacute;rences UI par d&eacute;faut</td></tr>
+    </tbody>
+  </table>
+
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Apr&egrave;s d&eacute;marrage de l'app, pousser la configuration en BDD via <code>PATCH /api/admin/config/rag</code> + <code>/logging</code> &mdash; <code>deploy.sh</code> phase 8</li>
+    <li><span class="check-done">&#x2705;</span> Support du mode <code>--auto</code> / <code>-y</code> pour un d&eacute;ploiement non-interactif avec valeurs par d&eacute;faut</li>
+    <li><span class="check-done">&#x2705;</span> Support <code>Escape</code> / <code>q</code> / <code>Ctrl+C</code> pour quitter proprement &agrave; tout moment &mdash; <code>setup_exit_handler()</code></li>
+    <li><span class="check-done">&#x2705;</span> Sauvegarde de la configuration dans <code>.external_secrets</code> (SMTP, OAuth, SMS)</li>
+  </ul>
+
+  <!-- ---- 16.5 Post-d&eacute;ploiement ---- -->
+
+  <h3><span class="h3-dot dot-green"></span> 16.5 Post-d&eacute;ploiement</h3>
+
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Ex&eacute;cution <code>alembic upgrade head</code> (migrations BDD) &mdash; phase 5 (bare-metal)</li>
+    <li><span class="check-done">&#x2705;</span> Seed initial : r&ocirc;les, permissions, admin, audit_actions, resource_types (<code>seed.py</code>) &mdash; phase 7</li>
+    <li><span class="check-done">&#x2705;</span> Import donn&eacute;es g&eacute;ographiques (countries + cities avec barre de progression) &mdash; phase 7</li>
+    <li><span class="check-done">&#x2705;</span> Cr&eacute;ation des utilisateurs de test (mode dev uniquement) &mdash; phase 7</li>
+    <li><span class="check-done">&#x2705;</span> Health check complet de tous les services &mdash; phase 6</li>
+    <li><span class="check-done">&#x2705;</span> Checklist s&eacute;curit&eacute; production (cl&eacute;s, ports, firewall, HTTPS) &mdash; phase 9</li>
+    <li><span class="check-done">&#x2705;</span> G&eacute;n&eacute;ration fichier <code>.credentials</code> horodat&eacute; avec tous les acc&egrave;s &mdash; phase 10</li>
+    <li><span class="check-done">&#x2705;</span> Affichage r&eacute;capitulatif avec URLs d'acc&egrave;s (frontend, admin, API docs) &mdash; phase 10</li>
+  </ul>
+
+  <!-- ---- 16.6 Structure des fichiers ---- -->
+
+  <h3><span class="h3-dot dot-green"></span> 16.6 Structure des fichiers cible</h3>
+
+  <pre><code>scripts/
+├── deploy.sh                  # Point d'entr&eacute;e unique (refonte compl&egrave;te)
+├── lib/
+│   ├── common.sh              # (existant) Couleurs, logs, ports, containers
+│   ├── env.sh                 # (existant) G&eacute;n&eacute;ration .env, cl&eacute;s, identifiants PG
+│   ├── config.sh              # (existant) Chargement configuration
+│   ├── instance.sh            # (existant) D&eacute;tection multi-instances
+│   ├── data.sh                # (existant) Import g&eacute;o, users de test
+│   ├── ollama.sh              # (existant) Gestion mod&egrave;les Ollama
+│   ├── prereqs.sh             # (nouveau) D&eacute;tection OS + v&eacute;rification/installation pr&eacute;requis
+│   └── baremetal.sh           # (nouveau) Installation services natifs + systemd + nginx
+├── templates/
+│   ├── myia-api.service       # (nouveau) Template systemd pour l'API
+│   ├── myia-chromadb.service  # (nouveau) Template systemd pour ChromaDB
+│   └── myia-nginx.conf        # (nouveau) Template nginx reverse-proxy
+├── docker/
+│   ├── entrypoint.sh          # (existant)
+│   ├── init-db.sh             # (existant)
+│   ├── seed.py                # (existant)
+│   └── seed_geo.py            # (existant)
+├── start.sh                   # (existant, inchang&eacute;)
+├── stop.sh                    # (existant, inchang&eacute;)
+└── generate-env.sh            # (existant, inchang&eacute;)</code></pre>
+
+  <!-- ---- 16.7 Plan d'impl&eacute;mentation ---- -->
+
+  <h3><span class="h3-dot dot-green"></span> 16.7 Plan d'impl&eacute;mentation</h3>
+
+  <div class="flow">
+    <div class="flow-step"><strong>&Eacute;tape 1</strong><br>lib/prereqs.sh<br><em>D&eacute;tection OS + pr&eacute;requis</em></div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step"><strong>&Eacute;tape 2</strong><br>Refonte deploy.sh<br><em>Mode Docker complet</em></div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step"><strong>&Eacute;tape 3</strong><br>lib/baremetal.sh<br><em>Installation native</em></div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step"><strong>&Eacute;tape 4</strong><br>Templates systemd/nginx<br><em>Services + reverse-proxy</em></div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step"><strong>&Eacute;tape 5</strong><br>Post-d&eacute;ploiement<br><em>Seed + config BDD + tests</em></div>
+  </div>
+
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> <strong>&Eacute;tape 1</strong> &mdash; Cr&eacute;er <code>lib/prereqs.sh</code> : d&eacute;tection OS, v&eacute;rification versions, installation interactive (~340 lignes)</li>
+    <li><span class="check-done">&#x2705;</span> <strong>&Eacute;tape 2</strong> &mdash; Refondre <code>deploy.sh</code> : 8 phases num&eacute;rot&eacute;es, support Docker + bare-metal (~1100 lignes)</li>
+    <li><span class="check-done">&#x2705;</span> <strong>&Eacute;tape 3</strong> &mdash; Cr&eacute;er <code>lib/baremetal.sh</code> : installation PostgreSQL, ChromaDB, Ollama, venv Python, systemd, nginx (~480 lignes)</li>
+    <li><span class="check-done">&#x2705;</span> <strong>&Eacute;tape 4</strong> &mdash; Cr&eacute;er les templates systemd et nginx dans <code>scripts/templates/</code> (3 fichiers)</li>
+    <li><span class="check-done">&#x2705;</span> <strong>&Eacute;tape 5</strong> &mdash; Post-d&eacute;ploiement : migrations, seed, import g&eacute;o, config BDD, health checks, r&eacute;capitulatif</li>
+    <li><span class="check-todo">&#x2B1C;</span> <strong>&Eacute;tape 6</strong> &mdash; Tests : valider le script sur macOS (Docker), Ubuntu 22.04 (Docker + bare-metal), Debian 12 (bare-metal)</li>
+  </ul>
+
+  <!-- ================================================================= -->
+  <!-- PHASE 2 — REFONTE ET AMELIORATION                                 -->
+  <!-- ================================================================= -->
+
+  <div class="callout callout-warning">
+    <span class="callout-icon">&#x26A0;&#xFE0F;</span>
+    <span>
+      <strong>Phase 2 &mdash; Refonte compl&egrave;te du flux interactif</strong><br>
+      Le script actuel (Phase 1) fonctionne mais pr&eacute;sente des probl&egrave;mes d'exp&eacute;rience utilisateur :
+      certains pr&eacute;requis ne sont pas propos&eacute;s &agrave; l'installation (ex: Homebrew sur macOS),
+      les mod&egrave;les Ollama ne sont pas propos&eacute;s au t&eacute;l&eacute;chargement quand le container Docker est absent,
+      et le flux interactif manque de clart&eacute; sur certaines &eacute;tapes.
+      Il faut reprendre chaque phase en profondeur pour garantir un parcours fluide de bout en bout,
+      aussi bien en premi&egrave;re installation qu'en mise &agrave; jour, dans les trois modes de d&eacute;ploiement :
+      Docker, bare-metal et mixte.
+    </span>
+  </div>
+
+  <!-- ---- 16.8 Trois modes de d&eacute;ploiement ---- -->
+
+  <h3><span class="h3-dot dot-green"></span> 16.8 Trois modes de d&eacute;ploiement</h3>
+
+  <p>Le script doit proposer clairement trois modes d&egrave;s le d&eacute;but :</p>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-title">&#x1F40B; Mode Docker</div>
+      <div class="card-body">
+        Tous les services dans des containers Docker.
+        <br><strong>Pr&eacute;requis :</strong> Docker, Docker Compose.
+        <br><strong>Cible :</strong> D&eacute;veloppement, d&eacute;ploiement rapide.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F4BB; Mode Bare-metal</div>
+      <div class="card-body">
+        Tous les services install&eacute;s nativement sur l'h&ocirc;te.
+        <br><strong>Pr&eacute;requis :</strong> Python 3.10+, PostgreSQL 15+, Ollama, ChromaDB, nginx.
+        <br><strong>Cible :</strong> Production optimis&eacute;e, acc&egrave;s GPU natif.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F504; Mode Mixte</div>
+      <div class="card-body">
+        Certains services en Docker, d'autres en natif.
+        <br><strong>Exemple :</strong> Ollama natif (GPU Metal/CUDA) + PostgreSQL &amp; App en Docker.
+        <br><strong>Cible :</strong> macOS M1/M2/M3, serveurs avec GPU.
+      </div>
+    </div>
+  </div>
+
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Menu de s&eacute;lection clair du mode (Docker / Bare-metal / Mixte) avec description de chaque option</li>
+    <li><span class="check-done">&#x2705;</span> En mode mixte : permettre de choisir quels services sont en Docker et lesquels en natif</li>
+    <li><span class="check-done">&#x2705;</span> Adapter dynamiquement les pr&eacute;requis v&eacute;rifi&eacute;s selon le mode choisi</li>
+    <li><span class="check-done">&#x2705;</span> G&eacute;n&eacute;rer le <code>.env</code> et le <code>docker-compose.override.yml</code> en coh&eacute;rence avec le mode</li>
+  </ul>
+
+  <!-- ---- 16.9 Installation automatique des pr&eacute;requis ---- -->
+
+  <h3><span class="h3-dot dot-green"></span> 16.9 Installation automatique des pr&eacute;requis</h3>
+
+  <p>Chaque pr&eacute;requis manquant doit &ecirc;tre propos&eacute; &agrave; l'installation selon le mode choisi et l'OS d&eacute;tect&eacute;.</p>
+
+  <h4>Pr&eacute;requis communs (tous modes)</h4>
+  <table>
+    <thead>
+      <tr><th>Outil</th><th>macOS</th><th>Ubuntu/Debian</th><th>RHEL/CentOS</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>Homebrew</code></td><td><code>/bin/bash -c "$(curl -fsSL ...Homebrew...)"</code></td><td>&mdash;</td><td>&mdash;</td></tr>
+      <tr><td><code>curl</code></td><td><code>brew install curl</code></td><td><code>apt install curl</code></td><td><code>dnf install curl</code></td></tr>
+      <tr><td><code>git</code></td><td><code>brew install git</code></td><td><code>apt install git</code></td><td><code>dnf install git</code></td></tr>
+      <tr><td><code>openssl</code></td><td><code>brew install openssl</code></td><td><code>apt install openssl</code></td><td><code>dnf install openssl</code></td></tr>
+    </tbody>
+  </table>
+
+  <h4>Pr&eacute;requis mode Docker</h4>
+  <table>
+    <thead>
+      <tr><th>Outil</th><th>macOS</th><th>Ubuntu/Debian</th><th>RHEL/CentOS</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>Docker Desktop</code></td><td><code>brew install --cask docker</code></td><td><code>curl -fsSL https://get.docker.com | sh</code></td><td><code>curl -fsSL https://get.docker.com | sh</code></td></tr>
+      <tr><td><code>Docker Compose</code></td><td>Inclus dans Docker Desktop</td><td><code>apt install docker-compose-plugin</code></td><td><code>dnf install docker-compose-plugin</code></td></tr>
+    </tbody>
+  </table>
+
+  <h4>Pr&eacute;requis mode Bare-metal / Mixte (services natifs)</h4>
+  <table>
+    <thead>
+      <tr><th>Outil</th><th>macOS</th><th>Ubuntu/Debian</th><th>RHEL/CentOS</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>Python 3.10+</code></td><td><code>brew install python@3.12</code></td><td><code>apt install python3.12 python3.12-venv</code></td><td><code>dnf install python3.12</code></td></tr>
+      <tr><td><code>PostgreSQL 15+</code></td><td><code>brew install postgresql@15</code></td><td><code>apt install postgresql-15</code></td><td><code>dnf install postgresql-server</code></td></tr>
+      <tr><td><code>Ollama</code></td><td><code>curl -fsSL https://ollama.com/install.sh | sh</code></td><td><code>curl -fsSL https://ollama.com/install.sh | sh</code></td><td><code>curl -fsSL https://ollama.com/install.sh | sh</code></td></tr>
+      <tr><td><code>ChromaDB</code></td><td><code>pip3 install chromadb</code></td><td><code>pip3 install chromadb</code></td><td><code>pip3 install chromadb</code></td></tr>
+      <tr><td><code>nginx</code></td><td><code>brew install nginx</code></td><td><code>apt install nginx</code></td><td><code>dnf install nginx</code></td></tr>
+    </tbody>
+  </table>
+
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> V&eacute;rifier Homebrew en premier sur macOS et proposer l'installation si absent</li>
+    <li><span class="check-done">&#x2705;</span> Adapter la liste des pr&eacute;requis dynamiquement selon le mode (Docker, bare-metal, mixte)</li>
+    <li><span class="check-done">&#x2705;</span> Proposer l'installation de chaque pr&eacute;requis manquant avec la bonne commande selon l'OS</li>
+    <li><span class="check-done">&#x2705;</span> En mode mixte : v&eacute;rifier les pr&eacute;requis Docker ET les pr&eacute;requis natifs des services choisis</li>
+    <li><span class="check-done">&#x2705;</span> V&eacute;rifier les versions minimales et proposer la mise &agrave; jour si insuffisantes</li>
+    <li><span class="check-done">&#x2705;</span> Afficher un r&eacute;capitulatif clair de tout ce qui est install&eacute;/manquant avant de continuer</li>
+  </ul>
+
+  <!-- ---- 16.10 Premi&egrave;re installation vs mise &agrave; jour ---- -->
+
+  <h3><span class="h3-dot dot-green"></span> 16.10 Premi&egrave;re installation vs mise &agrave; jour</h3>
+
+  <p>Le script doit d&eacute;tecter automatiquement s'il s'agit d'une premi&egrave;re installation ou d'une mise &agrave; jour,
+  et adapter son comportement en cons&eacute;quence.</p>
+
+  <div class="two-cols">
+    <div>
+      <h4>&#x1F195; Premi&egrave;re installation</h4>
+      <ul class="checklist">
+        <li><span class="check-done">&#x2705;</span> G&eacute;n&eacute;rer le <code>.env</code> complet depuis <code>env.template</code></li>
+        <li><span class="check-done">&#x2705;</span> Cr&eacute;er les volumes / r&eacute;pertoires de donn&eacute;es</li>
+        <li><span class="check-done">&#x2705;</span> Build des images Docker (si mode Docker/mixte)</li>
+        <li><span class="check-done">&#x2705;</span> Ex&eacute;cuter les migrations Alembic</li>
+        <li><span class="check-done">&#x2705;</span> Seed des donn&eacute;es initiales (r&ocirc;les, admin, config)</li>
+        <li><span class="check-done">&#x2705;</span> T&eacute;l&eacute;charger les mod&egrave;les Ollama (LLM + embeddings)</li>
+      </ul>
+    </div>
+    <div>
+      <h4>&#x1F504; Mise &agrave; jour</h4>
+      <ul class="checklist">
+        <li><span class="check-done">&#x2705;</span> D&eacute;tecter l'instance existante (containers, volumes, <code>.env</code>)</li>
+        <li><span class="check-done">&#x2705;</span> Pr&eacute;server les donn&eacute;es et la configuration</li>
+        <li><span class="check-done">&#x2705;</span> Proposer : mettre &agrave; jour / reconfigurer / r&eacute;installer</li>
+        <li><span class="check-done">&#x2705;</span> Rebuild des images uniquement si n&eacute;cessaire</li>
+        <li><span class="check-done">&#x2705;</span> Ex&eacute;cuter les nouvelles migrations Alembic</li>
+        <li><span class="check-done">&#x2705;</span> V&eacute;rifier/mettre &agrave; jour les mod&egrave;les Ollama</li>
+      </ul>
+    </div>
+  </div>
+
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> D&eacute;tection automatique (pr&eacute;sence de <code>.env</code>, containers existants, volumes)</li>
+    <li><span class="check-done">&#x2705;</span> Message clair indiquant le mode d&eacute;tect&eacute; (nouvelle installation / mise &agrave; jour)</li>
+    <li><span class="check-done">&#x2705;</span> Backup automatique du <code>.env</code> avant mise &agrave; jour</li>
+  </ul>
+
+  <!-- ---- 16.11 Gestion des containers et services existants ---- -->
+
+  <h3><span class="h3-dot dot-green"></span> 16.11 Gestion des containers et services existants</h3>
+
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> D&eacute;tecter les containers Docker du projet d&eacute;j&agrave; pr&eacute;sents (running ou stopped)</li>
+    <li><span class="check-done">&#x2705;</span> D&eacute;tecter les services natifs d&eacute;j&agrave; en cours (PostgreSQL, Ollama, ChromaDB, nginx)</li>
+    <li><span class="check-done">&#x2705;</span> D&eacute;tecter les conflits de ports avant le d&eacute;marrage</li>
+    <li><span class="check-done">&#x2705;</span> Proposer des actions claires : arr&ecirc;ter, supprimer, r&eacute;utiliser, ignorer</li>
+    <li><span class="check-done">&#x2705;</span> En mode mixte : v&eacute;rifier que les services natifs choisis sont bien d&eacute;marr&eacute;s</li>
+    <li><span class="check-done">&#x2705;</span> Ne jamais supprimer de donn&eacute;es sans confirmation explicite</li>
+  </ul>
+
+  <!-- ---- 16.12 T&eacute;l&eacute;chargement des mod&egrave;les Ollama ---- -->
+
+  <h3><span class="h3-dot dot-green"></span> 16.12 T&eacute;l&eacute;chargement des mod&egrave;les Ollama</h3>
+
+  <p>Le t&eacute;l&eacute;chargement des mod&egrave;les doit fonctionner quel que soit le mode de d&eacute;ploiement :</p>
+
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Mode Docker : via <code>docker exec</code> sur le container Ollama</li>
+    <li><span class="check-done">&#x2705;</span> Mode natif / mixte : via le CLI <code>ollama</code> install&eacute; sur l'h&ocirc;te</li>
+    <li><span class="check-done">&#x2705;</span> Fallback automatique : si le container Docker est indisponible, tenter le CLI natif</li>
+    <li><span class="check-done">&#x2705;</span> Proposer le t&eacute;l&eacute;chargement des mod&egrave;les configur&eacute;s (LLM + embeddings)</li>
+    <li><span class="check-done">&#x2705;</span> Proposer le t&eacute;l&eacute;chargement de mod&egrave;les personnalis&eacute;s</li>
+    <li><span class="check-done">&#x2705;</span> Afficher la progression et la taille des mod&egrave;les</li>
+  </ul>
+
+  <!-- ---- 16.13 Exp&eacute;rience utilisateur interactive ---- -->
+
+  <h3><span class="h3-dot dot-green"></span> 16.13 Exp&eacute;rience utilisateur interactive</h3>
+
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Num&eacute;roter chaque phase clairement (Phase 1/N, Phase 2/N, etc.)</li>
+    <li><span class="check-done">&#x2705;</span> Messages d'&eacute;tat clairs &agrave; chaque &eacute;tape (en cours, succ&egrave;s, &eacute;chec, ignor&eacute;)</li>
+    <li><span class="check-done">&#x2705;</span> Barre de progression ou indicateur visuel pour les op&eacute;rations longues (pull images, t&eacute;l&eacute;chargement mod&egrave;les)</li>
+    <li><span class="check-done">&#x2705;</span> R&eacute;capitulatif clair en fin de chaque phase</li>
+    <li><span class="check-done">&#x2705;</span> R&eacute;capitulatif final complet : services d&eacute;marr&eacute;s, URLs d'acc&egrave;s, identifiants, prochain pas</li>
+    <li><span class="check-done">&#x2705;</span> Gestion d'erreur : message explicite + suggestion de correction + possibilit&eacute; de r&eacute;essayer</li>
+    <li><span class="check-done">&#x2705;</span> Option <code>--auto</code> pour un d&eacute;ploiement non-interactif (CI/CD)</li>
+  </ul>
+
+  <!-- ---- 16.14 Tests de validation ---- -->
+
+  <h3><span class="h3-dot dot-green"></span> 16.14 Tests de validation</h3>
+
+  <table>
+    <thead>
+      <tr><th>Sc&eacute;nario</th><th>OS</th><th>Mode</th><th>Statut</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Premi&egrave;re installation</td><td>macOS (M1/M2/M3)</td><td>Docker</td><td><span class="badge badge-warning">&#x23F3; &Agrave; tester</span></td></tr>
+      <tr><td>Premi&egrave;re installation</td><td>macOS (M1/M2/M3)</td><td>Mixte (Ollama natif)</td><td><span class="badge badge-warning">&#x23F3; &Agrave; tester</span></td></tr>
+      <tr><td>Premi&egrave;re installation</td><td>Ubuntu 22.04</td><td>Docker</td><td><span class="badge badge-warning">&#x23F3; &Agrave; tester</span></td></tr>
+      <tr><td>Premi&egrave;re installation</td><td>Ubuntu 22.04</td><td>Bare-metal</td><td><span class="badge badge-warning">&#x23F3; &Agrave; tester</span></td></tr>
+      <tr><td>Mise &agrave; jour</td><td>macOS</td><td>Docker</td><td><span class="badge badge-warning">&#x23F3; &Agrave; tester</span></td></tr>
+      <tr><td>Mise &agrave; jour</td><td>Ubuntu 22.04</td><td>Docker</td><td><span class="badge badge-warning">&#x23F3; &Agrave; tester</span></td></tr>
+      <tr><td>Mise &agrave; jour</td><td>Ubuntu 22.04</td><td>Bare-metal</td><td><span class="badge badge-warning">&#x23F3; &Agrave; tester</span></td></tr>
+      <tr><td>Premi&egrave;re installation</td><td>Debian 12</td><td>Bare-metal</td><td><span class="badge badge-warning">&#x23F3; &Agrave; tester</span></td></tr>
+    </tbody>
+  </table>
+
+  <ul class="checklist">
+    <li><span class="check-todo">&#x2B1C;</span> Tester chaque sc&eacute;nario du tableau ci-dessus</li>
+    <li><span class="check-todo">&#x2B1C;</span> V&eacute;rifier l'installation des pr&eacute;requis manquants sur chaque OS</li>
+    <li><span class="check-todo">&#x2B1C;</span> V&eacute;rifier la mise &agrave; jour sans perte de donn&eacute;es</li>
+    <li><span class="check-todo">&#x2B1C;</span> V&eacute;rifier le mode <code>--auto</code> (non-interactif)</li>
+    <li><span class="check-done">&#x2705;</span> Script de tests automatiques <code>test-deploy-modes.sh</code> &mdash; 68/68 tests passent (9 cat&eacute;gories : syntaxe, fonctions, parsing, d&eacute;tection install, services natifs, variables mode mixte, compatibilit&eacute; ascendante, line endings) &mdash; <em>commit <code>2454af0</code></em></li>
+  </ul>
+
+  <!-- ---- 16.15 Fichiers concern&eacute;s ---- -->
+
+  <h3><span class="h3-dot dot-green"></span> 16.15 Fichiers concern&eacute;s</h3>
+
+  <table>
+    <thead>
+      <tr><th>Fichier</th><th>Action</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>scripts/deploy.sh</code></td><td>Modifier</td><td>Orchestrateur principal : 8 phases num&eacute;rot&eacute;es, mode mixte, d&eacute;tection multi-signaux, UX am&eacute;lior&eacute;e</td></tr>
+      <tr><td><code>scripts/start.sh</code></td><td>Modifier</td><td>Aligner avec le nouveau flux de deploy.sh</td></tr>
+      <tr><td><code>scripts/lib/prereqs.sh</code></td><td>Modifier</td><td>Pr&eacute;requis dynamiques : check_mixed_prereqs(), show_prereqs_summary()</td></tr>
+      <tr><td><code>scripts/lib/ollama.sh</code></td><td>Modifier</td><td>Fonctions unifi&eacute;es Docker/natif : detect_ollama_backend(), ollama_list/has_model/pull()</td></tr>
+      <tr><td><code>scripts/lib/baremetal.sh</code></td><td>Modifier</td><td>Alembic : affichage version avant/apr&egrave;s migration</td></tr>
+      <tr><td><code>scripts/lib/common.sh</code></td><td>Modifier</td><td>Ajout detect_native_services() (PostgreSQL, Ollama, ChromaDB, nginx)</td></tr>
+      <tr><td><code>scripts/lib/instance.sh</code></td><td>Modifier</td><td>Ajout detect_installation_state() multi-signaux (fresh/existing/partial)</td></tr>
+      <tr><td><code>scripts/lib/config.sh</code></td><td>Modifier</td><td>G&eacute;n&eacute;ration <code>.env</code> adapt&eacute;e au mode mixte + <code>check_all_ports()</code> tol&eacute;rance ports natifs</td></tr>
+      <tr><td><code>scripts/test/test-deploy-modes.sh</code></td><td>Cr&eacute;er</td><td>Script de tests de validation : 9 cat&eacute;gories, 68 tests (syntaxe, fonctions, parsing, d&eacute;tection, compatibilit&eacute;)</td></tr>
+    </tbody>
+  </table>
+
+</div>
+
+<!-- ==================== SECTION 17 : EXTERNALISATION TEMPLATES ==================== -->
+<div class="section" id="s17">
+  <div class="section-header">
+    <div class="section-icon icon-teal">&#x1F3A8;</div>
+    <div><h2>Externalisation templates HTML/SVG <span class="section-num">&mdash; Section 17 &mdash; PRIORIT&Eacute; MOYENNE</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <p>
+    <span class="badge badge-green">&#x2705; Termin&eacute;</span>
+    <strong>Plan d&eacute;taill&eacute; :</strong> <a href="PLAN-TEMPLATES-ADMIN.html">PLAN-TEMPLATES-ADMIN.html</a>
+  </p>
+
+  <p>
+    Actuellement, de nombreux fragments HTML et SVG sont construits dynamiquement
+    dans les fichiers JavaScript des deux interfaces (UI-FRONT et UI-BACK) via des
+    concat&eacute;nations de cha&icirc;nes ou des template literals. Cela rend la maintenance
+    difficile : modifier une ic&ocirc;ne SVG, un layout de carte ou un formulaire
+    n&eacute;cessite d'entrer dans le code JS et de comprendre la logique m&eacute;tier environnante.
+  </p>
+
+  <h3><span class="h3-dot dot-blue"></span> 17.1 Probl&egrave;me actuel</h3>
+
+  <ul class="feature-list">
+    <li>
+      <strong>SVG inline dans le JS</strong> &mdash; Les ic&ocirc;nes SVG (boutons, badges, indicateurs)
+      sont &eacute;crites directement dans les cha&icirc;nes JavaScript, m&eacute;lang&eacute;es avec la logique applicative
+    </li>
+    <li>
+      <strong>HTML dynamique</strong> &mdash; Des blocs HTML complets (cartes, listes, formulaires,
+      banni&egrave;res, modales) sont g&eacute;n&eacute;r&eacute;s par concat&eacute;nation dans les modules JS
+    </li>
+    <li>
+      <strong>Duplication</strong> &mdash; Certains fragments sont dupliqu&eacute;s entre UI-FRONT et UI-BACK
+      sans &ecirc;tre mutualis&eacute;s dans UI-SHARED
+    </li>
+    <li>
+      <strong>Maintenabilit&eacute; r&eacute;duite</strong> &mdash; Un designer ou int&eacute;grateur ne peut pas modifier
+      le markup sans risquer de casser la logique JS
+    </li>
+  </ul>
+
+  <h3><span class="h3-dot dot-teal"></span> 17.2 Objectif</h3>
+
+  <p>
+    Extraire les fragments HTML et SVG g&eacute;n&eacute;r&eacute;s dynamiquement vers des fichiers templates
+    s&eacute;par&eacute;s, consultables et modifiables <strong>sans toucher au code JavaScript</strong>,
+    tout en maintenant les performances (pas de requ&ecirc;tes HTTP suppl&eacute;mentaires &agrave; chaque rendu).
+  </p>
+
+  <h3><span class="h3-dot dot-green"></span> 17.3 Approches possibles</h3>
+
+  <div class="cards">
+    <div class="card" style="border-top: 3px solid var(--accent);">
+      <div class="card-title">&#x1F4C4; &Eacute;l&eacute;ments &lt;template&gt; HTML</div>
+      <div class="card-text">
+        Regrouper les fragments dans des balises <code>&lt;template id="tpl-xxx"&gt;</code>
+        dans le HTML principal ou dans des fichiers inclus. Le JS clone le contenu via
+        <code>document.getElementById('tpl-xxx').content.cloneNode(true)</code>.
+        <strong>Avantage :</strong> natif, z&eacute;ro requ&ecirc;te HTTP, performant.
+      </div>
+    </div>
+    <div class="card" style="border-top: 3px solid var(--primary-light);">
+      <div class="card-title">&#x1F4E6; Fichiers .html pr&eacute;charg&eacute;s</div>
+      <div class="card-text">
+        Fichiers templates dans <code>UI-SHARED/templates/</code>, charg&eacute;s une seule fois
+        au d&eacute;marrage via <code>fetch()</code> et mis en cache dans un registre global
+        (<code>TemplateRegistry</code>). Les rendus ult&eacute;rieurs utilisent le cache sans requ&ecirc;te.
+        <strong>Avantage :</strong> s&eacute;paration nette, fichiers &eacute;ditables ind&eacute;pendamment.
+      </div>
+    </div>
+    <div class="card" style="border-top: 3px solid var(--warning);">
+      <div class="card-title">&#x1F3AD; Biblioth&egrave;que d'ic&ocirc;nes SVG</div>
+      <div class="card-text">
+        Centraliser tous les SVG dans un sprite SVG ou un fichier <code>icons.js</code>
+        exportant un objet <code>{ iconName: '&lt;svg&gt;...' }</code>.
+        Le JS r&eacute;f&eacute;rence les ic&ocirc;nes par nom plut&ocirc;t que par markup.
+        <strong>Avantage :</strong> coh&eacute;rence, r&eacute;utilisabilit&eacute;, catalogue visuel possible.
+      </div>
+    </div>
+  </div>
+
+  <div class="callout callout-info">
+    <span class="callout-icon">&#x1F4A1;</span>
+    <span>
+      <strong>Performance :</strong> quelle que soit l'approche retenue, les templates doivent &ecirc;tre
+      charg&eacute;s/pars&eacute;s <strong>une seule fois</strong> au d&eacute;marrage et mis en cache en m&eacute;moire.
+      Le rendu doit se faire par clonage ou interpolation de cha&icirc;nes cach&eacute;es,
+      sans appels r&eacute;seau suppl&eacute;mentaires.
+    </span>
+  </div>
+
+  <h3><span class="h3-dot dot-amber"></span> 17.4 P&eacute;rim&egrave;tre</h3>
+
+  <table>
+    <thead>
+      <tr><th>Interface</th><th>Type de contenu</th><th>Exemples</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>UI-FRONT</td>
+        <td>SVG inline</td>
+        <td>Ic&ocirc;nes boutons (envoi, micro, pi&egrave;ce jointe), indicateurs de statut, badges</td>
+      </tr>
+      <tr>
+        <td>UI-FRONT</td>
+        <td>HTML dynamique</td>
+        <td>Bulles de chat, cartes documents, panneau login debug, banni&egrave;re debug</td>
+      </tr>
+      <tr>
+        <td>UI-BACK</td>
+        <td>SVG inline</td>
+        <td>Ic&ocirc;nes actions admin (modifier, supprimer, t&eacute;l&eacute;charger), indicateurs dashboard</td>
+      </tr>
+      <tr>
+        <td>UI-BACK</td>
+        <td>HTML dynamique</td>
+        <td>Lignes de tableau admin, formulaires CRUD, modales de confirmation, panneaux config</td>
+      </tr>
+      <tr>
+        <td>UI-SHARED</td>
+        <td>Composants communs</td>
+        <td>Toasts, spinners, progress bars, tooltips, modales partag&eacute;es</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-warning">
+    <span class="callout-icon">&#x26A0;&#xFE0F;</span>
+    <span>
+      <strong>R&egrave;gle absolue &mdash; z&eacute;ro duplication :</strong> un template utilis&eacute; par les deux interfaces
+      (UI-FRONT et UI-BACK) doit exister <strong>uniquement</strong> dans <code>UI-SHARED/templates/</code>.
+      Chaque fragment HTML ou ic&ocirc;ne SVG ne doit &ecirc;tre d&eacute;fini qu'&agrave; <strong>un seul endroit</strong>.
+      Avant de cr&eacute;er un nouveau template, v&eacute;rifier syst&eacute;matiquement s'il existe d&eacute;j&agrave; dans le registre partag&eacute;.
+      Un template sp&eacute;cifique &agrave; une seule UI peut rester dans son dossier, mais d&egrave;s qu'il est
+      r&eacute;utilis&eacute; par l'autre, il doit &ecirc;tre remont&eacute; dans <code>UI-SHARED/</code>.
+    </span>
+  </div>
+
+  <h3><span class="h3-dot dot-purple"></span> 17.5 T&acirc;ches</h3>
+
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Auditer les fichiers JS des deux UI pour inventorier tous les fragments HTML/SVG inline</li>
+    <li><span class="check-done">&#x2705;</span> Choisir l'approche de templating (balises <code>&lt;template&gt;</code>, fichiers pr&eacute;charg&eacute;s, ou hybride)</li>
+    <li><span class="check-done">&#x2705;</span> Cr&eacute;er la structure de dossiers templates dans <code>UI-SHARED/templates/</code></li>
+    <li><span class="check-done">&#x2705;</span> Centraliser les ic&ocirc;nes SVG dans un registre ou sprite d&eacute;di&eacute;</li>
+    <li><span class="check-done">&#x2705;</span> Identifier et d&eacute;dupliquer les fragments communs UI-FRONT / UI-BACK vers <code>UI-SHARED/templates/</code></li>
+    <li><span class="check-done">&#x2705;</span> Extraire les fragments HTML dynamiques des modules JS</li>
+    <li><span class="check-done">&#x2705;</span> Impl&eacute;menter le syst&egrave;me de chargement/cache des templates</li>
+    <li><span class="check-done">&#x2705;</span> Migrer UI-FRONT : remplacer les cha&icirc;nes inline par des r&eacute;f&eacute;rences templates</li>
+    <li><span class="check-done">&#x2705;</span> Migrer UI-BACK : remplacer les cha&icirc;nes inline par des r&eacute;f&eacute;rences templates (termin&eacute; 16 f&eacute;vrier 2026)</li>
+    <li><span class="check-done">&#x2705;</span> V&eacute;rifier la compatibilit&eacute; i18n (<code>t()</code> dans les templates)</li>
+    <li><span class="check-done">&#x2705;</span> Tests de non-r&eacute;gression visuelle sur les deux interfaces</li>
+    <li><span class="check-done">&#x2705;</span> Mesurer les performances (temps de chargement avant/apr&egrave;s)</li>
+  </ul>
+
+</div>
+
+<!-- ==================== SECTION 18 : MIGRATION LLAMA.CPP ==================== -->
+<div class="section" id="s18">
+  <div class="section-header">
+    <div class="section-icon icon-amber">&#x1F919;</div>
+    <div><h2>Migration Ollama vers llama.cpp <span class="section-num">&mdash; Section 18 &mdash; PRIORIT&Eacute; HAUTE</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <p>
+    <span class="badge badge-success">&#x2705; Termin&eacute;</span>
+    <strong>Objectif :</strong> Permettre de choisir entre <strong>Ollama</strong> (Docker) et <strong>llama.cpp</strong> (natif GPU Metal)
+    comme provider LLM. L'application doit pouvoir switcher dynamiquement entre les deux.
+  </p>
+
+  <div class="callout callout-success">
+    <span class="callout-icon">&#x2705;</span>
+    <span>
+      <strong>Impl&eacute;mentation compl&egrave;te (12 f&eacute;vrier 2026) :</strong> Abstraction LLM provider, gestion mod&egrave;les GGUF,
+      contr&ocirc;le serveur start/stop, param&egrave;tres llama.cpp (ctx-size, gpu-layers, threads, etc.), m&eacute;triques runtime,
+      UI Admin compl&egrave;te avec switch provider + gestion mod&egrave;les + params. Tests unitaires et int&eacute;gration.
+    </span>
+  </div>
+
+  <h3><span class="h3-dot dot-green"></span> 18.1 Backend &mdash; Abstraction LLM &#x2705;</h3>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Couche d'abstraction <code>app/common/llm/</code> (base, factory, ollama, llamacpp)</li>
+    <li><span class="check-done">&#x2705;</span> Client llama.cpp compatible API OpenAI (<code>/v1/chat/completions</code>, <code>/v1/embeddings</code>)</li>
+    <li><span class="check-done">&#x2705;</span> Configuration <code>LLM_PROVIDER</code> dans <code>app/core/config.py</code> et <code>env.template</code></li>
+    <li><span class="check-done">&#x2705;</span> Service Chat adapt&eacute; pour utiliser le provider abstrait (streaming SSE/JSONL)</li>
+    <li><span class="check-done">&#x2705;</span> Health check unifi&eacute; dans <code>app/features/health/service.py</code></li>
+  </ul>
+
+  <h3><span class="h3-dot dot-green"></span> 18.2 Admin UI &mdash; Onglet LLM &#x2705;</h3>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Onglet "LLM" dans Syst&egrave;me (<code>UI-BACK/js/modules/system.js</code>)</li>
+    <li><span class="check-done">&#x2705;</span> S&eacute;lection du provider actif (Ollama / llama.cpp)</li>
+    <li><span class="check-done">&#x2705;</span> Configuration host/port par provider</li>
+    <li><span class="check-done">&#x2705;</span> Affichage statut connexion (healthy/unhealthy)</li>
+    <li><span class="check-done">&#x2705;</span> Traductions i18n FR/EN compl&egrave;tes</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-green"></span> 18.3 Scripts &amp; DevOps &#x2705;</h3>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Script <code>scripts/llamacpp.sh</code> (start/stop/status/install)</li>
+    <li><span class="check-done">&#x2705;</span> Int&eacute;gration dans <code>scripts/start.sh</code> et <code>scripts/stop.sh</code></li>
+    <li><span class="check-done">&#x2705;</span> Compilation avec support Metal (Apple Silicon) document&eacute;e</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-green"></span> 18.4 Fusion Config RAG + LLM Provider &#x2705;</h3>
+  <div class="callout callout-success">
+    <span class="callout-icon">&#x2705;</span>
+    <span>
+      <strong>Impl&eacute;ment&eacute; :</strong> Configuration par provider avec cl&eacute;s <code>llm.ollama.*</code> et <code>llm.llamacpp.*</code>.
+      Fallback automatique vers <code>rag.*</code> pour r&eacute;trocompatibilit&eacute;.
+    </span>
+  </div>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> <strong>Restructurer le stockage config</strong> &mdash; Cl&eacute;s par provider : <code>llm.ollama.llm_model</code>, <code>llm.llamacpp.llm_model</code></li>
+    <li><span class="check-done">&#x2705;</span> <strong>Fusionner ou synchroniser les onglets RAG et LLM</strong> &mdash; ConfigService.get_rag_config() lit selon provider actif</li>
+    <li><span class="check-done">&#x2705;</span> <strong>API liste mod&egrave;les par provider</strong> &mdash; <code>GET /admin/config/models/ollama</code>, <code>GET /admin/config/models/llamacpp</code></li>
+    <li><span class="check-done">&#x2705;</span> <strong>UI RAG dynamique</strong> &mdash; Onglet LLM avec liste mod&egrave;les selon provider actif</li>
+    <li><span class="check-done">&#x2705;</span> <strong>Migration donn&eacute;es existantes</strong> &mdash; Fallback hi&eacute;rarchique dans ConfigService</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-green"></span> 18.5 Gestion des mod&egrave;les par provider &#x2705;</h3>
+  <div class="callout callout-success">
+    <span class="callout-icon">&#x2705;</span>
+    <span>
+      <strong>Impl&eacute;ment&eacute; :</strong> Gestion compl&egrave;te des mod&egrave;les pour les deux providers avec endpoints d&eacute;di&eacute;s.
+    </span>
+  </div>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> <strong>Endpoint <code>GET /admin/config/models</code></strong> &mdash; Liste mod&egrave;les selon provider actif</li>
+    <li><span class="check-done">&#x2705;</span> <strong>Endpoint <code>GET /admin/config/models/ollama</code></strong> &mdash; Liste mod&egrave;les Ollama via <code>/api/tags</code></li>
+    <li><span class="check-done">&#x2705;</span> <strong>Endpoint <code>GET /admin/config/models/llamacpp</code></strong> &mdash; Liste fichiers GGUF dans <code>models/gguf/</code></li>
+  </ul>
+
+  <h4>T&eacute;l&eacute;chargement de mod&egrave;les</h4>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> <strong>Ollama</strong> &mdash; T&eacute;l&eacute;chargement via <code>POST /admin/config/models/pull</code></li>
+    <li><span class="check-done">&#x2705;</span> <strong>llama.cpp</strong> &mdash; T&eacute;l&eacute;chargement via <code>POST /admin/config/models/llamacpp/download</code> (URL directe)</li>
+    <li><span class="check-done">&#x2705;</span> <strong>UI unifi&eacute;e</strong> &mdash; Modale de t&eacute;l&eacute;chargement adapt&eacute;e au provider</li>
+    <li><span class="check-done">&#x2705;</span> <strong>Progression</strong> &mdash; Affichage de la progression du t&eacute;l&eacute;chargement (streaming)</li>
+  </ul>
+
+  <h4>Suppression de mod&egrave;les</h4>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> <strong>Ollama</strong> &mdash; Suppression via <code>DELETE /admin/config/models/{name}</code></li>
+    <li><span class="check-done">&#x2705;</span> <strong>llama.cpp</strong> &mdash; Suppression via <code>DELETE /admin/config/models/llamacpp/{filename}</code></li>
+    <li><span class="check-done">&#x2705;</span> <strong>UI unifi&eacute;e</strong> &mdash; Liste des mod&egrave;les avec bouton supprimer + bulk delete</li>
+  </ul>
+
+  <h4>Affichage et monitoring</h4>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> <strong>UI Admin mod&egrave;les</strong> &mdash; Liste mod&egrave;les avec taille, date, statut</li>
+    <li><span class="check-done">&#x2705;</span> <strong>Mod&egrave;le charg&eacute;</strong> &mdash; Affich&eacute; via <code>GET /admin/config/llm/status</code></li>
+    <li><span class="check-done">&#x2705;</span> <strong>Usage m&eacute;moire</strong> &mdash; M&eacute;triques via <code>GET /admin/config/llm/llamacpp/metrics</code></li>
+  </ul>
+
+  <h3><span class="h3-dot dot-green"></span> 18.6 D&eacute;marrer / Arr&ecirc;ter le provider &#x2705;</h3>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> <strong>Endpoint <code>POST /admin/config/llm/start</code></strong> &mdash; D&eacute;marre llama-server</li>
+    <li><span class="check-done">&#x2705;</span> <strong>Endpoint <code>POST /admin/config/llm/stop</code></strong> &mdash; Arr&ecirc;te llama-server</li>
+    <li><span class="check-done">&#x2705;</span> <strong>Endpoint <code>GET /admin/config/llm/status</code></strong> &mdash; Statut d&eacute;taill&eacute; (running, model, memory)</li>
+    <li><span class="check-done">&#x2705;</span> <strong>Boutons Start/Stop dans UI</strong> &mdash; Onglet LLM avec <code>startLlamacpp()</code> et <code>stopLlamacpp()</code></li>
+  </ul>
+
+  <h3><span class="h3-dot dot-green"></span> 18.7 Param&egrave;tres sp&eacute;cifiques llama.cpp &#x2705;</h3>
+  <div class="callout callout-success">
+    <span class="callout-icon">&#x2705;</span>
+    <span>
+      <strong>Impl&eacute;ment&eacute; :</strong> Endpoints <code>GET/PATCH /admin/config/llm/llamacpp/params</code> et
+      <code>GET /admin/config/llm/llamacpp/metrics</code>. UI avec modale <code>saveLlamacppParams()</code>.
+    </span>
+  </div>
+
+  <h4>Param&egrave;tres GPU / Performance</h4>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> <strong><code>--gpu-layers</code> (ngl)</strong> &mdash; Nombre de couches &agrave; offloader sur GPU Metal</li>
+    <li><span class="check-done">&#x2705;</span> <strong><code>--ctx-size</code></strong> &mdash; Taille du contexte en tokens</li>
+    <li><span class="check-done">&#x2705;</span> <strong><code>--threads</code></strong> &mdash; Nombre de threads CPU</li>
+    <li><span class="check-done">&#x2705;</span> <strong><code>--batch-size</code></strong> &mdash; Taille du batch de traitement</li>
+    <li><span class="check-done">&#x2705;</span> <strong><code>--flash-attn</code></strong> &mdash; Flash Attention</li>
+  </ul>
+
+  <h4>Param&egrave;tres Serveur</h4>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> <strong><code>--parallel</code></strong> &mdash; Nombre de slots parall&egrave;les</li>
+    <li><span class="check-done">&#x2705;</span> <strong><code>--port</code></strong> &mdash; Port d'&eacute;coute</li>
+    <li><span class="check-done">&#x2705;</span> <strong><code>--embedding</code></strong> &mdash; Mode embedding</li>
+    <li><span class="check-done">&#x2705;</span> <strong><code>--metrics</code></strong> &mdash; Endpoint Prometheus /metrics</li>
+  </ul>
+
+  <h4>Param&egrave;tres M&eacute;moire</h4>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> <strong><code>--mlock</code></strong> &mdash; Verrouiller le mod&egrave;le en RAM</li>
+    <li><span class="check-done">&#x2705;</span> <strong><code>--mmap</code></strong> &mdash; Memory-map du mod&egrave;le</li>
+  </ul>
+
+  <h4>Impl&eacute;mentation</h4>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> <strong>Stockage BDD</strong> &mdash; Cl&eacute;s <code>llm.llamacpp.*</code> dans system_configs</li>
+    <li><span class="check-done">&#x2705;</span> <strong>UI formulaire</strong> &mdash; Modale param&egrave;tres dans l'onglet LLM</li>
+    <li><span class="check-done">&#x2705;</span> <strong>Script llamacpp.sh</strong> &mdash; Lecture param&egrave;tres depuis config + arguments CLI</li>
+    <li><span class="check-done">&#x2705;</span> <strong>Validation</strong> &mdash; V&eacute;rification des valeurs dans les endpoints</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-green"></span> 18.8 Tests &#x2705;</h3>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Tests unitaires dans <code>tests/llm/</code> (6 fichiers, 37 fonctions)</li>
+    <li><span class="check-done">&#x2705;</span> Tests d'int&eacute;gration endpoints dans <code>tests/admin/test_admin_config.py</code></li>
+    <li><span class="check-done">&#x2705;</span> Tests factory, providers (Ollama + llama.cpp), compatibility</li>
+  </ul>
+</div>
+
+<!-- ==================== SECTION 19 : PERSONNALISATION ==================== -->
+<div class="section" id="s19">
+  <div class="section-header">
+    <div class="section-icon icon-purple">&#x1F3AD;</div>
+    <div><h2>Personnalisation &amp; White-labeling <span class="section-num">&mdash; Section 19 &mdash; PRIORIT&Eacute; MOYENNE</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <p>
+    <span class="badge badge-warning">&#x23F3; &Agrave; faire</span>
+    <strong>Objectif :</strong> Permettre une personnalisation compl&egrave;te de l'application (Marque Blanche) pour les d&eacute;ploiements en entreprise sans modification du code source.
+  </p>
+
+  <h3><span class="h3-dot dot-teal"></span> 19.1 Identit&eacute; visuelle &amp; Branding &#x23F3;</h3>
+  <ul class="checklist">
+    <li><span class="check-todo">&#x2B1C;</span> <strong>Nom de l'application</strong> &mdash; Remplacer "MY-IA" par un nom personnalis&eacute; (BDD + Front/Admin)</li>
+    <li><span class="check-todo">&#x2B1C;</span> <strong>Logo personnalis&eacute;</strong> &mdash; Upload du logo entreprise via l'interface admin (Sidebar + Page de login)</li>
+    <li><span class="check-todo">&#x2B1C;</span> <strong>Favicon dynamique</strong> &mdash; Synchronisation du favicon avec le logo ou upload d&eacute;di&eacute;</li>
+    <li><span class="check-todo">&#x2B1C;</span> <strong>Description &amp; Accueil</strong> &mdash; Texte de bienvenue et slogan personnalisables par l'admin</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-teal"></span> 19.2 Support &amp; Coordonn&eacute;es &#x23F3;</h3>
+  <ul class="checklist">
+    <li><span class="check-todo">&#x2B1C;</span> <strong>Liens de support</strong> &mdash; Configuration d'une URL de centre d'aide ou d'un email de support technique</li>
+    <li><span class="check-todo">&#x2B1C;</span> <strong>Informations de contact</strong> &mdash; Ajout des coordonn&eacute;es de l'entreprise dans les r&eacute;glages/footer</li>
+    <li><span class="check-todo">&#x2B1C;</span> <strong>Mentions l&eacute;gales &amp; RGPD</strong> &mdash; Personnalisation des liens vers les politiques de confidentialit&eacute; internes</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-teal"></span> 19.3 Configuration Admin &#x23F3;</h3>
+  <ul class="checklist">
+    <li><span class="check-todo">&#x2B1C;</span> <strong>Onglet "Branding"</strong> &mdash; Cr&eacute;ation d'un nouvel onglet dans <em>Syst&egrave;me</em> pour g&eacute;rer toute l'identit&eacute; visuelle</li>
+    <li><span class="check-todo">&#x2B1C;</span> <strong>Preview en temps r&eacute;el</strong> &mdash; Visualiser les changements de logo/nom avant application</li>
+  </ul>
+</div>
+
+<!-- ==================== SECTION 20 : UNIFICATION SOURCES ==================== -->
+<div class="section" id="s20">
+  <div class="section-header">
+    <div class="section-icon icon-teal">&#x1F517;</div>
+    <div><h2>Unification des Sources de Donn&eacute;es <span class="section-num">&mdash; Section 20 &mdash; PRIORIT&Eacute; HAUTE</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <p>
+    <span class="badge badge-warning">&#x23F3; &Agrave; faire</span>
+  </p>
+
+  <div class="callout callout-info">
+    <span class="callout-icon">&#x1F3AF;</span>
+    <span>
+      <strong>Objectif :</strong> Fusionner les documents locaux et sources externes en un syst&egrave;me unifi&eacute;,
+      permettant d'assigner des sources &agrave; des collections sp&eacute;cifiques et de configurer le RAG par collection.
+    </span>
+  </div>
+
+  <h3><span class="h3-dot dot-green"></span> 20.1 Phase 1 : Mod&egrave;le de donn&eacute;es &#x2705;</h3>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Cr&eacute;er le mod&egrave;le <code>CollectionSource</code> (table de liaison)</li>
+    <li><span class="check-done">&#x2705;</span> Migration Alembic pour <code>collection_sources</code></li>
+    <li><span class="check-done">&#x2705;</span> Relations SQLAlchemy bidirectionnelles</li>
+    <li><span class="check-done">&#x2705;</span> Schemas Pydantic pour l'API</li>
+    <li><span class="check-done">&#x2705;</span> Mod&egrave;le <code>Corpus</code> + <code>CorpusCollection</code> + <code>CorpusSource</code> (relation N-N)</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-green"></span> 20.2 Phase 2 : API Admin &#x2705;</h3>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> <code>GET /api/admin/collections/{id}/sources</code> &mdash; Liste sources d'une collection</li>
+    <li><span class="check-done">&#x2705;</span> <code>POST /api/admin/collections/{id}/sources</code> &mdash; Ajouter source &agrave; collection</li>
+    <li><span class="check-done">&#x2705;</span> <code>DELETE /api/admin/collections/{id}/sources/{source_id}</code> &mdash; Retirer liaison</li>
+    <li><span class="check-done">&#x2705;</span> <code>PATCH /api/admin/collections/{id}/sources/{source_id}</code> &mdash; Modifier priorit&eacute;</li>
+    <li><span class="check-done">&#x2705;</span> <code>GET /api/admin/sources/{id}/collections</code> &mdash; Collections d'une source</li>
+    <li><span class="check-done">&#x2705;</span> API Corpus compl&egrave;te : CRUD + collections + sources + bulk operations</li>
+    <li><span class="check-done">&#x2705;</span> <code>GET /api/admin/collections/{id}/corpus</code> &mdash; Corpus d'une collection</li>
+    <li><span class="check-done">&#x2705;</span> <code>POST/DELETE /api/admin/collections/{id}/corpus</code> &mdash; G&eacute;rer corpus</li>
+    <li><span class="check-done">&#x2705;</span> <code>GET /api/admin/permissions</code> &mdash; Liste actions par r&ocirc;le</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-green"></span> 20.3 Phase 3 : Int&eacute;gration RAG &#x2705;</h3>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Filtrer les sources par <code>collection_id</code> dans le contexte RAG</li>
+    <li><span class="check-done">&#x2705;</span> Respecter les priorit&eacute;s des sources dans la collection</li>
+    <li><span class="check-done">&#x2705;</span> Cl&eacute; config <code>rag.use_corpus</code> &mdash; utiliser les corpus au lieu des sources individuelles</li>
+    <li><span class="check-done">&#x2705;</span> <code>SourceContextService.resolve_source_ids()</code> &mdash; r&eacute;solution s&eacute;curis&eacute;e</li>
+    <li><span class="check-done">&#x2705;</span> R&eacute;trocompatibilit&eacute; : comportement actuel si pas de collection_id</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-green"></span> 20.4 Phase 4 : Interface Admin &#x2705;</h3>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Modal "Sources" dans la vue collections (liste, ajout, suppression, priorit&eacute;)</li>
+    <li><span class="check-done">&#x2705;</span> Modal "Corpus" dans la vue collections (gestion N-N)</li>
+    <li><span class="check-done">&#x2705;</span> Module <code>content-corpus.js</code> complet avec bulk operations</li>
+    <li><span class="check-done">&#x2705;</span> Classes CSS <code>.corpus-modal</code>, <code>.corpus-section</code>, <code>.corpus-item</code></li>
+    <li><span class="check-done">&#x2705;</span> Traductions i18n (fr/en) : 35+ cl&eacute;s corpus</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-green"></span> 20.5 Phase 5 : Tests &amp; Documentation &#x2705;</h3>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Tests unitaires <code>tests/admin/test_corpus.py</code> (25 tests)</li>
+    <li><span class="check-done">&#x2705;</span> Tests <code>tests/sources/test_source_resolution_security.py</code></li>
+    <li><span class="check-done">&#x2705;</span> Seed des donn&eacute;es de r&eacute;f&eacute;rence dans <code>scripts/docker/seed.py</code></li>
+    <li><span class="check-todo">&#x2B1C;</span> Documentation HTML (CORPUS.html)</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-blue"></span> Architecture cible</h3>
+  <table>
+    <thead>
+      <tr><th>Type de source</th><th>Assignable &agrave; collection</th><th>Index&eacute;</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Documents locaux</td><td>&#x2705; Oui (existant)</td><td>&#x2705; ChromaDB</td></tr>
+      <tr><td>Sources web</td><td>&#x2705; Oui (nouveau)</td><td>&#x2705; Optionnel</td></tr>
+      <tr><td>Sources API</td><td>&#x2705; Oui (nouveau)</td><td>&#x2705; Optionnel</td></tr>
+      <tr><td>Sources database</td><td>&#x2705; Oui (nouveau)</td><td>&#x2705; Optionnel</td></tr>
+      <tr><td>Sources MCP</td><td>&#x2705; Oui (nouveau)</td><td>&#x274C; Temps r&eacute;el</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ==================== SECTION 21 : AUDIT ADMIN/SYSTEME ==================== -->
+<div class="section" id="s21">
+  <div class="section-header">
+    <div class="section-icon icon-amber">&#x1F50D;</div>
+    <div><h2>Audit Admin/Syst&egrave;me <span class="section-num">&mdash; Section 21 &mdash; AUDIT 6 F&Eacute;VRIER 2026</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <p>
+    <span class="badge badge-success">&#x2705; Termin&eacute;</span>
+    <strong>Objectif :</strong> V&eacute;rifier que tous les param&egrave;tres de configuration admin sont
+    configurables via l'UI et persist&eacute;s en BDD (<code>system_config</code>).
+    <strong>Mis &agrave; jour :</strong> 12 f&eacute;vrier 2026
+  </p>
+
+  <h3><span class="h3-dot dot-green"></span> 21.1 Toutes les sections impl&eacute;ment&eacute;es &#x2705;</h3>
+  <p>Les 12 onglets sont enti&egrave;rement configur&eacute;s, avec UI, endpoints et persistance BDD :</p>
+  <table>
+    <thead>
+      <tr><th>Section</th><th>Cl&eacute;s system_config</th><th>UI Admin</th><th>Statut</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>Modes</strong></td><td>12 cl&eacute;s (<code>mode.*</code>)</td><td>&#x2705; Onglet Modes</td><td><span class="badge badge-success">OK</span></td></tr>
+      <tr><td><strong>Password</strong></td><td>7 cl&eacute;s (<code>password.*</code>)</td><td>&#x2705; Onglet Password</td><td><span class="badge badge-success">OK</span></td></tr>
+      <tr><td><strong>Storage</strong></td><td>4 cl&eacute;s (<code>storage.*</code>)</td><td>&#x2705; Onglet Storage</td><td><span class="badge badge-success">OK</span></td></tr>
+      <tr><td><strong>LLM Provider</strong></td><td>9 cl&eacute;s (<code>llm.*</code>)</td><td>&#x2705; Onglet LLM</td><td><span class="badge badge-success">OK</span></td></tr>
+      <tr><td><strong>RAG</strong></td><td>9 cl&eacute;s (<code>rag.*</code>)</td><td>&#x2705; Onglet RAG</td><td><span class="badge badge-success">OK</span></td></tr>
+      <tr><td><strong>Chat</strong></td><td>9 cl&eacute;s (<code>chat.*</code>)</td><td>&#x2705; Onglet Chat</td><td><span class="badge badge-success">OK</span></td></tr>
+      <tr><td><strong>Speech</strong></td><td>6 cl&eacute;s (<code>speech.*</code>)</td><td>&#x2705; Onglet Speech</td><td><span class="badge badge-success">OK</span></td></tr>
+      <tr><td><strong>SMTP</strong></td><td>5 cl&eacute;s (<code>smtp.*</code>)</td><td>&#x2705; Onglet SMTP</td><td><span class="badge badge-success">OK</span></td></tr>
+      <tr><td><strong>Indexation</strong></td><td>5 cl&eacute;s (<code>indexation.*</code>)</td><td>&#x2705; Onglet Indexation</td><td><span class="badge badge-success">OK</span></td></tr>
+      <tr><td><strong>Geo</strong></td><td>3 cl&eacute;s (<code>geo.*</code>)</td><td>&#x2705; Onglet Geo</td><td><span class="badge badge-success">OK</span></td></tr>
+      <tr><td><strong>Logging</strong></td><td>10 cl&eacute;s (<code>logging.*</code>)</td><td>&#x2705; Onglet Logging</td><td><span class="badge badge-success">OK</span></td></tr>
+      <tr><td><strong>Notifications</strong></td><td>5 cl&eacute;s (<code>notification.*</code>)</td><td>&#x2705; Onglet Notifications</td><td><span class="badge badge-success">OK</span></td></tr>
+      <tr><td><strong>Debug</strong></td><td>1 cl&eacute; (<code>debug.*</code>)</td><td>&#x2705; Onglet Debug</td><td><span class="badge badge-success">OK</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-green"></span> 21.2 Sections pr&eacute;c&eacute;demment incompl&egrave;tes (r&eacute;solues) &#x2705;</h3>
+
+  <h4>21.2.1 Geo &#x2705;</h4>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Cl&eacute;s BDD : <code>geo.default_country</code>, <code>geo.require_city</code>, <code>geo.allow_change</code></li>
+    <li><span class="check-done">&#x2705;</span> Endpoints : <code>/geo/countries</code>, <code>/geo/cities</code> (public)</li>
+    <li><span class="check-done">&#x2705;</span> UI : Onglet Geo avec templates <code>system-geo-*</code>, m&eacute;thode <code>loadGeo()</code></li>
+  </ul>
+
+  <h4>21.2.2 Debug &#x2705;</h4>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Cl&eacute; BDD : <code>debug.enabled</code></li>
+    <li><span class="check-done">&#x2705;</span> Endpoint : <code>GET/PATCH /api/admin/config/debug</code></li>
+    <li><span class="check-done">&#x2705;</span> UI : Onglet Debug avec <code>loadDebugConfig()</code></li>
+  </ul>
+
+  <h4>21.2.3 Logging &#x2705;</h4>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Cl&eacute;s BDD : <code>logging.level.*</code>, <code>logging.retention.*</code></li>
+    <li><span class="check-done">&#x2705;</span> Endpoints : <code>GET/PATCH /api/admin/config/logging</code>, <code>/admin/logs/*</code></li>
+    <li><span class="check-done">&#x2705;</span> UI : Onglet Logging avec template <code>system-logging-full</code>, m&eacute;thode <code>loadLoggingConfig()</code></li>
+  </ul>
+
+  <h4>21.2.4 Notifications &#x2705;</h4>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Cl&eacute;s BDD : <code>notification.*</code> (channels, email, webhook)</li>
+    <li><span class="check-done">&#x2705;</span> Endpoints : <code>GET/PATCH/POST /api/admin/config/notifications</code></li>
+    <li><span class="check-done">&#x2705;</span> UI : Onglet Notifications avec template <code>system-notifications-full</code>, m&eacute;thode <code>loadNotificationsConfig()</code></li>
+  </ul>
+
+  <h3><span class="h3-dot dot-blue"></span> 21.3 Configurations runtime-only (d&eacute;cision requise)</h3>
+  <p>Ces param&egrave;tres sont configur&eacute;s via <code>.env</code> et n&eacute;cessitent un red&eacute;marrage. Migration vers BDD optionnelle.</p>
+
+  <h4>21.3.1 Timeouts</h4>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Variables .env : <code>REQUEST_TIMEOUT</code>, <code>LLM_TIMEOUT</code>, <code>STREAM_TIMEOUT</code></li>
+    <li><span class="check-done">&#x274C;</span> <strong>D&eacute;cision :</strong> Garder en .env (red&eacute;marrage requis pour les timeouts serveur)</li>
+  </ul>
+
+  <h4>21.3.2 Rate Limits</h4>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Variables .env : <code>RATE_LIMIT_*</code></li>
+    <li><span class="check-done">&#x274C;</span> <strong>D&eacute;cision :</strong> Garder en .env (SlowAPI initialise au d&eacute;marrage)</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-green"></span> 21.4 R&eacute;sum&eacute; final &#x2705;</h3>
+  <div class="callout callout-success">
+    <span class="callout-icon">&#x2705;</span>
+    <span>
+      <strong>Toutes les sections sont impl&eacute;ment&eacute;es.</strong> Les 12 onglets du backoffice Syst&egrave;me
+      sont fonctionnels avec UI, endpoints et persistance BDD.
+    </span>
+  </div>
+
+  <table>
+    <thead>
+      <tr><th>Priorit&eacute;</th><th>Action</th><th>Statut</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="badge badge-success">P1</span></td>
+        <td>LLM Provider : fusion config RAG + gestion mod&egrave;les (&sect;18.4-18.8)</td>
+        <td>&#x2705; Termin&eacute;</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-success">P2</span></td>
+        <td>Geo endpoints + UI</td>
+        <td>&#x2705; Termin&eacute;</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-success">P2</span></td>
+        <td>Logging UI section</td>
+        <td>&#x2705; Termin&eacute;</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-success">P2</span></td>
+        <td>Notifications UI section</td>
+        <td>&#x2705; Termin&eacute;</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-success">P3</span></td>
+        <td>Timeouts : garder en .env (d&eacute;cision)</td>
+        <td>&#x274C; Non requis</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-success">P3</span></td>
+        <td>Rate Limits : garder en .env (d&eacute;cision)</td>
+        <td>~1 jour</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ==================== SECTION 22 : CORPUS & PERMISSIONS ==================== -->
+<div class="section" id="s22">
+  <div class="section-header">
+    <div class="section-icon icon-green">&#x1F4DA;</div>
+    <div><h2>Corpus &amp; Permissions <span class="section-num">&mdash; Section 22 &mdash; IMPL&Eacute;MENT&Eacute; 6 F&Eacute;VRIER 2026</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <p>
+    <span class="badge badge-success">&#x2705; Termin&eacute;</span>
+    <strong>Objectif :</strong> Regrouper collections et sources en corpus th&eacute;matiques,
+    et fournir un endpoint de permissions pour documenter les actions par r&ocirc;le.
+  </p>
+
+  <h3><span class="h3-dot dot-green"></span> 22.1 Corpus th&eacute;matiques &#x2705;</h3>
+  <p>Un <strong>corpus</strong> est un regroupement de sources (collections + sources externes) pour le RAG.</p>
+
+  <h4>Backend</h4>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Mod&egrave;le <code>Corpus</code> + <code>CorpusCollection</code> + <code>CorpusSource</code></li>
+    <li><span class="check-done">&#x2705;</span> API CRUD corpus : <code>/api/admin/corpus</code></li>
+    <li><span class="check-done">&#x2705;</span> Gestion collections : <code>/api/admin/corpus/{id}/collections</code></li>
+    <li><span class="check-done">&#x2705;</span> Gestion sources : <code>/api/admin/corpus/{id}/sources</code></li>
+    <li><span class="check-done">&#x2705;</span> Bulk operations : ajout/retrait de plusieurs &eacute;l&eacute;ments</li>
+    <li><span class="check-done">&#x2705;</span> Relation N-N : une collection peut appartenir &agrave; plusieurs corpus</li>
+    <li><span class="check-done">&#x2705;</span> Tous les corpus peuvent &ecirc;tre modifi&eacute;s/supprim&eacute;s</li>
+  </ul>
+
+  <h4>Frontend</h4>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Module <code>content-corpus.js</code> avec CRUD complet</li>
+    <li><span class="check-done">&#x2705;</span> Modal gestion collections/sources avec s&eacute;lection multiple</li>
+    <li><span class="check-done">&#x2705;</span> Bouton corpus dans les actions des collections</li>
+    <li><span class="check-done">&#x2705;</span> Classes CSS d&eacute;di&eacute;es (pas de styles inline)</li>
+    <li><span class="check-done">&#x2705;</span> Traductions i18n compl&egrave;tes (fr/en)</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-green"></span> 22.2 Endpoint Permissions &#x2705;</h3>
+  <p>Liste toutes les actions disponibles, organis&eacute;es par r&ocirc;le et cat&eacute;gorie.</p>
+
+  <table>
+    <thead>
+      <tr><th>Endpoint</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>GET /api/admin/permissions</code></td><td>Liste toutes les permissions par r&ocirc;le</td></tr>
+      <tr><td><code>GET /api/admin/permissions/{role_id}</code></td><td>Permissions d'un r&ocirc;le sp&eacute;cifique</td></tr>
+    </tbody>
+  </table>
+
+  <h4>R&ocirc;les et h&eacute;ritage</h4>
+  <ul>
+    <li><strong>Admin (id=1)</strong> &mdash; Toutes les permissions (user + contributor + admin)</li>
+    <li><strong>Contributor (id=2)</strong> &mdash; Permissions user + upload public + visibilit&eacute;</li>
+    <li><strong>User (id=3)</strong> &mdash; Chat, documents priv&eacute;s, profil</li>
+  </ul>
+
+  <h4>Cat&eacute;gories d'actions</h4>
+  <table>
+    <thead>
+      <tr><th>Cat&eacute;gorie</th><th>Exemples d'actions</th><th>R&ocirc;les</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>chat</td><td>Envoyer message, lister conversations</td><td>Tous</td></tr>
+      <tr><td>documents</td><td>Upload, t&eacute;l&eacute;charger, supprimer</td><td>Tous</td></tr>
+      <tr><td>profile</td><td>Voir/modifier profil, pr&eacute;f&eacute;rences</td><td>Tous</td></tr>
+      <tr><td>users</td><td>CRUD utilisateurs, r&ocirc;les, bulk</td><td>Admin</td></tr>
+      <tr><td>collections</td><td>CRUD collections, sync, clear</td><td>Admin</td></tr>
+      <tr><td>corpus</td><td>CRUD corpus, gestion membres</td><td>Admin</td></tr>
+      <tr><td>sources</td><td>CRUD sources, reindex, health</td><td>Admin</td></tr>
+      <tr><td>config</td><td>RAG, LLM, storage, mod&egrave;les</td><td>Admin</td></tr>
+      <tr><td>audit</td><td>Logs, historique actions</td><td>Admin</td></tr>
+      <tr><td>validation</td><td>Inscriptions en attente</td><td>Admin</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-success">
+    <span class="callout-icon">&#x2705;</span>
+    <span>
+      <strong>Bilan :</strong> Corpus + Permissions impl&eacute;ment&eacute;s le 6 f&eacute;vrier 2026.
+      25 tests corpus passent. Endpoint permissions documente 50+ actions par r&ocirc;le.
+    </span>
+  </div>
+</div>
+
+<!-- ==================== SECTION 23 : SMTP & GESTION DES MAILS ==================== -->
+<div class="section" id="s23">
+  <div class="section-header">
+    <div class="section-icon icon-amber">&#x1F4E7;</div>
+    <div><h2>SMTP &amp; Gestion des Mails <span class="section-num">&mdash; Section 23 &mdash; &Agrave; PLANIFIER</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <p>
+    <span class="badge badge-warning">&#x23F3; &Agrave; faire</span>
+    <strong>Objectif :</strong> Configurer le serveur SMTP et g&eacute;rer les templates d'emails pour notifications,
+    r&eacute;initialisation de mot de passe, invitations, et alertes syst&egrave;me.
+  </p>
+
+  <h3><span class="h3-dot dot-amber"></span> 23.1 Configuration SMTP &#x23F3;</h3>
+  <p>La configuration SMTP est d&eacute;j&agrave; partiellement pr&eacute;sente dans <code>NotificationConfig</code>.</p>
+
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Mod&egrave;le de configuration en BDD : <code>notification.email_*</code></li>
+    <li><span class="check-done">&#x2705;</span> API admin : <code>GET/PATCH /api/admin/config/notifications</code></li>
+    <li><span class="check-todo">&#x2B1C;</span> Test de connexion SMTP (endpoint <code>POST /notifications/test</code>)</li>
+    <li><span class="check-todo">&#x2B1C;</span> Support multi-providers (SMTP, SendGrid, SES, Mailgun)</li>
+    <li><span class="check-todo">&#x2B1C;</span> UI admin pour configuration SMTP</li>
+    <li><span class="check-todo">&#x2B1C;</span> Validation des param&egrave;tres au sauvegarder</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-amber"></span> 23.2 Templates d'emails &#x23F3;</h3>
+  <p>Syst&egrave;me de templates HTML/texte pour les diff&eacute;rents types d'emails.</p>
+
+  <ul class="checklist">
+    <li><span class="check-todo">&#x2B1C;</span> Template : Bienvenue / Confirmation d'inscription</li>
+    <li><span class="check-todo">&#x2B1C;</span> Template : R&eacute;initialisation de mot de passe</li>
+    <li><span class="check-todo">&#x2B1C;</span> Template : Compte approuv&eacute;</li>
+    <li><span class="check-todo">&#x2B1C;</span> Template : Invitation &agrave; rejoindre</li>
+    <li><span class="check-todo">&#x2B1C;</span> Template : Alerte syst&egrave;me (erreur, quota, s&eacute;curit&eacute;)</li>
+    <li><span class="check-todo">&#x2B1C;</span> Personnalisation avec variables (nom, lien, logo)</li>
+    <li><span class="check-todo">&#x2B1C;</span> Pr&eacute;visualisation dans l'admin UI</li>
+    <li><span class="check-todo">&#x2B1C;</span> Stockage en BDD (table <code>email_templates</code>)</li>
+    <li><span class="check-todo">&#x2B1C;</span> Version texte brut pour clients email sans HTML</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-amber"></span> 23.3 Service d'envoi &#x23F3;</h3>
+  <ul class="checklist">
+    <li><span class="check-todo">&#x2B1C;</span> Service <code>EmailService</code> avec m&eacute;thodes : send, send_template</li>
+    <li><span class="check-todo">&#x2B1C;</span> File d'attente pour envoi asynchrone (BackgroundTasks)</li>
+    <li><span class="check-todo">&#x2B1C;</span> R&eacute;tentatives en cas d'&eacute;chec (retry avec backoff)</li>
+    <li><span class="check-todo">&#x2B1C;</span> Logs des envois (table <code>email_logs</code>)</li>
+    <li><span class="check-todo">&#x2B1C;</span> Rate limiting pour &eacute;viter les abus</li>
+    <li><span class="check-todo">&#x2B1C;</span> D&eacute;sabonnement / pr&eacute;f&eacute;rences email utilisateur</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-amber"></span> 23.4 Int&eacute;gration &#x23F3;</h3>
+  <ul class="checklist">
+    <li><span class="check-todo">&#x2B1C;</span> Hook FastAPI-Users pour emails d'inscription/reset</li>
+    <li><span class="check-todo">&#x2B1C;</span> Int&eacute;gration alertes syst&egrave;me (logs FATAL/ERROR)</li>
+    <li><span class="check-todo">&#x2B1C;</span> Notifications admin (nouveaux utilisateurs, quotas)</li>
+    <li><span class="check-todo">&#x2B1C;</span> Tests unitaires et int&eacute;gration</li>
+  </ul>
+
+  <div class="callout callout-info">
+    <span class="callout-icon">&#x1F4A1;</span>
+    <span>
+      <strong>D&eacute;pendance :</strong> <code>aiosmtplib==3.0.1</code> d&eacute;j&agrave; install&eacute;.
+      Configuration SMTP d&eacute;j&agrave; en BDD via <code>NotificationConfig</code>.
+    </span>
+  </div>
+</div>
+
+<!-- ==================== SECTION 24 : COMMERCIAL & MARKETING ==================== -->
+<div class="section" id="s24">
+  <div class="section-header">
+    <div class="section-icon icon-green">&#x1F4BC;</div>
+    <div><h2>Commercial &amp; Marketing <span class="section-num">&mdash; Section 24 &mdash; EN COURS</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <p>
+    <span class="badge badge-accent">&#x1F6A7; En cours</span>
+    <strong>R&eacute;pertoire :</strong> <code>docs/commercial/</code> &mdash;
+    <strong>Objectif :</strong> Positionner MY-IA comme alternative priv&eacute;e et &eacute;conomique aux solutions SaaS.
+  </p>
+
+  <h3><span class="h3-dot dot-green"></span> 24.1 Documentation commerciale &#x2705;</h3>
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> Page de pr&eacute;sentation commerciale (pitch-my-ia.html)</li>
+    <li><span class="check-done">&#x2705;</span> Pitch deck markdown (pitch-deck.md)</li>
+    <li><span class="check-done">&#x2705;</span> Comparatif avec ChatGPT Enterprise et solutions SaaS</li>
+    <li><span class="check-done">&#x2705;</span> Calcul des &eacute;conomies (exemple 50 users : 29 400&euro;/an)</li>
+    <li><span class="check-done">&#x2705;</span> Cas d'usage par secteur (PME, juridique, sant&eacute;, public)</li>
+    <li><span class="check-done">&#x2705;</span> Tarification 3 options (Self-hosted, H&eacute;berg&eacute;, Enterprise)</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-amber"></span> 24.2 Site vitrine &#x23F3;</h3>
+  <ul class="checklist">
+    <li><span class="check-todo">&#x2B1C;</span> Landing page publique (h&eacute;berg&eacute;e s&eacute;par&eacute;ment)</li>
+    <li><span class="check-todo">&#x2B1C;</span> Formulaire de contact / demande de d&eacute;mo</li>
+    <li><span class="check-todo">&#x2B1C;</span> Vid&eacute;o de d&eacute;monstration</li>
+    <li><span class="check-todo">&#x2B1C;</span> T&eacute;moignages clients</li>
+    <li><span class="check-todo">&#x2B1C;</span> Blog / Actualit&eacute;s</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-amber"></span> 24.3 Mat&eacute;riel de vente &#x23F3;</h3>
+  <ul class="checklist">
+    <li><span class="check-todo">&#x2B1C;</span> Brochure PDF t&eacute;l&eacute;chargeable</li>
+    <li><span class="check-todo">&#x2B1C;</span> Pr&eacute;sentation PowerPoint/Keynote</li>
+    <li><span class="check-todo">&#x2B1C;</span> Fiche technique (specs, pr&eacute;requis)</li>
+    <li><span class="check-todo">&#x2B1C;</span> FAQ commerciale</li>
+    <li><span class="check-todo">&#x2B1C;</span> Mod&egrave;le de devis</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-amber"></span> 24.4 Strat&eacute;gie de distribution &#x23F3;</h3>
+  <ul class="checklist">
+    <li><span class="check-todo">&#x2B1C;</span> Marketplace (AWS, OVH, Scaleway)</li>
+    <li><span class="check-todo">&#x2B1C;</span> Partenariats int&eacute;grateurs</li>
+    <li><span class="check-todo">&#x2B1C;</span> Programme de r&eacute;f&eacute;rencement</li>
+    <li><span class="check-todo">&#x2B1C;</span> SEO / Content marketing</li>
+  </ul>
+
+  <div class="callout callout-success">
+    <span class="callout-icon">&#x1F4A1;</span>
+    <span>
+      <strong>Avantages cl&eacute;s &agrave; mettre en avant :</strong>
+      100% priv&eacute; (pas de donn&eacute;es vers le cloud), co&ucirc;t fixe (pas de facturation par token/user),
+      choix du mod&egrave;le IA, code source ouvert (MIT), RGPD natif.
+    </span>
+  </div>
+</div>
+
+<!-- ==================== FOOTER ==================== -->
+<div class="footer">
+  MY-IA &mdash; TODO &mdash; Version 1.17.0 &mdash; 14 f&eacute;vrier 2026
+</div>
+
+</div>
+
+</body>
+</html>

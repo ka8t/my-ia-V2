@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MY-IA &mdash; Guide de Tests</title>
+  <link rel="stylesheet" href="../assets/doc-style.css">
+</head>
+<body>
+
+<!-- ==================== HEADER ==================== -->
+<div class="header">
+  <div class="page">
+    <div class="header-icon">&#x1F9EA;</div>
+    <div>
+      <h1>MY-IA &mdash; Guide de Tests</h1>
+      <div class="subtitle">
+        Infrastructure de tests compl&egrave;te pour MY-IA : tests unitaires, tests d'int&eacute;gration,
+        scripts automatis&eacute;s, CI/CD GitHub Actions, coverage et bonnes pratiques.
+      </div>
+      <div class="meta">
+        <span>Version 1.1.0</span>
+        <span>12 f&eacute;vrier 2026</span>
+        <span>11 sections</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+
+<!-- ==================== TABLE OF CONTENTS ==================== -->
+<div class="toc">
+  <h2>Table des mati&egrave;res</h2>
+  <div class="toc-grid">
+    <a href="#s1"><span class="toc-num">1</span> Vue d'Ensemble</a>
+    <a href="#s2"><span class="toc-num">2</span> Structure</a>
+    <a href="#s3"><span class="toc-num">3</span> Scripts de Test</a>
+    <a href="#s4"><span class="toc-num">4</span> Ex&eacute;cution des Tests</a>
+    <a href="#s5"><span class="toc-num">5</span> Markers</a>
+    <a href="#s6"><span class="toc-num">6</span> Coverage</a>
+    <a href="#s7"><span class="toc-num">7</span> CI/CD GitHub Actions</a>
+    <a href="#s8"><span class="toc-num">8</span> &Eacute;crire de Nouveaux Tests</a>
+    <a href="#s9"><span class="toc-num">9</span> Fixtures Disponibles</a>
+    <a href="#s10"><span class="toc-num">10</span> Debugging et Probl&egrave;mes</a>
+    <a href="#s11"><span class="toc-num">11</span> M&eacute;triques et Prochaines &Eacute;tapes</a>
+  </div>
+</div>
+
+<!-- ==================== SECTION 1 : VUE D'ENSEMBLE ==================== -->
+<div class="section" id="s1">
+  <div class="section-header">
+    <div class="section-icon icon-blue">&#x1F3AF;</div>
+    <div><h2>Vue d'Ensemble <span class="section-num">&mdash; Section 1</span></h2></div>
+  </div>
+
+  <p>L'infrastructure de tests MY-IA couvre l'ensemble de l'application :</p>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-title">&#x1F9F1; ~100+ Tests Unitaires</div>
+      <div class="card-text">Tests pour l'API et les fonctions m&eacute;tier, isol&eacute;s avec mocking complet.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F517; Tests d'Int&eacute;gration E2E</div>
+      <div class="card-text">Tests end-to-end avec services r&eacute;els (PostgreSQL, ChromaDB, Ollama).</div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F4DC; Scripts Automatis&eacute;s</div>
+      <div class="card-text">Scripts pour endpoints HTTP (curl) et tests unitaires (pytest via Docker).</div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x2699;&#xFE0F; CI/CD GitHub Actions</div>
+      <div class="card-text">Pipeline complet avec lint, tests, coverage et security scan.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F4CA; Coverage 70%+</div>
+      <div class="card-text">Coverage minimum requis de 70% sur l'ensemble du code.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F3AD; Mocking Complet</div>
+      <div class="card-text">Isolation compl&egrave;te des tests via mocks pour Ollama, ChromaDB, etc.</div>
+    </div>
+  </div>
+
+  <h3><span class="h3-dot dot-blue"></span> Installation</h3>
+
+  <pre><code># Installer les d&eacute;pendances de test
+pip install -r requirements-test.txt
+
+# V&eacute;rifier l'installation
+pytest --version</code></pre>
+</div>
+
+<!-- ==================== SECTION 2 : STRUCTURE ==================== -->
+<div class="section" id="s2">
+  <div class="section-header">
+    <div class="section-icon icon-teal">&#x1F4C2;</div>
+    <div><h2>Structure <span class="section-num">&mdash; Section 2</span></h2></div>
+  </div>
+
+  <pre><code>my-ia/
+&#x251C;&#x2500;&#x2500; pytest.ini                      # Configuration pytest
+&#x251C;&#x2500;&#x2500; requirements-test.txt           # D&eacute;pendances de test
+&#x251C;&#x2500;&#x2500; scripts/
+&#x2502;   &#x251C;&#x2500;&#x2500; run-tests.sh               # Tests unitaires (pytest via Docker)
+&#x2502;   &#x251C;&#x2500;&#x2500; test-endpoints.sh          # Tests endpoints HTTP (curl)
+&#x2502;   &#x2514;&#x2500;&#x2500; init-multiple-databases.sh # Init PostgreSQL
+&#x251C;&#x2500;&#x2500; .github/
+&#x2502;   &#x2514;&#x2500;&#x2500; workflows/
+&#x2502;       &#x251C;&#x2500;&#x2500; tests.yml              # Workflow CI/CD
+&#x2502;       &#x2514;&#x2500;&#x2500; README.md              # Documentation workflows
+&#x2514;&#x2500;&#x2500; tests/
+    &#x251C;&#x2500;&#x2500; conftest.py                # Fixtures globales
+    &#x251C;&#x2500;&#x2500; test_*.py                  # Tests racine
+    &#x251C;&#x2500;&#x2500; admin/                     # Tests administration (13 fichiers)
+    &#x2502;   &#x251C;&#x2500;&#x2500; test_admin_*.py
+    &#x2502;   &#x2514;&#x2500;&#x2500; password_policy/       # Politique mot de passe
+    &#x251C;&#x2500;&#x2500; analytics/                 # Tests analytics dashboard (39 tests)
+    &#x251C;&#x2500;&#x2500; auth/                      # Tests authentification
+    &#x251C;&#x2500;&#x2500; chat/                      # Tests chat RAG
+    &#x251C;&#x2500;&#x2500; collections/               # Tests collections ChromaDB
+    &#x251C;&#x2500;&#x2500; crypto/                    # Tests cryptographie
+    &#x251C;&#x2500;&#x2500; documents/                 # Tests documents
+    &#x251C;&#x2500;&#x2500; geo/                       # Tests g&eacute;olocalisation
+    &#x251C;&#x2500;&#x2500; health/                    # Tests health check (33 tests)
+    &#x251C;&#x2500;&#x2500; preferences/               # Tests pr&eacute;f&eacute;rences (27 tests)
+    &#x251C;&#x2500;&#x2500; sources/                   # Tests sources externes (125 tests)
+    &#x251C;&#x2500;&#x2500; storage/                   # Tests stockage
+    &#x2514;&#x2500;&#x2500; user/                      # Tests utilisateur (5 fichiers)</code></pre>
+</div>
+
+<!-- ==================== SECTION 3 : SCRIPTS DE TEST ==================== -->
+<div class="section" id="s3">
+  <div class="section-header">
+    <div class="section-icon icon-green">&#x1F4DC;</div>
+    <div><h2>Scripts de Test <span class="section-num">&mdash; Section 3</span></h2></div>
+  </div>
+
+  <h3><span class="h3-dot dot-blue"></span> 1. Tests Unitaires (pytest) &mdash; run-tests.sh</h3>
+
+  <p>Ex&eacute;cute les tests pytest dans le container Docker (obligatoire pour PostgreSQL/UUID).</p>
+
+  <pre><code># Afficher les modules disponibles
+./scripts/test/run-tests.sh --list
+
+# Lancer tous les tests
+./scripts/test/run-tests.sh
+
+# Lancer un module sp&eacute;cifique
+./scripts/test/run-tests.sh admin       # Tests administration
+./scripts/test/run-tests.sh user        # Tests utilisateur
+./scripts/test/run-tests.sh auth        # Tests authentification
+./scripts/test/run-tests.sh documents   # Tests documents
+./scripts/test/run-tests.sh storage     # Tests stockage
+./scripts/test/run-tests.sh crypto      # Tests cryptographie
+./scripts/test/run-tests.sh geo         # Tests g&eacute;olocalisation
+./scripts/test/run-tests.sh sources     # Tests sources externes (125 tests)
+./scripts/test/run-tests.sh speech      # Tests speech-to-text
+
+# Options pytest
+./scripts/test/run-tests.sh admin -v            # Mode verbose
+./scripts/test/run-tests.sh -x                  # Stopper au premier &eacute;chec
+./scripts/test/run-tests.sh -k "test_create"    # Filtrer par pattern
+./scripts/test/run-tests.sh admin --cov         # Avec couverture
+./scripts/test/run-tests.sh --last-failed       # Rejouer les &eacute;checs</code></pre>
+
+  <h4>Modules Disponibles</h4>
+
+  <table>
+    <thead><tr><th>Module</th><th>Alias</th><th>Description</th><th>Tests</th></tr></thead>
+    <tbody>
+      <tr><td><code>all</code></td><td>-</td><td>Tous les tests</td><td>~340+</td></tr>
+      <tr><td><code>admin</code></td><td>-</td><td>Administration (CRUD, bulk, export)</td><td>~40</td></tr>
+      <tr><td><code>analytics</code></td><td>-</td><td>Dashboard analytics (overview, charts)</td><td>39</td></tr>
+      <tr><td><code>auth</code></td><td>-</td><td>Authentification (registration)</td><td>~10</td></tr>
+      <tr><td><code>crypto</code></td><td>-</td><td>Cryptographie (chiffrement PII)</td><td>~5</td></tr>
+      <tr><td><code>documents</code></td><td><code>docs</code></td><td>Gestion documents</td><td>~10</td></tr>
+      <tr><td><code>geo</code></td><td>-</td><td>G&eacute;olocalisation</td><td>~15</td></tr>
+      <tr><td><code>health</code></td><td>-</td><td>Health check &amp; metrics</td><td>33</td></tr>
+      <tr><td><code>password</code></td><td>-</td><td>Politique mot de passe</td><td>~5</td></tr>
+      <tr><td><code>preferences</code></td><td><code>prefs</code></td><td>Pr&eacute;f&eacute;rences utilisateur</td><td>27</td></tr>
+      <tr><td><code>sources</code></td><td>-</td><td>Sources externes (MCP, Web, API, DB)</td><td>125</td></tr>
+      <tr><td><code>speech</code></td><td>-</td><td>Speech-to-Text (Whisper)</td><td>~5</td></tr>
+      <tr><td><code>storage</code></td><td>-</td><td>Backend stockage</td><td>~5</td></tr>
+      <tr><td><code>user</code></td><td>-</td><td>Utilisateur (profil, conversations)</td><td>~15</td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-teal"></span> 2. Tests Endpoints HTTP (curl) &mdash; test-endpoints.sh</h3>
+
+  <p>Teste les endpoints de l'API via des requ&ecirc;tes HTTP r&eacute;elles.</p>
+
+  <pre><code># Lancer tous les tests (sauf chat lent)
+./scripts/test/test-endpoints.sh
+
+# Lancer une suite sp&eacute;cifique
+./scripts/test/test-endpoints.sh base           # Endpoints publics
+./scripts/test/test-endpoints.sh auth           # Authentification
+./scripts/test/test-endpoints.sh user           # Profil utilisateur
+./scripts/test/test-endpoints.sh conversations  # CRUD conversations
+./scripts/test/test-endpoints.sh documents      # Upload/download
+./scripts/test/test-endpoints.sh chat           # Chat RAG (lent)
+./scripts/test/test-endpoints.sh admin          # Administration
+./scripts/test/test-endpoints.sh full           # Vraiment tout</code></pre>
+
+  <h4>Suites Disponibles</h4>
+
+  <table>
+    <thead><tr><th>Suite</th><th>Alias</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>base</code></td><td><code>basic</code></td><td>Endpoints publics (/, /health, /metrics)</td></tr>
+      <tr><td><code>auth</code></td><td>-</td><td>Authentification (register, login, logout)</td></tr>
+      <tr><td><code>user</code></td><td>-</td><td>Gestion profil utilisateur</td></tr>
+      <tr><td><code>conversations</code></td><td><code>conv</code></td><td>CRUD conversations</td></tr>
+      <tr><td><code>documents</code></td><td><code>docs</code></td><td>Upload/download documents</td></tr>
+      <tr><td><code>chat</code></td><td>-</td><td>Chat RAG (lent, appelle Ollama)</td></tr>
+      <tr><td><code>admin</code></td><td>-</td><td>Administration (r&ocirc;le admin requis)</td></tr>
+      <tr><td><code>other</code></td><td>-</td><td>V&eacute;rification protection 401</td></tr>
+      <tr><td><code>all</code></td><td>-</td><td>Toutes sauf chat (rapide)</td></tr>
+      <tr><td><code>full</code></td><td>-</td><td>Vraiment toutes les suites</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-info">
+    <span class="callout-icon">&#x1F4A1;</span>
+    <span><strong>Pr&eacute;requis :</strong> Fichier <code>.env</code> configur&eacute; avec <code>TEST_USER_EMAIL</code> et <code>TEST_USER_PASSWORD</code>. Utilisateur <code>admin@test.local</code> pour tests admin (cr&eacute;&eacute; par seed si <code>debug.endpoints_enabled=true</code> en BDD ou premier install).</span>
+  </div>
+</div>
+
+<!-- ==================== SECTION 4 : EXÉCUTION ==================== -->
+<div class="section" id="s4">
+  <div class="section-header">
+    <div class="section-icon icon-amber">&#x25B6;&#xFE0F;</div>
+    <div><h2>Ex&eacute;cution des Tests <span class="section-num">&mdash; Section 4</span></h2></div>
+  </div>
+
+  <h3><span class="h3-dot dot-blue"></span> Tests Rapides (unitaires)</h3>
+
+  <pre><code># Via le script (recommand&eacute;)
+./scripts/test/run-tests.sh
+
+# Ou directement dans Docker
+docker-compose exec app python -m pytest tests/ -v</code></pre>
+
+  <h3><span class="h3-dot dot-teal"></span> Tests Complets (avec int&eacute;gration)</h3>
+
+  <pre><code># D&eacute;marrer les services
+docker compose up -d
+
+# Tests unitaires
+./scripts/test/run-tests.sh
+
+# Tests endpoints HTTP
+./scripts/test/test-endpoints.sh</code></pre>
+
+  <h3><span class="h3-dot dot-green"></span> Tests avec Coverage</h3>
+
+  <pre><code>./scripts/test/run-tests.sh --cov
+
+# Ou directement
+docker-compose exec app python -m pytest tests/ --cov=app --cov-report=term-missing</code></pre>
+
+  <h3><span class="h3-dot dot-amber"></span> Tests Sp&eacute;cifiques</h3>
+
+  <pre><code># Un fichier
+./scripts/test/run-tests.sh tests/admin/test_admin_users.py
+
+# Avec un pattern
+./scripts/test/run-tests.sh -k "test_create"
+
+# Un module
+./scripts/test/run-tests.sh admin</code></pre>
+</div>
+
+<!-- ==================== SECTION 5 : MARKERS ==================== -->
+<div class="section" id="s5">
+  <div class="section-header">
+    <div class="section-icon icon-purple">&#x1F3F7;&#xFE0F;</div>
+    <div><h2>Markers <span class="section-num">&mdash; Section 5</span></h2></div>
+  </div>
+
+  <p>Les tests sont cat&eacute;goris&eacute;s avec des markers pytest :</p>
+
+  <pre><code># Tests unitaires seulement
+pytest -m unit
+
+# Tests d'int&eacute;gration seulement
+pytest -m integration
+
+# Tests API
+pytest -m api
+
+# Tests du syst&egrave;me d'ingestion
+pytest -m ingest
+
+# Tests sans les lents
+pytest -m "not slow"
+
+# Combiner les markers
+pytest -m "unit and api"</code></pre>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-title"><span class="badge badge-primary">unit</span></div>
+      <div class="card-text">Tests unitaires isol&eacute;s, rapides, avec mocking.</div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="badge badge-accent">integration</span></div>
+      <div class="card-text">Tests d'int&eacute;gration avec services r&eacute;els.</div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="badge badge-purple">api</span></div>
+      <div class="card-text">Tests des endpoints HTTP de l'API.</div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="badge badge-warning">slow</span></div>
+      <div class="card-text">Tests lents (appels Ollama, etc.).</div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="badge badge-success">ingest</span></div>
+      <div class="card-text">Tests du syst&egrave;me d'ingestion de documents.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SECTION 6 : COVERAGE ==================== -->
+<div class="section" id="s6">
+  <div class="section-header">
+    <div class="section-icon icon-green">&#x1F4CA;</div>
+    <div><h2>Coverage <span class="section-num">&mdash; Section 6</span></h2></div>
+  </div>
+
+  <p>Le coverage minimum requis est de <strong>70%</strong>.</p>
+
+  <pre><code># G&eacute;n&eacute;rer le coverage
+pytest --cov=app --cov-report=html --cov-report=term-missing
+
+# V&eacute;rifier le coverage actuel
+pytest --cov=app --cov-report=term</code></pre>
+
+  <h3><span class="h3-dot dot-blue"></span> Fichiers Exclus du Coverage</h3>
+
+  <ul class="feature-list">
+    <li><strong>tests/*</strong> &mdash; R&eacute;pertoire de tests</li>
+    <li><strong>*/venv/*</strong> &mdash; Environnement virtuel</li>
+    <li><strong>*/__pycache__/*</strong> &mdash; Cache Python</li>
+  </ul>
+</div>
+
+<!-- ==================== SECTION 7 : CI/CD ==================== -->
+<div class="section" id="s7">
+  <div class="section-header">
+    <div class="section-icon icon-teal">&#x2699;&#xFE0F;</div>
+    <div><h2>CI/CD GitHub Actions <span class="section-num">&mdash; Section 7</span></h2></div>
+  </div>
+
+  <p>Chaque push ou PR d&eacute;clenche le workflow automatique :</p>
+
+  <div class="flow">
+    <div class="flow-step flow-blue">&#x1F50D;<br>Lint &amp; Format<span class="flow-label">Black, isort, Flake8 (1-2 min)</span></div>
+    <div class="flow-arrow">&#x25B6;</div>
+    <div class="flow-step flow-teal">&#x1F9EA;<br>Unit Tests<span class="flow-label">Python 3.10-3.12 (2-3 min)</span></div>
+    <div class="flow-arrow">&#x25B6;</div>
+    <div class="flow-step flow-green">&#x1F517;<br>Integration<span class="flow-label">ChromaDB + Ollama (8-12 min)</span></div>
+    <div class="flow-arrow">&#x25B6;</div>
+    <div class="flow-step flow-amber">&#x1F433;<br>Docker Build<span class="flow-label">Images app &amp; frontend (4-6 min)</span></div>
+  </div>
+
+  <div class="flow">
+    <div class="flow-step flow-blue">&#x1F512;<br>Security Scan<span class="flow-label">Safety, Bandit (1-2 min)</span></div>
+    <div class="flow-arrow">&#x25B6;</div>
+    <div class="flow-step flow-green">&#x1F4CA;<br>Coverage Report<span class="flow-label">Rapport HTML + commentaire PR (2-3 min)</span></div>
+  </div>
+
+  <h3><span class="h3-dot dot-teal"></span> Badge de Statut</h3>
+
+  <pre><code>![Tests](https://github.com/VOTRE-USERNAME/my-ia/workflows/Tests/badge.svg)</code></pre>
+</div>
+
+<!-- ==================== SECTION 8 : ÉCRIRE DES TESTS ==================== -->
+<div class="section" id="s8">
+  <div class="section-header">
+    <div class="section-icon icon-amber">&#x270D;&#xFE0F;</div>
+    <div><h2>&Eacute;crire de Nouveaux Tests <span class="section-num">&mdash; Section 8</span></h2></div>
+  </div>
+
+  <h3><span class="h3-dot dot-blue"></span> Test Unitaire</h3>
+
+  <pre><code>import pytest
+
+@pytest.mark.unit
+class TestMaFonction:
+    def test_comportement_normal(self, client, test_api_key):
+        """V&eacute;rifie le comportement normal"""
+        response = client.post(
+            "/endpoint",
+            json={"data": "test"},
+            headers={"X-API-Key": test_api_key}
+        )
+
+        assert response.status_code == 200
+        assert "expected_key" in response.json()</code></pre>
+
+  <h3><span class="h3-dot dot-teal"></span> Test d'Int&eacute;gration</h3>
+
+  <pre><code>import pytest
+
+@pytest.mark.integration
+@pytest.mark.slow
+@pytest.mark.asyncio
+class TestWorkflowComplet:
+    async def test_e2e(self, async_client, test_api_key):
+        """Test du workflow complet"""
+        # Skip si services non disponibles
+        health = await async_client.get("/health")
+        if not health.json().get("ollama"):
+            pytest.skip("Ollama non disponible")
+
+        # Test...</code></pre>
+</div>
+
+<!-- ==================== SECTION 9 : FIXTURES ==================== -->
+<div class="section" id="s9">
+  <div class="section-header">
+    <div class="section-icon icon-purple">&#x1F9F0;</div>
+    <div><h2>Fixtures Disponibles <span class="section-num">&mdash; Section 9</span></h2></div>
+  </div>
+
+  <h3><span class="h3-dot dot-blue"></span> Clients</h3>
+
+  <table>
+    <thead><tr><th>Fixture</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>client</code></td><td>TestClient FastAPI (sync)</td></tr>
+      <tr><td><code>async_client</code></td><td>httpx.AsyncClient (async)</td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-teal"></span> Donn&eacute;es</h3>
+
+  <table>
+    <thead><tr><th>Fixture</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>sample_chat_request</code></td><td>Requ&ecirc;te chat valide</td></tr>
+      <tr><td><code>sample_document_text</code></td><td>Document pour tests</td></tr>
+      <tr><td><code>sample_embeddings</code></td><td>Vecteur d'embeddings</td></tr>
+      <tr><td><code>mock_chroma_results</code></td><td>R&eacute;sultats ChromaDB</td></tr>
+      <tr><td><code>mock_ollama_response</code></td><td>R&eacute;ponse Ollama</td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-green"></span> Mocks</h3>
+
+  <table>
+    <thead><tr><th>Fixture</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>mock_ollama_embeddings</code></td><td>Mock get_embeddings()</td></tr>
+      <tr><td><code>mock_chroma_search</code></td><td>Mock search_context()</td></tr>
+      <tr><td><code>mock_ollama_generate</code></td><td>Mock generate_response()</td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-amber"></span> Configuration</h3>
+
+  <table>
+    <thead><tr><th>Fixture</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>test_api_key</code></td><td>Cl&eacute; API de test</td></tr>
+      <tr><td><code>test_ollama_host</code></td><td>URL Ollama</td></tr>
+      <tr><td><code>test_chroma_host</code></td><td>URL ChromaDB</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ==================== SECTION 10 : DEBUGGING ==================== -->
+<div class="section" id="s10">
+  <div class="section-header">
+    <div class="section-icon icon-red">&#x1F41B;</div>
+    <div><h2>Debugging et Probl&egrave;mes <span class="section-num">&mdash; Section 10</span></h2></div>
+  </div>
+
+  <h3><span class="h3-dot dot-blue"></span> Commandes de Debug</h3>
+
+  <div class="two-cols">
+    <div>
+      <h4>Afficher les Prints</h4>
+      <pre><code>pytest -s</code></pre>
+    </div>
+    <div>
+      <h4>Mode Debug (pdb)</h4>
+      <pre><code>pytest --pdb</code></pre>
+    </div>
+  </div>
+
+  <div class="two-cols">
+    <div>
+      <h4>Logs D&eacute;taill&eacute;s</h4>
+      <pre><code>pytest --log-cli-level=DEBUG</code></pre>
+    </div>
+    <div>
+      <h4>Re-runner les &Eacute;checs</h4>
+      <pre><code>pytest --lf  # Last failed
+pytest --ff  # Failed first</code></pre>
+    </div>
+  </div>
+
+  <p>Ou dans le code :</p>
+
+  <pre><code>import pdb; pdb.set_trace()</code></pre>
+
+  <h3><span class="h3-dot dot-red"></span> Tests qui passent localement mais &eacute;chouent en CI</h3>
+
+  <ul class="feature-list">
+    <li><strong>Chemins</strong> &mdash; V&eacute;rifier les chemins (absolu vs relatif)</li>
+    <li><strong>Variables</strong> &mdash; V&eacute;rifier les variables d'environnement</li>
+    <li><strong>Versions</strong> &mdash; V&eacute;rifier les versions Python</li>
+    <li><strong>Services</strong> &mdash; V&eacute;rifier les services (Ollama, ChromaDB)</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-amber"></span> Timeout en Tests d'Int&eacute;gration</h3>
+
+  <pre><code># Augmenter le timeout
+pytest --timeout=300
+
+# Utiliser un mod&egrave;le plus l&eacute;ger
+export MODEL_NAME="tinyllama"</code></pre>
+
+  <h3><span class="h3-dot dot-red"></span> ChromaDB Non Accessible</h3>
+
+  <pre><code># V&eacute;rifier le conteneur
+docker ps | grep chroma
+
+# Red&eacute;marrer
+docker compose restart chroma
+
+# V&eacute;rifier les logs
+docker compose logs chroma</code></pre>
+</div>
+
+<!-- ==================== SECTION 11 : MÉTRIQUES ==================== -->
+<div class="section" id="s11">
+  <div class="section-header">
+    <div class="section-icon icon-green">&#x1F4C8;</div>
+    <div><h2>M&eacute;triques et Prochaines &Eacute;tapes <span class="section-num">&mdash; Section 11</span></h2></div>
+  </div>
+
+  <h3><span class="h3-dot dot-blue"></span> Statistiques Actuelles</h3>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-title">&#x1F4CA; Tests Totaux</div>
+      <div class="card-text">~340+ tests r&eacute;partis entre unitaires (~300) et int&eacute;gration (~40).</div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x23F1;&#xFE0F; Dur&eacute;e Moyenne</div>
+      <div class="card-text">3-5 min (unit), 10-15 min (all).</div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F3AF; Coverage</div>
+      <div class="card-text">70%+ (objectif).</div>
+    </div>
+  </div>
+
+  <h3><span class="h3-dot dot-teal"></span> Par Module</h3>
+
+  <table>
+    <thead><tr><th>Module</th><th>Tests</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>tests/sources/</code></td><td>125</td><td>Connecteurs (MCP, Web, API, DB), contexte, indexation, service</td></tr>
+      <tr><td><code>tests/admin/</code></td><td>~40</td><td>CRUD admin, bulk, export</td></tr>
+      <tr><td><code>tests/analytics/</code></td><td>39</td><td>Dashboard analytics, charts, top users/queries</td></tr>
+      <tr><td><code>tests/health/</code></td><td>33</td><td>Health check, metrics Prometheus</td></tr>
+      <tr><td><code>tests/preferences/</code></td><td>27</td><td>Pr&eacute;f&eacute;rences utilisateur (th&egrave;me, langue, RAG)</td></tr>
+      <tr><td><code>tests/user/</code></td><td>~15</td><td>Profil, conversations</td></tr>
+      <tr><td><code>tests/geo/</code></td><td>~15</td><td>G&eacute;olocalisation</td></tr>
+      <tr><td><code>tests/auth/</code></td><td>~10</td><td>Registration, login</td></tr>
+      <tr><td><code>tests/</code> (racine)</td><td>~35</td><td>API endpoints, ingestion</td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-green"></span> Bonnes Pratiques</h3>
+
+  <ul class="feature-list">
+    <li><strong>Tests isol&eacute;s</strong> &mdash; Chaque test doit &ecirc;tre ind&eacute;pendant</li>
+    <li><strong>Noms descriptifs</strong> &mdash; <code>test_chat_rejects_invalid_api_key</code></li>
+    <li><strong>Une assertion principale</strong> &mdash; Focus sur un comportement</li>
+    <li><strong>Utiliser les fixtures</strong> &mdash; &Eacute;viter la duplication</li>
+    <li><strong>Mocker les d&eacute;pendances</strong> &mdash; Isoler le code test&eacute;</li>
+    <li><strong>Documenter les tests</strong> &mdash; Docstrings claires</li>
+    <li><strong>Skip intelligemment</strong> &mdash; <code>pytest.skip()</code> si services down</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-amber"></span> Prochaines &Eacute;tapes</h3>
+
+  <ul class="checklist">
+    <li><span class="check-todo">&#x2B1C;</span> Tests de performance (load testing)</li>
+    <li><span class="check-todo">&#x2B1C;</span> Tests de s&eacute;curit&eacute; (penetration testing)</li>
+    <li><span class="check-todo">&#x2B1C;</span> Tests frontend (Jest, Playwright)</li>
+    <li><span class="check-todo">&#x2B1C;</span> Tests E2E complets (Selenium)</li>
+    <li><span class="check-todo">&#x2B1C;</span> Mutation testing (coverage de qualit&eacute;)</li>
+    <li><span class="check-todo">&#x2B1C;</span> Property-based testing (Hypothesis)</li>
+  </ul>
+
+  <div class="callout callout-success">
+    <span class="callout-icon">&#x2705;</span>
+    <span><strong>Derni&egrave;re mise &agrave; jour :</strong> 12 f&eacute;vrier 2026 &mdash; Auteur : KL</span>
+  </div>
+</div>
+
+<!-- ==================== FOOTER ==================== -->
+<div class="footer">
+  MY-IA &mdash; Guide de Tests &mdash; Version 1.1.0 &mdash; 12 f&eacute;vrier 2026
+</div>
+
+</div>
+
+</body>
+</html>

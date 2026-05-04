@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentation - Script d'Audit de Conformit&eacute;</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --primary: #1e3a5f; --primary-light: #2d5a8e; --primary-lighter: #e8f0fe;
+            --accent: #0d9488; --accent-light: #ccfbf1;
+            --warning: #f59e0b; --warning-light: #fef3c7;
+            --danger: #ef4444; --danger-light: #fee2e2;
+            --success: #22c55e; --success-light: #dcfce7;
+            --purple: #7c3aed; --purple-light: #ede9fe;
+            --gray-50: #f9fafb; --gray-100: #f3f4f6; --gray-200: #e5e7eb;
+            --gray-500: #6b7280; --gray-600: #4b5563; --gray-700: #374151; --gray-800: #1f2937;
+            --radius: 10px;
+            --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+        }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; color: var(--gray-800); background: var(--gray-50); line-height: 1.7; font-size: 15px; }
+        .page { max-width: 1000px; margin: 0 auto; padding: 0 24px 60px; }
+
+        /* Header */
+        .header { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 60%, var(--accent) 100%); color: #fff; padding: 48px 0 40px; margin-bottom: 40px; }
+        .header .page { display: flex; align-items: flex-start; gap: 28px; }
+        .header-icon { width: 72px; height: 72px; background: rgba(255,255,255,0.15); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 36px; }
+        .header h1 { font-size: 28px; font-weight: 700; margin-bottom: 6px; }
+        .header .subtitle { font-size: 15px; opacity: 0.9; max-width: 600px; }
+        .header .meta { margin-top: 14px; display: flex; gap: 16px; flex-wrap: wrap; }
+        .header .meta span { font-size: 12px; background: rgba(255,255,255,0.18); padding: 4px 12px; border-radius: 20px; }
+
+        /* Navigation */
+        .nav { background: #fff; border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 24px; margin-bottom: 32px; box-shadow: var(--shadow); }
+        .nav h2 { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: var(--gray-500); margin-bottom: 16px; }
+        .nav-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; }
+        .nav a { color: var(--primary); text-decoration: none; font-size: 14px; padding: 8px 12px; border-radius: 6px; display: flex; align-items: center; gap: 8px; transition: all 0.15s; }
+        .nav a:hover { background: var(--primary-lighter); }
+        .nav .nav-num { width: 24px; height: 24px; background: var(--primary-lighter); color: var(--primary); border-radius: 6px; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+
+        /* Sections */
+        .section { background: #fff; border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 32px; margin-bottom: 24px; box-shadow: var(--shadow); }
+        .section-header { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 2px solid var(--gray-100); }
+        .section-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+        .icon-blue { background: var(--primary-lighter); }
+        .icon-green { background: var(--success-light); }
+        .icon-amber { background: var(--warning-light); }
+        .icon-red { background: var(--danger-light); }
+        .icon-purple { background: var(--purple-light); }
+        .icon-teal { background: var(--accent-light); }
+        .section-header h2 { font-size: 20px; font-weight: 700; }
+        .section-num { font-size: 13px; color: var(--gray-500); font-weight: 400; margin-left: 8px; }
+
+        /* Content */
+        h3 { font-size: 16px; font-weight: 600; margin: 24px 0 12px; color: var(--gray-700); display: flex; align-items: center; gap: 8px; }
+        h3::before { content: ''; width: 4px; height: 18px; background: var(--accent); border-radius: 2px; }
+        p { margin-bottom: 12px; }
+        ul, ol { margin: 12px 0 12px 24px; }
+        li { margin-bottom: 6px; }
+
+        /* Code */
+        code { background: var(--gray-100); padding: 2px 6px; border-radius: 4px; font-family: 'SF Mono', Consolas, monospace; font-size: 13px; }
+        pre { background: var(--gray-800); color: #e5e7eb; padding: 16px 20px; border-radius: 8px; overflow-x: auto; font-size: 13px; line-height: 1.5; margin: 16px 0; }
+        pre code { background: none; padding: 0; color: inherit; }
+        .code-title { display: block; background: var(--gray-700); color: var(--gray-200); padding: 8px 16px; border-radius: 8px 8px 0 0; font-size: 12px; margin-bottom: -8px; font-family: monospace; }
+
+        /* Tables */
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+        th { background: var(--gray-100); padding: 10px 12px; text-align: left; font-weight: 600; border-bottom: 2px solid var(--gray-200); }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--gray-200); }
+        tr:hover { background: var(--gray-50); }
+
+        /* Cards */
+        .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin: 16px 0; }
+        .card { background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 8px; padding: 16px; }
+        .card-title { font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .card-text { font-size: 14px; color: var(--gray-600); }
+
+        /* Alerts */
+        .alert { padding: 16px; border-radius: 8px; margin: 16px 0; border-left: 4px solid; }
+        .alert-info { background: #e8f4fd; border-color: #3498db; }
+        .alert-warning { background: var(--warning-light); border-color: var(--warning); }
+        .alert-danger { background: var(--danger-light); border-color: var(--danger); }
+        .alert-success { background: var(--success-light); border-color: var(--success); }
+
+        /* Badge */
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+        .badge-high { background: var(--danger-light); color: var(--danger); }
+        .badge-medium { background: var(--warning-light); color: #92400e; }
+        .badge-low { background: #dbeafe; color: #1e40af; }
+
+        /* Flow */
+        .flow { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 16px 0; }
+        .flow-step { background: var(--gray-100); padding: 8px 16px; border-radius: 20px; font-size: 14px; }
+        .flow-arrow { color: var(--gray-400); }
+
+        /* Back to top */
+        .back-top { position: fixed; bottom: 24px; right: 24px; width: 44px; height: 44px; background: var(--primary); color: #fff; border: none; border-radius: 50%; cursor: pointer; font-size: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); opacity: 0; visibility: hidden; transition: all 0.2s; }
+        .back-top.visible { opacity: 1; visibility: visible; }
+        .back-top:hover { background: var(--primary-light); transform: scale(1.1); }
+
+        /* Print */
+        @media print {
+            .nav, .back-top { display: none; }
+            .section { break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+    <div class="page">
+        <div class="header-icon">&#x1F6E1;</div>
+        <div>
+            <h1>Script d'Audit de Conformit&eacute;</h1>
+            <p class="subtitle">Documentation compl&egrave;te du script <code>run_audit.py</code> &mdash; Analyse statique du code, d&eacute;tection de vuln&eacute;rabilit&eacute;s, g&eacute;n&eacute;ration de rapports HTML.</p>
+            <div class="meta">
+                <span>&#x1F4C1; scripts/run_audit.py</span>
+                <span>&#x2699;&#xFE0F; audit.config.json</span>
+                <span>&#x1F4CA; Rapports HTML</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="page">
+
+<!-- Navigation -->
+<nav class="nav" id="nav">
+    <h2>Sommaire</h2>
+    <div class="nav-grid">
+        <a href="#s1"><span class="nav-num">1</span> Vue d'ensemble</a>
+        <a href="#s2"><span class="nav-num">2</span> Installation</a>
+        <a href="#s3"><span class="nav-num">3</span> Configuration</a>
+        <a href="#s4"><span class="nav-num">4</span> Utilisation CLI</a>
+        <a href="#s5"><span class="nav-num">5</span> Cat&eacute;gories d'audit</a>
+        <a href="#s6"><span class="nav-num">6</span> R&egrave;gles de d&eacute;tection</a>
+        <a href="#s7"><span class="nav-num">7</span> Fixtures &amp; Tests</a>
+        <a href="#s8"><span class="nav-num">8</span> Rapports g&eacute;n&eacute;r&eacute;s</a>
+        <a href="#s9"><span class="nav-num">9</span> Int&eacute;gration CI/CD</a>
+        <a href="#s10"><span class="nav-num">10</span> R&eacute;f&eacute;rence</a>
+    </div>
+</nav>
+
+<!-- Section 1: Vue d'ensemble -->
+<section class="section" id="s1">
+    <div class="section-header">
+        <div class="section-icon icon-blue">&#x1F50D;</div>
+        <h2>Vue d'ensemble <span class="section-num">&mdash; Section 1</span></h2>
+    </div>
+
+    <p>Le script d'audit analyse automatiquement le code source pour d&eacute;tecter les probl&egrave;mes de <strong>s&eacute;curit&eacute;</strong>, <strong>architecture</strong>, <strong>interface</strong>, <strong>UX</strong> et <strong>maintenance</strong>. Il g&eacute;n&egrave;re un rapport HTML interactif avec visualisations et comparaison historique.</p>
+
+    <h3>Fonctionnalit&eacute;s principales</h3>
+    <div class="cards">
+        <div class="card">
+            <div class="card-title">&#x1F6E1; S&eacute;curit&eacute; OWASP</div>
+            <div class="card-text">SQL Injection, XSS, secrets hardcod&eacute;s, HTTP sans TLS, routes non prot&eacute;g&eacute;es</div>
+        </div>
+        <div class="card">
+            <div class="card-title">&#x1F3D7; Architecture</div>
+            <div class="card-text">Logique DB dans routers, queries N+1, s&eacute;paration des responsabilit&eacute;s</div>
+        </div>
+        <div class="card">
+            <div class="card-title">&#x1F3A8; Interface</div>
+            <div class="card-text">innerHTML non s&eacute;curis&eacute;, styles inline, SVG inline, manipulation DOM</div>
+        </div>
+        <div class="card">
+            <div class="card-title">&#x1F514; Exp&eacute;rience utilisateur</div>
+            <div class="card-text">Toasts non traduits, console.log, accessibilit&eacute; (aria-label)</div>
+        </div>
+        <div class="card">
+            <div class="card-title">&#x267B; Maintenance</div>
+            <div class="card-text">TODO/FIXME, code mort, dette technique</div>
+        </div>
+        <div class="card">
+            <div class="card-title">&#x1F4CA; Rapports</div>
+            <div class="card-text">HTML interactif, graphiques, historique, comparaison baseline</div>
+        </div>
+    </div>
+
+    <h3>Flux d'ex&eacute;cution</h3>
+    <div class="flow">
+        <span class="flow-step">&#x2699; Config</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-step">&#x1F9EA; Fixtures</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-step">&#x1F50D; Scan</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-step">&#x1F9EA; Tests</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-step">&#x1F4CA; Baseline</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-step">&#x1F4C4; Rapport</span>
+    </div>
+</section>
+
+<!-- Section 2: Installation -->
+<section class="section" id="s2">
+    <div class="section-header">
+        <div class="section-icon icon-green">&#x1F4E6;</div>
+        <h2>Installation <span class="section-num">&mdash; Section 2</span></h2>
+    </div>
+
+    <h3>Pr&eacute;requis</h3>
+    <ul>
+        <li>Python 3.8+</li>
+        <li>Modules standard uniquement (pas de d&eacute;pendances externes)</li>
+        <li>Docker (optionnel, pour les tests unitaires)</li>
+    </ul>
+
+    <h3>Structure des fichiers</h3>
+    <pre><code>project/
+&#x251C;&#x2500;&#x2500; audit/
+&#x2502;   &#x2514;&#x2500;&#x2500; audit.config.template.json  # Template comment&eacute; (auto-cr&eacute;ation)
+&#x251C;&#x2500;&#x2500; scripts/
+&#x2502;   &#x251C;&#x2500;&#x2500; run_audit.py              # Script principal
+&#x2502;   &#x2514;&#x2500;&#x2500; templates/
+&#x2502;       &#x251C;&#x2500;&#x2500; report.css            # Styles du rapport
+&#x2502;       &#x251C;&#x2500;&#x2500; report.js             # Navigation et interactions
+&#x2502;       &#x251C;&#x2500;&#x2500; charts.js             # Graphiques Chart.js
+&#x2502;       &#x251C;&#x2500;&#x2500; audit-params.html     # Template param&egrave;tres
+&#x2502;       &#x2514;&#x2500;&#x2500; fixtures-list.html    # Template liste fixtures
+&#x251C;&#x2500;&#x2500; audit.config.json             # Configuration projet (obligatoire)
+&#x251C;&#x2500;&#x2500; tests/audit/
+&#x2502;   &#x251C;&#x2500;&#x2500; fixtures/
+&#x2502;   &#x2502;   &#x251C;&#x2500;&#x2500; vulnerable/           # Fixtures avec failles
+&#x2502;   &#x2502;   &#x2514;&#x2500;&#x2500; clean/                # Fixtures saines
+&#x2502;   &#x2514;&#x2500;&#x2500; conftest.py               # Mapping des fixtures
+&#x2514;&#x2500;&#x2500; docs/audit-reports/           # Rapports g&eacute;n&eacute;r&eacute;s</code></pre>
+
+    <h3>Premier lancement</h3>
+    <pre><code># Premier lancement : cr&eacute;e audit.config.json depuis le template
+python scripts/run_audit.py
+# &rarr; Fichier cr&eacute;&eacute;, le script s'arr&ecirc;te pour vous permettre de configurer
+
+# Apr&egrave;s configuration : lancer l'audit
+python scripts/run_audit.py
+
+# Audit rapide (s&eacute;curit&eacute; uniquement)
+python scripts/run_audit.py --quick</code></pre>
+
+    <div class="alert alert-warning">
+        <strong>Configuration obligatoire :</strong> Si <code>audit.config.json</code> n'existe pas, le script le cr&eacute;e depuis <code>audit/audit.config.template.json</code> puis <strong>s'arr&ecirc;te</strong> (exit 0). Modifiez le fichier selon votre projet avant de relancer.
+    </div>
+</section>
+
+<!-- Section 3: Configuration -->
+<section class="section" id="s3">
+    <div class="section-header">
+        <div class="section-icon icon-purple">&#x2699;</div>
+        <h2>Configuration <span class="section-num">&mdash; Section 3</span></h2>
+    </div>
+
+    <p>La configuration est charg&eacute;e avec la priorit&eacute; suivante :</p>
+    <div class="flow">
+        <span class="flow-step"><strong>1.</strong> Options CLI</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-step"><strong>2.</strong> Variables ENV</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-step"><strong>3.</strong> audit.config.json</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-step"><strong>4.</strong> D&eacute;fauts</span>
+    </div>
+
+    <div class="alert alert-info">
+        <strong>Pourquoi cet ordre ?</strong> La priorit&eacute; va du plus sp&eacute;cifique au plus g&eacute;n&eacute;ral :
+        <ul style="margin-top: 8px; margin-bottom: 0;">
+            <li><strong>Options CLI</strong> &mdash; Pour un override ponctuel lors d'une ex&eacute;cution sp&eacute;cifique (ex: <code>--quick</code> pour un audit rapide)</li>
+            <li><strong>Variables ENV</strong> &mdash; Pour les environnements CI/CD o&ugrave; la config varie selon le pipeline, ou pour des pr&eacute;f&eacute;rences de session</li>
+            <li><strong>audit.config.json</strong> &mdash; Pour les param&egrave;tres persistants du projet, commit&eacute;s dans le repo et partag&eacute;s par l'&eacute;quipe</li>
+            <li><strong>D&eacute;fauts</strong> &mdash; Valeurs raisonnables pour que le script fonctionne sans configuration</li>
+        </ul>
+    </div>
+
+    <h3>Fichier audit.config.json</h3>
+    <pre><code>{
+  "project": {
+    "name": "MY-IA",
+    "version": "3.0",
+    "description": "Chatbot RAG avec FastAPI"
+  },
+  "paths": {
+    "include": ["app/", "UI-FRONT/js/", "UI-BACK/js/", "UI-SHARED/"],
+    "exclude": ["node_modules/", "vendor/", ".venv/", "__pycache__/"],
+    "defaults": {
+      "python": "app/service.py",
+      "javascript": "UI-FRONT/js/app.js",
+      "html": "UI-FRONT/index.html"
+    }
+  },
+  "reports": {
+    "output_dir": "docs/audit-reports",
+    "history_dir": "docs/audit-reports/audit-datas",
+    "max_history": 10
+  },
+  "categories": {
+    "security": { "enabled": true, "weight": 3 },
+    "architecture": { "enabled": true, "weight": 2 },
+    "ui": { "enabled": true, "weight": 1 },
+    "ux": { "enabled": true, "weight": 1 },
+    "maintenance": { "enabled": true, "weight": 1 }
+  },
+  "rules": {
+    "disabled": [],
+    "custom_patterns": {
+      "admin_routes": "app/features/admin",
+      "services": "app/features",
+      "templates": "UI-SHARED/templates"
+    }
+  },
+  "tests": {
+    "enabled": true,
+    "tests_dir": "tests/",
+    "command": "docker-compose exec app python -m pytest {tests_dir} -v --tb=short",
+    "fixtures_dir": "tests/audit/fixtures"
+  },
+  "thresholds": {
+    "max_high": 0,
+    "max_medium": 10,
+    "min_health": 80,
+    "health_good": 90,
+    "health_warning": 70
+  }
+}</code></pre>
+
+    <h3>Sections de configuration</h3>
+    <table>
+        <thead>
+            <tr><th>Section</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><code>project</code></td><td>Nom et version affich&eacute;s dans le rapport</td></tr>
+            <tr><td><code>paths.include</code></td><td>Dossiers &agrave; scanner</td></tr>
+            <tr><td><code>paths.exclude</code></td><td>Patterns &agrave; ignorer</td></tr>
+            <tr><td><code>categories</code></td><td>Activer/d&eacute;sactiver des cat&eacute;gories, d&eacute;finir les poids</td></tr>
+            <tr><td><code>rules.disabled</code></td><td>Liste des r&egrave;gles &agrave; ignorer</td></tr>
+            <tr><td><code>thresholds</code></td><td>Seuils pour le score de sant&eacute; et les alertes</td></tr>
+        </tbody>
+    </table>
+
+    <h3>Variables d'environnement</h3>
+    <table>
+        <thead>
+            <tr><th>Variable</th><th>Description</th><th>Exemple</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><code>AUDIT_CONFIG</code></td><td>Chemin vers la config</td><td><code>./custom-audit.json</code></td></tr>
+            <tr><td><code>AUDIT_OUTPUT</code></td><td>Dossier de sortie</td><td><code>./reports</code></td></tr>
+            <tr><td><code>AUDIT_VERBOSE</code></td><td>Mode verbose (0/1)</td><td><code>1</code></td></tr>
+        </tbody>
+    </table>
+
+    <h3>Poids des cat&eacute;gories</h3>
+    <p>Les poids affectent le calcul du <strong>score de sant&eacute;</strong> :</p>
+    <pre><code>Score = &Sigma;(succ&egrave;s &times; poids) / &Sigma;(total &times; poids) &times; 100
+
+Exemple avec poids par d&eacute;faut :
+- Security (poids 3) : 10 findings &rarr; impact &times;3
+- UI (poids 1) : 10 findings &rarr; impact &times;1</code></pre>
+</section>
+
+<!-- Section 4: Utilisation CLI -->
+<section class="section" id="s4">
+    <div class="section-header">
+        <div class="section-icon icon-teal">&#x1F4BB;</div>
+        <h2>Utilisation CLI <span class="section-num">&mdash; Section 4</span></h2>
+    </div>
+
+    <h3>Syntaxe</h3>
+    <pre><code>python scripts/run_audit.py [OPTIONS]</code></pre>
+
+    <div class="alert alert-warning">
+        <strong>&#x26A0; R&eacute;pertoire courant</strong> &mdash; Le script doit &ecirc;tre lanc&eacute; <strong>depuis la racine du projet</strong>.
+        Le fichier <code>audit.config.json</code> est recherch&eacute; dans le r&eacute;pertoire courant (<code>os.getcwd()</code>), pas dans le dossier du script.
+        <pre style="margin: 12px 0 0; background: #fef3c7; color: #92400e;"><code># &#x2714; Correct
+cd /path/to/my-ia
+python scripts/run_audit.py
+
+# &#x274C; Incorrect (config non trouv&eacute;e)
+cd /tmp
+python /path/to/my-ia/scripts/run_audit.py</code></pre>
+    </div>
+
+    <h3>Options disponibles</h3>
+    <table>
+        <thead>
+            <tr><th>Option</th><th>Court</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><code>--config=FILE</code></td><td><code>-c</code></td><td>Fichier de configuration JSON</td></tr>
+            <tr><td><code>--project=NAME</code></td><td><code>-p</code></td><td>Nom du projet (override config)</td></tr>
+            <tr><td><code>--output=DIR</code></td><td><code>-o</code></td><td>Dossier de sortie des rapports</td></tr>
+            <tr><td><code>--quick</code></td><td><code>-q</code></td><td>Mode rapide (s&eacute;curit&eacute; uniquement)</td></tr>
+            <tr><td><code>--fail-on-high</code></td><td></td><td>Exit code 1 si HIGH trouv&eacute;</td></tr>
+            <tr><td><code>--self-test</code></td><td></td><td>Valide les fixtures, exit 2 si invalides</td></tr>
+            <tr><td><code>--disable-rule=RULE</code></td><td></td><td>D&eacute;sactiver une r&egrave;gle (r&eacute;p&eacute;table)</td></tr>
+            <tr><td><code>--only-category=CAT</code></td><td></td><td>Une seule cat&eacute;gorie</td></tr>
+            <tr><td><code>--verbose</code></td><td><code>-v</code></td><td>Mode verbose</td></tr>
+        </tbody>
+    </table>
+
+    <h3>Exemples d'utilisation</h3>
+    <pre><code># Audit complet
+python scripts/run_audit.py
+
+# Audit rapide (s&eacute;curit&eacute; uniquement)
+python scripts/run_audit.py --quick
+
+# Configuration personnalis&eacute;e
+python scripts/run_audit.py --config=my-config.json
+
+# Changer le nom du projet
+python scripts/run_audit.py --project="Mon Application"
+
+# D&eacute;sactiver des r&egrave;gles sp&eacute;cifiques
+python scripts/run_audit.py --disable-rule="TODO/FIXME" --disable-rule="console.log"
+
+# Audit d'une seule cat&eacute;gorie
+python scripts/run_audit.py --only-category=security
+
+# CI/CD : &eacute;chouer si vuln&eacute;rabilit&eacute;s critiques
+python scripts/run_audit.py --fail-on-high
+
+# Valider les fixtures (CI/CD)
+python scripts/run_audit.py --self-test --quick</code></pre>
+
+    <h3>Codes de sortie</h3>
+    <table>
+        <thead>
+            <tr><th>Code</th><th>Signification</th><th>D&eacute;tail</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><code>0</code></td><td>Succ&egrave;s</td><td>Seuils respect&eacute;s, ou config cr&eacute;&eacute;e depuis template</td></tr>
+            <tr><td><code>1</code></td><td>Seuil d&eacute;pass&eacute;</td><td>Trop de HIGH (le rapport est quand m&ecirc;me g&eacute;n&eacute;r&eacute;)</td></tr>
+            <tr><td><code>2</code></td><td>Fixtures invalides</td><td>Avec <code>--self-test</code> : d&eacute;tection d&eacute;faillante</td></tr>
+        </tbody>
+    </table>
+
+    <div class="alert alert-info">
+        <strong>Comportement des seuils :</strong> Le rapport HTML est <strong>toujours g&eacute;n&eacute;r&eacute;</strong>, m&ecirc;me si les seuils sont d&eacute;pass&eacute;s. Le code de sortie permet au CI/CD de bloquer le pipeline apr&egrave;s g&eacute;n&eacute;ration du rapport.
+    </div>
+</section>
+
+<!-- Section 5: Catégories d'audit -->
+<section class="section" id="s5">
+    <div class="section-header">
+        <div class="section-icon icon-amber">&#x1F4CB;</div>
+        <h2>Cat&eacute;gories d'audit <span class="section-num">&mdash; Section 5</span></h2>
+    </div>
+
+    <h3>SECURITY (Poids: 3)</h3>
+    <p>D&eacute;tecte les failles de s&eacute;curit&eacute; critiques conform&eacute;ment &agrave; l'OWASP Top 10.</p>
+    <table>
+        <thead>
+            <tr><th>R&egrave;gle</th><th>S&eacute;v&eacute;rit&eacute;</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>SQL Injection</td><td><span class="badge badge-high">HIGH</span></td><td>f-strings ou concat&eacute;nation dans les requ&ecirc;tes SQL</td></tr>
+            <tr><td>XSS via innerHTML</td><td><span class="badge badge-high">HIGH</span></td><td>innerHTML sans &eacute;chappement</td></tr>
+            <tr><td>Secret hardcod&eacute;</td><td><span class="badge badge-high">HIGH</span></td><td>Mots de passe, cl&eacute;s API dans le code</td></tr>
+            <tr><td>Debug mode</td><td><span class="badge badge-high">HIGH</span></td><td>DEBUG=True en production</td></tr>
+            <tr><td>HTTP sans TLS</td><td><span class="badge badge-medium">MEDIUM</span></td><td>URLs http:// vers des services externes</td></tr>
+            <tr><td>Route admin non prot&eacute;g&eacute;e</td><td><span class="badge badge-high">HIGH</span></td><td>Routes admin sans v&eacute;rification de r&ocirc;le</td></tr>
+        </tbody>
+    </table>
+
+    <h3>ARCHITECTURE (Poids: 2)</h3>
+    <p>V&eacute;rifie la s&eacute;paration des responsabilit&eacute;s et les patterns.</p>
+    <table>
+        <thead>
+            <tr><th>R&egrave;gle</th><th>S&eacute;v&eacute;rit&eacute;</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>Logique DB dans router</td><td><span class="badge badge-medium">MEDIUM</span></td><td>db.add/commit/delete dans les routers</td></tr>
+            <tr><td>Query dans router</td><td><span class="badge badge-medium">MEDIUM</span></td><td>db.execute ou db.query dans les routers</td></tr>
+            <tr><td>N+1 Query</td><td><span class="badge badge-medium">MEDIUM</span></td><td>Requ&ecirc;tes dans des boucles</td></tr>
+        </tbody>
+    </table>
+
+    <h3>UI (Poids: 1)</h3>
+    <p>V&eacute;rifie les bonnes pratiques de rendu et performance.</p>
+    <table>
+        <thead>
+            <tr><th>R&egrave;gle</th><th>S&eacute;v&eacute;rit&eacute;</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>Style inline</td><td><span class="badge badge-low">LOW</span></td><td>.style.* au lieu de classes CSS</td></tr>
+            <tr><td>createElement</td><td><span class="badge badge-low">LOW</span></td><td>createElement au lieu de Templates</td></tr>
+            <tr><td>SVG inline</td><td><span class="badge badge-low">LOW</span></td><td>SVG dans le HTML au lieu d'Icons.*</td></tr>
+            <tr><td>DOM dans boucle</td><td><span class="badge badge-medium">MEDIUM</span></td><td>Manipulation DOM dans des boucles</td></tr>
+        </tbody>
+    </table>
+
+    <h3>UX (Poids: 1)</h3>
+    <p>Accessibilit&eacute;, internationalisation, exp&eacute;rience utilisateur.</p>
+    <table>
+        <thead>
+            <tr><th>R&egrave;gle</th><th>S&eacute;v&eacute;rit&eacute;</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>Toast non traduit</td><td><span class="badge badge-low">LOW</span></td><td>Toast sans t() pour l'i18n</td></tr>
+            <tr><td>Toast erreur &eacute;ph&eacute;m&egrave;re</td><td><span class="badge badge-low">LOW</span></td><td>Toast d'erreur sans persistent: true</td></tr>
+            <tr><td>console.log</td><td><span class="badge badge-low">LOW</span></td><td>Logs de debug oubli&eacute;s</td></tr>
+            <tr><td>Bouton sans aria-label</td><td><span class="badge badge-low">LOW</span></td><td>Boutons sans accessibilit&eacute;</td></tr>
+        </tbody>
+    </table>
+
+    <h3>MAINTENANCE (Poids: 1)</h3>
+    <p>Dette technique et qualit&eacute; du code.</p>
+    <table>
+        <thead>
+            <tr><th>R&egrave;gle</th><th>S&eacute;v&eacute;rit&eacute;</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>TODO/FIXME</td><td><span class="badge badge-low">LOW</span></td><td>Commentaires TODO, FIXME, HACK, XXX</td></tr>
+        </tbody>
+    </table>
+</section>
+
+<!-- Section 6: Règles de détection -->
+<section class="section" id="s6">
+    <div class="section-header">
+        <div class="section-icon icon-red">&#x1F50E;</div>
+        <h2>R&egrave;gles de d&eacute;tection <span class="section-num">&mdash; Section 6</span></h2>
+    </div>
+
+    <h3>Structure d'un finding</h3>
+    <p>Chaque probl&egrave;me d&eacute;tect&eacute; contient :</p>
+    <pre><code>{
+  "category": "SECURITY",
+  "rule": "SQL Injection",
+  "file": "app/features/users/service.py",
+  "line": 42,
+  "code": "query = f\"SELECT * FROM users WHERE id = {user_id}\"",
+  "severity": "HIGH",
+  "risk": "Permet l'ex&eacute;cution de code SQL arbitraire",
+  "solution": "Utiliser des param&egrave;tres li&eacute;s",
+  "benefit": "Immunit&eacute; contre les injections SQL",
+  "confidence": 95
+}</code></pre>
+
+    <h3>Niveaux de s&eacute;v&eacute;rit&eacute;</h3>
+    <table>
+        <thead>
+            <tr><th>Niveau</th><th>Couleur</th><th>Description</th><th>Action</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><span class="badge badge-high">HIGH</span></td><td>Rouge</td><td>Vuln&eacute;rabilit&eacute; critique</td><td>Corriger imm&eacute;diatement</td></tr>
+            <tr><td><span class="badge badge-medium">MEDIUM</span></td><td>Orange</td><td>Probl&egrave;me important</td><td>Planifier la correction</td></tr>
+            <tr><td><span class="badge badge-low">LOW</span></td><td>Bleu</td><td>Am&eacute;lioration sugg&eacute;r&eacute;e</td><td>Corriger si possible</td></tr>
+        </tbody>
+    </table>
+
+    <h3>Score de confiance</h3>
+    <p>Chaque d&eacute;tection a un score de confiance (0-100) :</p>
+    <ul>
+        <li><strong>90-100</strong> : D&eacute;tection certaine</li>
+        <li><strong>70-89</strong> : Probable, &agrave; v&eacute;rifier</li>
+        <li><strong>30-69</strong> : Possiblement un faux positif</li>
+    </ul>
+
+    <h3>D&eacute;sactiver une r&egrave;gle</h3>
+    <pre><code># Via CLI
+python scripts/run_audit.py --disable-rule="TODO/FIXME"
+
+# Via config
+{
+  "rules": {
+    "disabled": ["TODO/FIXME", "console.log"]
+  }
+}</code></pre>
+</section>
+
+<!-- Section 7: Fixtures & Tests -->
+<section class="section" id="s7">
+    <div class="section-header">
+        <div class="section-icon icon-teal">&#x1F9EA;</div>
+        <h2>Fixtures &amp; Tests <span class="section-num">&mdash; Section 7</span></h2>
+    </div>
+
+    <p>Les fixtures permettent de valider que les r&egrave;gles de d&eacute;tection fonctionnent correctement.</p>
+
+    <h3>Structure des fixtures</h3>
+    <pre><code>tests/audit/fixtures/
+&#x251C;&#x2500;&#x2500; vulnerable/          # 23 fichiers avec failles (doivent &ecirc;tre d&eacute;tect&eacute;s)
+&#x2502;   &#x251C;&#x2500;&#x2500; sql_injection_fstring.py
+&#x2502;   &#x251C;&#x2500;&#x2500; xss_innerhtml.js
+&#x2502;   &#x2514;&#x2500;&#x2500; ...
+&#x2514;&#x2500;&#x2500; clean/               # 19 fichiers sains (ne doivent PAS &ecirc;tre d&eacute;tect&eacute;s)
+    &#x251C;&#x2500;&#x2500; sql_parameterized.py
+    &#x251C;&#x2500;&#x2500; xss_with_templates.js
+    &#x2514;&#x2500;&#x2500; ...</code></pre>
+
+    <h3>Mapping des fixtures</h3>
+    <p>D&eacute;fini dans <code>tests/audit/conftest.py</code> :</p>
+    <pre><code>VULNERABLE_FIXTURES = {
+    "sql_injection_fstring": ("sql_injection_fstring.py", "app/service.py", "SQL Injection"),
+    "xss_innerhtml": ("xss_innerhtml.js", "UI-FRONT/js/app.js", "XSS"),
+    # ...
+}
+
+CLEAN_FIXTURES = {
+    "sql_parameterized": ("sql_parameterized.py", "app/service.py", "SQL Injection"),
+    # ...
+}</code></pre>
+
+    <h3>Validation des fixtures</h3>
+    <pre><code># Valider que toutes les fixtures sont correctement d&eacute;tect&eacute;es
+python scripts/run_audit.py --self-test --quick
+
+# R&eacute;sultat attendu
+   &#x2705; Fixtures: 100.0% (23/23 vuln&eacute;rables d&eacute;tect&eacute;s, 19/19 clean valid&eacute;s)</code></pre>
+
+    <h3>M&eacute;triques de validation</h3>
+    <table>
+        <thead>
+            <tr><th>M&eacute;trique</th><th>Description</th><th>Objectif</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>True Positives</td><td>Vuln&eacute;rables correctement d&eacute;tect&eacute;s</td><td>23/23</td></tr>
+            <tr><td>True Negatives</td><td>Clean correctement ignor&eacute;s</td><td>19/19</td></tr>
+            <tr><td>False Negatives</td><td>Vuln&eacute;rables non d&eacute;tect&eacute;s</td><td>0</td></tr>
+            <tr><td>False Positives</td><td>Clean d&eacute;tect&eacute;s &agrave; tort</td><td>0</td></tr>
+        </tbody>
+    </table>
+
+    <div class="alert alert-warning">
+        <strong>Important :</strong> Si des fixtures &eacute;chouent, cela indique un probl&egrave;me dans les r&egrave;gles de d&eacute;tection, pas dans le code audit&eacute;.
+    </div>
+</section>
+
+<!-- Section 8: Rapports générés -->
+<section class="section" id="s8">
+    <div class="section-header">
+        <div class="section-icon icon-blue">&#x1F4CA;</div>
+        <h2>Rapports g&eacute;n&eacute;r&eacute;s <span class="section-num">&mdash; Section 8</span></h2>
+    </div>
+
+    <h3>Fichiers de sortie</h3>
+    <pre><code>docs/audit-reports/
+&#x251C;&#x2500;&#x2500; AUDIT-REPORT-2026-02-20-14-00.html    # Rapport HTML interactif
+&#x2514;&#x2500;&#x2500; audit-datas/
+    &#x2514;&#x2500;&#x2500; AUDIT-DATA-2026-02-20-14-00.json     # Donn&eacute;es brutes (baseline)</code></pre>
+
+    <h3>Contenu du rapport HTML</h3>
+    <div class="cards">
+        <div class="card">
+            <div class="card-title">&#x1F4CB; Param&egrave;tres</div>
+            <div class="card-text">Chemins analys&eacute;s, options, cat&eacute;gories actives</div>
+        </div>
+        <div class="card">
+            <div class="card-title">&#x1F4CA; Graphiques</div>
+            <div class="card-text">Doughnuts (s&eacute;v&eacute;rit&eacute;, tests), barres (cat&eacute;gories), historique</div>
+        </div>
+        <div class="card">
+            <div class="card-title">&#x1F4AF; Score de sant&eacute;</div>
+            <div class="card-text">Barre de progression avec code couleur</div>
+        </div>
+        <div class="card">
+            <div class="card-title">&#x1F4C1; Top fichiers</div>
+            <div class="card-text">Heatmap des fichiers les plus probl&eacute;matiques</div>
+        </div>
+        <div class="card">
+            <div class="card-title">&#x1F9EA; Tests &amp; Fixtures</div>
+            <div class="card-text">R&eacute;sultats des tests unitaires et validation fixtures</div>
+        </div>
+        <div class="card">
+            <div class="card-title">&#x1F50D; Findings</div>
+            <div class="card-text">D&eacute;tail des probl&egrave;mes group&eacute;s par s&eacute;v&eacute;rit&eacute;</div>
+        </div>
+    </div>
+
+    <h3>Navigation du rapport</h3>
+    <ul>
+        <li><strong>Sidebar</strong> : Table des mati&egrave;res cliquable</li>
+        <li><strong>Raccourcis clavier</strong> : <kbd>j</kbd>/<kbd>k</kbd> pour naviguer, <kbd>Ctrl+Home</kbd> pour le d&eacute;but</li>
+        <li><strong>Boutons</strong> : Pr&eacute;c&eacute;dent/Suivant, Retour en haut</li>
+        <li><strong>Mode impression</strong> : Version imprimable du rapport</li>
+    </ul>
+
+    <h3>Comparaison historique</h3>
+    <p>Le rapport compare automatiquement avec la derni&egrave;re baseline :</p>
+    <pre><code>&#x1F4CA; Comparaison avec baseline du 2026-02-19-18-30...
+  &#x2795; Nouveaux probl&egrave;mes : 2
+  &#x2705; Probl&egrave;mes r&eacute;solus : 5
+  &#x23F8;  Probl&egrave;mes persistants : 43</code></pre>
+</section>
+
+<!-- Section 9: Intégration CI/CD -->
+<section class="section" id="s9">
+    <div class="section-header">
+        <div class="section-icon icon-green">&#x1F504;</div>
+        <h2>Int&eacute;gration CI/CD <span class="section-num">&mdash; Section 9</span></h2>
+    </div>
+
+    <h3>GitHub Actions</h3>
+    <pre><code>name: Audit de s&eacute;curit&eacute;
+
+on: [push, pull_request]
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Run Audit
+        run: python scripts/run_audit.py --fail-on-high --quick
+
+      - name: Upload Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: audit-report
+          path: docs/audit-reports/*.html</code></pre>
+
+    <h3>GitLab CI</h3>
+    <pre><code>audit:
+  stage: test
+  script:
+    - python scripts/run_audit.py --fail-on-high
+  artifacts:
+    paths:
+      - docs/audit-reports/
+    expire_in: 1 week
+  rules:
+    - if: $CI_MERGE_REQUEST_ID</code></pre>
+
+    <h3>Pre-commit hook</h3>
+    <pre><code>#!/bin/bash
+# .git/hooks/pre-commit
+
+python scripts/run_audit.py --quick --fail-on-high
+if [ $? -ne 0 ]; then
+    echo "&#x274C; Audit &eacute;chou&eacute; - corrigez les vuln&eacute;rabilit&eacute;s HIGH"
+    exit 1
+fi</code></pre>
+
+    <h3>Seuils recommand&eacute;s</h3>
+    <table>
+        <thead>
+            <tr><th>Environnement</th><th>max_high</th><th>max_medium</th><th>Action</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>D&eacute;veloppement</td><td>5</td><td>50</td><td>Avertissement</td></tr>
+            <tr><td>Staging</td><td>0</td><td>20</td><td>Bloquer le merge</td></tr>
+            <tr><td>Production</td><td>0</td><td>0</td><td>Bloquer le d&eacute;ploiement</td></tr>
+        </tbody>
+    </table>
+</section>
+
+<!-- Section 10: Référence -->
+<section class="section" id="s10">
+    <div class="section-header">
+        <div class="section-icon icon-purple">&#x1F4D6;</div>
+        <h2>R&eacute;f&eacute;rence <span class="section-num">&mdash; Section 10</span></h2>
+    </div>
+
+    <h3>Classes principales</h3>
+    <table>
+        <thead>
+            <tr><th>Classe</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><code>AuditRunner</code></td><td>Classe principale, orchestre l'audit</td></tr>
+            <tr><td><code>Finding</code></td><td>Repr&eacute;sente un probl&egrave;me d&eacute;tect&eacute;</td></tr>
+            <tr><td><code>Category</code></td><td>Cat&eacute;gorie d'audit avec findings et succ&egrave;s</td></tr>
+            <tr><td><code>TestResults</code></td><td>R&eacute;sultats des tests unitaires</td></tr>
+            <tr><td><code>FixtureValidation</code></td><td>R&eacute;sultats de validation des fixtures</td></tr>
+            <tr><td><code>ComparisonResult</code></td><td>Comparaison avec baseline</td></tr>
+        </tbody>
+    </table>
+
+    <h3>M&eacute;thodes d'audit</h3>
+    <table>
+        <thead>
+            <tr><th>M&eacute;thode</th><th>Cat&eacute;gorie</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><code>_audit_security()</code></td><td>SECURITY</td><td>SQL injection, XSS, secrets, etc.</td></tr>
+            <tr><td><code>_audit_architecture()</code></td><td>ARCH</td><td>Logique DB, N+1 queries</td></tr>
+            <tr><td><code>_audit_ui()</code></td><td>UI</td><td>Styles inline, DOM, SVG</td></tr>
+            <tr><td><code>_audit_ux()</code></td><td>UX</td><td>Toasts, console.log, accessibilit&eacute;</td></tr>
+            <tr><td><code>_audit_maintenance()</code></td><td>MAINTENANCE</td><td>TODO/FIXME</td></tr>
+        </tbody>
+    </table>
+
+    <h3>Templates</h3>
+    <table>
+        <thead>
+            <tr><th>Fichier</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><code>report.css</code></td><td>Styles CSS du rapport HTML</td></tr>
+            <tr><td><code>report.js</code></td><td>Navigation, accord&eacute;ons, scroll spy</td></tr>
+            <tr><td><code>charts.js</code></td><td>Configuration des graphiques Chart.js</td></tr>
+            <tr><td><code>audit-params.html</code></td><td>Section param&egrave;tres de l'audit</td></tr>
+            <tr><td><code>fixtures-list.html</code></td><td>Tableau d&eacute;taill&eacute; des fixtures</td></tr>
+        </tbody>
+    </table>
+
+    <h3>D&eacute;pannage</h3>
+    <table>
+        <thead>
+            <tr><th>Probl&egrave;me</th><th>Cause</th><th>Solution</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Erreur de syntaxe JSON</td>
+                <td>Fichier <code>audit.config.json</code> mal form&eacute;</td>
+                <td>V&eacute;rifier les guillemets, virgules. Le script utilise les d&eacute;fauts si erreur.</td>
+            </tr>
+            <tr>
+                <td>Rapport dans mauvais dossier</td>
+                <td>Config JSON non charg&eacute;e (erreur syntaxe)</td>
+                <td>Corriger <code>audit.config.json</code>, le d&eacute;faut est <code>./audit-reports/</code></td>
+            </tr>
+            <tr>
+                <td>Nombre de HIGH incoh&eacute;rent</td>
+                <td>Chemins <code>paths.include</code> diff&eacute;rents</td>
+                <td>V&eacute;rifier que la config est bien charg&eacute;e (pas d'erreur au d&eacute;but)</td>
+            </tr>
+            <tr>
+                <td>Template introuvable</td>
+                <td>Fichier <code>audit/audit.config.template.json</code> manquant</td>
+                <td>Cr&eacute;er manuellement <code>audit.config.json</code></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>Licence et maintenance</h3>
+    <p>Script d&eacute;velopp&eacute; pour le projet MY-IA. Modifiable pour tout projet Python/JavaScript.</p>
+</section>
+
+</div><!-- .page -->
+
+<!-- Back to top -->
+<button class="back-top" id="backTop" title="Retour en haut">&#x2191;</button>
+
+<script>
+// Back to top
+const backTop = document.getElementById('backTop');
+window.addEventListener('scroll', () => {
+    backTop.classList.toggle('visible', window.scrollY > 400);
+});
+backTop.addEventListener('click', () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+// Smooth scroll for nav links
+document.querySelectorAll('.nav a').forEach(link => {
+    link.addEventListener('click', e => {
+        e.preventDefault();
+        const target = document.querySelector(link.getAttribute('href'));
+        if (target) target.scrollIntoView({ behavior: 'smooth' });
+    });
+});
+</script>
+</body>
+</html>

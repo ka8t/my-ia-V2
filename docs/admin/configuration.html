@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MY-IA &mdash; Configuration</title>
+  <link rel="stylesheet" href="../assets/doc-style.css">
+</head>
+<body>
+
+<!-- ==================== HEADER ==================== -->
+<div class="header">
+  <div class="page">
+    <div class="header-icon">&#x2699;&#xFE0F;</div>
+    <div>
+      <h1>Guide de configuration</h1>
+      <div class="subtitle">
+        Param&eacute;trez MY-IA selon les besoins de votre organisation : personnalisation, s&eacute;curit&eacute;, mod&egrave;le IA et modes de conversation.
+      </div>
+      <div class="meta">
+        <span>&#x23F1; 15 min</span>
+        <span>Administrateur</span>
+        <span>6 sections</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+
+<!-- Navigation -->
+<div class="callout callout-info">
+  <span class="callout-icon">&#x1F3E0;</span>
+  <span><a href="../index.html">&larr; Retour &agrave; l'accueil</a> &nbsp;|&nbsp; <a href="installation.html">Installation</a> &nbsp;|&nbsp; <a href="gestion.html">Gestion</a></span>
+</div>
+
+<!-- ==================== TABLE DES MATIERES ==================== -->
+<div class="toc">
+  <h2>Sommaire</h2>
+  <div class="toc-grid">
+    <a href="#acces"><span class="toc-num">1</span> Acc&egrave;s admin</a>
+    <a href="#general"><span class="toc-num">2</span> Param&egrave;tres g&eacute;n&eacute;raux</a>
+    <a href="#ia"><span class="toc-num">3</span> Mod&egrave;le IA</a>
+    <a href="#securite"><span class="toc-num">4</span> S&eacute;curit&eacute;</a>
+    <a href="#modes"><span class="toc-num">5</span> Modes de conversation</a>
+    <a href="#collections"><span class="toc-num">6</span> Collections</a>
+  </div>
+</div>
+
+<!-- ==================== ACCES ADMIN ==================== -->
+<div class="section" id="acces">
+  <div class="section-header">
+    <div class="section-icon icon-blue">&#x1F512;</div>
+    <div><h2>Acc&egrave;s &agrave; l'administration <span class="section-num">&mdash; Section 1</span></h2></div>
+  </div>
+
+  <h3><span class="h3-dot dot-blue"></span> URL d'acc&egrave;s</h3>
+
+  <p>L'interface d'administration est accessible &agrave; l'adresse :</p>
+
+  <pre><code>https://votre-serveur:8081</code></pre>
+
+  <div class="callout callout-warning">
+    <span class="callout-icon">&#x26A0;&#xFE0F;</span>
+    <span><strong>S&eacute;curit&eacute; :</strong> L'interface admin doit &ecirc;tre acc&eacute;d&eacute;e uniquement par les administrateurs. En production, limitez l'acc&egrave;s par IP ou VPN si possible.</span>
+  </div>
+
+  <h3><span class="h3-dot dot-blue"></span> Tableau de bord</h3>
+
+  <p>Apr&egrave;s connexion, le tableau de bord affiche un aper&ccedil;u complet :</p>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-title">&#x1F4CA; Statistiques</div>
+      <div class="card-text">
+        <strong>Utilisateurs actifs</strong> &mdash; Aujourd'hui, cette semaine<br>
+        <strong>Messages</strong> &mdash; Nombre de questions pos&eacute;es<br>
+        <strong>Documents</strong> &mdash; Total et r&eacute;cemment ajout&eacute;s
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F49A; &Eacute;tat des services</div>
+      <div class="card-text">
+        <strong>API</strong> &mdash; Temps de r&eacute;ponse moyen<br>
+        <strong>Base de donn&eacute;es</strong> &mdash; Connexions actives<br>
+        <strong>Mod&egrave;le IA</strong> &mdash; Statut et charge
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F4C8; Activit&eacute;</div>
+      <div class="card-text">
+        <strong>Graphique</strong> &mdash; Messages par jour<br>
+        <strong>Top questions</strong> &mdash; Sujets les plus demand&eacute;s<br>
+        <strong>Top utilisateurs</strong> &mdash; Les plus actifs
+      </div>
+    </div>
+  </div>
+
+  <h3><span class="h3-dot dot-blue"></span> Navigation</h3>
+
+  <table>
+    <thead><tr><th>Menu</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td>&#x1F3E0; Tableau de bord</td><td>Vue d'ensemble, statistiques, &eacute;tat du syst&egrave;me</td></tr>
+      <tr><td>&#x1F465; Utilisateurs</td><td>Gestion des comptes utilisateurs</td></tr>
+      <tr><td>&#x1F4C4; Documents</td><td>Collections, documents syst&egrave;me</td></tr>
+      <tr><td>&#x1F310; Sources</td><td>Sources externes (sites web, APIs)</td></tr>
+      <tr><td>&#x2699;&#xFE0F; Configuration</td><td>Param&egrave;tres syst&egrave;me</td></tr>
+      <tr><td>&#x1F4CA; Analytics</td><td>Statistiques d&eacute;taill&eacute;es</td></tr>
+      <tr><td>&#x1F4DD; Audit</td><td>Logs d'activit&eacute;</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ==================== PARAMETRES GENERAUX ==================== -->
+<div class="section" id="general">
+  <div class="section-header">
+    <div class="section-icon icon-teal">&#x1F527;</div>
+    <div><h2>Param&egrave;tres g&eacute;n&eacute;raux <span class="section-num">&mdash; Section 2</span></h2></div>
+  </div>
+
+  <p>Acc&eacute;dez aux param&egrave;tres via <strong>Configuration &gt; G&eacute;n&eacute;ral</strong>.</p>
+
+  <h3><span class="h3-dot dot-teal"></span> Identit&eacute; de l'application</h3>
+
+  <table>
+    <thead><tr><th>Param&egrave;tre</th><th>Description</th><th>Recommandation</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Nom de l'application</td>
+        <td>Affich&eacute; dans l'interface et les emails</td>
+        <td>Nom de votre entreprise + "Assistant"</td>
+      </tr>
+      <tr>
+        <td>Logo</td>
+        <td>Image affich&eacute;e en haut de l'interface</td>
+        <td>PNG ou SVG, 200x50px maximum</td>
+      </tr>
+      <tr>
+        <td>Favicon</td>
+        <td>Ic&ocirc;ne du navigateur</td>
+        <td>ICO ou PNG, 32x32px</td>
+      </tr>
+      <tr>
+        <td>Description</td>
+        <td>Texte d'accueil sur la page de connexion</td>
+        <td>Court, informatif</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-teal"></span> Langue et localisation</h3>
+
+  <table>
+    <thead><tr><th>Param&egrave;tre</th><th>Options</th><th>Impact</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Langue par d&eacute;faut</td>
+        <td>Fran&ccedil;ais, English</td>
+        <td>Langue de l'interface pour les nouveaux utilisateurs</td>
+      </tr>
+      <tr>
+        <td>Th&egrave;me par d&eacute;faut</td>
+        <td>Clair, Sombre, Auto</td>
+        <td>Apparence pour les nouveaux utilisateurs</td>
+      </tr>
+      <tr>
+        <td>Format de date</td>
+        <td>JJ/MM/AAAA, MM/DD/YYYY</td>
+        <td>Affichage des dates partout</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-teal"></span> Limites et quotas</h3>
+
+  <table>
+    <thead><tr><th>Param&egrave;tre</th><th>Par d&eacute;faut</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Taille max fichier</td>
+        <td>50 Mo</td>
+        <td>Limite par fichier upload&eacute;</td>
+      </tr>
+      <tr>
+        <td>Quota utilisateur</td>
+        <td>500 Mo</td>
+        <td>Espace total par utilisateur</td>
+      </tr>
+      <tr>
+        <td>Historique conversations</td>
+        <td>90 jours</td>
+        <td>Dur&eacute;e de r&eacute;tention des conversations</td>
+      </tr>
+      <tr>
+        <td>Messages par minute</td>
+        <td>10</td>
+        <td>Rate limiting par utilisateur</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-info">
+    <span class="callout-icon">&#x1F4A1;</span>
+    <span><strong>Astuce :</strong> Commencez avec des limites raisonnables et ajustez selon l'usage r&eacute;el. Surveillez les analytics pour identifier les besoins.</span>
+  </div>
+</div>
+
+<!-- ==================== MODELE IA ==================== -->
+<div class="section" id="ia">
+  <div class="section-header">
+    <div class="section-icon icon-green">&#x1F9E0;</div>
+    <div><h2>Mod&egrave;le IA <span class="section-num">&mdash; Section 3</span></h2></div>
+  </div>
+
+  <p>Acc&eacute;dez aux param&egrave;tres via <strong>Configuration &gt; Mod&egrave;le IA</strong>.</p>
+
+  <h3><span class="h3-dot dot-green"></span> Fournisseur LLM</h3>
+
+  <div class="two-cols">
+    <div>
+      <h4>&#x1F4E6; Ollama</h4>
+      <ul class="feature-list">
+        <li><strong>Recommand&eacute;</strong> pour la plupart des cas</li>
+        <li>Installation simple</li>
+        <li>Nombreux mod&egrave;les disponibles</li>
+        <li>Gestion GPU automatique</li>
+      </ul>
+    </div>
+    <div>
+      <h4>&#x2699;&#xFE0F; llama.cpp</h4>
+      <ul class="feature-list">
+        <li><strong>Performant</strong> sur CPU</li>
+        <li>Contr&ocirc;le fin des param&egrave;tres</li>
+        <li>Format GGUF requis</li>
+        <li>Configuration manuelle</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3><span class="h3-dot dot-green"></span> Mod&egrave;les disponibles</h3>
+
+  <table>
+    <thead><tr><th>Mod&egrave;le</th><th>Taille</th><th>VRAM requise</th><th>Usage recommand&eacute;</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="badge badge-success">Mistral 7B</span></td>
+        <td>4 Go</td>
+        <td>6 Go</td>
+        <td>G&eacute;n&eacute;raliste, rapide, bon fran&ccedil;ais</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-primary">Llama3 8B</span></td>
+        <td>5 Go</td>
+        <td>8 Go</td>
+        <td>Tr&egrave;s performant, multilingue</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-purple">Qwen2 7B</span></td>
+        <td>4 Go</td>
+        <td>6 Go</td>
+        <td>Excellent sur les donn&eacute;es structur&eacute;es</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-accent">Llama3 70B</span></td>
+        <td>40 Go</td>
+        <td>48 Go</td>
+        <td>Qualit&eacute; maximale (GPU puissant requis)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-green"></span> Param&egrave;tres de g&eacute;n&eacute;ration</h3>
+
+  <table>
+    <thead><tr><th>Param&egrave;tre</th><th>Plage</th><th>Effet</th><th>Recommand&eacute;</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Temp&eacute;rature</td>
+        <td>0.0 - 1.0</td>
+        <td>Cr&eacute;ativit&eacute; des r&eacute;ponses</td>
+        <td>0.3 (factuel) &agrave; 0.7 (cr&eacute;atif)</td>
+      </tr>
+      <tr>
+        <td>Top-K (RAG)</td>
+        <td>1 - 20</td>
+        <td>Nombre de passages consult&eacute;s</td>
+        <td>5 - 10</td>
+      </tr>
+      <tr>
+        <td>Max tokens</td>
+        <td>256 - 4096</td>
+        <td>Longueur max des r&eacute;ponses</td>
+        <td>1024 (d&eacute;taill&eacute;), 512 (concis)</td>
+      </tr>
+      <tr>
+        <td>Top-P</td>
+        <td>0.0 - 1.0</td>
+        <td>Diversit&eacute; des mots choisis</td>
+        <td>0.9</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-green"></span> Mod&egrave;le d'embeddings</h3>
+
+  <p>Le mod&egrave;le d'embeddings transforme le texte en vecteurs pour la recherche :</p>
+
+  <ul class="feature-list">
+    <li><strong>nomic-embed-text</strong> &mdash; Recommand&eacute;, bon compromis qualit&eacute;/vitesse</li>
+    <li><strong>mxbai-embed-large</strong> &mdash; Meilleure qualit&eacute;, plus lent</li>
+    <li><strong>all-minilm</strong> &mdash; L&eacute;ger, rapide, pour CPU</li>
+  </ul>
+
+  <div class="callout callout-warning">
+    <span class="callout-icon">&#x26A0;&#xFE0F;</span>
+    <span><strong>R&eacute;indexation requise :</strong> Changer de mod&egrave;le d'embeddings n&eacute;cessite de r&eacute;indexer tous les documents. Cette op&eacute;ration peut prendre du temps.</span>
+  </div>
+</div>
+
+<!-- ==================== SECURITE ==================== -->
+<div class="section" id="securite">
+  <div class="section-header">
+    <div class="section-icon icon-purple">&#x1F6E1;&#xFE0F;</div>
+    <div><h2>S&eacute;curit&eacute; <span class="section-num">&mdash; Section 4</span></h2></div>
+  </div>
+
+  <p>Acc&eacute;dez aux param&egrave;tres via <strong>Configuration &gt; S&eacute;curit&eacute;</strong>.</p>
+
+  <h3><span class="h3-dot dot-purple"></span> Politique de mot de passe</h3>
+
+  <table>
+    <thead><tr><th>R&egrave;gle</th><th>Options</th><th>Recommandation production</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Longueur minimale</td>
+        <td>6 - 32 caract&egrave;res</td>
+        <td>12 caract&egrave;res minimum</td>
+      </tr>
+      <tr>
+        <td>Majuscules requises</td>
+        <td>Oui / Non</td>
+        <td>Oui</td>
+      </tr>
+      <tr>
+        <td>Chiffres requis</td>
+        <td>Oui / Non</td>
+        <td>Oui</td>
+      </tr>
+      <tr>
+        <td>Caract&egrave;res sp&eacute;ciaux</td>
+        <td>Oui / Non</td>
+        <td>Oui</td>
+      </tr>
+      <tr>
+        <td>Expiration</td>
+        <td>0 - 365 jours</td>
+        <td>90 jours (0 = jamais)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-purple"></span> Inscription des utilisateurs</h3>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-title">&#x1F513; Inscription ouverte</div>
+      <div class="card-text">N'importe qui peut cr&eacute;er un compte. Utile pour les tests ou acc&egrave;s public limit&eacute;.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F4E7; Sur invitation</div>
+      <div class="card-text">Seuls les utilisateurs invit&eacute;s par email peuvent s'inscrire. Recommand&eacute; en entreprise.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F3E2; Domaines autoris&eacute;s</div>
+      <div class="card-text">Seuls les emails @entreprise.com peuvent s'inscrire. S&eacute;curit&eacute; renforc&eacute;e.</div>
+    </div>
+  </div>
+
+  <h3><span class="h3-dot dot-purple"></span> Sessions et authentification</h3>
+
+  <table>
+    <thead><tr><th>Param&egrave;tre</th><th>Description</th><th>Recommand&eacute;</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Dur&eacute;e de session</td>
+        <td>Temps avant d&eacute;connexion automatique</td>
+        <td>8 heures (journ&eacute;e de travail)</td>
+      </tr>
+      <tr>
+        <td>Sessions multiples</td>
+        <td>Autoriser plusieurs connexions simultan&eacute;es</td>
+        <td>Oui (pour multi-appareils)</td>
+      </tr>
+      <tr>
+        <td>Blocage apr&egrave;s &eacute;checs</td>
+        <td>Nombre de tentatives avant blocage</td>
+        <td>5 tentatives, blocage 15 min</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-danger">
+    <span class="callout-icon">&#x1F6A8;</span>
+    <span><strong>En production :</strong> Activez toujours HTTPS, limitez les domaines autoris&eacute;s, et utilisez des mots de passe forts. Ne laissez jamais l'inscription ouverte sans validation.</span>
+  </div>
+</div>
+
+<!-- ==================== MODES DE CONVERSATION ==================== -->
+<div class="section" id="modes">
+  <div class="section-header">
+    <div class="section-icon icon-amber">&#x1F3AD;</div>
+    <div><h2>Modes de conversation <span class="section-num">&mdash; Section 5</span></h2></div>
+  </div>
+
+  <p>Les modes permettent de personnaliser le comportement de l'IA selon le contexte d'utilisation.</p>
+
+  <h3><span class="h3-dot dot-amber"></span> Cr&eacute;er un mode</h3>
+
+  <div class="vflow">
+    <div class="vflow-step active">
+      <div class="step-title">1. Acc&eacute;der aux modes</div>
+      <div class="step-desc">Configuration &gt; Modes &gt; + Nouveau mode</div>
+    </div>
+    <div class="vflow-step active">
+      <div class="step-title">2. D&eacute;finir l'identit&eacute;</div>
+      <div class="step-desc">Nom, description, ic&ocirc;ne</div>
+    </div>
+    <div class="vflow-step active">
+      <div class="step-title">3. Configurer le prompt syst&egrave;me</div>
+      <div class="step-desc">Instructions pour l'IA</div>
+    </div>
+    <div class="vflow-step active">
+      <div class="step-title">4. Associer les collections</div>
+      <div class="step-desc">Quels documents consulter</div>
+    </div>
+    <div class="vflow-step">
+      <div class="step-title">5. Activer le mode</div>
+      <div class="step-desc">Le rendre disponible aux utilisateurs</div>
+    </div>
+  </div>
+
+  <h3><span class="h3-dot dot-amber"></span> Exemples de prompts syst&egrave;me</h3>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-title">&#x1F4BC; Mode RH</div>
+      <div class="card-text">
+        "Tu es un assistant RH bienveillant. R&eacute;ponds de mani&egrave;re professionnelle et empathique. Cite toujours les r&eacute;f&eacute;rences l&eacute;gales (Code du travail) quand c'est pertinent. Si tu ne connais pas la r&eacute;ponse, oriente vers le service RH."
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F4CA; Mode Commercial</div>
+      <div class="card-text">
+        "Tu aides les commerciaux &agrave; trouver des informations produits. Sois concis et factuel. Donne les prix, disponibilit&eacute;s et caract&eacute;ristiques techniques. Sugg&egrave;re des produits compl&eacute;mentaires quand c'est pertinent."
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x2699;&#xFE0F; Mode Technique</div>
+      <div class="card-text">
+        "Tu es un expert technique. R&eacute;ponds avec pr&eacute;cision et d&eacute;tail. Utilise la terminologie technique appropri&eacute;e. Fournis des exemples de code ou de commandes si n&eacute;cessaire. Cite les versions et compatibilit&eacute;s."
+      </div>
+    </div>
+  </div>
+
+  <h3><span class="h3-dot dot-amber"></span> Param&egrave;tres du mode</h3>
+
+  <table>
+    <thead><tr><th>Param&egrave;tre</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td>Collections associ&eacute;es</td><td>Documents accessibles dans ce mode</td></tr>
+      <tr><td>Temp&eacute;rature</td><td>Peut surcharger la valeur globale</td></tr>
+      <tr><td>Visibilit&eacute;</td><td>Tous les utilisateurs ou certains r&ocirc;les</td></tr>
+      <tr><td>Mode par d&eacute;faut</td><td>S&eacute;lectionn&eacute; automatiquement pour les nouveaux utilisateurs</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ==================== COLLECTIONS ==================== -->
+<div class="section" id="collections">
+  <div class="section-header">
+    <div class="section-icon icon-red">&#x1F4DA;</div>
+    <div><h2>Collections de documents <span class="section-num">&mdash; Section 6</span></h2></div>
+  </div>
+
+  <p>Les collections organisent vos documents par th&egrave;me, d&eacute;partement ou usage.</p>
+
+  <h3><span class="h3-dot dot-red"></span> Cr&eacute;er une collection</h3>
+
+  <div class="vflow">
+    <div class="vflow-step active">
+      <div class="step-title">1. Acc&eacute;der aux collections</div>
+      <div class="step-desc">Documents &gt; Collections &gt; + Nouvelle collection</div>
+    </div>
+    <div class="vflow-step active">
+      <div class="step-title">2. D&eacute;finir l'identit&eacute;</div>
+      <div class="step-desc">Nom, description</div>
+    </div>
+    <div class="vflow-step active">
+      <div class="step-title">3. Choisir la visibilit&eacute;</div>
+      <div class="step-desc">Publique (tous) ou Priv&eacute;e (s&eacute;lection)</div>
+    </div>
+    <div class="vflow-step">
+      <div class="step-title">4. Ajouter des documents</div>
+      <div class="step-desc">Upload ou sources externes</div>
+    </div>
+  </div>
+
+  <h3><span class="h3-dot dot-red"></span> Types de collections</h3>
+
+  <div class="two-cols">
+    <div>
+      <h4>&#x1F310; Publique</h4>
+      <ul class="feature-list">
+        <li>Accessible &agrave; <strong>tous</strong> les utilisateurs</li>
+        <li>Documents officiels de l'entreprise</li>
+        <li>Proc&eacute;dures, r&egrave;glements, catalogues</li>
+      </ul>
+    </div>
+    <div>
+      <h4>&#x1F512; Priv&eacute;e</h4>
+      <ul class="feature-list">
+        <li>Accessible &agrave; des <strong>utilisateurs sp&eacute;cifiques</strong></li>
+        <li>Documents confidentiels</li>
+        <li>Donn&eacute;es sensibles par d&eacute;partement</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3><span class="h3-dot dot-red"></span> Corpus (regroupement)</h3>
+
+  <p>Les corpus permettent de regrouper plusieurs collections pour une recherche &eacute;largie :</p>
+
+  <ul class="feature-list">
+    <li><strong>Recherche multi-collection</strong> &mdash; Une question peut chercher dans plusieurs collections &agrave; la fois</li>
+    <li><strong>Coh&eacute;rence th&eacute;matique</strong> &mdash; Regroupez "RH Proc&eacute;dures" + "RH L&eacute;gal" dans un corpus "RH"</li>
+    <li><strong>Modes de conversation</strong> &mdash; Associez un corpus &agrave; un mode pour un contexte riche</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-red"></span> Gestion des documents</h3>
+
+  <table>
+    <thead><tr><th>Action</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td>&#x2B06;&#xFE0F; Upload</td><td>Glissez-d&eacute;posez ou s&eacute;lectionnez des fichiers (PDF, Word, Excel...)</td></tr>
+      <tr><td>&#x1F310; Source web</td><td>Indexez les pages d'un site internet</td></tr>
+      <tr><td>&#x1F517; Source API</td><td>Connectez une API REST pour des donn&eacute;es dynamiques</td></tr>
+      <tr><td>&#x1F504; R&eacute;indexer</td><td>Reconstruire l'index apr&egrave;s modification</td></tr>
+      <tr><td>&#x1F5D1;&#xFE0F; Supprimer</td><td>Retirer un document (supprime aussi l'index)</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-info">
+    <span class="callout-icon">&#x1F4A1;</span>
+    <span><strong>Bonnes pratiques :</strong> Organisez vos collections par th&egrave;me m&eacute;tier (RH, Commercial, Technique) plut&ocirc;t que par type de document. Cela facilite l'association aux modes.</span>
+  </div>
+</div>
+
+<!-- ==================== FOOTER ==================== -->
+<div class="footer">
+  MY-IA &mdash; Guide de configuration &mdash; <a href="../index.html">Retour &agrave; l'accueil</a>
+</div>
+
+</div>
+
+</body>
+</html>

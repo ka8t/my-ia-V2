@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plan - Système de Thèmes MY-IA</title>
+    <link rel="stylesheet" href="../assets/doc-style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Plan Système de Thèmes</h1>
+            <p class="subtitle">Gestion des styles d'affichage UI-FRONT et UI-BACK</p>
+            <div class="metadata">
+                <span class="date">2026-02-18</span>
+                <span class="version">v1.0</span>
+                <span class="status status-draft">Draft</span>
+            </div>
+        </header>
+
+        <nav class="toc">
+            <h2>Table des matières</h2>
+            <ol>
+                <li><a href="#section-1">Principe</a></li>
+                <li><a href="#section-2">État actuel</a></li>
+                <li><a href="#section-3">Thèmes à ajouter</a></li>
+                <li><a href="#section-4">Harmonisation CSS</a></li>
+                <li><a href="#section-5">Configuration BDD</a></li>
+                <li><a href="#section-6">Admin UI</a></li>
+                <li><a href="#section-7">Choix utilisateur</a></li>
+                <li><a href="#section-8">Implémentation</a></li>
+            </ol>
+        </nav>
+
+        <!-- Section 1 -->
+        <section id="section-1">
+            <h2>1. Principe</h2>
+
+            <div class="card">
+                <h4>Hiérarchie des choix</h4>
+                <pre class="pipeline">
+┌─────────────────────────────────────────────────────────────┐
+│                         ADMIN                               │
+│   Sélectionne le thème global de l'application              │
+│   (corporate, nature, sunset, royal, ou default)            │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                      UTILISATEUR                            │
+│   Choisit parmi :                                           │
+│   ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │
+│   │   Thème     │  │    Mode     │  │    Mode     │        │
+│   │   global    │  │    clair    │  │   sombre    │        │
+│   │  (admin)    │  │  (default)  │  │   (dark)    │        │
+│   └─────────────┘  └─────────────┘  └─────────────┘        │
+└─────────────────────────────────────────────────────────────┘
+                </pre>
+            </div>
+
+            <h3>1.1 Fonctionnement</h3>
+            <ul>
+                <li><strong>Admin</strong> : Configure le thème "marque" de l'application via l'interface admin</li>
+                <li><strong>Utilisateur</strong> : Peut choisir d'utiliser le thème admin OU basculer en mode clair/sombre</li>
+                <li><strong>Persistance</strong> : Choix utilisateur stocké en localStorage</li>
+                <li><strong>Appliqué</strong> : Sur UI-FRONT et UI-BACK de la même manière</li>
+            </ul>
+        </section>
+
+        <!-- Section 2 -->
+        <section id="section-2">
+            <h2>2. État actuel</h2>
+
+            <h3>2.1 Fichiers existants</h3>
+            <table>
+                <thead>
+                    <tr><th>Fichier</th><th>Contenu</th><th>Status</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>UI-SHARED/css/base/variables.css</code></td>
+                        <td>Variables CSS + 2 thèmes (<code>:root</code>, <code>[data-theme="dark"]</code>)</td>
+                        <td>✅ Existant</td>
+                    </tr>
+                    <tr>
+                        <td><code>UI-FRONT/index.html:80</code></td>
+                        <td>Bouton toggle thème (<code>#themeToggle</code>)</td>
+                        <td>✅ Existant</td>
+                    </tr>
+                    <tr>
+                        <td><code>UI-FRONT/js/modules/settings.js</code></td>
+                        <td>Fonction <code>toggleTheme()</code> + sauvegarde API</td>
+                        <td>✅ Existant</td>
+                    </tr>
+                    <tr>
+                        <td><code>UI-BACK/index.html:56</code></td>
+                        <td>Bouton toggle thème (soleil/lune)</td>
+                        <td>✅ Existant</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>2.2 Logique existante UI-FRONT</h3>
+            <pre class="code">
+// UI-FRONT/js/modules/settings.js - EXISTANT
+
+export function toggleTheme() {
+    window.CONFIG.theme = window.CONFIG.theme === 'light' ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', window.CONFIG.theme);
+
+    // Sauvegarde préférence utilisateur via API
+    ApiService.updatePreferences({ theme: window.CONFIG.theme });
+}
+
+export function applyPreferences(prefs) {
+    if (prefs.theme) {
+        window.CONFIG.theme = prefs.theme;
+        document.documentElement.setAttribute('data-theme', window.CONFIG.theme);
+    }
+}
+            </pre>
+
+            <h3>2.3 Variables CSS actuelles</h3>
+            <pre class="code">
+/* UI-SHARED/css/base/variables.css - EXISTANT */
+
+:root {
+    /* Backgrounds */
+    --bg-primary: #ffffff;
+    --bg-secondary: #f7f7f8;
+    --bg-tertiary: #ececf1;
+
+    /* Texte */
+    --text-primary: #000000;
+    --text-secondary: #6e6e80;
+
+    /* Accent (vert ChatGPT) */
+    --accent-color: #10a37f;
+    --accent-hover: #0d8c6d;
+
+    /* États */
+    --danger-color: #ef4444;
+    --warning-color: #f59e0b;
+    --info-color: #3b82f6;
+
+    /* Autres */
+    --border-color: #e5e5e5;
+    --user-bg: #f7f7f8;
+    --assistant-bg: #ffffff;
+    --code-bg: #f5f5f5;
+    --code-text: #1f2937;
+}
+
+[data-theme="dark"] {
+    --bg-primary: #212121;
+    --bg-secondary: #2f2f2f;
+    --bg-tertiary: #3f3f3f;
+    --text-primary: #ececf1;
+    --text-secondary: #9b9ba5;
+    --border-color: #4d4d4d;
+    --user-bg: #2f2f2f;
+    --assistant-bg: #212121;
+    --code-bg: #282c34;
+    --code-text: #abb2bf;
+}
+            </pre>
+        </section>
+
+        <!-- Section 3 -->
+        <section id="section-3">
+            <h2>3. Thèmes à ajouter</h2>
+
+            <h3>3.1 Liste des thèmes</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Thème</th>
+                        <th>ID</th>
+                        <th>Accent</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Default</strong></td>
+                        <td><code>default</code></td>
+                        <td style="background:#10a37f;color:white;padding:2px 8px;border-radius:4px">#10a37f</td>
+                        <td>Vert ChatGPT (existant)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Dark</strong></td>
+                        <td><code>dark</code></td>
+                        <td style="background:#10a37f;color:white;padding:2px 8px;border-radius:4px">#10a37f</td>
+                        <td>Mode sombre (existant)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Corporate</strong></td>
+                        <td><code>corporate</code></td>
+                        <td style="background:#0066cc;color:white;padding:2px 8px;border-radius:4px">#0066cc</td>
+                        <td>Bleu professionnel</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Nature</strong></td>
+                        <td><code>nature</code></td>
+                        <td style="background:#059669;color:white;padding:2px 8px;border-radius:4px">#059669</td>
+                        <td>Vert nature</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Sunset</strong></td>
+                        <td><code>sunset</code></td>
+                        <td style="background:#ea580c;color:white;padding:2px 8px;border-radius:4px">#ea580c</td>
+                        <td>Orange chaleureux</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Royal</strong></td>
+                        <td><code>royal</code></td>
+                        <td style="background:#7c3aed;color:white;padding:2px 8px;border-radius:4px">#7c3aed</td>
+                        <td>Violet élégant</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>3.2 Code CSS à ajouter dans variables.css</h3>
+            <pre class="code">
+/* === NOUVEAUX THÈMES === */
+
+/* Corporate - Bleu professionnel */
+[data-theme="corporate"] {
+    --accent-color: #0066cc;
+    --accent-hover: #0052a3;
+}
+
+/* Nature - Vert nature */
+[data-theme="nature"] {
+    --accent-color: #059669;
+    --accent-hover: #047857;
+}
+
+/* Sunset - Orange chaleureux */
+[data-theme="sunset"] {
+    --accent-color: #ea580c;
+    --accent-hover: #c2410c;
+}
+
+/* Royal - Violet élégant */
+[data-theme="royal"] {
+    --accent-color: #7c3aed;
+    --accent-hover: #6d28d9;
+}
+
+/* === COMBINAISONS THÈME + DARK === */
+
+/* Corporate Dark */
+[data-theme="corporate-dark"] {
+    --bg-primary: #212121;
+    --bg-secondary: #2f2f2f;
+    --bg-tertiary: #3f3f3f;
+    --text-primary: #ececf1;
+    --text-secondary: #9b9ba5;
+    --border-color: #4d4d4d;
+    --accent-color: #3b82f6;
+    --accent-hover: #2563eb;
+    --user-bg: #2f2f2f;
+    --assistant-bg: #212121;
+    --code-bg: #282c34;
+    --code-text: #abb2bf;
+}
+
+/* Nature Dark */
+[data-theme="nature-dark"] {
+    --bg-primary: #212121;
+    --bg-secondary: #2f2f2f;
+    --bg-tertiary: #3f3f3f;
+    --text-primary: #ececf1;
+    --text-secondary: #9b9ba5;
+    --border-color: #4d4d4d;
+    --accent-color: #34d399;
+    --accent-hover: #10b981;
+    --user-bg: #2f2f2f;
+    --assistant-bg: #212121;
+    --code-bg: #282c34;
+    --code-text: #abb2bf;
+}
+
+/* Sunset Dark */
+[data-theme="sunset-dark"] {
+    --bg-primary: #212121;
+    --bg-secondary: #2f2f2f;
+    --bg-tertiary: #3f3f3f;
+    --text-primary: #ececf1;
+    --text-secondary: #9b9ba5;
+    --border-color: #4d4d4d;
+    --accent-color: #fb923c;
+    --accent-hover: #f97316;
+    --user-bg: #2f2f2f;
+    --assistant-bg: #212121;
+    --code-bg: #282c34;
+    --code-text: #abb2bf;
+}
+
+/* Royal Dark */
+[data-theme="royal-dark"] {
+    --bg-primary: #212121;
+    --bg-secondary: #2f2f2f;
+    --bg-tertiary: #3f3f3f;
+    --text-primary: #ececf1;
+    --text-secondary: #9b9ba5;
+    --border-color: #4d4d4d;
+    --accent-color: #a78bfa;
+    --accent-hover: #8b5cf6;
+    --user-bg: #2f2f2f;
+    --assistant-bg: #212121;
+    --code-bg: #282c34;
+    --code-text: #abb2bf;
+}
+            </pre>
+        </section>
+
+        <!-- Section 4 -->
+        <section id="section-4">
+            <h2>4. Harmonisation CSS</h2>
+
+            <div class="card card-warning">
+                <h4>Prérequis</h4>
+                <p>Avant d'ajouter les nouveaux thèmes, vérifier que tous les fichiers CSS utilisent
+                   <code>var(--xxx)</code> au lieu de couleurs hardcodées.</p>
+            </div>
+
+            <h3>4.1 Fichiers à vérifier</h3>
+            <table>
+                <thead>
+                    <tr><th>Fichier</th><th>Action</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>UI-BACK/css/admin.css</code></td><td>Vérifier/remplacer #xxx par var(--)</td></tr>
+                    <tr><td><code>UI-FRONT/css/layout/*.css</code></td><td>Vérifier/remplacer #xxx par var(--)</td></tr>
+                    <tr><td><code>UI-SHARED/css/components/*.css</code></td><td>Vérifier/remplacer #xxx par var(--)</td></tr>
+                </tbody>
+            </table>
+
+            <h3>4.2 Commande d'audit</h3>
+            <pre class="code">
+# Trouver les couleurs hardcodées dans les CSS
+grep -r "#[0-9a-fA-F]\{3,6\}" UI-SHARED/css/ UI-FRONT/css/ UI-BACK/css/ \
+    --include="*.css" | grep -v "variables.css"
+            </pre>
+        </section>
+
+        <!-- Section 5 -->
+        <section id="section-5">
+            <h2>5. Configuration BDD</h2>
+
+            <h3>5.1 Clé system_configs</h3>
+            <table>
+                <thead>
+                    <tr><th>Clé</th><th>Type</th><th>Valeur par défaut</th><th>Description</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>theme.global</code></td>
+                        <td>string</td>
+                        <td><code>"default"</code></td>
+                        <td>Thème global sélectionné par l'admin</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>5.2 Valeurs possibles</h3>
+            <pre class="code">
+"default"    # Vert ChatGPT (existant)
+"corporate"  # Bleu professionnel
+"nature"     # Vert nature
+"sunset"     # Orange
+"royal"      # Violet
+            </pre>
+
+            <h3>5.3 API publique</h3>
+            <pre class="code">
+GET /config/public
+
+{
+    "theme": {
+        "global": "corporate"  // Thème défini par l'admin
+    },
+    // ... autres configs
+}
+            </pre>
+        </section>
+
+        <!-- Section 6 -->
+        <section id="section-6">
+            <h2>6. Admin UI</h2>
+
+            <h3>6.1 Interface de sélection</h3>
+            <p>Nouveau sous-onglet dans Système → Apparence :</p>
+
+            <pre class="pipeline">
+┌─────────────────────────────────────────────────────────────┐
+│  Système → Apparence                                        │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  Thème global de l'application                              │
+│                                                             │
+│  ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌───────────┐   │
+│  │  Default  │ │ Corporate │ │  Nature   │ │  Sunset   │   │
+│  │    ✓      │ │           │ │           │ │           │   │
+│  │   🟢      │ │    🔵     │ │    🟢     │ │    🟠     │   │
+│  └───────────┘ └───────────┘ └───────────┘ └───────────┘   │
+│                                                             │
+│  ┌───────────┐                                              │
+│  │   Royal   │                                              │
+│  │           │       [ Appliquer ]                          │
+│  │    🟣     │                                              │
+│  └───────────┘                                              │
+│                                                             │
+│  ℹ️ Les utilisateurs peuvent choisir entre ce thème,        │
+│     le mode clair ou le mode sombre.                        │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+            </pre>
+
+            <h3>6.2 Template HTML</h3>
+            <pre class="code">
+&lt;template id="system-theme-section"&gt;
+    &lt;div class="admin-section"&gt;
+        &lt;h3&gt;{{t 'admin_theme_title'}}&lt;/h3&gt;
+        &lt;p class="section-description"&gt;{{t 'admin_theme_description'}}&lt;/p&gt;
+
+        &lt;div class="theme-grid"&gt;
+            {{#each themes}}
+            &lt;div class="theme-card {{#if isActive}}active{{/if}}"
+                 data-theme="{{id}}"&gt;
+                &lt;div class="theme-preview" style="--preview-accent: {{accent}}"&gt;
+                    &lt;div class="preview-dot"&gt;&lt;/div&gt;
+                &lt;/div&gt;
+                &lt;span class="theme-name"&gt;{{name}}&lt;/span&gt;
+                {{#if isActive}}&lt;span class="theme-check"&gt;✓&lt;/span&gt;{{/if}}
+            &lt;/div&gt;
+            {{/each}}
+        &lt;/div&gt;
+
+        &lt;div class="form-actions"&gt;
+            &lt;button class="btn btn-primary" data-action="save-theme"&gt;
+                {{t 'apply'}}
+            &lt;/button&gt;
+        &lt;/div&gt;
+    &lt;/div&gt;
+&lt;/template&gt;
+            </pre>
+
+            <h3>6.3 Module JS</h3>
+            <pre class="code">
+// UI-BACK/js/modules/system/appearance.js
+
+export const SystemAppearance = {
+    selectedTheme: null,
+
+    async load() {
+        const config = await adminApi.config.get('theme.global');
+        this.selectedTheme = config || 'default';
+        this.render();
+    },
+
+    render() {
+        const themes = [
+            { id: 'default', name: 'Default', accent: '#10a37f' },
+            { id: 'corporate', name: 'Corporate', accent: '#0066cc' },
+            { id: 'nature', name: 'Nature', accent: '#059669' },
+            { id: 'sunset', name: 'Sunset', accent: '#ea580c' },
+            { id: 'royal', name: 'Royal', accent: '#7c3aed' },
+        ];
+
+        const html = Templates.render('system-theme-section', {
+            themes: themes.map(t => ({
+                ...t,
+                isActive: t.id === this.selectedTheme
+            }))
+        });
+
+        document.getElementById('systemContent').innerHTML = html;
+        this.bindEvents();
+    },
+
+    bindEvents() {
+        document.querySelectorAll('.theme-card').forEach(card => {
+            card.onclick = () => {
+                this.selectedTheme = card.dataset.theme;
+                this.render();
+            };
+        });
+
+        document.querySelector('[data-action="save-theme"]').onclick = () => {
+            this.save();
+        };
+    },
+
+    async save() {
+        await adminApi.config.set('theme.global', this.selectedTheme);
+        showToast(t('admin_theme_saved'));
+    }
+};
+            </pre>
+        </section>
+
+        <!-- Section 7 -->
+        <section id="section-7">
+            <h2>7. Choix utilisateur</h2>
+
+            <h3>7.1 Options disponibles</h3>
+            <table>
+                <thead>
+                    <tr><th>Option</th><th>data-theme</th><th>Description</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Thème global</strong></td>
+                        <td><code>{theme.global}</code> ou <code>{theme.global}-dark</code></td>
+                        <td>Utilise le thème défini par l'admin</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Mode clair</strong></td>
+                        <td><code>default</code></td>
+                        <td>Thème clair standard (vert)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Mode sombre</strong></td>
+                        <td><code>dark</code></td>
+                        <td>Thème sombre standard</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>7.2 Interface utilisateur</h3>
+            <p>Dans les paramètres utilisateur (profil) ou dans le footer :</p>
+            <pre class="pipeline">
+┌─────────────────────────────────────────┐
+│  Apparence                              │
+│                                         │
+│  ○ Thème de l'application (Corporate)  │
+│  ○ Mode clair                           │
+│  ● Mode sombre                          │
+│                                         │
+└─────────────────────────────────────────┘
+            </pre>
+
+            <h3>7.3 Extension du code existant</h3>
+            <p>Le code existant dans <code>UI-FRONT/js/modules/settings.js</code> gère déjà light/dark.
+               Il faut l'étendre pour supporter le thème global admin :</p>
+            <pre class="code">
+// UI-FRONT/js/modules/settings.js - À ÉTENDRE
+
+class ThemeService {
+    constructor() {
+        this.globalTheme = 'default';  // Défini par l'admin
+        this.userChoice = null;        // 'global', 'light', 'dark'
+        this.isDarkMode = false;
+    }
+
+    async init() {
+        // 1. Charger le thème global depuis l'API
+        try {
+            const config = await fetch('/config/public').then(r => r.json());
+            this.globalTheme = config.theme?.global || 'default';
+        } catch (e) {
+            this.globalTheme = 'default';
+        }
+
+        // 2. Charger le choix utilisateur depuis localStorage
+        this.userChoice = localStorage.getItem('theme-choice') || 'global';
+        this.isDarkMode = localStorage.getItem('theme-dark') === 'true';
+
+        // 3. Appliquer
+        this.apply();
+    }
+
+    apply() {
+        let themeName;
+
+        switch (this.userChoice) {
+            case 'light':
+                themeName = 'default';
+                break;
+            case 'dark':
+                themeName = 'dark';
+                break;
+            case 'global':
+            default:
+                // Utiliser le thème admin + mode sombre si activé
+                themeName = this.isDarkMode
+                    ? `${this.globalTheme}-dark`
+                    : this.globalTheme;
+                break;
+        }
+
+        document.documentElement.setAttribute('data-theme', themeName);
+        window.dispatchEvent(new CustomEvent('theme-changed', {
+            detail: { theme: themeName }
+        }));
+    }
+
+    setUserChoice(choice) {
+        // choice: 'global', 'light', 'dark'
+        this.userChoice = choice;
+        localStorage.setItem('theme-choice', choice);
+        this.apply();
+    }
+
+    toggleDarkMode() {
+        this.isDarkMode = !this.isDarkMode;
+        localStorage.setItem('theme-dark', this.isDarkMode);
+        this.apply();
+    }
+
+    getCurrentTheme() {
+        return document.documentElement.getAttribute('data-theme');
+    }
+}
+
+export const Theme = new ThemeService();
+            </pre>
+        </section>
+
+        <!-- Section 8 -->
+        <section id="section-8">
+            <h2>8. Implémentation</h2>
+
+            <h3>8.1 Étapes</h3>
+            <ol>
+                <li><strong>Audit CSS</strong> : Vérifier/corriger les couleurs hardcodées</li>
+                <li><strong>Ajouter thèmes</strong> : Étendre <code>variables.css</code> avec les nouveaux thèmes</li>
+                <li><strong>Config BDD</strong> : Ajouter clé <code>theme.global</code> dans bootstrap</li>
+                <li><strong>API publique</strong> : Exposer <code>theme.global</code> dans <code>/config/public</code></li>
+                <li><strong>Admin UI</strong> : Module sélection thème + template</li>
+                <li><strong>ThemeService</strong> : Étendre le service existant</li>
+                <li><strong>UI utilisateur</strong> : Ajouter sélecteur dans profil/paramètres</li>
+                <li><strong>Tests</strong> : Vérifier tous les thèmes sur UI-FRONT et UI-BACK</li>
+            </ol>
+
+            <h3>8.2 Fichiers à modifier</h3>
+            <table>
+                <thead>
+                    <tr><th>Fichier</th><th>Action</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>UI-SHARED/css/base/variables.css</code></td>
+                        <td>Ajouter les 4 nouveaux thèmes + variantes dark</td>
+                    </tr>
+                    <tr>
+                        <td><code>app/core/bootstrap.py</code></td>
+                        <td>Ajouter <code>theme.global: "default"</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>app/features/config/public_router.py</code></td>
+                        <td>Exposer <code>theme.global</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>UI-BACK/js/modules/system/appearance.js</code></td>
+                        <td>Créer module admin</td>
+                    </tr>
+                    <tr>
+                        <td><code>UI-SHARED/templates/admin/system.html</code></td>
+                        <td>Ajouter template sélection thème</td>
+                    </tr>
+                    <tr>
+                        <td><code>UI-FRONT/js/modules/settings.js</code></td>
+                        <td>Étendre toggleTheme() pour supporter thème global</td>
+                    </tr>
+                    <tr>
+                        <td><code>UI-SHARED/locales/fr.json</code></td>
+                        <td>Ajouter clés i18n thèmes</td>
+                    </tr>
+                    <tr>
+                        <td><code>UI-SHARED/locales/en.json</code></td>
+                        <td>Ajouter clés i18n thèmes</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>8.3 Clés i18n à ajouter</h3>
+            <pre class="code">
+{
+    "admin_theme_title": "Thème de l'application",
+    "admin_theme_description": "Sélectionnez le thème global. Les utilisateurs peuvent choisir entre ce thème, le mode clair ou le mode sombre.",
+    "admin_theme_saved": "Thème enregistré",
+    "theme_default": "Default",
+    "theme_corporate": "Corporate",
+    "theme_nature": "Nature",
+    "theme_sunset": "Sunset",
+    "theme_royal": "Royal",
+    "user_theme_choice": "Apparence",
+    "user_theme_global": "Thème de l'application",
+    "user_theme_light": "Mode clair",
+    "user_theme_dark": "Mode sombre"
+}
+            </pre>
+        </section>
+
+        <footer class="doc-footer">
+            <p>Document généré le 2026-02-18 | MY-IA Project</p>
+        </footer>
+    </div>
+</body>
+</html>

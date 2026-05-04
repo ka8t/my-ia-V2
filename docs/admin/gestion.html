@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MY-IA &mdash; Gestion</title>
+  <link rel="stylesheet" href="../assets/doc-style.css">
+</head>
+<body>
+
+<!-- ==================== HEADER ==================== -->
+<div class="header">
+  <div class="page">
+    <div class="header-icon">&#x1F465;</div>
+    <div>
+      <h1>Guide de gestion</h1>
+      <div class="subtitle">
+        G&eacute;rez au quotidien les utilisateurs, documents, sources et surveillez l'activit&eacute; de MY-IA.
+      </div>
+      <div class="meta">
+        <span>&#x23F1; 15 min</span>
+        <span>Administrateur</span>
+        <span>6 sections</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+
+<!-- Navigation -->
+<div class="callout callout-info">
+  <span class="callout-icon">&#x1F3E0;</span>
+  <span><a href="../index.html">&larr; Retour &agrave; l'accueil</a> &nbsp;|&nbsp; <a href="installation.html">Installation</a> &nbsp;|&nbsp; <a href="configuration.html">Configuration</a></span>
+</div>
+
+<!-- ==================== TABLE DES MATIERES ==================== -->
+<div class="toc">
+  <h2>Sommaire</h2>
+  <div class="toc-grid">
+    <a href="#utilisateurs"><span class="toc-num">1</span> Utilisateurs</a>
+    <a href="#documents"><span class="toc-num">2</span> Documents</a>
+    <a href="#sources"><span class="toc-num">3</span> Sources externes</a>
+    <a href="#analytics"><span class="toc-num">4</span> Analytics</a>
+    <a href="#audit"><span class="toc-num">5</span> Audit</a>
+    <a href="#maintenance"><span class="toc-num">6</span> Maintenance</a>
+  </div>
+</div>
+
+<!-- ==================== UTILISATEURS ==================== -->
+<div class="section" id="utilisateurs">
+  <div class="section-header">
+    <div class="section-icon icon-blue">&#x1F465;</div>
+    <div><h2>Gestion des utilisateurs <span class="section-num">&mdash; Section 1</span></h2></div>
+  </div>
+
+  <p>Acc&eacute;dez &agrave; la liste des utilisateurs via le menu <strong>Utilisateurs</strong>.</p>
+
+  <h3><span class="h3-dot dot-blue"></span> Cr&eacute;er un utilisateur</h3>
+
+  <div class="vflow">
+    <div class="vflow-step active">
+      <div class="step-title">1. Cliquer sur "+ Nouveau"</div>
+      <div class="step-desc">Ouvre le formulaire de cr&eacute;ation</div>
+    </div>
+    <div class="vflow-step active">
+      <div class="step-title">2. Remplir les informations</div>
+      <div class="step-desc">Email (identifiant), nom, pr&eacute;nom</div>
+    </div>
+    <div class="vflow-step active">
+      <div class="step-title">3. Choisir le r&ocirc;le</div>
+      <div class="step-desc">Utilisateur standard ou Administrateur</div>
+    </div>
+    <div class="vflow-step">
+      <div class="step-title">4. Envoyer l'invitation</div>
+      <div class="step-desc">Un email avec le lien d'activation est envoy&eacute;</div>
+    </div>
+  </div>
+
+  <h3><span class="h3-dot dot-blue"></span> R&ocirc;les et permissions</h3>
+
+  <table>
+    <thead><tr><th>R&ocirc;le</th><th>Permissions</th><th>Acc&egrave;s</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="badge badge-primary">Utilisateur</span></td>
+        <td>Chat, documents personnels, pr&eacute;f&eacute;rences</td>
+        <td>Interface utilisateur uniquement</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-purple">Administrateur</span></td>
+        <td>Toutes les permissions utilisateur + gestion compl&egrave;te</td>
+        <td>Interface utilisateur + Backoffice admin</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-blue"></span> Actions sur un utilisateur</h3>
+
+  <table>
+    <thead><tr><th>Action</th><th>Description</th><th>Quand l'utiliser</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>&#x270F;&#xFE0F; Modifier</td>
+        <td>Changer nom, email, r&ocirc;le</td>
+        <td>Mise &agrave; jour des informations</td>
+      </tr>
+      <tr>
+        <td>&#x1F511; R&eacute;initialiser mot de passe</td>
+        <td>Envoie un email de r&eacute;initialisation</td>
+        <td>Utilisateur qui a oubli&eacute; son mot de passe</td>
+      </tr>
+      <tr>
+        <td>&#x1F6AB; D&eacute;sactiver</td>
+        <td>Bloque l'acc&egrave;s sans supprimer les donn&eacute;es</td>
+        <td>D&eacute;part temporaire, cong&eacute; longue dur&eacute;e</td>
+      </tr>
+      <tr>
+        <td>&#x2705; R&eacute;activer</td>
+        <td>Restaure l'acc&egrave;s d'un compte d&eacute;sactiv&eacute;</td>
+        <td>Retour de l'utilisateur</td>
+      </tr>
+      <tr>
+        <td>&#x1F5D1;&#xFE0F; Supprimer</td>
+        <td>Supprime le compte et toutes ses donn&eacute;es</td>
+        <td>D&eacute;part d&eacute;finitif (irr&eacute;versible)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-blue"></span> Voir l'activit&eacute; d'un utilisateur</h3>
+
+  <p>Cliquez sur un utilisateur pour voir ses d&eacute;tails :</p>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-title">&#x1F4CA; Statistiques</div>
+      <div class="card-text">Nombre de messages, conversations, documents</div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F4C4; Documents</div>
+      <div class="card-text">Liste des documents upload&eacute;s par l'utilisateur</div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F4AC; Conversations</div>
+      <div class="card-text">Historique des conversations (acc&egrave;s support)</div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x2699;&#xFE0F; Pr&eacute;f&eacute;rences</div>
+      <div class="card-text">Param&egrave;tres personnalis&eacute;s de l'utilisateur</div>
+    </div>
+  </div>
+
+  <div class="callout callout-warning">
+    <span class="callout-icon">&#x26A0;&#xFE0F;</span>
+    <span><strong>Respect de la vie priv&eacute;e :</strong> N'acc&eacute;dez aux conversations et documents utilisateurs que si n&eacute;cessaire (support, audit de s&eacute;curit&eacute;). Documentez vos acc&egrave;s.</span>
+  </div>
+</div>
+
+<!-- ==================== DOCUMENTS ==================== -->
+<div class="section" id="documents">
+  <div class="section-header">
+    <div class="section-icon icon-teal">&#x1F4C4;</div>
+    <div><h2>Gestion des documents <span class="section-num">&mdash; Section 2</span></h2></div>
+  </div>
+
+  <h3><span class="h3-dot dot-teal"></span> Documents syst&egrave;me</h3>
+
+  <p>Les documents syst&egrave;me sont les documents officiels accessibles &agrave; tous les utilisateurs.</p>
+
+  <div class="vflow">
+    <div class="vflow-step active">
+      <div class="step-title">1. Acc&eacute;der aux documents</div>
+      <div class="step-desc">Documents &gt; Syst&egrave;me ou cliquer sur une collection</div>
+    </div>
+    <div class="vflow-step active">
+      <div class="step-title">2. Ajouter des documents</div>
+      <div class="step-desc">Glissez-d&eacute;posez ou cliquez sur "+ Ajouter"</div>
+    </div>
+    <div class="vflow-step active">
+      <div class="step-title">3. Attendre l'indexation</div>
+      <div class="step-desc">MY-IA analyse et indexe le contenu</div>
+    </div>
+    <div class="vflow-step">
+      <div class="step-title">4. V&eacute;rifier</div>
+      <div class="step-desc">Testez une question pour confirmer l'indexation</div>
+    </div>
+  </div>
+
+  <h3><span class="h3-dot dot-teal"></span> Op&eacute;rations sur les documents</h3>
+
+  <table>
+    <thead><tr><th>Op&eacute;ration</th><th>Description</th><th>Impact</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>&#x1F441;&#xFE0F; Voir</td>
+        <td>Aper&ccedil;u du document dans le navigateur</td>
+        <td>Aucun</td>
+      </tr>
+      <tr>
+        <td>&#x2B07;&#xFE0F; T&eacute;l&eacute;charger</td>
+        <td>R&eacute;cup&eacute;rer le fichier original</td>
+        <td>Aucun</td>
+      </tr>
+      <tr>
+        <td>&#x1F504; R&eacute;indexer</td>
+        <td>Reconstruire l'index du document</td>
+        <td>Recherche indisponible pendant l'op&eacute;ration</td>
+      </tr>
+      <tr>
+        <td>&#x1F4CB; D&eacute;placer</td>
+        <td>Changer de collection</td>
+        <td>Peut affecter les modes associ&eacute;s</td>
+      </tr>
+      <tr>
+        <td>&#x1F5D1;&#xFE0F; Supprimer</td>
+        <td>Retirer le document et son index</td>
+        <td>Irr&eacute;versible, supprime aussi les r&eacute;f&eacute;rences</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-teal"></span> &Eacute;tat des documents</h3>
+
+  <p>Chaque document a un statut d'indexation :</p>
+
+  <ul class="feature-list">
+    <li><span class="badge badge-success">Index&eacute;</span> &mdash; Document pr&ecirc;t, utilisable dans les recherches</li>
+    <li><span class="badge badge-warning">En cours</span> &mdash; Indexation en cours, patientez</li>
+    <li><span class="badge badge-danger">Erreur</span> &mdash; Probl&egrave;me lors de l'indexation (format, contenu)</li>
+    <li><span class="badge badge-primary">En attente</span> &mdash; Dans la file d'attente d'indexation</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-teal"></span> Documents des utilisateurs</h3>
+
+  <p>Vous pouvez consulter les documents de chaque utilisateur :</p>
+
+  <ul class="feature-list">
+    <li><strong>Utilisateurs &gt; [Utilisateur] &gt; Documents</strong></li>
+    <li>Voir la liste, l'espace utilis&eacute;, le quota restant</li>
+    <li>Possibilit&eacute; de supprimer des documents (cas exceptionnels)</li>
+  </ul>
+</div>
+
+<!-- ==================== SOURCES EXTERNES ==================== -->
+<div class="section" id="sources">
+  <div class="section-header">
+    <div class="section-icon icon-green">&#x1F310;</div>
+    <div><h2>Sources externes <span class="section-num">&mdash; Section 3</span></h2></div>
+  </div>
+
+  <p>MY-IA peut se connecter &agrave; des sources de donn&eacute;es externes pour enrichir ses r&eacute;ponses.</p>
+
+  <h3><span class="h3-dot dot-green"></span> Types de sources</h3>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-title">&#x1F310; Sites web</div>
+      <div class="card-text">Indexez le contenu de sites internet. Utile pour la documentation en ligne, les bases de connaissances publiques.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F517; APIs REST</div>
+      <div class="card-text">Connectez des APIs pour des donn&eacute;es en temps r&eacute;el. CRM, ERP, bases de donn&eacute;es m&eacute;tier.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F5C4;&#xFE0F; Bases SQL</div>
+      <div class="card-text">Interrogez directement vos bases de donn&eacute;es relationnelles.</div>
+    </div>
+  </div>
+
+  <h3><span class="h3-dot dot-green"></span> Ajouter une source web</h3>
+
+  <div class="vflow">
+    <div class="vflow-step active">
+      <div class="step-title">1. Cr&eacute;er la source</div>
+      <div class="step-desc">Sources &gt; + Nouvelle source &gt; Site web</div>
+    </div>
+    <div class="vflow-step active">
+      <div class="step-title">2. Configurer l'URL</div>
+      <div class="step-desc">URL de d&eacute;part du crawl</div>
+    </div>
+    <div class="vflow-step active">
+      <div class="step-title">3. Param&eacute;trer le crawl</div>
+      <div class="step-desc">Profondeur, filtres d'URL, fr&eacute;quence</div>
+    </div>
+    <div class="vflow-step active">
+      <div class="step-title">4. Lancer l'indexation</div>
+      <div class="step-desc">Cliquez sur "Indexer maintenant"</div>
+    </div>
+    <div class="vflow-step">
+      <div class="step-title">5. Associer &agrave; une collection</div>
+      <div class="step-desc">Pour l'int&eacute;grer aux recherches</div>
+    </div>
+  </div>
+
+  <h3><span class="h3-dot dot-green"></span> Param&egrave;tres de crawl</h3>
+
+  <table>
+    <thead><tr><th>Param&egrave;tre</th><th>Description</th><th>Recommand&eacute;</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Profondeur</td>
+        <td>Nombre de niveaux de liens &agrave; suivre</td>
+        <td>2-3 (au-del&agrave;, tr&egrave;s long)</td>
+      </tr>
+      <tr>
+        <td>Filtre d'URL</td>
+        <td>Pattern pour inclure/exclure des pages</td>
+        <td>Ex: /docs/* pour n'indexer que la doc</td>
+      </tr>
+      <tr>
+        <td>Fr&eacute;quence</td>
+        <td>R&eacute;indexation automatique</td>
+        <td>Hebdomadaire pour sites actifs</td>
+      </tr>
+      <tr>
+        <td>D&eacute;lai entre requ&ecirc;tes</td>
+        <td>Temps entre chaque page crawl&eacute;e</td>
+        <td>500ms (respecter le serveur)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-warning">
+    <span class="callout-icon">&#x26A0;&#xFE0F;</span>
+    <span><strong>Respect des sites :</strong> V&eacute;rifiez que vous avez le droit d'indexer le site (robots.txt, conditions d'utilisation). &Eacute;vitez de surcharger les serveurs avec des crawls trop agressifs.</span>
+  </div>
+</div>
+
+<!-- ==================== ANALYTICS ==================== -->
+<div class="section" id="analytics">
+  <div class="section-header">
+    <div class="section-icon icon-purple">&#x1F4CA;</div>
+    <div><h2>Analytics et monitoring <span class="section-num">&mdash; Section 4</span></h2></div>
+  </div>
+
+  <p>Suivez l'utilisation et les performances de MY-IA via le tableau de bord <strong>Analytics</strong>.</p>
+
+  <h3><span class="h3-dot dot-purple"></span> M&eacute;triques d'utilisation</h3>
+
+  <table>
+    <thead><tr><th>M&eacute;trique</th><th>Description</th><th>P&eacute;riodes</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Utilisateurs actifs</td>
+        <td>Nombre d'utilisateurs connect&eacute;s</td>
+        <td>Jour, semaine, mois</td>
+      </tr>
+      <tr>
+        <td>Messages envoy&eacute;s</td>
+        <td>Questions pos&eacute;es &agrave; MY-IA</td>
+        <td>Jour, semaine, mois</td>
+      </tr>
+      <tr>
+        <td>Conversations</td>
+        <td>Nombre de sessions de chat</td>
+        <td>Jour, semaine, mois</td>
+      </tr>
+      <tr>
+        <td>Documents index&eacute;s</td>
+        <td>Total et nouveaux</td>
+        <td>Cumul et p&eacute;riode</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-purple"></span> Top utilisateurs</h3>
+
+  <p>Identifiez les utilisateurs les plus actifs pour :</p>
+
+  <ul class="feature-list">
+    <li><strong>Comprendre les usages</strong> &mdash; Qui utilise le plus MY-IA ?</li>
+    <li><strong>Identifier les ambassadeurs</strong> &mdash; Pour promouvoir l'adoption</li>
+    <li><strong>D&eacute;tecter les probl&egrave;mes</strong> &mdash; Utilisateur inactif = probl&egrave;me potentiel</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-purple"></span> Questions fr&eacute;quentes</h3>
+
+  <p>Analysez les sujets les plus demand&eacute;s :</p>
+
+  <ul class="feature-list">
+    <li><strong>Am&eacute;liorer la documentation</strong> &mdash; Si une question revient souvent, enrichissez les documents</li>
+    <li><strong>Cr&eacute;er des modes</strong> &mdash; Th&egrave;mes r&eacute;currents = mode d&eacute;di&eacute; potentiel</li>
+    <li><strong>Formation</strong> &mdash; Identifier les lacunes de connaissance</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-purple"></span> &Eacute;tat du syst&egrave;me</h3>
+
+  <p>Le tableau de bord affiche l'&eacute;tat de chaque service :</p>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-title"><span class="badge badge-success">Vert</span></div>
+      <div class="card-text">Service op&eacute;rationnel, performances normales</div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="badge badge-warning">Orange</span></div>
+      <div class="card-text">Service d&eacute;grad&eacute;, performances r&eacute;duites, &agrave; surveiller</div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="badge badge-danger">Rouge</span></div>
+      <div class="card-text">Service en erreur, intervention requise</div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== AUDIT ==================== -->
+<div class="section" id="audit">
+  <div class="section-header">
+    <div class="section-icon icon-amber">&#x1F4DD;</div>
+    <div><h2>Logs d'audit <span class="section-num">&mdash; Section 5</span></h2></div>
+  </div>
+
+  <p>MY-IA enregistre toutes les actions importantes pour la tra&ccedil;abilit&eacute; et la conformit&eacute;.</p>
+
+  <h3><span class="h3-dot dot-amber"></span> Actions audit&eacute;es</h3>
+
+  <table>
+    <thead><tr><th>Cat&eacute;gorie</th><th>Actions</th><th>D&eacute;tails enregistr&eacute;s</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Authentification</td>
+        <td>Connexion, d&eacute;connexion, &eacute;chec</td>
+        <td>Utilisateur, date, IP, navigateur</td>
+      </tr>
+      <tr>
+        <td>Utilisateurs</td>
+        <td>Cr&eacute;ation, modification, suppression</td>
+        <td>Qui a fait quoi, anciennes/nouvelles valeurs</td>
+      </tr>
+      <tr>
+        <td>Documents</td>
+        <td>Upload, suppression, d&eacute;placement</td>
+        <td>Fichier, utilisateur, collection</td>
+      </tr>
+      <tr>
+        <td>Configuration</td>
+        <td>Changement de param&egrave;tre</td>
+        <td>Param&egrave;tre, ancienne/nouvelle valeur</td>
+      </tr>
+      <tr>
+        <td>S&eacute;curit&eacute;</td>
+        <td>Changement de r&ocirc;le, blocage compte</td>
+        <td>D&eacute;tails de l'action</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-amber"></span> Consulter les logs</h3>
+
+  <p>Acc&eacute;dez aux logs via <strong>Syst&egrave;me &gt; Logs d'audit</strong> :</p>
+
+  <ul class="feature-list">
+    <li><strong>Filtrer par type</strong> &mdash; Auth, utilisateurs, documents, config</li>
+    <li><strong>Filtrer par utilisateur</strong> &mdash; Voir les actions d'une personne</li>
+    <li><strong>Filtrer par date</strong> &mdash; P&eacute;riode sp&eacute;cifique</li>
+    <li><strong>Rechercher</strong> &mdash; Par mot-cl&eacute; dans les d&eacute;tails</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-amber"></span> Conservation des logs</h3>
+
+  <ul class="feature-list">
+    <li><strong>Dur&eacute;e de r&eacute;tention</strong> &mdash; Configurable (par d&eacute;faut 1 an)</li>
+    <li><strong>Export</strong> &mdash; T&eacute;l&eacute;chargez les logs en CSV pour archivage</li>
+    <li><strong>Conformit&eacute;</strong> &mdash; Adaptez la r&eacute;tention selon vos obligations l&eacute;gales (RGPD)</li>
+  </ul>
+</div>
+
+<!-- ==================== MAINTENANCE ==================== -->
+<div class="section" id="maintenance">
+  <div class="section-header">
+    <div class="section-icon icon-red">&#x1F527;</div>
+    <div><h2>Maintenance <span class="section-num">&mdash; Section 6</span></h2></div>
+  </div>
+
+  <h3><span class="h3-dot dot-red"></span> Sauvegardes</h3>
+
+  <p>MY-IA stocke ses donn&eacute;es dans des volumes Docker. Pour sauvegarder :</p>
+
+  <pre><code># Sauvegarde compl&egrave;te (base + documents + config)
+./scripts/backup.sh
+
+# Le fichier est cr&eacute;&eacute; dans backups/
+ls -la backups/</code></pre>
+
+  <div class="callout callout-success">
+    <span class="callout-icon">&#x2705;</span>
+    <span><strong>Sauvegarde automatique :</strong> Configurez une t&acirc;che cron pour sauvegarder quotidiennement :<br><code>0 2 * * * /opt/my-ia/scripts/backup.sh</code></span>
+  </div>
+
+  <h3><span class="h3-dot dot-red"></span> Restauration</h3>
+
+  <pre><code># Restaurer une sauvegarde
+./scripts/restore.sh backups/backup-20260212.tar.gz</code></pre>
+
+  <div class="callout callout-danger">
+    <span class="callout-icon">&#x1F6A8;</span>
+    <span><strong>Attention :</strong> La restauration &eacute;crase les donn&eacute;es actuelles. Faites une sauvegarde avant de restaurer si vous n'&ecirc;tes pas s&ucirc;r.</span>
+  </div>
+
+  <h3><span class="h3-dot dot-red"></span> Red&eacute;marrage des services</h3>
+
+  <pre><code># Red&eacute;marrer tous les services
+docker compose restart
+
+# Red&eacute;marrer un service sp&eacute;cifique
+docker compose restart app
+docker compose restart postgres
+docker compose restart ollama</code></pre>
+
+  <h3><span class="h3-dot dot-red"></span> Nettoyage</h3>
+
+  <pre><code># Voir l'espace utilis&eacute; par Docker
+docker system df
+
+# Nettoyer les donn&eacute;es temporaires (images non utilis&eacute;es, cache)
+docker system prune
+
+# Nettoyer les logs volumineux
+docker compose logs --tail 1000 > logs.txt
+truncate -s 0 /var/lib/docker/containers/*/*-json.log</code></pre>
+
+  <h3><span class="h3-dot dot-red"></span> Surveillance</h3>
+
+  <table>
+    <thead><tr><th>Commande</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>docker compose ps</code></td><td>État des containers</td></tr>
+      <tr><td><code>docker compose logs -f app</code></td><td>Logs en temps réel de l'API</td></tr>
+      <tr><td><code>docker stats</code></td><td>Utilisation CPU/RAM/réseau</td></tr>
+      <tr><td><code>curl localhost:8080/health</code></td><td>Health check de l'API</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-info">
+    <span class="callout-icon">&#x1F4A1;</span>
+    <span><strong>Monitoring avanc&eacute; :</strong> Pour une surveillance continue, MY-IA expose des m&eacute;triques Prometheus sur <code>/metrics</code>. Int&eacute;grez-les &agrave; Grafana pour des dashboards complets.</span>
+  </div>
+</div>
+
+<!-- ==================== FOOTER ==================== -->
+<div class="footer">
+  MY-IA &mdash; Guide de gestion &mdash; <a href="../index.html">Retour &agrave; l'accueil</a>
+</div>
+
+</div>
+
+</body>
+</html>

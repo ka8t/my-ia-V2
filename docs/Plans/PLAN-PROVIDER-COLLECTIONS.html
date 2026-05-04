@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plan - Collections par Provider</title>
+    <link rel="stylesheet" href="../assets/doc-style.css">
+</head>
+<body>
+    <!-- HEADER -->
+    <div class="header">
+        <div class="page">
+            <div class="header-icon">🗂️</div>
+            <div>
+                <h1>Collections par Provider</h1>
+                <p class="subtitle">Architecture d'indexation multi-provider pour Documents, Sources et Corpus</p>
+                <div class="meta">
+                    <span>📅 2026-02-21</span>
+                    <span>🔄 Statut : En cours</span>
+                    <span>⏱️ Estimé : 4-6h</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="page">
+        <!-- TABLE OF CONTENTS -->
+        <nav class="toc" id="toc">
+            <h2>Table des matières</h2>
+            <div class="toc-grid">
+                <a href="#contexte"><span class="toc-num">1</span> Contexte et Problème</a>
+                <a href="#architecture"><span class="toc-num">2</span> Architecture Cible</a>
+                <a href="#backend"><span class="toc-num">3</span> Modifications Backend</a>
+                <a href="#frontend-admin"><span class="toc-num">4</span> Modifications Frontend Admin</a>
+                <a href="#frontend-user"><span class="toc-num">5</span> Modifications Frontend Utilisateur</a>
+                <a href="#bdd"><span class="toc-num">6</span> Base de Données</a>
+                <a href="#migration"><span class="toc-num">7</span> Plan de Migration</a>
+                <a href="#tests"><span class="toc-num">8</span> Tests Requis</a>
+                <a href="#checklist"><span class="toc-num">9</span> Checklist</a>
+            </div>
+        </nav>
+
+        <!-- SECTION 1: CONTEXTE -->
+        <section class="section" id="contexte">
+            <div class="section-header">
+                <div class="section-icon icon-blue">📋</div>
+                <div>
+                    <span class="section-num">Section 1</span>
+                    <h2>Contexte et Problème</h2>
+                </div>
+                <a href="#toc" class="back-to-toc">↑ Sommaire</a>
+            </div>
+
+            <h3><span class="h3-dot dot-blue"></span>Situation Actuelle</h3>
+            <p>Le système supporte deux providers LLM pour les embeddings :</p>
+            <ul class="feature-list">
+                <li><strong>Ollama</strong> — Provider cloud/local avec modèles comme <code>nomic-embed-text</code></li>
+                <li><strong>llama.cpp</strong> — Provider local avec modèles GGUF</li>
+            </ul>
+
+            <div class="callout callout-danger">
+                <span class="callout-icon">⚠️</span>
+                <div>
+                    <strong>Problème critique :</strong> Les embeddings générés par Ollama et llama.cpp ont des dimensions différentes et ne sont <strong>pas compatibles</strong> dans la même collection ChromaDB.
+                </div>
+            </div>
+
+            <h3><span class="h3-dot dot-teal"></span>Comportement Attendu</h3>
+            <ul class="feature-list">
+                <li>Chaque provider a sa propre collection ChromaDB (suffixe <code>_ollama</code> ou <code>_llamacpp</code>)</li>
+                <li>L'indexation utilise toujours le provider <strong>courant</strong> configuré dans l'admin</li>
+                <li>L'UI affiche uniquement les données indexées avec le provider <strong>courant</strong></li>
+                <li>Le changement de provider masque les données de l'ancien provider (sans les supprimer)</li>
+            </ul>
+
+            <h3><span class="h3-dot dot-amber"></span>Éléments Concernés</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Élément</th>
+                        <th>Collection ChromaDB</th>
+                        <th>Champ Provider</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Documents</td>
+                        <td><code>documents_{provider}</code></td>
+                        <td><code>documents.indexed_provider</code></td>
+                    </tr>
+                    <tr>
+                        <td>Sources</td>
+                        <td><code>external_sources_{provider}</code></td>
+                        <td><code>context_sources.indexed_provider</code></td>
+                    </tr>
+                    <tr>
+                        <td>Corpus</td>
+                        <td><code>corpus_{corpus_id}_{provider}</code></td>
+                        <td><code>corpus.indexed_provider</code></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- SECTION 2: ARCHITECTURE -->
+        <section class="section" id="architecture">
+            <div class="section-header">
+                <div class="section-icon icon-teal">🏗️</div>
+                <div>
+                    <span class="section-num">Section 2</span>
+                    <h2>Architecture Cible</h2>
+                </div>
+                <a href="#toc" class="back-to-toc">↑ Sommaire</a>
+            </div>
+
+            <h3><span class="h3-dot dot-blue"></span>Flux d'Indexation</h3>
+            <div class="flow">
+                <div class="flow-step flow-blue">Admin Action<span class="flow-label">Réindexer</span></div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-step flow-teal">API Backend<span class="flow-label">/reindex</span></div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-step flow-amber">Provider Actif<span class="flow-label">llm.provider</span></div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-step flow-green">ChromaDB<span class="flow-label">collection_{provider}</span></div>
+            </div>
+
+            <h3><span class="h3-dot dot-teal"></span>Flux d'Affichage UI</h3>
+            <div class="flow">
+                <div class="flow-step flow-blue">Admin Page<span class="flow-label">Liste documents</span></div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-step flow-teal">API Backend<span class="flow-label">GET /list</span></div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-step flow-amber">Filtre SQL<span class="flow-label">indexed_provider = ?</span></div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-step flow-green">Tableau UI<span class="flow-label">Provider courant</span></div>
+            </div>
+
+            <h3><span class="h3-dot dot-purple"></span>Règles Métier</h3>
+            <div class="cards">
+                <div class="card">
+                    <div class="card-title"><span class="badge badge-primary">R1</span> Indexation</div>
+                    <div class="card-text">
+                        <ul>
+                            <li>Toute indexation utilise le provider <strong>courant</strong></li>
+                            <li>Le champ <code>indexed_provider</code> est mis à jour après indexation</li>
+                            <li>Embeddings stockés dans la collection du provider courant</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-title"><span class="badge badge-accent">R2</span> Affichage</div>
+                    <div class="card-text">
+                        <ul>
+                            <li>Tableaux affichent uniquement les éléments du provider courant</li>
+                            <li>Compteurs reflètent le provider courant</li>
+                            <li>Badge indique le provider utilisé</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-title"><span class="badge badge-warning">R3</span> Réindexation</div>
+                    <div class="card-text">
+                        <ul>
+                            <li>Réindexation utilise toujours le provider courant</li>
+                            <li>Anciennes données dans l'autre collection restent intactes</li>
+                            <li>Champ <code>indexed_provider</code> est mis à jour</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-title"><span class="badge badge-purple">R4</span> Corpus</div>
+                    <div class="card-text">
+                        <ul>
+                            <li>Corpus agrège documents et sources</li>
+                            <li>Affichage contenu filtre par provider courant</li>
+                            <li>Réindexation corpus réindexe tous les éléments</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 3: BACKEND -->
+        <section class="section" id="backend">
+            <div class="section-header">
+                <div class="section-icon icon-purple">⚙️</div>
+                <div>
+                    <span class="section-num">Section 3</span>
+                    <h2>Modifications Backend</h2>
+                </div>
+                <a href="#toc" class="back-to-toc">↑ Sommaire</a>
+            </div>
+
+            <h3><span class="h3-dot dot-blue"></span>Documents</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fichier</th>
+                        <th>Modification</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>documents/repository.py</code></td>
+                        <td>Ajouter paramètre <code>provider_filter</code> à <code>get_all()</code><br>Filtrer par <code>indexed_provider = provider OR IS NULL</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>documents/router.py</code></td>
+                        <td>Récupérer le provider courant depuis <code>SystemConfigService</code><br>Passer le filtre provider au repository</td>
+                    </tr>
+                    <tr>
+                        <td><code>documents/service.py</code></td>
+                        <td>S'assurer que <code>indexed_provider</code> est défini lors de l'indexation</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3><span class="h3-dot dot-teal"></span>Sources</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fichier</th>
+                        <th>Modification</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>sources/repository.py</code></td>
+                        <td>Ajouter paramètre <code>provider_filter</code> à <code>get_all()</code><br>Filtrer par <code>indexed_provider = provider OR IS NULL</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>sources/router.py</code></td>
+                        <td>Récupérer le provider courant et filtrer la liste</td>
+                    </tr>
+                    <tr>
+                        <td><code>sources/indexer.py</code></td>
+                        <td>Utiliser la collection <code>external_sources_{provider}</code><br>Mettre à jour <code>indexed_provider</code> après indexation</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3><span class="h3-dot dot-amber"></span>Corpus</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fichier</th>
+                        <th>Modification</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>corpus/repository.py</code></td>
+                        <td>Ajouter filtre provider pour les documents/sources liés</td>
+                    </tr>
+                    <tr>
+                        <td><code>corpus/router.py</code></td>
+                        <td><code>GET /corpus/{id}/content</code> : filtrer par provider<br><code>POST /corpus/{id}/reindex</code> : utiliser provider courant</td>
+                    </tr>
+                    <tr>
+                        <td><code>corpus/service.py</code></td>
+                        <td><code>get_corpus_content()</code> : filtrer par provider<br><code>reindex_corpus()</code> : indexer avec provider courant</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3><span class="h3-dot dot-green"></span>Pattern de Récupération du Provider</h3>
+            <p>Utiliser le code existant dans chaque repository/router :</p>
+            <pre><code># Récupérer le provider courant (déjà disponible via SystemConfigService)
+config_service = SystemConfigService(db)
+provider = await config_service.get("llm.embedding_provider") \
+           or await config_service.get("llm.provider", "ollama")
+
+# Nom de collection (pattern existant dans SourceIndexer)
+collection_name = f"{base_collection}_{provider}"</code></pre>
+            <div class="callout callout-info">
+                <span class="callout-icon">💡</span>
+                <div>Pas besoin de créer un nouveau fichier — ces patterns existent déjà dans le code.</div>
+            </div>
+        </section>
+
+        <!-- SECTION 4: FRONTEND ADMIN -->
+        <section class="section" id="frontend-admin">
+            <div class="section-header">
+                <div class="section-icon icon-amber">🎨</div>
+                <div>
+                    <span class="section-num">Section 4</span>
+                    <h2>Modifications Frontend Admin (UI-BACK)</h2>
+                </div>
+                <a href="#toc" class="back-to-toc">↑ Sommaire</a>
+            </div>
+
+            <h3><span class="h3-dot dot-blue"></span>Documents (UI-BACK)</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fichier</th>
+                        <th>Modification</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>UI-BACK/js/modules/documents.js</code></td>
+                        <td>
+                            • Afficher badge provider sur chaque ligne<br>
+                            • Filtrer visuellement les documents non-indexés avec provider courant<br>
+                            • Ajouter indicateur "Nécessite réindexation" si provider différent
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3><span class="h3-dot dot-teal"></span>Sources (UI-BACK)</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fichier</th>
+                        <th>Modification</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>UI-BACK/js/modules/sources.js</code></td>
+                        <td>
+                            • Afficher badge provider sur chaque ligne<br>
+                            • Indicateur visuel si <code>indexed_provider != current_provider</code><br>
+                            • <strong>Supprimer la modale de choix de provider</strong> (utiliser provider courant)
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3><span class="h3-dot dot-amber"></span>Corpus (UI-BACK)</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fichier</th>
+                        <th>Modification</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>UI-BACK/js/modules/corpus.js</code></td>
+                        <td>
+                            • Modale contenu : afficher uniquement éléments du provider courant<br>
+                            • Compteur de chunks : refléter le provider courant<br>
+                            • Bouton "Réindexer tout" : utiliser provider courant
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3><span class="h3-dot dot-purple"></span>Indicateur Provider Global</h3>
+            <p>Ajouter dans le header de l'admin un indicateur du provider courant :</p>
+            <pre><code>&lt;div class="provider-indicator"&gt;
+    &lt;span class="provider-badge provider-ollama"&gt;Ollama&lt;/span&gt;
+    &lt;!-- ou --&gt;
+    &lt;span class="provider-badge provider-llamacpp"&gt;llama.cpp&lt;/span&gt;
+&lt;/div&gt;</code></pre>
+
+            <h3><span class="h3-dot dot-green"></span>Traductions i18n</h3>
+            <p>Ajouter dans <code>UI-SHARED/locales/{fr,en}.json</code> :</p>
+            <pre><code>{
+    "provider_current": "Provider actif",
+    "provider_mismatch_warning": "Indexé avec un autre provider",
+    "provider_needs_reindex": "Nécessite réindexation",
+    "provider_ollama": "Ollama",
+    "provider_llamacpp": "llama.cpp",
+    "content_filtered_by_provider": "Contenu filtré par provider actif ({provider})"
+}</code></pre>
+        </section>
+
+        <!-- SECTION 5: FRONTEND USER -->
+        <section class="section" id="frontend-user">
+            <div class="section-header">
+                <div class="section-icon icon-purple">👤</div>
+                <div>
+                    <span class="section-num">Section 5</span>
+                    <h2>Modifications Frontend Utilisateur (UI-FRONT)</h2>
+                </div>
+                <a href="#toc" class="back-to-toc">↑ Sommaire</a>
+            </div>
+
+            <h3><span class="h3-dot dot-blue"></span>Contexte</h3>
+            <p>L'interface utilisateur (chat) affiche les <strong>collections publiques</strong> disponibles pour le RAG. Ces collections doivent être filtrées par le provider courant pour n'afficher que les données compatibles avec les embeddings actifs.</p>
+
+            <div class="callout callout-warning">
+                <span class="callout-icon">⚠️</span>
+                <div>
+                    <strong>Règles métier :</strong>
+                    <ul style="margin: 0.5rem 0 0 0; padding-left: 1.5rem;">
+                        <li>Un utilisateur ne doit voir que les collections indexées avec le provider courant</li>
+                        <li>Les collections <strong>sans corpus</strong> sont exclues (pas de contenu RAG)</li>
+                        <li>Les collections avec corpus vide ou incompatible sont exclues</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3><span class="h3-dot dot-teal"></span>Collections Publiques à Filtrer</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Élément</th>
+                        <th>Endpoint API</th>
+                        <th>Modification</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Corpus publics</td>
+                        <td><code>GET /api/corpus/public</code></td>
+                        <td>Filtrer par <code>indexed_provider = current OR NULL</code></td>
+                    </tr>
+                    <tr>
+                        <td>Sources publiques</td>
+                        <td><code>GET /api/sources/public</code></td>
+                        <td>Filtrer par <code>indexed_provider = current OR NULL</code></td>
+                    </tr>
+                    <tr>
+                        <td>Collections utilisateur</td>
+                        <td><code>GET /api/collections</code></td>
+                        <td>Filtrer les documents par provider</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3><span class="h3-dot dot-amber"></span>Fichiers à Modifier</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fichier</th>
+                        <th>Modification</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>app/features/corpus/router.py</code></td>
+                        <td>Endpoint public : ajouter filtre provider courant</td>
+                    </tr>
+                    <tr>
+                        <td><code>app/features/sources/router.py</code></td>
+                        <td>Endpoint public : ajouter filtre provider courant</td>
+                    </tr>
+                    <tr>
+                        <td><code>UI-FRONT/js/services/rag.js</code></td>
+                        <td>Afficher uniquement les collections compatibles</td>
+                    </tr>
+                    <tr>
+                        <td><code>UI-FRONT/js/components/corpus-selector.js</code></td>
+                        <td>Filtrer la liste des corpus disponibles</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3><span class="h3-dot dot-green"></span>UX Utilisateur</h3>
+            <div class="cards">
+                <div class="card">
+                    <div class="card-title"><span class="badge badge-primary">Affichage</span></div>
+                    <div class="card-text">
+                        <ul>
+                            <li>L'utilisateur ne voit que les collections compatibles</li>
+                            <li>Collections sans corpus = exclues (pas de contenu)</li>
+                            <li>Filtrage transparent côté backend</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-title"><span class="badge badge-accent">Recherche RAG</span></div>
+                    <div class="card-text">
+                        <ul>
+                            <li>Recherche utilise uniquement les collections du provider courant</li>
+                            <li>Pas de mélange d'embeddings incompatibles</li>
+                            <li>Performance optimale (pas de filtre post-recherche)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 6: BDD -->
+        <section class="section" id="bdd">
+            <div class="section-header">
+                <div class="section-icon icon-green">🗄️</div>
+                <div>
+                    <span class="section-num">Section 6</span>
+                    <h2>Modifications Base de Données</h2>
+                </div>
+                <a href="#toc" class="back-to-toc">↑ Sommaire</a>
+            </div>
+
+            <h3><span class="h3-dot dot-blue"></span>Vérification des Champs Existants</h3>
+            <p>Les champs <code>indexed_provider</code> existent déjà sur :</p>
+            <ul class="feature-list">
+                <li><code>documents.indexed_provider</code> <span class="badge badge-success">✓ Existe</span></li>
+                <li><code>context_sources.indexed_provider</code> <span class="badge badge-success">✓ Existe</span></li>
+            </ul>
+
+            <h3><span class="h3-dot dot-amber"></span>Ajout pour Corpus (si nécessaire)</h3>
+            <p>Vérifier si <code>corpus.indexed_provider</code> existe, sinon créer migration :</p>
+            <pre><code># Migration Alembic
+def upgrade():
+    op.add_column('corpus', sa.Column('indexed_provider', sa.String(50), nullable=True))</code></pre>
+
+            <h3><span class="h3-dot dot-green"></span>Index pour Performance</h3>
+            <pre><code># Ajouter index sur indexed_provider pour les requêtes filtrées
+CREATE INDEX idx_documents_provider ON documents(indexed_provider);
+CREATE INDEX idx_sources_provider ON context_sources(indexed_provider);</code></pre>
+        </section>
+
+        <!-- SECTION 7: MIGRATION -->
+        <section class="section" id="migration">
+            <div class="section-header">
+                <div class="section-icon icon-red">🚀</div>
+                <div>
+                    <span class="section-num">Section 7</span>
+                    <h2>Plan de Migration</h2>
+                </div>
+                <a href="#toc" class="back-to-toc">↑ Sommaire</a>
+            </div>
+
+            <h3><span class="h3-dot dot-blue"></span>Étapes d'Implémentation</h3>
+            <div class="vflow">
+                <div class="vflow-step active">
+                    <div class="step-title">Phase 1 : Backend Repository</div>
+                    <div class="step-desc">Ajouter filtre provider aux repositories (documents, sources, corpus)</div>
+                </div>
+                <div class="vflow-step">
+                    <div class="step-title">Phase 2 : Backend Router</div>
+                    <div class="step-desc">Modifier les endpoints de listing pour filtrer • Ajouter le provider courant dans les réponses API</div>
+                </div>
+                <div class="vflow-step">
+                    <div class="step-title">Phase 3 : Frontend Admin (UI-BACK)</div>
+                    <div class="step-desc">Afficher les badges provider • Ajouter l'indicateur global • Modifier les modales corpus</div>
+                </div>
+                <div class="vflow-step">
+                    <div class="step-title">Phase 4 : Frontend Utilisateur (UI-FRONT)</div>
+                    <div class="step-desc">Filtrer collections publiques • Sélecteur corpus compatible • Recherche RAG filtrée</div>
+                </div>
+                <div class="vflow-step">
+                    <div class="step-title">Phase 5 : Tests et Documentation</div>
+                    <div class="step-desc">Tests unitaires pour le filtrage • Tests E2E pour le changement de provider</div>
+                </div>
+            </div>
+
+            <h3><span class="h3-dot dot-amber"></span>Rétrocompatibilité</h3>
+            <div class="callout callout-info">
+                <span class="callout-icon">💡</span>
+                <div>
+                    Les éléments avec <code>indexed_provider = NULL</code> sont considérés comme "legacy".
+                    Ils sont affichés quel que soit le provider courant. Après réindexation, ils obtiennent le provider courant.
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 8: TESTS -->
+        <section class="section" id="tests">
+            <div class="section-header">
+                <div class="section-icon icon-blue">🧪</div>
+                <div>
+                    <span class="section-num">Section 8</span>
+                    <h2>Tests Requis</h2>
+                </div>
+                <a href="#toc" class="back-to-toc">↑ Sommaire</a>
+            </div>
+
+            <div class="two-cols">
+                <div>
+                    <h3><span class="h3-dot dot-blue"></span>Tests Unitaires</h3>
+                    <ul class="feature-list">
+                        <li><code>test_documents_filter_by_provider</code></li>
+                        <li><code>test_sources_filter_by_provider</code></li>
+                        <li><code>test_corpus_content_filter_by_provider</code></li>
+                        <li><code>test_indexation_sets_provider</code></li>
+                        <li><code>test_reindex_updates_provider</code></li>
+                        <li><code>test_public_corpus_filter_by_provider</code></li>
+                        <li><code>test_public_sources_filter_by_provider</code></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3><span class="h3-dot dot-teal"></span>Tests E2E</h3>
+                    <ul class="feature-list">
+                        <li>Changer de provider → l'affichage change</li>
+                        <li>Réindexer un document → badge provider mis à jour</li>
+                        <li>Corpus avec éléments mixtes → filtrage correct</li>
+                        <li>Collections publiques → uniquement provider courant</li>
+                        <li>Chat RAG → recherche dans collections compatibles</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 9: CHECKLIST -->
+        <section class="section" id="checklist">
+            <div class="section-header">
+                <div class="section-icon icon-green">✅</div>
+                <div>
+                    <span class="section-num">Section 9</span>
+                    <h2>Checklist d'Implémentation</h2>
+                </div>
+                <a href="#toc" class="back-to-toc">↑ Sommaire</a>
+            </div>
+
+            <h3><span class="h3-dot dot-blue"></span>Backend</h3>
+            <ul class="checklist checklist-single">
+                <li><span class="check-todo">○</span> Modifier <code>documents/repository.py</code> - filtre provider</li>
+                <li><span class="check-todo">○</span> Modifier <code>documents/router.py</code> - passer filtre</li>
+                <li><span class="check-todo">○</span> Modifier <code>sources/repository.py</code> - filtre provider</li>
+                <li><span class="check-todo">○</span> Modifier <code>sources/router.py</code> - passer filtre</li>
+                <li><span class="check-todo">○</span> Modifier <code>corpus/service.py</code> - filtre contenu</li>
+                <li><span class="check-todo">○</span> Modifier <code>corpus/router.py</code> - endpoints</li>
+                <li><span class="check-todo">○</span> Vérifier/créer migration pour <code>corpus.indexed_provider</code></li>
+            </ul>
+
+            <h3><span class="h3-dot dot-teal"></span>Frontend Admin (UI-BACK)</h3>
+            <ul class="checklist checklist-single">
+                <li><span class="check-todo">○</span> Ajouter badge provider dans <code>documents.js</code></li>
+                <li><span class="check-todo">○</span> Ajouter badge provider dans <code>sources.js</code></li>
+                <li><span class="check-todo">○</span> Supprimer modale choix provider dans <code>sources.js</code></li>
+                <li><span class="check-todo">○</span> Modifier modale contenu corpus</li>
+                <li><span class="check-todo">○</span> Ajouter indicateur provider global (header)</li>
+                <li><span class="check-todo">○</span> Ajouter traductions i18n</li>
+            </ul>
+
+            <h3><span class="h3-dot dot-purple"></span>Frontend Utilisateur (UI-FRONT)</h3>
+            <ul class="checklist checklist-single">
+                <li><span class="check-done">✓</span> Filtrer collections publiques par provider (<code>collections/service.py</code>)</li>
+                <li><span class="check-done">✓</span> Filtrer sources publiques par provider (<code>sources/router.py</code>)</li>
+                <li><span class="check-done">✓</span> Stats corpus filtrées par provider (<code>collections/service.py</code>)</li>
+                <li><span class="check-done">✓</span> Exclure collections sans corpus</li>
+                <li><span class="check-done">✓</span> Afficher display_name des sources dans le chat (<code>ContextResult.display_name</code>)</li>
+                <li><span class="check-done">✓</span> Tests unitaires endpoints publics (<code>tests/api/test_public_provider_filter.py</code>)</li>
+            </ul>
+
+            <h3><span class="h3-dot dot-amber"></span>Tests</h3>
+            <ul class="checklist checklist-single">
+                <li><span class="check-todo">○</span> Tests unitaires filtrage provider</li>
+                <li><span class="check-todo">○</span> Tests E2E changement provider</li>
+            </ul>
+        </section>
+
+        <!-- FOOTER -->
+        <footer class="footer">
+            MY-IA Documentation | Plan Collections par Provider | 2026
+        </footer>
+    </div>
+</body>
+</html>

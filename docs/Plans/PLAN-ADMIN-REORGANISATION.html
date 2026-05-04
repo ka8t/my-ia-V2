@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plan - Réorganisation Admin UI Système</title>
+    <link rel="stylesheet" href="../assets/doc-style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Réorganisation Admin UI - Système</h1>
+            <p class="subtitle">Groupement des 12 sous-onglets en 4 catégories</p>
+            <div class="metadata">
+                <span class="date">2026-02-18</span>
+                <span class="version">v1.0</span>
+                <span class="status status-draft">Draft</span>
+            </div>
+        </header>
+
+        <nav class="toc">
+            <h2>Table des matières</h2>
+            <ol>
+                <li><a href="#section-1">État actuel</a></li>
+                <li><a href="#section-2">Nouvelle organisation</a></li>
+                <li><a href="#section-3">Interface visuelle</a></li>
+                <li><a href="#section-4">Implémentation</a></li>
+            </ol>
+        </nav>
+
+        <!-- Section 1 -->
+        <section id="section-1">
+            <h2>1. État actuel</h2>
+
+            <h3>1.1 Problème</h3>
+            <p>12 sous-onglets alignés horizontalement dans "Système" → difficile à naviguer.</p>
+
+            <h3>1.2 Sous-onglets existants</h3>
+            <table>
+                <thead>
+                    <tr><th>#</th><th>ID</th><th>Fichier JS</th><th>Description</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>1</td><td>modes</td><td>modes.js</td><td>Modes de conversation</td></tr>
+                    <tr><td>2</td><td>password</td><td>password.js</td><td>Politique mot de passe</td></tr>
+                    <tr><td>3</td><td>storage</td><td>storage.js</td><td>Stockage fichiers</td></tr>
+                    <tr><td>4</td><td>llm</td><td>llm.js</td><td>LLM + RAG</td></tr>
+                    <tr><td>5</td><td>chat</td><td>chat.js</td><td>Mémoire conversationnelle</td></tr>
+                    <tr><td>6</td><td>speech</td><td>speech.js</td><td>Speech-to-Text / TTS</td></tr>
+                    <tr><td>7</td><td>smtp</td><td>smtp.js</td><td>Email SMTP</td></tr>
+                    <tr><td>8</td><td>indexation</td><td>indexation.js</td><td>Scheduler indexation</td></tr>
+                    <tr><td>9</td><td>geo</td><td>geo.js</td><td>Données géographiques</td></tr>
+                    <tr><td>10</td><td>logging</td><td>logging.js</td><td>Configuration logs</td></tr>
+                    <tr><td>11</td><td>notifications</td><td>notifications.js</td><td>Notifications</td></tr>
+                    <tr><td>12</td><td>debug</td><td>debug.js</td><td>Options debug</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Section 2 -->
+        <section id="section-2">
+            <h2>2. Nouvelle organisation</h2>
+
+            <h3>2.1 Groupes proposés</h3>
+            <table>
+                <thead>
+                    <tr><th>Groupe</th><th>ID</th><th>Sous-onglets</th><th>Icône</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Application</strong></td>
+                        <td>app</td>
+                        <td>modes, chat, speech, geo</td>
+                        <td>⚙️</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Infrastructure</strong></td>
+                        <td>infra</td>
+                        <td>llm, storage, indexation, <em>apparence</em> (NEW)</td>
+                        <td>🖥️</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Sécurité</strong></td>
+                        <td>security</td>
+                        <td>password, logging, debug</td>
+                        <td>🔒</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Communication</strong></td>
+                        <td>comm</td>
+                        <td>smtp, notifications</td>
+                        <td>📧</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>2.2 Mapping complet</h3>
+            <pre class="code">
+const SYSTEM_GROUPS = {
+    app: {
+        label: 'admin_system_group_app',      // "Application"
+        icon: 'settings',
+        tabs: ['modes', 'chat', 'speech', 'geo']
+    },
+    infra: {
+        label: 'admin_system_group_infra',    // "Infrastructure"
+        icon: 'server',
+        tabs: ['llm', 'storage', 'indexation', 'appearance']
+    },
+    security: {
+        label: 'admin_system_group_security', // "Sécurité"
+        icon: 'shield',
+        tabs: ['password', 'logging', 'debug']
+    },
+    comm: {
+        label: 'admin_system_group_comm',     // "Communication"
+        icon: 'mail',
+        tabs: ['smtp', 'notifications']
+    }
+};
+            </pre>
+        </section>
+
+        <!-- Section 3 -->
+        <section id="section-3">
+            <h2>3. Interface visuelle</h2>
+
+            <h3>3.1 Layout proposé</h3>
+            <pre class="pipeline">
+┌─────────────────────────────────────────────────────────────────────┐
+│  Système                                                            │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐   │
+│  │ Application │ │Infrastructure│ │  Sécurité   │ │Communication│   │
+│  │     ⚙️      │ │     🖥️      │ │     🔒      │ │     📧      │   │
+│  └──────┬──────┘ └─────────────┘ └─────────────┘ └─────────────┘   │
+│         │                                                           │
+│         ▼                                                           │
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │  [Modes]  [Chat]  [Speech]  [Géo]                           │   │
+│  ├─────────────────────────────────────────────────────────────┤   │
+│  │                                                             │   │
+│  │     Contenu du sous-onglet sélectionné                      │   │
+│  │                                                             │   │
+│  └─────────────────────────────────────────────────────────────┘   │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+            </pre>
+
+            <h3>3.2 Comportement</h3>
+            <ul>
+                <li><strong>Niveau 1</strong> : 4 boutons de groupe (Application, Infrastructure, Sécurité, Communication)</li>
+                <li><strong>Niveau 2</strong> : Sous-onglets du groupe sélectionné</li>
+                <li><strong>Persistance</strong> : Mémoriser le dernier groupe/onglet visité</li>
+                <li><strong>Défaut</strong> : Application → Modes</li>
+            </ul>
+
+            <h3>3.3 Template HTML</h3>
+            <pre class="code">
+&lt;template id="system-main-layout"&gt;
+    &lt;div class="admin-section"&gt;
+        &lt;h2&gt;{{title}}&lt;/h2&gt;
+
+        &lt;!-- Niveau 1 : Groupes --&gt;
+        &lt;div class="system-groups"&gt;
+            {{#each groups}}
+            &lt;button class="system-group-btn {{#if isActive}}active{{/if}}"
+                    data-group="{{id}}"&gt;
+                {{{icon}}}
+                &lt;span&gt;{{label}}&lt;/span&gt;
+            &lt;/button&gt;
+            {{/each}}
+        &lt;/div&gt;
+
+        &lt;!-- Niveau 2 : Sous-onglets du groupe actif --&gt;
+        &lt;div class="sub-tabs-bar" id="subTabsBar"&gt;
+            &lt;!-- Généré dynamiquement selon le groupe --&gt;
+        &lt;/div&gt;
+
+        &lt;!-- Contenu --&gt;
+        &lt;div class="sub-tab-content" id="subTabContent"&gt;
+            &lt;!-- Contenu du sous-onglet --&gt;
+        &lt;/div&gt;
+    &lt;/div&gt;
+&lt;/template&gt;
+            </pre>
+
+            <h3>3.4 CSS</h3>
+            <pre class="code">
+/* Groupes de niveau 1 */
+.system-groups {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.system-group-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.system-group-btn:hover {
+    background: var(--bg-tertiary);
+}
+
+.system-group-btn.active {
+    background: var(--accent-color);
+    color: white;
+    border-color: var(--accent-color);
+}
+
+.system-group-btn svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* Sous-onglets niveau 2 */
+.sub-tabs-bar {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.sub-tab {
+    padding: 8px 16px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: all var(--transition-fast);
+}
+
+.sub-tab:hover {
+    color: var(--text-primary);
+}
+
+.sub-tab.active {
+    color: var(--accent-color);
+    border-bottom-color: var(--accent-color);
+}
+            </pre>
+        </section>
+
+        <!-- Section 4 -->
+        <section id="section-4">
+            <h2>4. Implémentation</h2>
+
+            <h3>4.1 Fichiers à modifier</h3>
+            <table>
+                <thead>
+                    <tr><th>Fichier</th><th>Action</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>UI-BACK/js/modules/system.js</code></td>
+                        <td>Ajouter gestion des groupes + navigation 2 niveaux</td>
+                    </tr>
+                    <tr>
+                        <td><code>UI-SHARED/templates/admin/system.html</code></td>
+                        <td>Nouveau template avec groupes</td>
+                    </tr>
+                    <tr>
+                        <td><code>UI-BACK/css/admin.css</code></td>
+                        <td>Styles pour .system-groups et .system-group-btn</td>
+                    </tr>
+                    <tr>
+                        <td><code>UI-SHARED/locales/fr.json</code></td>
+                        <td>Clés i18n pour les groupes</td>
+                    </tr>
+                    <tr>
+                        <td><code>UI-SHARED/locales/en.json</code></td>
+                        <td>Clés i18n pour les groupes</td>
+                    </tr>
+                    <tr>
+                        <td><code>UI-BACK/js/modules/system/appearance.js</code></td>
+                        <td>Créer nouveau module pour les thèmes</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>4.2 Clés i18n à ajouter</h3>
+            <pre class="code">
+{
+    "admin_system_group_app": "Application",
+    "admin_system_group_infra": "Infrastructure",
+    "admin_system_group_security": "Sécurité",
+    "admin_system_group_comm": "Communication"
+}
+            </pre>
+
+            <h3>4.3 Modification SystemModule.js</h3>
+            <pre class="code">
+const SystemModule = {
+    currentGroup: 'app',
+    currentSubTab: 'modes',
+
+    // Configuration des groupes
+    groups: {
+        app: {
+            label: 'admin_system_group_app',
+            icon: 'settings',
+            tabs: ['modes', 'chat', 'speech', 'geo'],
+            defaultTab: 'modes'
+        },
+        infra: {
+            label: 'admin_system_group_infra',
+            icon: 'server',
+            tabs: ['llm', 'storage', 'indexation', 'appearance'],
+            defaultTab: 'llm'
+        },
+        security: {
+            label: 'admin_system_group_security',
+            icon: 'shield',
+            tabs: ['password', 'logging', 'debug'],
+            defaultTab: 'password'
+        },
+        comm: {
+            label: 'admin_system_group_comm',
+            icon: 'mail',
+            tabs: ['smtp', 'notifications'],
+            defaultTab: 'smtp'
+        }
+    },
+
+    async render(container) {
+        // Restaurer état précédent
+        this.currentGroup = localStorage.getItem('admin-system-group') || 'app';
+        this.currentSubTab = localStorage.getItem('admin-system-subtab') || 'modes';
+
+        // Vérifier que le subtab appartient au groupe
+        if (!this.groups[this.currentGroup].tabs.includes(this.currentSubTab)) {
+            this.currentSubTab = this.groups[this.currentGroup].defaultTab;
+        }
+
+        // Render layout avec groupes
+        container.innerHTML = Templates.render('system-main-layout', {
+            title: t('admin_system_title'),
+            groups: Object.entries(this.groups).map(([id, cfg]) => ({
+                id,
+                label: t(cfg.label),
+                icon: Icons[cfg.icon](),
+                isActive: id === this.currentGroup
+            }))
+        });
+
+        this.initGroupTabs();
+        this.renderSubTabs();
+        await this.loadCurrentSubTab();
+    },
+
+    initGroupTabs() {
+        document.querySelectorAll('.system-group-btn').forEach(btn => {
+            btn.onclick = () => this.switchGroup(btn.dataset.group);
+        });
+    },
+
+    switchGroup(groupId) {
+        this.currentGroup = groupId;
+        this.currentSubTab = this.groups[groupId].defaultTab;
+
+        localStorage.setItem('admin-system-group', groupId);
+        localStorage.setItem('admin-system-subtab', this.currentSubTab);
+
+        // Update UI
+        document.querySelectorAll('.system-group-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.group === groupId);
+        });
+
+        this.renderSubTabs();
+        this.loadCurrentSubTab();
+    },
+
+    renderSubTabs() {
+        const group = this.groups[this.currentGroup];
+        const html = group.tabs.map(tabId => `
+            &lt;button class="sub-tab ${tabId === this.currentSubTab ? 'active' : ''}"
+                    data-subtab="${tabId}"&gt;
+                ${t('admin_system_' + tabId)}
+            &lt;/button&gt;
+        `).join('');
+
+        document.getElementById('subTabsBar').innerHTML = html;
+
+        // Bind events
+        document.querySelectorAll('.sub-tab').forEach(tab => {
+            tab.onclick = () => this.switchSubTab(tab.dataset.subtab);
+        });
+    },
+
+    switchSubTab(subtabId) {
+        this.currentSubTab = subtabId;
+        localStorage.setItem('admin-system-subtab', subtabId);
+
+        document.querySelectorAll('.sub-tab').forEach(t => {
+            t.classList.toggle('active', t.dataset.subtab === subtabId);
+        });
+
+        this.loadCurrentSubTab();
+    },
+
+    async loadCurrentSubTab() {
+        // Déléguer au sous-module approprié
+        switch (this.currentSubTab) {
+            case 'modes': await SystemModes.load(); break;
+            case 'chat': await SystemChat.load(); break;
+            case 'speech': await SystemSpeech.load(); break;
+            case 'geo': await SystemGeo.load(); break;
+            case 'llm': await SystemLLM.load(); break;
+            case 'storage': await SystemStorage.load(); break;
+            case 'indexation': await SystemIndexation.load(); break;
+            case 'appearance': await SystemAppearance.load(); break;
+            case 'password': await SystemPassword.load(); break;
+            case 'logging': await SystemLogging.load(); break;
+            case 'debug': await SystemDebug.load(); break;
+            case 'smtp': await SystemSmtp.load(); break;
+            case 'notifications': await SystemNotifications.load(); break;
+        }
+    },
+
+    // ... reste des méthodes déléguées (inchangé)
+};
+            </pre>
+
+            <h3>4.4 Étapes</h3>
+            <ol>
+                <li>Ajouter les clés i18n pour les groupes (fr.json, en.json)</li>
+                <li>Créer le nouveau template <code>system-main-layout</code></li>
+                <li>Ajouter les styles CSS pour les groupes</li>
+                <li>Modifier <code>SystemModule.js</code> avec la logique 2 niveaux</li>
+                <li>Créer <code>system/appearance.js</code> pour les thèmes</li>
+                <li>Tester la navigation entre groupes et sous-onglets</li>
+            </ol>
+        </section>
+
+        <footer class="doc-footer">
+            <p>Document généré le 2026-02-18 | MY-IA Project</p>
+        </footer>
+    </div>
+</body>
+</html>

@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MY-IA &mdash; Plan D&eacute;tection Mode Chatbot/Assistant</title>
+  <link rel="stylesheet" href="assets/doc-style.css">
+  <style>
+    .pipeline { background: var(--bg-code); border-radius: 8px; padding: 1.5rem; margin: 1.5rem 0; font-family: monospace; font-size: 0.9rem; line-height: 1.6; overflow-x: auto; white-space: pre; }
+    .pipeline-title { background: var(--primary); color: white; padding: 0.5rem 1rem; border-radius: 4px 4px 0 0; margin: -1.5rem -1.5rem 1rem -1.5rem; font-weight: bold; }
+    .mode-chatbot { border-left: 4px solid var(--success); background: rgba(46, 204, 113, 0.05); }
+    .mode-assistant { border-left: 4px solid var(--primary); background: rgba(52, 152, 219, 0.05); }
+    .pattern-table { width: 100%; }
+    .pattern-table th { background: var(--primary-light); color: white; }
+    .pattern-table td:first-child { font-family: monospace; font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+
+<!-- ==================== HEADER ==================== -->
+<div class="header">
+  <div class="page">
+    <div class="header-icon">&#x1F916;</div>
+    <div>
+      <h1>D&eacute;tection Automatique Mode Chatbot/Assistant</h1>
+      <div class="subtitle">
+        Analyse de la requ&ecirc;te utilisateur pour adapter automatiquement le style de r&eacute;ponse
+      </div>
+      <div class="meta">
+        <span>Version 1.0</span>
+        <span>18 f&eacute;vrier 2026</span>
+        <span>8 sections</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+
+<!-- ==================== TABLE OF CONTENTS ==================== -->
+<div class="toc" id="toc">
+  <h2>Table des mati&egrave;res</h2>
+  <div class="toc-grid">
+    <a href="#s1"><span class="toc-num">1</span> Objectif &amp; Contexte</a>
+    <a href="#s2"><span class="toc-num">2</span> D&eacute;finition des Modes</a>
+    <a href="#s3"><span class="toc-num">3</span> Architecture Existante</a>
+    <a href="#s4"><span class="toc-num">4</span> Algorithme de D&eacute;tection</a>
+    <a href="#s5"><span class="toc-num">5</span> Int&eacute;gration Backend</a>
+    <a href="#s6"><span class="toc-num">6</span> Interface Utilisateur</a>
+    <a href="#s7"><span class="toc-num">7</span> Configuration BDD</a>
+    <a href="#s8"><span class="toc-num">8</span> Plan d'Impl&eacute;mentation</a>
+  </div>
+</div>
+
+<!-- ==================== SECTION 1 ==================== -->
+<div class="section" id="s1">
+  <div class="section-header">
+    <div class="section-icon icon-blue">&#x1F3AF;</div>
+    <div><h2>Objectif &amp; Contexte <span class="section-num">&mdash; Section 1</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <h3><span class="h3-dot dot-blue"></span> Probl&egrave;me actuel</h3>
+  <p>
+    Le syst&egrave;me MY-IA utilise actuellement un style de r&eacute;ponse unique, d&eacute;fini par le <strong>mode de conversation</strong>
+    (chatbot ou assistant) choisi manuellement lors de la cr&eacute;ation de la conversation.
+  </p>
+
+  <div class="callout callout-warning">
+    <span class="callout-icon">&#x26A0;&#xFE0F;</span>
+    <span>
+      <strong>Limitation :</strong> Un utilisateur qui dit "Bonjour !" re&ccedil;oit une r&eacute;ponse formelle si le mode assistant est actif,
+      ce qui cr&eacute;e une exp&eacute;rience utilisateur d&eacute;connect&eacute;e.
+    </span>
+  </div>
+
+  <h3><span class="h3-dot dot-green"></span> Solution propos&eacute;e</h3>
+  <p>
+    <strong>D&eacute;tecter automatiquement</strong> la nature de chaque message pour adapter le style de r&eacute;ponse en temps r&eacute;el,
+    tout en conservant le RAG actif pour les r&eacute;ponses contextualis&eacute;es.
+  </p>
+
+  <div class="cards">
+    <div class="card mode-chatbot">
+      <div class="card-title">&#x1F60A; Mode Chatbot</div>
+      <div class="card-text">
+        Style <strong>conversationnel</strong>, amical, d&eacute;contract&eacute;.<br>
+        Pour : salutations, bavardage, questions simples, feedback.
+      </div>
+    </div>
+    <div class="card mode-assistant">
+      <div class="card-title">&#x1F4BC; Mode Assistant</div>
+      <div class="card-text">
+        Style <strong>formel</strong>, structur&eacute;, professionnel.<br>
+        Pour : analyses, explications techniques, t&acirc;ches, recherches.
+      </div>
+    </div>
+  </div>
+
+  <h3><span class="h3-dot dot-teal"></span> Principes cl&eacute;s</h3>
+  <ul>
+    <li><strong>RAG toujours actif</strong> : Le contexte documentaire est recherch&eacute; quel que soit le mode</li>
+    <li><strong>D&eacute;tection par message</strong> : Chaque message est analys&eacute; ind&eacute;pendamment</li>
+    <li><strong>Override possible</strong> : L'utilisateur peut forcer un mode via toggle ou pr&eacute;fixe</li>
+    <li><strong>Transparence</strong> : Le mode utilis&eacute; est retourn&eacute; dans la r&eacute;ponse API</li>
+  </ul>
+</div>
+
+<!-- ==================== SECTION 2 ==================== -->
+<div class="section" id="s2">
+  <div class="section-header">
+    <div class="section-icon icon-green">&#x1F3AD;</div>
+    <div><h2>D&eacute;finition des Modes <span class="section-num">&mdash; Section 2</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <h3><span class="h3-dot dot-green"></span> Mode Chatbot (conversationnel)</h3>
+
+  <div class="callout callout-success">
+    <span class="callout-icon">&#x1F4AC;</span>
+    <span>
+      <strong>Ton :</strong> Amical, d&eacute;contract&eacute;, empathique<br>
+      <strong>Format :</strong> R&eacute;ponses courtes, naturelles, pas de listes structur&eacute;es<br>
+      <strong>Ponctuation :</strong> Points d'exclamation, questions rh&eacute;toriques autoris&eacute;s
+    </span>
+  </div>
+
+  <p><strong>Exemples de prompts utilisateur :</strong></p>
+  <ul>
+    <li>"Bonjour !"</li>
+    <li>"&Ccedil;a va ?"</li>
+    <li>"Merci beaucoup"</li>
+    <li>"C'est quoi ton nom ?"</li>
+    <li>"T'es l&agrave; ?"</li>
+  </ul>
+
+  <p><strong>Exemple de r&eacute;ponse chatbot :</strong></p>
+  <div class="pipeline">Bonjour ! Je vais bien, merci de demander. Comment puis-je t'aider aujourd'hui ?</div>
+
+  <h3><span class="h3-dot dot-blue"></span> Mode Assistant (formel)</h3>
+
+  <div class="callout callout-info">
+    <span class="callout-icon">&#x1F4CB;</span>
+    <span>
+      <strong>Ton :</strong> Professionnel, pr&eacute;cis, factuel<br>
+      <strong>Format :</strong> R&eacute;ponses structur&eacute;es, listes, titres si n&eacute;cessaire<br>
+      <strong>Contenu :</strong> Bas&eacute; sur les sources, citations explicites
+    </span>
+  </div>
+
+  <p><strong>Exemples de prompts utilisateur :</strong></p>
+  <ul>
+    <li>"Analyse les tendances du march&eacute; informatique"</li>
+    <li>"Compare les deux approches techniques"</li>
+    <li>"Explique en d&eacute;tail le fonctionnement de X"</li>
+    <li>"Quels sont les KPIs du projet Y ?"</li>
+    <li>"R&eacute;sume le document sur la s&eacute;curit&eacute;"</li>
+  </ul>
+
+  <p><strong>Exemple de r&eacute;ponse assistant :</strong></p>
+  <div class="pipeline">Selon les documents disponibles, voici l'analyse des tendances :
+
+**1. Croissance du secteur**
+- Le march&eacute; IT progresse de 8% par an (Source: rapport_2025.pdf)
+- Les comp&eacute;tences cloud sont les plus demand&eacute;es
+
+**2. Enjeux identifi&eacute;s**
+- P&eacute;nurie de talents qualifi&eacute;s
+- Transformation digitale acc&eacute;l&eacute;r&eacute;e</div>
+</div>
+
+<!-- ==================== SECTION 3 ==================== -->
+<div class="section" id="s3">
+  <div class="section-header">
+    <div class="section-icon icon-purple">&#x1F3D7;&#xFE0F;</div>
+    <div><h2>Architecture Existante <span class="section-num">&mdash; Section 3</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <h3><span class="h3-dot dot-purple"></span> Flux actuel du chat</h3>
+
+  <div class="pipeline">
+    <div class="pipeline-title">FLUX CHAT STREAMING (actuel)</div>
+POST /chat/stream (ChatRequest)
+        &darr;
+   ┌────────────────────────────────────────────┐
+   │  1. Chargement config RAG (BDD)            │
+   │  2. D&eacute;tection mode RAG (fast/full/auto)   │
+   │  3. Contextualisation query (follow-ups)   │
+   │  4. Recherche ChromaDB + Sources           │
+   │  5. Historique conversationnel             │
+   │  6. Construction system prompt (mode_id)   │ &larr; ICI: style fig&eacute; par mode
+   │  7. Appel LLM streaming                    │
+   └────────────────────────────────────────────┘
+        &darr;
+NDJSON: {sources} &rarr; {response}* &rarr; {done}
+  </div>
+
+  <h3><span class="h3-dot dot-teal"></span> Fichiers cl&eacute;s</h3>
+
+  <table class="pattern-table">
+    <thead>
+      <tr>
+        <th>Fichier</th>
+        <th>R&ocirc;le</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>app/features/chat/router.py</td>
+        <td>Endpoints <code>/chat/stream</code>, <code>/assistant</code></td>
+      </tr>
+      <tr>
+        <td>app/features/chat/service.py</td>
+        <td>Logique compl&egrave;te <code>chat_stream()</code> (1196 lignes)</td>
+      </tr>
+      <tr>
+        <td>app/features/chat/schemas.py</td>
+        <td>Schemas <code>ChatRequest</code>, <code>ChatResponse</code></td>
+      </tr>
+      <tr>
+        <td>app/common/utils/rag_config.py</td>
+        <td>Modes RAG (fast/full), d&eacute;tection complexit&eacute;</td>
+      </tr>
+      <tr>
+        <td>app/prompts/*.md</td>
+        <td>System prompts par mode (chatbot/assistant) et langue</td>
+      </tr>
+      <tr>
+        <td>app/features/conversations/models.py</td>
+        <td>Table <code>conversation_modes</code> (prompts BDD)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-amber"></span> M&eacute;canisme existant : Mode RAG</h3>
+  <p>
+    Il existe d&eacute;j&agrave; une d&eacute;tection automatique pour le <strong>mode RAG</strong> (fast vs full) bas&eacute;e sur la complexit&eacute; de la requ&ecirc;te.
+    Ce m&eacute;canisme peut servir de mod&egrave;le pour la d&eacute;tection du style de r&eacute;ponse.
+  </p>
+
+  <div class="pipeline">
+    <div class="pipeline-title">D&Eacute;TECTION EXISTANTE : RAG MODE (rag_config.py:189-248)</div>
+def detect_query_complexity(query: str) -&gt; str:
+    words = len(query.split())
+
+    # Mots-cl&eacute;s indiquant une question complexe
+    complex_keywords = ["d&eacute;taille", "explique", "compare", "analyse",
+                        "pourquoi", "comment fonctionne"]
+
+    if words &lt; 10:
+        return "fast"    # Questions courtes &rarr; mode rapide
+    elif words &gt;= 15 or any(kw in query.lower() for kw in complex_keywords):
+        return "full"    # Questions longues/complexes &rarr; mode complet
+    else:
+        return "fast"    # D&eacute;faut
+  </div>
+</div>
+
+<!-- ==================== SECTION 4 ==================== -->
+<div class="section" id="s4">
+  <div class="section-header">
+    <div class="section-icon icon-red">&#x1F9E0;</div>
+    <div><h2>Algorithme de D&eacute;tection <span class="section-num">&mdash; Section 4</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <h3><span class="h3-dot dot-red"></span> Crit&egrave;res de d&eacute;tection</h3>
+
+  <div class="two-cols">
+    <div>
+      <h4>&#x2192; Mode Chatbot</h4>
+      <table class="pattern-table">
+        <thead><tr><th>Pattern</th><th>Score</th></tr></thead>
+        <tbody>
+          <tr><td>Salutation (bonjour, salut, hello, hi)</td><td>+50</td></tr>
+          <tr><td>&Eacute;mojis pr&eacute;sents</td><td>+30</td></tr>
+          <tr><td>Question &lt; 5 mots</td><td>+20</td></tr>
+          <tr><td>Mots informels (ok, cool, super, merci)</td><td>+15</td></tr>
+          <tr><td>Points d'exclamation multiples</td><td>+10</td></tr>
+          <tr><td>Tutoiement d&eacute;tect&eacute;</td><td>+10</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <h4>&#x2192; Mode Assistant</h4>
+      <table class="pattern-table">
+        <thead><tr><th>Pattern</th><th>Score</th></tr></thead>
+        <tbody>
+          <tr><td>Verbes d'analyse (analyse, compare, explique)</td><td>+40</td></tr>
+          <tr><td>Question &gt; 15 mots</td><td>+30</td></tr>
+          <tr><td>Mots techniques d&eacute;tect&eacute;s</td><td>+25</td></tr>
+          <tr><td>Demande de liste/tableau/code</td><td>+20</td></tr>
+          <tr><td>R&eacute;f&eacute;rence document ("selon", "dans le")</td><td>+15</td></tr>
+          <tr><td>Vouvoiement d&eacute;tect&eacute;</td><td>+10</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <h3><span class="h3-dot dot-green"></span> Algorithme propos&eacute;</h3>
+
+  <div class="pipeline">
+    <div class="pipeline-title">FONCTION : detect_response_style(query: str) -&gt; str</div>
+def detect_response_style(query: str) -&gt; str:
+    """
+    D&eacute;tecte le style de r&eacute;ponse adapt&eacute; &agrave; la requ&ecirc;te.
+
+    Returns:
+        "chatbot" ou "assistant"
+    """
+    query_lower = query.lower().strip()
+    words = query_lower.split()
+    word_count = len(words)
+
+    chatbot_score = 0
+    assistant_score = 0
+
+    # === Patterns Chatbot ===
+    GREETINGS = {"bonjour", "salut", "hello", "hi", "hey", "coucou", "bonsoir"}
+    INFORMAL = {"ok", "cool", "super", "merci", "thanks", "top", "nickel", "parfait"}
+
+    if words and words[0] in GREETINGS:
+        chatbot_score += 50
+    if any(w in INFORMAL for w in words):
+        chatbot_score += 15
+    if any(c in query for c in "&#x1F600;&#x1F44D;&#x2764;&#xFE0F;&#x1F389;"):  # Emojis
+        chatbot_score += 30
+    if word_count &lt; 5:
+        chatbot_score += 20
+    if query.count("!") &gt;= 2:
+        chatbot_score += 10
+    if any(w in words for w in ["tu", "toi", "t'es"]):
+        chatbot_score += 10
+
+    # === Patterns Assistant ===
+    ANALYSIS_VERBS = {"analyse", "compare", "explique", "d&eacute;taille", "r&eacute;sume",
+                      "liste", "d&eacute;cris", "&eacute;value", "synth&eacute;tise"}
+    TECHNICAL = {"api", "code", "fonction", "erreur", "bug", "config", "base de donn&eacute;es",
+                 "serveur", "d&eacute;ploiement", "architecture"}
+
+    if any(v in query_lower for v in ANALYSIS_VERBS):
+        assistant_score += 40
+    if word_count &gt; 15:
+        assistant_score += 30
+    if any(t in query_lower for t in TECHNICAL):
+        assistant_score += 25
+    if any(p in query_lower for p in ["donne-moi la liste", "fais un tableau", "montre le code"]):
+        assistant_score += 20
+    if any(p in query_lower for p in ["selon le document", "dans le fichier", "d'apr&egrave;s"]):
+        assistant_score += 15
+    if any(w in words for w in ["vous", "votre", "pourriez"]):
+        assistant_score += 10
+
+    # === D&eacute;cision ===
+    # Seuil de diff&eacute;rence pour &eacute;viter l'ambiguit&eacute;
+    if chatbot_score &gt; assistant_score + 10:
+        return "chatbot"
+    elif assistant_score &gt; chatbot_score + 10:
+        return "assistant"
+    else:
+        # En cas d'ambiguit&eacute;, pr&eacute;f&eacute;rer assistant (plus s&ucirc;r)
+        return "assistant"
+  </div>
+
+  <h3><span class="h3-dot dot-amber"></span> Cas particuliers</h3>
+
+  <table class="pattern-table">
+    <thead>
+      <tr>
+        <th>Requ&ecirc;te</th>
+        <th>Score Chatbot</th>
+        <th>Score Assistant</th>
+        <th>R&eacute;sultat</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>"Bonjour !"</td>
+        <td>50 + 10 = 60</td>
+        <td>0</td>
+        <td><strong>chatbot</strong></td>
+      </tr>
+      <tr>
+        <td>"Salut, peux-tu m'expliquer comment fonctionne l'API ?"</td>
+        <td>50 + 10 = 60</td>
+        <td>40 + 25 = 65</td>
+        <td><strong>assistant</strong> (ambigu &rarr; assistant)</td>
+      </tr>
+      <tr>
+        <td>"Analyse les performances du serveur de production"</td>
+        <td>0</td>
+        <td>40 + 25 = 65</td>
+        <td><strong>assistant</strong></td>
+      </tr>
+      <tr>
+        <td>"Merci beaucoup !"</td>
+        <td>15 + 20 + 10 = 45</td>
+        <td>0</td>
+        <td><strong>chatbot</strong></td>
+      </tr>
+      <tr>
+        <td>"C'est quoi ?"</td>
+        <td>20</td>
+        <td>0</td>
+        <td><strong>chatbot</strong></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ==================== SECTION 5 ==================== -->
+<div class="section" id="s5">
+  <div class="section-header">
+    <div class="section-icon icon-teal">&#x2699;&#xFE0F;</div>
+    <div><h2>Int&eacute;gration Backend <span class="section-num">&mdash; Section 5</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <h3><span class="h3-dot dot-teal"></span> Modifications des fichiers</h3>
+
+  <h4>1. <code>app/features/chat/schemas.py</code></h4>
+  <div class="pipeline">
+class ChatRequest(BaseModel):
+    query: str
+    session_id: Optional[str] = None
+    collection_name: Optional[str] = None
+    source_ids: Optional[List[str]] = None
+    language: str = "fr"
+    rag_mode: str = "auto"  # fast, full, auto
+    response_style: str = "auto"  # NEW: chatbot, assistant, auto
+
+class ChatResponse(BaseModel):
+    # ... existing fields ...
+    rag_mode_used: Optional[str] = None
+    response_style_used: Optional[str] = None  # NEW
+  </div>
+
+  <h4>2. <code>app/common/utils/rag_config.py</code></h4>
+  <div class="pipeline">
+# Ajouter apr&egrave;s detect_query_complexity()
+
+CHATBOT_GREETINGS = {"bonjour", "salut", "hello", "hi", "hey", "coucou", "bonsoir"}
+CHATBOT_INFORMAL = {"ok", "cool", "super", "merci", "thanks", "top", "nickel"}
+ASSISTANT_VERBS = {"analyse", "compare", "explique", "d&eacute;taille", "r&eacute;sume", "liste"}
+ASSISTANT_TECHNICAL = {"api", "code", "fonction", "erreur", "bug", "config", "serveur"}
+
+def detect_response_style(query: str) -&gt; str:
+    """D&eacute;tecte le style de r&eacute;ponse (chatbot ou assistant)."""
+    # ... impl&eacute;mentation compl&egrave;te ...
+
+async def get_effective_response_style(
+    style: str,
+    query: str,
+    db: AsyncSession
+) -&gt; str:
+    """
+    R&eacute;sout le style effectif.
+
+    Args:
+        style: "auto", "chatbot", ou "assistant"
+        query: La requ&ecirc;te utilisateur
+        db: Session BDD pour config
+
+    Returns:
+        "chatbot" ou "assistant"
+    """
+    if style in ("chatbot", "assistant"):
+        return style
+    return detect_response_style(query)
+  </div>
+
+  <h4>3. <code>app/features/chat/service.py</code></h4>
+  <div class="pipeline">
+async def chat_stream(...):
+    # Apr&egrave;s d&eacute;tection mode RAG (ligne ~1010)
+
+    # D&eacute;tection style de r&eacute;ponse
+    from app.common.utils.rag_config import get_effective_response_style
+
+    effective_style = await get_effective_response_style(
+        request.response_style,
+        request.query,
+        db
+    )
+
+    # Charger le prompt adapt&eacute; au style
+    system_prompt = await load_prompt_with_style(
+        db,
+        mode_id,
+        language,
+        style=effective_style  # NEW
+    )
+
+    # ... reste du flux ...
+
+    # Dans le message "done" final
+    yield json.dumps({
+        "done": True,
+        "rag_mode_used": effective_mode.name,
+        "response_style_used": effective_style,  # NEW
+        # ...
+    })
+  </div>
+
+  <h4>4. <code>app/prompts/</code> - Nouveaux fichiers</h4>
+  <div class="pipeline">
+app/prompts/
+├── chatbot_system_fr.md       # Existant (style conversationnel)
+├── chatbot_system_en.md       # Existant
+├── assistant_system_fr.md     # Existant (style formel)
+├── assistant_system_en.md     # Existant
+├── style_chatbot_fr.md        # NEW: Instructions de style chatbot
+├── style_chatbot_en.md        # NEW
+├── style_assistant_fr.md      # NEW: Instructions de style assistant
+└── style_assistant_en.md      # NEW
+  </div>
+
+  <p>
+    <strong>Alternative :</strong> Plut&ocirc;t que de cr&eacute;er de nouveaux fichiers, on peut injecter dynamiquement
+    des instructions de style dans le prompt existant.
+  </p>
+
+  <div class="pipeline">
+    <div class="pipeline-title">INJECTION DYNAMIQUE DE STYLE</div>
+STYLE_INSTRUCTIONS = {
+    "chatbot": """
+## Style de r&eacute;ponse
+- Ton amical et d&eacute;contract&eacute;
+- R&eacute;ponses courtes et naturelles
+- Pas de listes structur&eacute;es sauf si demand&eacute;
+- Tu peux utiliser des expressions comme "Super !", "Bien s&ucirc;r !"
+""",
+    "assistant": """
+## Style de r&eacute;ponse
+- Ton professionnel et pr&eacute;cis
+- R&eacute;ponses structur&eacute;es avec titres et listes
+- Cite toujours tes sources
+- Reste factuel et objectif
+"""
+}
+
+def build_system_prompt(base_prompt: str, style: str) -&gt; str:
+    return base_prompt + "\n\n" + STYLE_INSTRUCTIONS.get(style, "")
+  </div>
+</div>
+
+<!-- ==================== SECTION 6 ==================== -->
+<div class="section" id="s6">
+  <div class="section-header">
+    <div class="section-icon icon-green">&#x1F5A5;&#xFE0F;</div>
+    <div><h2>Interface Utilisateur <span class="section-num">&mdash; Section 6</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <h3><span class="h3-dot dot-green"></span> Override manuel</h3>
+
+  <p>L'utilisateur peut forcer un style de deux mani&egrave;res :</p>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-title">&#x1F518; Toggle UI</div>
+      <div class="card-text">
+        Bouton dans la barre d'input pour basculer entre Auto / Chatbot / Assistant.
+        La valeur est envoy&eacute;e dans <code>response_style</code>.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x2328;&#xFE0F; Pr&eacute;fixes</div>
+      <div class="card-text">
+        <code>/chat</code> : Force mode chatbot<br>
+        <code>/assistant</code> ou <code>/pro</code> : Force mode assistant<br>
+        Le pr&eacute;fixe est retir&eacute; avant envoi au LLM.
+      </div>
+    </div>
+  </div>
+
+  <h4>Mockup UI</h4>
+  <div class="pipeline">
+┌─────────────────────────────────────────────────────────────┐
+│  &#x1F4AC; Conversation avec [Collection Marche Travail]           │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  &#x1F464; Bonjour !                                               │
+│                                                             │
+│  &#x1F916; Bonjour ! Comment puis-je t'aider aujourd'hui ?         │
+│      [Mode: chatbot]                                        │
+│                                                             │
+│  &#x1F464; Analyse les tendances du recrutement IT                 │
+│                                                             │
+│  &#x1F916; Selon les documents disponibles, voici l'analyse...    │
+│      [Mode: assistant]                                      │
+│                                                             │
+├─────────────────────────────────────────────────────────────┤
+│  [&#x1F916; Auto &#x25BC;] │ Posez votre question...          [Envoyer] │
+└─────────────────────────────────────────────────────────────┘
+                  &uarr;
+            Dropdown: Auto | Chatbot | Assistant
+  </div>
+
+  <h3><span class="h3-dot dot-blue"></span> Fichiers frontend &agrave; modifier</h3>
+
+  <table class="pattern-table">
+    <thead>
+      <tr>
+        <th>Fichier</th>
+        <th>Modification</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>UI-FRONT/index.html</td>
+        <td>Ajouter dropdown/toggle dans la zone input</td>
+      </tr>
+      <tr>
+        <td>UI-FRONT/js/app.js</td>
+        <td>G&eacute;rer l'&eacute;tat du toggle, envoyer <code>response_style</code></td>
+      </tr>
+      <tr>
+        <td>UI-FRONT/css/style.css</td>
+        <td>Styles pour le toggle et indicateur de mode</td>
+      </tr>
+      <tr>
+        <td>UI-SHARED/locales/fr.json</td>
+        <td>Labels : "Auto", "Chatbot", "Assistant", "Mode: {mode}"</td>
+      </tr>
+      <tr>
+        <td>UI-SHARED/locales/en.json</td>
+        <td>Idem en anglais</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-amber"></span> Affichage du mode utilis&eacute;</h3>
+  <p>
+    Apr&egrave;s chaque r&eacute;ponse, afficher discr&egrave;tement le mode utilis&eacute; (si diff&eacute;rent d'auto)
+    pour informer l'utilisateur.
+  </p>
+  <div class="pipeline">
+// Dans la gestion du message "done" du streaming
+if (data.response_style_used &amp;&amp; responseStyleSetting === 'auto') {
+    const modeLabel = data.response_style_used === 'chatbot'
+        ? t('mode_chatbot')
+        : t('mode_assistant');
+    appendModeIndicator(messageEl, modeLabel);
+}
+  </div>
+</div>
+
+<!-- ==================== SECTION 7 ==================== -->
+<div class="section" id="s7">
+  <div class="section-header">
+    <div class="section-icon icon-amber">&#x1F5C4;&#xFE0F;</div>
+    <div><h2>Configuration BDD <span class="section-num">&mdash; Section 7</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <h3><span class="h3-dot dot-amber"></span> Nouvelles cl&eacute;s system_configs</h3>
+
+  <table class="pattern-table">
+    <thead>
+      <tr>
+        <th>Cl&eacute;</th>
+        <th>Type</th>
+        <th>D&eacute;faut</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>chat.style_detection_enabled</td>
+        <td>bool</td>
+        <td>true</td>
+        <td>Activer la d&eacute;tection automatique du style</td>
+      </tr>
+      <tr>
+        <td>chat.style_default</td>
+        <td>string</td>
+        <td>"auto"</td>
+        <td>Style par d&eacute;faut (auto, chatbot, assistant)</td>
+      </tr>
+      <tr>
+        <td>chat.style_ambiguity_threshold</td>
+        <td>int</td>
+        <td>10</td>
+        <td>Diff&eacute;rence de score minimum pour trancher</td>
+      </tr>
+      <tr>
+        <td>chat.style_ambiguity_fallback</td>
+        <td>string</td>
+        <td>"assistant"</td>
+        <td>Style utilis&eacute; en cas d'ambiguit&eacute;</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-teal"></span> Pr&eacute;f&eacute;rence utilisateur</h3>
+  <p>
+    Optionnellement, permettre &agrave; chaque utilisateur de d&eacute;finir son style pr&eacute;f&eacute;r&eacute;
+    dans ses pr&eacute;f&eacute;rences (table <code>user_preferences</code> ou champ sur <code>users</code>).
+  </p>
+
+  <div class="pipeline">
+-- Option 1: Colonne sur users
+ALTER TABLE users ADD COLUMN preferred_response_style VARCHAR(20) DEFAULT 'auto';
+
+-- Option 2: Table user_preferences (si existe)
+INSERT INTO user_preferences (user_id, key, value)
+VALUES ('...', 'response_style', 'assistant');
+  </div>
+</div>
+
+<!-- ==================== SECTION 8 ==================== -->
+<div class="section" id="s8">
+  <div class="section-header">
+    <div class="section-icon icon-red">&#x1F4C5;</div>
+    <div><h2>Plan d'Impl&eacute;mentation <span class="section-num">&mdash; Section 8</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <h3><span class="h3-dot dot-red"></span> Phase 1 : Backend (2-3h)</h3>
+  <ul class="checklist">
+    <li><span class="check-todo">&#x2B1C;</span> Ajouter <code>detect_response_style()</code> dans <code>rag_config.py</code></li>
+    <li><span class="check-todo">&#x2B1C;</span> Ajouter <code>response_style</code> dans <code>ChatRequest</code> et <code>ChatResponse</code></li>
+    <li><span class="check-todo">&#x2B1C;</span> Int&eacute;grer d&eacute;tection dans <code>chat_stream()</code></li>
+    <li><span class="check-todo">&#x2B1C;</span> Cr&eacute;er les instructions de style (injection dynamique)</li>
+    <li><span class="check-todo">&#x2B1C;</span> Ajouter <code>response_style_used</code> dans le message "done"</li>
+    <li><span class="check-todo">&#x2B1C;</span> Tests unitaires pour <code>detect_response_style()</code></li>
+  </ul>
+
+  <h3><span class="h3-dot dot-amber"></span> Phase 2 : Frontend (1-2h)</h3>
+  <ul class="checklist">
+    <li><span class="check-todo">&#x2B1C;</span> Ajouter toggle/dropdown dans l'UI du chat</li>
+    <li><span class="check-todo">&#x2B1C;</span> Envoyer <code>response_style</code> dans les requ&ecirc;tes</li>
+    <li><span class="check-todo">&#x2B1C;</span> G&eacute;rer les pr&eacute;fixes (<code>/chat</code>, <code>/assistant</code>)</li>
+    <li><span class="check-todo">&#x2B1C;</span> Afficher le mode utilis&eacute; apr&egrave;s chaque r&eacute;ponse</li>
+    <li><span class="check-todo">&#x2B1C;</span> Traductions i18n</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-green"></span> Phase 3 : Configuration (30min)</h3>
+  <ul class="checklist">
+    <li><span class="check-todo">&#x2B1C;</span> Ajouter cl&eacute;s <code>chat.style_*</code> dans <code>system_configs</code></li>
+    <li><span class="check-todo">&#x2B1C;</span> UI Admin pour activer/configurer la d&eacute;tection</li>
+    <li><span class="check-todo">&#x2B1C;</span> Documentation utilisateur</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-blue"></span> Phase 4 : Tests E2E (1h)</h3>
+  <ul class="checklist">
+    <li><span class="check-todo">&#x2B1C;</span> Test d&eacute;tection chatbot (salutations)</li>
+    <li><span class="check-todo">&#x2B1C;</span> Test d&eacute;tection assistant (questions techniques)</li>
+    <li><span class="check-todo">&#x2B1C;</span> Test override manuel via API</li>
+    <li><span class="check-todo">&#x2B1C;</span> Test pr&eacute;fixes (<code>/chat</code>, <code>/assistant</code>)</li>
+  </ul>
+
+  <div class="callout callout-success">
+    <span class="callout-icon">&#x2705;</span>
+    <span>
+      <strong>Estimation totale :</strong> 5-6 heures de d&eacute;veloppement<br>
+      <strong>Complexit&eacute; :</strong> Moyenne (r&eacute;utilise l'architecture existante du mode RAG)
+    </span>
+  </div>
+</div>
+
+<!-- ==================== FOOTER ==================== -->
+<div class="footer">
+  <p>
+    <strong>MY-IA</strong> &mdash; Plan D&eacute;tection Mode Chatbot/Assistant<br>
+    <a href="index.html">&#x2190; Retour &agrave; l'index</a> |
+    <a href="TODO.html">TODO</a> |
+    <a href="MY-IA-Technique.html">Documentation technique</a>
+  </p>
+</div>
+
+</div><!-- .page -->
+</body>
+</html>

@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MY-IA &mdash; Installation</title>
+  <link rel="stylesheet" href="../assets/doc-style.css">
+</head>
+<body>
+
+<!-- ==================== HEADER ==================== -->
+<div class="header">
+  <div class="page">
+    <div class="header-icon">&#x1F4E6;</div>
+    <div>
+      <h1>Guide d'installation</h1>
+      <div class="subtitle">
+        Installez MY-IA sur votre serveur en quelques &eacute;tapes simples. Ce guide couvre l'installation compl&egrave;te, de la pr&eacute;paration du serveur &agrave; la v&eacute;rification finale.
+      </div>
+      <div class="meta">
+        <span>&#x23F1; 20 min</span>
+        <span>Administrateur</span>
+        <span>6 sections</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+
+<!-- Navigation -->
+<div class="callout callout-info">
+  <span class="callout-icon">&#x1F3E0;</span>
+  <span><a href="../index.html">&larr; Retour &agrave; l'accueil</a> &nbsp;|&nbsp; <a href="configuration.html">Configuration</a> &nbsp;|&nbsp; <a href="gestion.html">Gestion</a></span>
+</div>
+
+<!-- ==================== TABLE DES MATIERES ==================== -->
+<div class="toc">
+  <h2>Sommaire</h2>
+  <div class="toc-grid">
+    <a href="#prerequis"><span class="toc-num">1</span> Pr&eacute;requis</a>
+    <a href="#serveur"><span class="toc-num">2</span> Pr&eacute;paration serveur</a>
+    <a href="#installation"><span class="toc-num">3</span> Installation</a>
+    <a href="#verification"><span class="toc-num">4</span> V&eacute;rification</a>
+    <a href="#maj"><span class="toc-num">5</span> Mise &agrave; jour</a>
+    <a href="#problemes"><span class="toc-num">6</span> Probl&egrave;mes courants</a>
+  </div>
+</div>
+
+<!-- ==================== PREREQUIS ==================== -->
+<div class="section" id="prerequis">
+  <div class="section-header">
+    <div class="section-icon icon-blue">&#x2705;</div>
+    <div><h2>Pr&eacute;requis <span class="section-num">&mdash; Section 1</span></h2></div>
+  </div>
+
+  <p>Avant de commencer l'installation, assurez-vous de disposer des ressources n&eacute;cessaires.</p>
+
+  <h3><span class="h3-dot dot-blue"></span> Configuration mat&eacute;rielle</h3>
+
+  <table>
+    <thead><tr><th>Profil</th><th>Utilisateurs</th><th>CPU</th><th>RAM</th><th>Disque</th><th>GPU</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="badge badge-success">Small</span></td>
+        <td>&lt; 50</td>
+        <td>4 cores</td>
+        <td>16 Go</td>
+        <td>100 Go SSD</td>
+        <td>Optionnel</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-primary">Medium</span></td>
+        <td>50 - 200</td>
+        <td>8 cores</td>
+        <td>32 Go</td>
+        <td>250 Go SSD</td>
+        <td>NVIDIA 8 Go</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-purple">Large</span></td>
+        <td>&gt; 200</td>
+        <td>16 cores</td>
+        <td>64 Go</td>
+        <td>500 Go SSD</td>
+        <td>NVIDIA 16 Go+</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-info">
+    <span class="callout-icon">&#x1F4A1;</span>
+    <span><strong>GPU optionnel mais recommand&eacute; :</strong> Un GPU NVIDIA acc&eacute;l&egrave;re consid&eacute;rablement les r&eacute;ponses (5-10x plus rapide). MY-IA fonctionne aussi sans GPU en mode CPU.</span>
+  </div>
+
+  <h3><span class="h3-dot dot-blue"></span> Syst&egrave;me d'exploitation</h3>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-title">&#x1F427; Linux (Recommand&eacute;)</div>
+      <div class="card-text">
+        <strong>Ubuntu 22.04 LTS</strong> ou plus r&eacute;cent<br>
+        <strong>Debian 12</strong> (Bookworm)<br>
+        <strong>RHEL 9</strong> / Rocky Linux 9
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F34E; macOS (D&eacute;veloppement)</div>
+      <div class="card-text">
+        macOS 13+ (Ventura)<br>
+        Docker Desktop<br>
+        <em>Note : GPU Metal non support&eacute; par Docker</em>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1FA9F; Windows (D&eacute;veloppement)</div>
+      <div class="card-text">
+        Windows 11 avec WSL2<br>
+        Docker Desktop<br>
+        <em>Note : Performances r&eacute;duites vs Linux natif</em>
+      </div>
+    </div>
+  </div>
+
+  <h3><span class="h3-dot dot-blue"></span> Logiciels requis</h3>
+
+  <table>
+    <thead><tr><th>Logiciel</th><th>Version minimum</th><th>V&eacute;rification</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Docker</strong></td><td>24.0+</td><td><code>docker --version</code></td></tr>
+      <tr><td><strong>Docker Compose</strong></td><td>2.20+</td><td><code>docker compose version</code></td></tr>
+      <tr><td><strong>Git</strong></td><td>2.30+</td><td><code>git --version</code></td></tr>
+      <tr><td><strong>curl</strong></td><td>7.68+</td><td><code>curl --version</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-blue"></span> R&eacute;seau</h3>
+
+  <ul class="feature-list">
+    <li><strong>Ports &agrave; ouvrir</strong> &mdash; 80 (HTTP), 443 (HTTPS), 3000 (UI), 8081 (Admin)</li>
+    <li><strong>Connexion internet</strong> &mdash; Requise pour le t&eacute;l&eacute;chargement initial des images Docker</li>
+    <li><strong>Nom de domaine</strong> &mdash; Optionnel mais recommand&eacute; (pour SSL Let's Encrypt)</li>
+  </ul>
+</div>
+
+<!-- ==================== PREPARATION SERVEUR ==================== -->
+<div class="section" id="serveur">
+  <div class="section-header">
+    <div class="section-icon icon-teal">&#x1F5A5;&#xFE0F;</div>
+    <div><h2>Pr&eacute;paration du serveur <span class="section-num">&mdash; Section 2</span></h2></div>
+  </div>
+
+  <h3><span class="h3-dot dot-teal"></span> Mise &agrave; jour du syst&egrave;me</h3>
+
+  <pre><code># Ubuntu / Debian
+sudo apt update &amp;&amp; sudo apt upgrade -y
+
+# RHEL / Rocky Linux
+sudo dnf update -y</code></pre>
+
+  <h3><span class="h3-dot dot-teal"></span> Installation de Docker</h3>
+
+  <div class="vflow">
+    <div class="vflow-step active">
+      <div class="step-title">1. Installer Docker Engine</div>
+      <div class="step-desc">Script officiel recommand&eacute;</div>
+    </div>
+    <div class="vflow-step active">
+      <div class="step-title">2. Ajouter l'utilisateur au groupe docker</div>
+      <div class="step-desc">Permet d'ex&eacute;cuter docker sans sudo</div>
+    </div>
+    <div class="vflow-step active">
+      <div class="step-title">3. D&eacute;connecter / Reconnecter</div>
+      <div class="step-desc">Pour appliquer les changements de groupe</div>
+    </div>
+    <div class="vflow-step">
+      <div class="step-title">4. V&eacute;rifier l'installation</div>
+      <div class="step-desc">Tester avec docker run hello-world</div>
+    </div>
+  </div>
+
+  <pre><code># Installation Docker (script officiel)
+curl -fsSL https://get.docker.com | sh
+
+# Ajouter l'utilisateur actuel au groupe docker
+sudo usermod -aG docker $USER
+
+# D&eacute;connexion n&eacute;cessaire pour appliquer
+exit
+
+# Apr&egrave;s reconnexion, v&eacute;rifier
+docker run hello-world</code></pre>
+
+  <h3><span class="h3-dot dot-teal"></span> Installation GPU NVIDIA (Optionnel)</h3>
+
+  <p>Si vous disposez d'un GPU NVIDIA :</p>
+
+  <pre><code># Installer les drivers NVIDIA
+sudo apt install nvidia-driver-535
+
+# Installer NVIDIA Container Toolkit
+curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
+  sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
+  sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+sudo apt update &amp;&amp; sudo apt install -y nvidia-container-toolkit
+
+# Red&eacute;marrer Docker
+sudo systemctl restart docker
+
+# V&eacute;rifier
+docker run --rm --gpus all nvidia/cuda:12.0-base nvidia-smi</code></pre>
+
+  <div class="callout callout-warning">
+    <span class="callout-icon">&#x26A0;&#xFE0F;</span>
+    <span><strong>Red&eacute;marrage requis :</strong> Apr&egrave;s l'installation des drivers NVIDIA, un red&eacute;marrage complet du serveur est recommand&eacute;.</span>
+  </div>
+</div>
+
+<!-- ==================== INSTALLATION ==================== -->
+<div class="section" id="installation">
+  <div class="section-header">
+    <div class="section-icon icon-green">&#x1F680;</div>
+    <div><h2>Installation MY-IA <span class="section-num">&mdash; Section 3</span></h2></div>
+  </div>
+
+  <h3><span class="h3-dot dot-green"></span> &Eacute;tape 1 : T&eacute;l&eacute;charger MY-IA</h3>
+
+  <pre><code># Cloner le projet
+git clone https://github.com/votre-org/my-ia.git /opt/my-ia
+cd /opt/my-ia</code></pre>
+
+  <h3><span class="h3-dot dot-green"></span> &Eacute;tape 2 : Configurer l'environnement</h3>
+
+  <pre><code># Copier le fichier de configuration
+cp env.template .env
+
+# &Eacute;diter la configuration
+nano .env</code></pre>
+
+  <p>Param&egrave;tres essentiels &agrave; configurer dans <code>.env</code> :</p>
+
+  <table>
+    <thead><tr><th>Variable</th><th>Description</th><th>Exemple</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>APP_NAME_PREFIX</code></td>
+        <td>Pr&eacute;fixe pour les containers (sans espaces)</td>
+        <td><code>my_ia</code></td>
+      </tr>
+      <tr>
+        <td><code>ADMIN_EMAIL</code></td>
+        <td>Email du premier administrateur</td>
+        <td><code>admin@entreprise.com</code></td>
+      </tr>
+      <tr>
+        <td><code>ADMIN_PASSWORD</code></td>
+        <td>Mot de passe admin (g&eacute;n&eacute;r&eacute; si vide)</td>
+        <td><code>MotDePasseSecurise123!</code></td>
+      </tr>
+      <tr>
+        <td><code>DEPLOY_ENV</code></td>
+        <td>Environnement de d&eacute;ploiement</td>
+        <td><code>prod</code> ou <code>dev</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-warning">
+    <span class="callout-icon">&#x26A0;&#xFE0F;</span>
+    <span><strong>S&eacute;curit&eacute; :</strong> Utilisez un mot de passe fort (min. 12 caract&egrave;res, majuscules, chiffres, symboles). Changez les mots de passe par d&eacute;faut imm&eacute;diatement.</span>
+  </div>
+
+  <h3><span class="h3-dot dot-green"></span> &Eacute;tape 3 : D&eacute;marrer l'application</h3>
+
+  <pre><code># Lancer l'installation et le d&eacute;marrage
+./scripts/start.sh</code></pre>
+
+  <p>Le script effectue automatiquement :</p>
+
+  <ul class="feature-list">
+    <li><strong>G&eacute;n&eacute;ration des cl&eacute;s</strong> &mdash; SECRET_KEY, JWT_SECRET si non d&eacute;finis</li>
+    <li><strong>T&eacute;l&eacute;chargement des images</strong> &mdash; PostgreSQL, ChromaDB, Nginx</li>
+    <li><strong>Construction des containers</strong> &mdash; Application Python, interfaces web</li>
+    <li><strong>Cr&eacute;ation de la base</strong> &mdash; Tables, utilisateur admin, donn&eacute;es initiales</li>
+    <li><strong>D&eacute;marrage des services</strong> &mdash; Tous les containers en s&eacute;quence</li>
+  </ul>
+
+  <div class="callout callout-success">
+    <span class="callout-icon">&#x2705;</span>
+    <span><strong>Installation termin&eacute;e !</strong> Acc&eacute;dez &agrave; <code>https://votre-serveur:3000</code> (utilisateurs) et <code>https://votre-serveur:8081</code> (administration).</span>
+  </div>
+
+  <h3><span class="h3-dot dot-green"></span> &Eacute;tape 4 : Configurer le mod&egrave;le IA</h3>
+
+  <p>MY-IA n&eacute;cessite un mod&egrave;le de langage. Deux options :</p>
+
+  <div class="two-cols">
+    <div>
+      <h4>&#x1F4E6; Option A : Ollama (Recommand&eacute;)</h4>
+      <pre><code># Le container Ollama d&eacute;marre avec MY-IA
+# T&eacute;l&eacute;charger un mod&egrave;le
+docker exec my_ia_ollama ollama pull mistral
+
+# V&eacute;rifier
+docker exec my_ia_ollama ollama list</code></pre>
+    </div>
+    <div>
+      <h4>&#x2699;&#xFE0F; Option B : llama.cpp</h4>
+      <pre><code># T&eacute;l&eacute;charger un mod&egrave;le GGUF
+wget https://huggingface.co/.../model.gguf
+
+# D&eacute;marrer le serveur
+./llama-server -m model.gguf \
+  --embedding --port 8080</code></pre>
+    </div>
+  </div>
+
+  <p>Ensuite, configurez le mod&egrave;le dans l'interface admin : <strong>Configuration &gt; Mod&egrave;le IA</strong>.</p>
+</div>
+
+<!-- ==================== VERIFICATION ==================== -->
+<div class="section" id="verification">
+  <div class="section-header">
+    <div class="section-icon icon-purple">&#x1F50D;</div>
+    <div><h2>V&eacute;rification <span class="section-num">&mdash; Section 4</span></h2></div>
+  </div>
+
+  <p>Apr&egrave;s l'installation, v&eacute;rifiez que tous les composants fonctionnent correctement.</p>
+
+  <h3><span class="h3-dot dot-purple"></span> 1. V&eacute;rifier les containers</h3>
+
+  <pre><code># Lister les containers
+docker compose ps</code></pre>
+
+  <p>Tous les services doivent &ecirc;tre <span class="badge badge-success">Up</span> :</p>
+
+  <table>
+    <thead><tr><th>Service</th><th>&Eacute;tat attendu</th><th>Port</th><th>R&ocirc;le</th></tr></thead>
+    <tbody>
+      <tr><td>app</td><td><span class="badge badge-success">Up (healthy)</span></td><td>8080</td><td>API FastAPI</td></tr>
+      <tr><td>postgres</td><td><span class="badge badge-success">Up (healthy)</span></td><td>5432</td><td>Base de donn&eacute;es</td></tr>
+      <tr><td>chroma</td><td><span class="badge badge-success">Up</span></td><td>8000</td><td>Base vectorielle</td></tr>
+      <tr><td>ui-front</td><td><span class="badge badge-success">Up</span></td><td>3000</td><td>Interface utilisateurs</td></tr>
+      <tr><td>ui-back</td><td><span class="badge badge-success">Up</span></td><td>8081</td><td>Interface admin</td></tr>
+      <tr><td>ollama</td><td><span class="badge badge-success">Up</span></td><td>11434</td><td>Mod&egrave;le IA</td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-purple"></span> 2. Tester l'API</h3>
+
+  <pre><code># Health check
+curl -k https://localhost:8080/health
+
+# R&eacute;ponse attendue :
+{
+  "status": "healthy",
+  "database": true,
+  "chroma": true,
+  "llm": {"provider": "ollama", "status": "connected"}
+}</code></pre>
+
+  <h3><span class="h3-dot dot-purple"></span> 3. Tester la connexion admin</h3>
+
+  <div class="vflow">
+    <div class="vflow-step active">
+      <div class="step-title">Ouvrir l'interface admin</div>
+      <div class="step-desc"><code>https://votre-serveur:8081</code></div>
+    </div>
+    <div class="vflow-step active">
+      <div class="step-title">Se connecter</div>
+      <div class="step-desc">Email et mot de passe d&eacute;finis dans <code>.env</code></div>
+    </div>
+    <div class="vflow-step active">
+      <div class="step-title">V&eacute;rifier le tableau de bord</div>
+      <div class="step-desc">Tous les indicateurs doivent &ecirc;tre verts</div>
+    </div>
+    <div class="vflow-step">
+      <div class="step-title">Tester le chat</div>
+      <div class="step-desc">Poser une question simple pour v&eacute;rifier le mod&egrave;le IA</div>
+    </div>
+  </div>
+
+  <h3><span class="h3-dot dot-purple"></span> 4. Checklist de validation</h3>
+
+  <ul class="checklist checklist-single">
+    <li><span class="check-todo">&#x2B1C;</span> Tous les containers sont <span class="badge badge-success">Up</span></li>
+    <li><span class="check-todo">&#x2B1C;</span> Le health check renvoie "healthy"</li>
+    <li><span class="check-todo">&#x2B1C;</span> Connexion admin r&eacute;ussie</li>
+    <li><span class="check-todo">&#x2B1C;</span> Tableau de bord affiche tous les indicateurs verts</li>
+    <li><span class="check-todo">&#x2B1C;</span> Une question test dans le chat obtient une r&eacute;ponse</li>
+    <li><span class="check-todo">&#x2B1C;</span> L'upload d'un document fonctionne</li>
+  </ul>
+</div>
+
+<!-- ==================== MISE A JOUR ==================== -->
+<div class="section" id="maj">
+  <div class="section-header">
+    <div class="section-icon icon-amber">&#x1F504;</div>
+    <div><h2>Mise &agrave; jour <span class="section-num">&mdash; Section 5</span></h2></div>
+  </div>
+
+  <p>Pour mettre &agrave; jour MY-IA vers une nouvelle version :</p>
+
+  <h3><span class="h3-dot dot-amber"></span> Proc&eacute;dure standard</h3>
+
+  <pre><code># 1. Sauvegarder (obligatoire avant toute mise &agrave; jour)
+./scripts/backup.sh
+
+# 2. Arr&ecirc;ter l'application
+./scripts/stop.sh
+
+# 3. R&eacute;cup&eacute;rer la nouvelle version
+git pull origin main
+
+# 4. Red&eacute;marrer (reconstruction automatique si n&eacute;cessaire)
+./scripts/start.sh
+
+# 5. V&eacute;rifier
+curl -k https://localhost:8080/health</code></pre>
+
+  <div class="callout callout-success">
+    <span class="callout-icon">&#x2705;</span>
+    <span><strong>Donn&eacute;es pr&eacute;serv&eacute;es :</strong> Les documents, utilisateurs et conversations sont stock&eacute;s dans des volumes Docker persistants. Ils ne sont pas affect&eacute;s par les mises &agrave; jour.</span>
+  </div>
+
+  <h3><span class="h3-dot dot-amber"></span> Mise &agrave; jour avec migration</h3>
+
+  <p>Si la mise &agrave; jour inclut des changements de base de donn&eacute;es :</p>
+
+  <pre><code># Les migrations sont appliqu&eacute;es automatiquement au d&eacute;marrage
+# V&eacute;rifier les logs en cas de probl&egrave;me
+docker compose logs -f app</code></pre>
+
+  <h3><span class="h3-dot dot-amber"></span> Rollback</h3>
+
+  <p>En cas de probl&egrave;me apr&egrave;s une mise &agrave; jour :</p>
+
+  <pre><code># Arr&ecirc;ter
+./scripts/stop.sh
+
+# Revenir &agrave; la version pr&eacute;c&eacute;dente
+git checkout v1.2.3  # ou le tag de la version pr&eacute;c&eacute;dente
+
+# Red&eacute;marrer
+./scripts/start.sh
+
+# Restaurer la sauvegarde si n&eacute;cessaire
+./scripts/restore.sh backup-YYYYMMDD.tar.gz</code></pre>
+</div>
+
+<!-- ==================== PROBLEMES ==================== -->
+<div class="section" id="problemes">
+  <div class="section-header">
+    <div class="section-icon icon-red">&#x1F6A8;</div>
+    <div><h2>Probl&egrave;mes courants <span class="section-num">&mdash; Section 6</span></h2></div>
+  </div>
+
+  <h3><span class="h3-dot dot-red"></span> Les containers ne d&eacute;marrent pas</h3>
+
+  <pre><code># Voir les logs d&eacute;taill&eacute;s
+docker compose logs -f app
+
+# Causes fr&eacute;quentes :
+# - Port d&eacute;j&agrave; utilis&eacute; : modifier les ports dans .env
+# - M&eacute;moire insuffisante : v&eacute;rifier avec 'free -h'
+# - Permissions : v&eacute;rifier que l'utilisateur est dans le groupe docker</code></pre>
+
+  <h3><span class="h3-dot dot-red"></span> Erreur "Port already in use"</h3>
+
+  <table>
+    <thead><tr><th>Port</th><th>Service concern&eacute;</th><th>Solution</th></tr></thead>
+    <tbody>
+      <tr><td>3000</td><td>UI Frontend</td><td>Modifier <code>UI_FRONT_PORT</code> dans <code>.env</code></td></tr>
+      <tr><td>8081</td><td>UI Admin</td><td>Modifier <code>UI_BACK_PORT</code> dans <code>.env</code></td></tr>
+      <tr><td>8080</td><td>API</td><td>Modifier <code>APP_PORT</code> dans <code>.env</code></td></tr>
+      <tr><td>5432</td><td>PostgreSQL</td><td>Arr&ecirc;ter le PostgreSQL local</td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-red"></span> Erreur de connexion base de donn&eacute;es</h3>
+
+  <pre><code># V&eacute;rifier que PostgreSQL fonctionne
+docker compose logs postgres
+
+# Red&eacute;marrer PostgreSQL
+docker compose restart postgres
+
+# Attendre 10 secondes puis red&eacute;marrer l'app
+docker compose restart app</code></pre>
+
+  <h3><span class="h3-dot dot-red"></span> Le mod&egrave;le IA ne r&eacute;pond pas</h3>
+
+  <pre><code># V&eacute;rifier Ollama
+docker compose logs ollama
+
+# V&eacute;rifier qu'un mod&egrave;le est install&eacute;
+docker exec my_ia_ollama ollama list
+
+# Si aucun mod&egrave;le, en t&eacute;l&eacute;charger un
+docker exec my_ia_ollama ollama pull mistral</code></pre>
+
+  <h3><span class="h3-dot dot-red"></span> Certificat SSL invalide</h3>
+
+  <p>Par d&eacute;faut, MY-IA utilise un certificat auto-sign&eacute;. Pour la production :</p>
+
+  <pre><code># Installer certbot
+sudo apt install certbot
+
+# G&eacute;n&eacute;rer un certificat Let's Encrypt
+sudo certbot certonly --standalone -d myia.entreprise.com
+
+# Copier les certificats
+sudo cp /etc/letsencrypt/live/myia.entreprise.com/fullchain.pem ssl/
+sudo cp /etc/letsencrypt/live/myia.entreprise.com/privkey.pem ssl/
+
+# Red&eacute;marrer
+docker compose restart ui-front ui-back</code></pre>
+
+  <div class="callout callout-info">
+    <span class="callout-icon">&#x1F4A1;</span>
+    <span><strong>Besoin d'aide ?</strong> Consultez la <a href="../technique/deploiement.html">documentation technique de d&eacute;ploiement</a> pour plus de d&eacute;tails sur les configurations avanc&eacute;es.</span>
+  </div>
+</div>
+
+<!-- ==================== FOOTER ==================== -->
+<div class="footer">
+  MY-IA &mdash; Guide d'installation &mdash; <a href="../index.html">Retour &agrave; l'accueil</a>
+</div>
+
+</div>
+
+</body>
+</html>

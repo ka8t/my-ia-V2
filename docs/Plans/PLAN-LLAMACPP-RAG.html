@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plan RAG llama.cpp — MY-IA</title>
+    <link rel="stylesheet" href="../assets/doc-style.css">
+</head>
+<body>
+    <nav class="toc">
+        <div class="toc-title">Table des matières</div>
+        <ul>
+            <li><a href="#introduction">1. Introduction</a></li>
+            <li><a href="#concepts">2. Concepts fondamentaux</a></li>
+            <li><a href="#architecture">3. Architecture cible</a></li>
+            <li><a href="#etat-actuel">4. État actuel</a></li>
+            <li><a href="#backend">5. Modifications Backend</a></li>
+            <li><a href="#frontend">6. Modifications Frontend</a></li>
+            <li><a href="#scripts">7. Scripts de gestion</a></li>
+            <li><a href="#configuration">8. Configuration BDD</a></li>
+            <li><a href="#tests">9. Tests</a></li>
+            <li><a href="#deploiement">10. Déploiement</a></li>
+            <li><a href="#checklist">11. Checklist finale</a></li>
+        </ul>
+    </nav>
+
+    <main>
+        <h1>Plan d'implémentation RAG avec llama.cpp</h1>
+        <p class="subtitle">Parité fonctionnelle avec Ollama pour l'application MY-IA</p>
+
+        <!-- ================================================================== -->
+        <section id="introduction">
+            <h2>1. Introduction</h2>
+
+            <div class="card">
+                <h3>Objectif</h3>
+                <p>Implémenter un système RAG complet avec <strong>llama.cpp</strong> qui offre les mêmes fonctionnalités que le provider Ollama :</p>
+                <ul>
+                    <li>Chat avec un modèle LLM (génération de texte)</li>
+                    <li>Recherche sémantique dans les documents (embeddings)</li>
+                    <li>Combinaison des deux pour le RAG (Retrieval-Augmented Generation)</li>
+                </ul>
+            </div>
+
+            <div class="card card-warning">
+                <h3>Contrainte technique</h3>
+                <p><strong>llama-server</strong> (llama.cpp) ne peut charger qu'<strong>un seul modèle</strong> en mémoire à la fois.</p>
+                <p>Pour avoir chat + embeddings, il faut <strong>deux instances</strong> de llama-server sur des ports différents.</p>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Provider</th>
+                        <th>Gestion des modèles</th>
+                        <th>Complexité</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Ollama</strong></td>
+                        <td>Automatique (charge/décharge selon besoins)</td>
+                        <td>Simple</td>
+                    </tr>
+                    <tr>
+                        <td><strong>llama.cpp</strong></td>
+                        <td>1 modèle par instance → 2 instances nécessaires</td>
+                        <td>Plus complexe</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- ================================================================== -->
+        <section id="concepts">
+            <h2>2. Concepts fondamentaux</h2>
+
+            <h3>2.1 Qu'est-ce qu'un LLM (Large Language Model) ?</h3>
+            <div class="card">
+                <p>Un <strong>LLM</strong> est un modèle de langage entraîné sur des milliards de textes. Il peut :</p>
+                <ul>
+                    <li>Comprendre et générer du texte en langage naturel</li>
+                    <li>Répondre à des questions avec ses connaissances d'entraînement</li>
+                    <li>Raisonner, résumer, traduire, coder...</li>
+                </ul>
+                <p><strong>Exemples :</strong> Qwen, Llama, Mistral, Gemma, Phi...</p>
+                <p><strong>Limitation :</strong> Ne connaît que ce qu'il a appris pendant l'entraînement (pas vos documents).</p>
+            </div>
+
+            <h3>2.2 Qu'est-ce qu'un Embedding ?</h3>
+            <div class="card">
+                <p>Un <strong>embedding</strong> est une représentation vectorielle (liste de nombres) d'un texte qui capture son <strong>sens sémantique</strong>.</p>
+
+<pre class="ascii">
+"Les congés sont de 25 jours"  →  [0.12, -0.45, 0.78, 0.33, ...]
+                                        │
+                                   768 dimensions
+                                   (varie selon le modèle)
+</pre>
+
+                <p><strong>Propriété clé :</strong> Des textes avec un sens similaire ont des vecteurs proches.</p>
+
+<pre class="ascii">
+"Combien de jours de vacances ?"  →  [0.11, -0.44, 0.79, 0.32, ...]
+                                            ↑
+                                      Très proche du premier !
+</pre>
+
+                <p><strong>Exemples de modèles :</strong> nomic-embed-text, BGE, all-MiniLM, GTE...</p>
+            </div>
+
+            <h3>2.3 Comment fonctionne le RAG ?</h3>
+            <div class="card">
+                <p><strong>RAG = Retrieval-Augmented Generation</strong></p>
+                <p>Combine la recherche dans vos documents + les connaissances du LLM :</p>
+
+<pre class="ascii">
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              FLUX RAG COMPLET                               │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+ PHASE 1 : INDEXATION (une seule fois par document)
+ ─────────────────────────────────────────────────────
+
+   Document PDF                    Modèle Embedding
+        │                                │
+        ▼                                │
+   ┌─────────┐                           │
+   │ Chunking │  → "Les congés..."       │
+   │ (découpe)│  → "Le télétravail..."   │
+   └─────────┘  → "Les RTT sont..."      │
+        │                                │
+        ▼                                ▼
+   ┌──────────────────────────────────────────┐
+   │     EMBEDDING : texte → vecteur          │
+   │                                          │
+   │  "Les congés..."  →  [0.12, -0.45, ...]  │
+   │  "Le télétravail" →  [0.89, 0.12, ...]   │
+   │  "Les RTT sont"   →  [0.34, -0.67, ...]  │
+   └──────────────────────────────────────────┘
+        │
+        ▼
+   ┌─────────────┐
+   │  ChromaDB   │  ← Stocke les vecteurs + textes
+   │  (base      │
+   │  vectorielle)│
+   └─────────────┘
+
+
+ PHASE 2 : RECHERCHE + GÉNÉRATION (à chaque question)
+ ─────────────────────────────────────────────────────
+
+   Question utilisateur              Modèle Embedding
+   "Combien de congés ?"                   │
+        │                                  │
+        ▼                                  ▼
+   ┌──────────────────────────────────────────┐
+   │  EMBEDDING de la question               │
+   │  "Combien de congés ?" → [0.11, -0.44]  │
+   └──────────────────────────────────────────┘
+        │
+        ▼
+   ┌─────────────┐
+   │  ChromaDB   │  ← Recherche les vecteurs les plus proches
+   │  SEARCH     │
+   └─────────────┘
+        │
+        │  Résultats : "Les congés sont de 25 jours..."
+        │              "Les RTT peuvent être..."
+        ▼
+   ┌──────────────────────────────────────────┐
+   │              MODÈLE LLM                  │
+   │                                          │
+   │  Reçoit :                                │
+   │  • La question                           │
+   │  • Les passages trouvés (contexte)       │
+   │  • Ses connaissances générales           │
+   │                                          │
+   │  Génère : réponse complète et précise    │
+   └──────────────────────────────────────────┘
+        │
+        ▼
+   "Selon vos documents, vous avez 25 jours de congés
+    annuels. De plus, le Code du travail prévoit..."
+</pre>
+            </div>
+
+            <h3>2.4 Pourquoi deux modèles différents ?</h3>
+            <div class="card">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Modèle</th>
+                            <th>Rôle</th>
+                            <th>Optimisé pour</th>
+                            <th>Taille typique</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>LLM (Chat)</strong></td>
+                            <td>Générer du texte, répondre</td>
+                            <td>Compréhension, raisonnement, rédaction</td>
+                            <td>0.5 - 7 GB</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Embedding</strong></td>
+                            <td>Transformer texte → vecteur</td>
+                            <td>Similarité sémantique, recherche</td>
+                            <td>20 - 100 MB</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p class="info-box">Un modèle de chat <strong>peut</strong> générer des embeddings, mais la qualité est médiocre. Les modèles d'embedding sont spécialement entraînés pour cette tâche.</p>
+            </div>
+        </section>
+
+        <!-- ================================================================== -->
+        <section id="architecture">
+            <h2>3. Architecture cible</h2>
+
+            <h3>3.1 Vue d'ensemble avec llama.cpp</h3>
+<pre class="ascii">
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         ARCHITECTURE MY-IA + LLAMA.CPP                      │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+                              ┌─────────────────┐
+                              │   UI Frontend   │
+                              │   (Port 3000)   │
+                              └────────┬────────┘
+                                       │
+                              ┌────────▼────────┐
+                              │   UI Backend    │
+                              │   (Port 8081)   │
+                              └────────┬────────┘
+                                       │
+                              ┌────────▼────────┐
+                              │   API FastAPI   │
+                              │   (Port 8080)   │
+                              │                 │
+                              │  LLM Factory    │
+                              │  (sélection     │
+                              │   provider)     │
+                              └───────┬─────────┘
+                                      │
+                   ┌──────────────────┼──────────────────┐
+                   │                  │                  │
+          ┌────────▼────────┐ ┌───────▼───────┐ ┌───────▼───────┐
+          │  llama-server   │ │ llama-server  │ │   ChromaDB    │
+          │  CHAT           │ │ EMBEDDING     │ │               │
+          │  (Port 8085)    │ │ (Port 8086)   │ │  (Port 8000)  │
+          │                 │ │               │ │               │
+          │  Qwen2.5        │ │ Nomic Embed   │ │  Stockage     │
+          │  Llama 3.2      │ │ BGE           │ │  vecteurs     │
+          │  Mistral        │ │ MiniLM        │ │               │
+          └─────────────────┘ └───────────────┘ └───────────────┘
+                   │                  │
+                   │     GPU METAL    │
+                   │   (Apple Silicon)│
+                   └──────────────────┘
+</pre>
+
+            <h3>3.2 Comparaison Ollama vs llama.cpp</h3>
+<pre class="ascii">
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              PROVIDER OLLAMA                                │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+   API FastAPI                    Ollama (Port 11434)
+       │                                │
+       │  /api/chat ─────────────────►  │ ← charge mistral
+       │  /api/embeddings ───────────►  │ ← charge nomic-embed
+       │                                │
+       │                         Gestion automatique
+       │                         des modèles en mémoire
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                             PROVIDER LLAMA.CPP                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+   API FastAPI
+       │
+       ├── Chat ──────────────────►  llama-server CHAT (Port 8085)
+       │                             └── 1 modèle : Qwen2.5
+       │
+       └── Embeddings ────────────►  llama-server EMBED (Port 8086)
+                                     └── 1 modèle : Nomic Embed
+</pre>
+
+            <h3>3.3 Flux de données détaillé</h3>
+            <div class="card">
+                <h4>A. Upload d'un document</h4>
+<pre class="ascii">
+POST /upload/v2/async
+        │
+        ▼
+   ┌─────────────┐
+   │  Ingestion  │
+   │  Service    │
+   └──────┬──────┘
+          │
+          ▼
+   ┌─────────────┐      ┌───────────────────┐
+   │  Chunking   │ ───► │ llama-server EMBED│
+   │  (découpe)  │      │    (Port 8086)    │
+   └─────────────┘      │                   │
+          │             │  GET /v1/embeddings│
+          │             └─────────┬─────────┘
+          │                       │
+          ▼                       ▼
+   ┌─────────────────────────────────────┐
+   │           ChromaDB                  │
+   │  collection.add(                    │
+   │    documents=[chunk1, chunk2, ...], │
+   │    embeddings=[[...], [...], ...],  │
+   │    metadatas=[{source: "doc.pdf"}]  │
+   │  )                                  │
+   └─────────────────────────────────────┘
+</pre>
+
+                <h4>B. Question utilisateur (RAG)</h4>
+<pre class="ascii">
+POST /api/chat/{conversation_id}
+  body: { "query": "Combien de congés ?" }
+        │
+        ▼
+   ┌─────────────┐      ┌───────────────────┐
+   │    Chat     │ ───► │ llama-server EMBED│
+   │   Service   │      │    (Port 8086)    │
+   └─────────────┘      │                   │
+          │             │  Embedding query  │
+          │             └─────────┬─────────┘
+          │                       │
+          ▼                       ▼
+   ┌─────────────────────────────────────┐
+   │           ChromaDB                  │
+   │  collection.query(                  │
+   │    query_embeddings=[...],          │
+   │    n_results=5                      │
+   │  )                                  │
+   │  → ["Les congés sont...", ...]      │
+   └──────────────────┬──────────────────┘
+                      │
+                      ▼
+   ┌─────────────────────────────────────┐
+   │  Construction du prompt             │
+   │                                     │
+   │  System: "Tu es un assistant..."    │
+   │  Context: [documents trouvés]       │
+   │  User: "Combien de congés ?"        │
+   └──────────────────┬──────────────────┘
+                      │
+                      ▼
+             ┌───────────────────┐
+             │ llama-server CHAT │
+             │    (Port 8085)    │
+             │                   │
+             │  /v1/chat/complete│
+             └─────────┬─────────┘
+                       │
+                       ▼
+              Réponse générée
+</pre>
+            </div>
+        </section>
+
+        <!-- ================================================================== -->
+        <section id="etat-actuel">
+            <h2>4. État actuel de l'implémentation</h2>
+
+            <h3>4.1 Ce qui existe déjà</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Composant</th>
+                        <th>Fichier</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Provider LlamaCpp (chat)</td>
+                        <td><code>app/common/llm/llamacpp.py</code></td>
+                        <td><span class="badge badge-success">Implémenté</span></td>
+                    </tr>
+                    <tr>
+                        <td>Provider LlamaCpp (embeddings)</td>
+                        <td><code>app/common/llm/llamacpp.py</code></td>
+                        <td><span class="badge badge-success">Implémenté</span></td>
+                    </tr>
+                    <tr>
+                        <td>Factory provider</td>
+                        <td><code>app/common/llm/factory.py</code></td>
+                        <td><span class="badge badge-success">Implémenté</span></td>
+                    </tr>
+                    <tr>
+                        <td>Script llama-server</td>
+                        <td><code>scripts/llamacpp.sh</code></td>
+                        <td><span class="badge badge-warning">1 instance seulement</span></td>
+                    </tr>
+                    <tr>
+                        <td>UI Admin - Sélection provider</td>
+                        <td><code>UI-BACK/js/modules/system/llm.js</code></td>
+                        <td><span class="badge badge-success">Implémenté</span></td>
+                    </tr>
+                    <tr>
+                        <td>UI Admin - Téléchargement GGUF</td>
+                        <td><code>UI-BACK/js/modules/system/llm.js</code></td>
+                        <td><span class="badge badge-success">Implémenté</span></td>
+                    </tr>
+                    <tr>
+                        <td>Liste modèles embedding GGUF</td>
+                        <td><code>UI-BACK/js/modules/system/llm.js</code></td>
+                        <td><span class="badge badge-success">Implémenté</span></td>
+                    </tr>
+                    <tr>
+                        <td>Configuration 2 instances</td>
+                        <td>-</td>
+                        <td><span class="badge badge-danger">Manquant</span></td>
+                    </tr>
+                    <tr>
+                        <td>Sélection modèle embedding séparé</td>
+                        <td>-</td>
+                        <td><span class="badge badge-danger">Manquant</span></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>4.2 Le problème actuel</h3>
+            <div class="card card-danger">
+                <p>Le provider <code>LlamaCppProvider</code> utilise une <strong>seule URL</strong> (<code>http://host:8085</code>) pour :</p>
+                <ul>
+                    <li><code>/v1/chat/completions</code> → génération de texte</li>
+                    <li><code>/v1/embeddings</code> → génération d'embeddings</li>
+                </ul>
+                <p>Mais llama-server ne peut avoir qu'un modèle chargé. Si c'est un modèle de chat, les embeddings échouent (erreur <code>pooling type 'none'</code>).</p>
+            </div>
+        </section>
+
+        <!-- ================================================================== -->
+        <section id="backend">
+            <h2>5. Modifications Backend</h2>
+
+            <h3>5.1 Nouveau provider avec 2 URLs</h3>
+            <div class="card">
+                <h4>Fichier : <code>app/common/llm/llamacpp.py</code></h4>
+                <p>Modifier le provider pour supporter deux endpoints distincts :</p>
+<pre><code class="language-python">class LlamaCppProvider(LLMProvider):
+    def __init__(
+        self,
+        # Instance CHAT
+        chat_host: Optional[str] = None,
+        chat_port: Optional[int] = None,
+
+        # Instance EMBEDDING
+        embed_host: Optional[str] = None,
+        embed_port: Optional[int] = None,
+
+        # Modèles
+        llm_model: Optional[str] = None,
+        embed_model: Optional[str] = None,
+
+        timeout: Optional[float] = None,
+    ):
+        # URLs distinctes
+        self._chat_host = chat_host or settings.llamacpp_chat_host
+        self._chat_port = chat_port or settings.llamacpp_chat_port
+        self._embed_host = embed_host or settings.llamacpp_embed_host
+        self._embed_port = embed_port or settings.llamacpp_embed_port
+
+        self._chat_url = f"http://{self._chat_host}:{self._chat_port}"
+        self._embed_url = f"http://{self._embed_host}:{self._embed_port}"
+
+        # ... reste du code
+
+    async def generate(self, ...):
+        # Utilise self._chat_url
+        response = await client.post(
+            f"{self._chat_url}/v1/chat/completions",
+            ...
+        )
+
+    async def get_embeddings(self, text: str, model: Optional[str] = None):
+        # Utilise self._embed_url
+        response = await client.post(
+            f"{self._embed_url}/v1/embeddings",
+            ...
+        )
+</code></pre>
+            </div>
+
+            <h3>5.2 Nouvelles variables de configuration</h3>
+            <div class="card">
+                <h4>Fichier : <code>app/core/config.py</code></h4>
+<pre><code class="language-python"># llama.cpp - Instance CHAT
+llamacpp_chat_host: str = "host.docker.internal"
+llamacpp_chat_port: int = 8085
+llamacpp_chat_model: Optional[str] = None
+
+# llama.cpp - Instance EMBEDDING
+llamacpp_embed_host: str = "host.docker.internal"
+llamacpp_embed_port: int = 8086
+llamacpp_embed_model: Optional[str] = None
+</code></pre>
+            </div>
+
+            <h3>5.3 Configuration BDD (bootstrap.py)</h3>
+            <div class="card">
+                <h4>Fichier : <code>app/core/bootstrap.py</code></h4>
+                <p>Ajouter les nouvelles clés de configuration :</p>
+<pre><code class="language-python">DEFAULT_CONFIG = {
+    # ... existant ...
+
+    # llama.cpp dual instance
+    "llm.llamacpp.chat.host": "host.docker.internal",
+    "llm.llamacpp.chat.port": 8085,
+    "llm.llamacpp.chat.model": "",
+
+    "llm.llamacpp.embed.host": "host.docker.internal",
+    "llm.llamacpp.embed.port": 8086,
+    "llm.llamacpp.embed.model": "",
+}
+</code></pre>
+            </div>
+
+            <h3>5.4 Health check dual</h3>
+            <div class="card">
+                <h4>Fichier : <code>app/common/llm/llamacpp.py</code></h4>
+<pre><code class="language-python">async def health_check(self) -> Dict[str, Any]:
+    """Vérifie la santé des deux instances llama-server."""
+
+    chat_status = await self._check_instance(self._chat_url, "chat")
+    embed_status = await self._check_instance(self._embed_url, "embedding")
+
+    return {
+        "status": "healthy" if chat_status["ok"] and embed_status["ok"] else "degraded",
+        "provider": self.provider_name,
+        "instances": {
+            "chat": {
+                "url": self._chat_url,
+                "status": chat_status["status"],
+                "model": chat_status.get("model"),
+            },
+            "embedding": {
+                "url": self._embed_url,
+                "status": embed_status["status"],
+                "model": embed_status.get("model"),
+            }
+        }
+    }
+</code></pre>
+            </div>
+
+            <h3>5.5 Endpoints Admin pour gestion instances</h3>
+            <div class="card">
+                <h4>Fichier : <code>app/features/admin/config/router.py</code></h4>
+                <p>Ajouter des endpoints pour contrôler les instances :</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Endpoint</th>
+                            <th>Méthode</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>/admin/config/llamacpp/instances</code></td>
+                            <td>GET</td>
+                            <td>Liste les instances (chat + embed) avec statut</td>
+                        </tr>
+                        <tr>
+                            <td><code>/admin/config/llamacpp/instances/{type}/start</code></td>
+                            <td>POST</td>
+                            <td>Démarre une instance (type = chat | embed)</td>
+                        </tr>
+                        <tr>
+                            <td><code>/admin/config/llamacpp/instances/{type}/stop</code></td>
+                            <td>POST</td>
+                            <td>Arrête une instance</td>
+                        </tr>
+                        <tr>
+                            <td><code>/admin/config/llamacpp/instances/{type}/restart</code></td>
+                            <td>POST</td>
+                            <td>Redémarre avec un nouveau modèle</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ================================================================== -->
+        <section id="frontend">
+            <h2>6. Modifications Frontend (UI Admin)</h2>
+
+            <h3>6.1 Section llama.cpp avec 2 instances</h3>
+            <div class="card">
+                <h4>Fichier : <code>UI-BACK/js/modules/system/llm.js</code></h4>
+                <p>Modifier <code>_renderLlamacppConfig()</code> pour afficher deux cartes :</p>
+
+<pre class="ascii">
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        Configuration llama.cpp                              │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌─────────────────────────────────┐  ┌─────────────────────────────────┐  │
+│  │  INSTANCE CHAT                  │  │  INSTANCE EMBEDDING             │  │
+│  │  ─────────────────────────────  │  │  ─────────────────────────────  │  │
+│  │                                 │  │                                 │  │
+│  │  Status: ● Running              │  │  Status: ○ Stopped              │  │
+│  │  Port: 8085                     │  │  Port: 8086                     │  │
+│  │  Modèle: qwen2.5-0.5b-instruct  │  │  Modèle: (non configuré)        │  │
+│  │  Mémoire: 600 MB                │  │                                 │  │
+│  │                                 │  │                                 │  │
+│  │  [Changer modèle] [Arrêter]     │  │  [Démarrer]                     │  │
+│  │                                 │  │                                 │  │
+│  └─────────────────────────────────┘  └─────────────────────────────────┘  │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │  Modèles GGUF disponibles                                           │   │
+│  │  ───────────────────────────────────────────────────────────────── │   │
+│  │                                                                     │   │
+│  │  ○ qwen2.5-0.5b-instruct-q4_k_m.gguf     [Chat]     400 MB         │   │
+│  │  ○ nomic-embed-text-v1.5.Q4_K_M.gguf     [Embed]    87 MB          │   │
+│  │  ○ gemma-2-2b-it-Q4_K_M.gguf             [Chat]     1.6 GB         │   │
+│  │                                                                     │   │
+│  │  [Télécharger un modèle]                                            │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+</pre>
+            </div>
+
+            <h3>6.2 Modale de démarrage d'instance</h3>
+            <div class="card">
+                <p>Quand l'utilisateur clique sur "Démarrer" ou "Changer modèle" :</p>
+
+<pre class="ascii">
+┌─────────────────────────────────────────────────────────────────┐
+│  Démarrer l'instance EMBEDDING                            [X]  │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  Modèle GGUF :                                                  │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │ nomic-embed-text-v1.5.Q4_K_M.gguf                   ▼   │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│                                                                 │
+│  Port : 8086                                                    │
+│  GPU Layers : 99 (toutes)                                       │
+│  Context Size : 2048                                            │
+│                                                                 │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │  ⚠️ Cette instance sera dédiée aux embeddings.          │   │
+│  │  Choisissez un modèle d'embedding (nomic, bge, etc.)    │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│                                                                 │
+│                              [Annuler]  [Démarrer]              │
+└─────────────────────────────────────────────────────────────────┘
+</pre>
+            </div>
+
+            <h3>6.3 Templates HTML à ajouter</h3>
+            <div class="card">
+                <h4>Fichier : <code>UI-SHARED/templates/admin/system.html</code></h4>
+                <p>Nouveaux templates :</p>
+                <ul>
+                    <li><code>system-llm-llamacpp-instances</code> - Conteneur des 2 cartes</li>
+                    <li><code>system-llm-llamacpp-instance-card</code> - Carte d'une instance</li>
+                    <li><code>system-llm-llamacpp-instance-modal</code> - Modale de démarrage</li>
+                </ul>
+            </div>
+
+            <h3>6.4 Traductions à ajouter</h3>
+            <div class="card">
+                <h4>Fichiers : <code>UI-SHARED/locales/{fr,en}.json</code></h4>
+<pre><code class="language-json">{
+    "admin_system_llamacpp_instance_chat": "Instance Chat",
+    "admin_system_llamacpp_instance_embed": "Instance Embedding",
+    "admin_system_llamacpp_instance_start": "Démarrer",
+    "admin_system_llamacpp_instance_stop": "Arrêter",
+    "admin_system_llamacpp_instance_change": "Changer modèle",
+    "admin_system_llamacpp_instance_status_running": "En cours",
+    "admin_system_llamacpp_instance_status_stopped": "Arrêté",
+    "admin_system_llamacpp_instance_port": "Port",
+    "admin_system_llamacpp_instance_model": "Modèle",
+    "admin_system_llamacpp_instance_memory": "Mémoire",
+    "admin_system_llamacpp_embed_warning": "Cette instance est dédiée aux embeddings. Choisissez un modèle d'embedding.",
+    "admin_system_llamacpp_chat_warning": "Cette instance est dédiée au chat. Choisissez un modèle de chat/instruct."
+}
+</code></pre>
+            </div>
+
+            <h3>6.5 API Admin JS</h3>
+            <div class="card">
+                <h4>Fichier : <code>UI-BACK/js/services/adminApi.js</code></h4>
+<pre><code class="language-javascript">llamacpp: {
+    instances: () => ApiService.get('/admin/config/llamacpp/instances'),
+    startInstance: (type, model) => ApiService.post(
+        `/admin/config/llamacpp/instances/${type}/start`,
+        { model }
+    ),
+    stopInstance: (type) => ApiService.post(
+        `/admin/config/llamacpp/instances/${type}/stop`
+    ),
+    restartInstance: (type, model) => ApiService.post(
+        `/admin/config/llamacpp/instances/${type}/restart`,
+        { model }
+    ),
+}
+</code></pre>
+            </div>
+        </section>
+
+        <!-- ================================================================== -->
+        <section id="scripts">
+            <h2>7. Scripts de gestion</h2>
+
+            <h3>7.1 Modification de llamacpp.sh</h3>
+            <div class="card">
+                <h4>Fichier : <code>scripts/llamacpp.sh</code></h4>
+                <p>Ajouter le support multi-instance :</p>
+<pre><code class="language-bash">#!/bin/bash
+# Usage:
+#   ./scripts/llamacpp.sh start chat --model models/gguf/qwen.gguf
+#   ./scripts/llamacpp.sh start embed --model models/gguf/nomic.gguf
+#   ./scripts/llamacpp.sh stop chat
+#   ./scripts/llamacpp.sh stop embed
+#   ./scripts/llamacpp.sh status
+
+# Ports par défaut
+CHAT_PORT=8085
+EMBED_PORT=8086
+
+# PID files séparés
+CHAT_PID_FILE="$PROJECT_ROOT/.llamacpp-chat.pid"
+EMBED_PID_FILE="$PROJECT_ROOT/.llamacpp-embed.pid"
+
+start_instance() {
+    local instance_type="$1"  # "chat" ou "embed"
+    shift
+
+    local port=$CHAT_PORT
+    local pid_file=$CHAT_PID_FILE
+    local embed_flag=""
+
+    if [[ "$instance_type" == "embed" ]]; then
+        port=$EMBED_PORT
+        pid_file=$EMBED_PID_FILE
+        embed_flag="--embedding"
+    fi
+
+    # ... logique de démarrage avec le bon port et flag
+}
+
+stop_instance() {
+    local instance_type="$1"
+    # ... arrêter l'instance spécifique
+}
+
+show_status() {
+    echo "=== Instance CHAT (port $CHAT_PORT) ==="
+    # ... statut instance chat
+
+    echo ""
+    echo "=== Instance EMBEDDING (port $EMBED_PORT) ==="
+    # ... statut instance embedding
+}
+</code></pre>
+            </div>
+
+            <h3>7.2 Intégration avec start.sh</h3>
+            <div class="card">
+                <h4>Fichier : <code>scripts/start.sh</code></h4>
+                <p>Option pour démarrer automatiquement les instances llama.cpp :</p>
+<pre><code class="language-bash"># Si provider = llamacpp, démarrer les deux instances
+if [[ "$LLM_PROVIDER" == "llamacpp" ]]; then
+    log_step "Démarrage des instances llama.cpp..."
+
+    # Instance chat (si modèle configuré)
+    if [[ -n "$LLAMACPP_CHAT_MODEL" ]]; then
+        ./scripts/llamacpp.sh start chat --model "$LLAMACPP_CHAT_MODEL"
+    fi
+
+    # Instance embedding (si modèle configuré)
+    if [[ -n "$LLAMACPP_EMBED_MODEL" ]]; then
+        ./scripts/llamacpp.sh start embed --model "$LLAMACPP_EMBED_MODEL"
+    fi
+fi
+</code></pre>
+            </div>
+        </section>
+
+        <!-- ================================================================== -->
+        <section id="configuration">
+            <h2>8. Configuration BDD</h2>
+
+            <h3>8.1 Nouvelles clés system_configs</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Clé</th>
+                        <th>Type</th>
+                        <th>Défaut</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>llm.llamacpp.chat.host</code></td>
+                        <td>string</td>
+                        <td>host.docker.internal</td>
+                        <td>Hôte instance chat</td>
+                    </tr>
+                    <tr>
+                        <td><code>llm.llamacpp.chat.port</code></td>
+                        <td>int</td>
+                        <td>8085</td>
+                        <td>Port instance chat</td>
+                    </tr>
+                    <tr>
+                        <td><code>llm.llamacpp.chat.model</code></td>
+                        <td>string</td>
+                        <td>""</td>
+                        <td>Fichier GGUF chat (chemin relatif)</td>
+                    </tr>
+                    <tr>
+                        <td><code>llm.llamacpp.embed.host</code></td>
+                        <td>string</td>
+                        <td>host.docker.internal</td>
+                        <td>Hôte instance embedding</td>
+                    </tr>
+                    <tr>
+                        <td><code>llm.llamacpp.embed.port</code></td>
+                        <td>int</td>
+                        <td>8086</td>
+                        <td>Port instance embedding</td>
+                    </tr>
+                    <tr>
+                        <td><code>llm.llamacpp.embed.model</code></td>
+                        <td>string</td>
+                        <td>""</td>
+                        <td>Fichier GGUF embedding (chemin relatif)</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>8.2 Migration depuis configuration existante</h3>
+            <div class="card">
+                <p>Les anciennes clés restent supportées pour compatibilité :</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Ancienne clé</th>
+                            <th>Nouvelle clé</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>llm.llamacpp.host</code></td>
+                            <td><code>llm.llamacpp.chat.host</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>llm.llamacpp.port</code></td>
+                            <td><code>llm.llamacpp.chat.port</code></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ================================================================== -->
+        <section id="tests">
+            <h2>9. Tests</h2>
+
+            <h3>9.1 Tests unitaires backend</h3>
+            <div class="card">
+                <h4>Fichier : <code>tests/llm/test_llamacpp_dual.py</code></h4>
+                <ul>
+                    <li>Test génération chat via instance chat</li>
+                    <li>Test embeddings via instance embed</li>
+                    <li>Test health check dual</li>
+                    <li>Test fallback si une instance down</li>
+                    <li>Test configuration depuis BDD</li>
+                </ul>
+            </div>
+
+            <h3>9.2 Tests E2E</h3>
+            <div class="card">
+                <h4>Fichier : <code>scripts/test/e2e/flows/test-llamacpp-rag.sh</code></h4>
+                <ol>
+                    <li>Démarrer les deux instances llama-server</li>
+                    <li>Configurer provider = llamacpp</li>
+                    <li>Upload un document</li>
+                    <li>Vérifier que les embeddings sont générés (via instance embed)</li>
+                    <li>Poser une question RAG</li>
+                    <li>Vérifier que la réponse utilise le contexte</li>
+                </ol>
+            </div>
+
+            <h3>9.3 Test manuel rapide</h3>
+            <div class="card">
+<pre><code class="language-bash"># 1. Démarrer les instances
+./scripts/llamacpp.sh start chat --model models/gguf/qwen2.5-0.5b-instruct-q4_k_m.gguf
+./scripts/llamacpp.sh start embed --model models/gguf/nomic-embed-text-v1.5.Q4_K_M.gguf
+
+# 2. Vérifier le statut
+./scripts/llamacpp.sh status
+
+# 3. Tester les endpoints
+curl http://localhost:8085/health  # Chat
+curl http://localhost:8086/health  # Embed
+
+# 4. Tester les embeddings
+curl -X POST http://localhost:8086/v1/embeddings \
+  -H "Content-Type: application/json" \
+  -d '{"input": "test", "model": "nomic"}'
+
+# 5. Tester le chat
+curl -X POST http://localhost:8085/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{"model": "qwen", "messages": [{"role": "user", "content": "Bonjour"}]}'
+</code></pre>
+            </div>
+        </section>
+
+        <!-- ================================================================== -->
+        <section id="deploiement">
+            <h2>10. Déploiement</h2>
+
+            <h3>10.1 Prérequis</h3>
+            <div class="card">
+                <ul>
+                    <li>llama.cpp compilé avec Metal (<code>bin/llama.cpp/build/bin/llama-server</code>)</li>
+                    <li>Au moins un modèle GGUF de chat téléchargé</li>
+                    <li>Au moins un modèle GGUF d'embedding téléchargé</li>
+                    <li>Ports 8085 et 8086 disponibles</li>
+                </ul>
+            </div>
+
+            <h3>10.2 Mémoire GPU estimée</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Configuration</th>
+                        <th>Chat</th>
+                        <th>Embed</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Minimale</td>
+                        <td>Qwen 0.5B (400 MB)</td>
+                        <td>MiniLM (17 MB)</td>
+                        <td>~500 MB</td>
+                    </tr>
+                    <tr>
+                        <td>Recommandée</td>
+                        <td>Qwen 1.5B (1.1 GB)</td>
+                        <td>Nomic (87 MB)</td>
+                        <td>~1.2 GB</td>
+                    </tr>
+                    <tr>
+                        <td>Performante</td>
+                        <td>Llama 3B (2 GB)</td>
+                        <td>BGE Base (70 MB)</td>
+                        <td>~2.1 GB</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>10.3 Ordre de déploiement</h3>
+            <div class="card">
+                <ol>
+                    <li>Télécharger les modèles GGUF (via UI Admin ou manuellement)</li>
+                    <li>Configurer les clés BDD (<code>llm.llamacpp.chat.model</code>, etc.)</li>
+                    <li>Modifier <code>llm.provider</code> = "llamacpp"</li>
+                    <li>Démarrer les instances via script ou UI</li>
+                    <li>Vérifier le health check</li>
+                    <li>Tester un upload + question RAG</li>
+                </ol>
+            </div>
+        </section>
+
+        <!-- ================================================================== -->
+        <section id="checklist">
+            <h2>11. Checklist finale</h2>
+
+            <h3>Backend</h3>
+            <ul class="checklist">
+                <li><input type="checkbox"> Modifier <code>LlamaCppProvider</code> pour 2 URLs</li>
+                <li><input type="checkbox"> Ajouter settings dans <code>config.py</code></li>
+                <li><input type="checkbox"> Ajouter clés dans <code>bootstrap.py</code></li>
+                <li><input type="checkbox"> Implémenter health check dual</li>
+                <li><input type="checkbox"> Ajouter endpoints admin instances</li>
+                <li><input type="checkbox"> Tests unitaires</li>
+            </ul>
+
+            <h3>Frontend UI Admin</h3>
+            <ul class="checklist">
+                <li><input type="checkbox"> Modifier <code>_renderLlamacppConfig()</code> pour 2 cartes</li>
+                <li><input type="checkbox"> Ajouter modale démarrage instance</li>
+                <li><input type="checkbox"> Ajouter templates HTML</li>
+                <li><input type="checkbox"> Ajouter traductions fr/en</li>
+                <li><input type="checkbox"> Ajouter méthodes API dans <code>adminApi.js</code></li>
+            </ul>
+
+            <h3>Scripts</h3>
+            <ul class="checklist">
+                <li><input type="checkbox"> Modifier <code>llamacpp.sh</code> multi-instance</li>
+                <li><input type="checkbox"> Intégrer dans <code>start.sh</code></li>
+                <li><input type="checkbox"> Ajouter <code>stop.sh</code> pour llama.cpp</li>
+            </ul>
+
+            <h3>Documentation</h3>
+            <ul class="checklist">
+                <li><input type="checkbox"> Mettre à jour MEMORY.md</li>
+                <li><input type="checkbox"> Documenter la configuration dual instance</li>
+            </ul>
+
+            <h3>Tests</h3>
+            <ul class="checklist">
+                <li><input type="checkbox"> Tests unitaires provider dual</li>
+                <li><input type="checkbox"> Tests E2E RAG complet</li>
+                <li><input type="checkbox"> Test manuel sur Mac M1</li>
+            </ul>
+        </section>
+
+    </main>
+
+    <footer>
+        <p>MY-IA — Plan RAG llama.cpp — Généré le 17 février 2026</p>
+    </footer>
+</body>
+</html>

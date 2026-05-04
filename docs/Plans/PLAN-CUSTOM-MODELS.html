@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MY-IA &mdash; Plan Cr&eacute;ation Mod&egrave;les Personnalis&eacute;s</title>
+  <link rel="stylesheet" href="../assets/doc-style.css">
+  <style>
+    .pipeline { background: var(--bg-code); border-radius: 8px; padding: 1.5rem; margin: 1.5rem 0; font-family: monospace; font-size: 0.9rem; line-height: 1.6; overflow-x: auto; white-space: pre; }
+    .pipeline-title { background: var(--primary); color: white; padding: 0.5rem 1rem; border-radius: 4px 4px 0 0; margin: -1.5rem -1.5rem 1rem -1.5rem; font-weight: bold; }
+    .pipeline-new { border: 2px solid var(--accent); }
+    .pipeline-new .pipeline-title { background: var(--accent); }
+    .comparison-table { width: 100%; }
+    .comparison-table th { background: var(--primary-light); color: white; }
+    .comparison-table .better { background: rgba(46, 204, 113, 0.15); font-weight: bold; }
+    .tool-card { border-left: 4px solid var(--primary); }
+    .tool-card.recommended { border-left-color: var(--success); }
+    .tool-card.advanced { border-left-color: var(--accent); }
+  </style>
+</head>
+<body>
+
+<!-- ==================== HEADER ==================== -->
+<div class="header">
+  <div class="page">
+    <div class="header-icon">&#x1F9E0;</div>
+    <div>
+      <h1>Cr&eacute;ation de Mod&egrave;les Personnalis&eacute;s</h1>
+      <div class="subtitle">
+        Fine-tuning et d&eacute;ploiement de LLM sp&eacute;cifiques pour Ollama et llama.cpp
+      </div>
+      <div class="meta">
+        <span>Version 1.0</span>
+        <span>16 f&eacute;vrier 2026</span>
+        <span>12 sections</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+
+<!-- ==================== TABLE OF CONTENTS ==================== -->
+<div class="toc" id="toc">
+  <h2>Table des mati&egrave;res</h2>
+  <div class="toc-grid">
+    <a href="#s1"><span class="toc-num">1</span> Pourquoi des mod&egrave;les personnalis&eacute;s ?</a>
+    <a href="#s2"><span class="toc-num">2</span> Types de personnalisation</a>
+    <a href="#s3"><span class="toc-num">3</span> Architecture Ollama vs llama.cpp</a>
+    <a href="#s4"><span class="toc-num">4</span> Outils de fine-tuning</a>
+    <a href="#s5"><span class="toc-num">5</span> Pr&eacute;paration des donn&eacute;es</a>
+    <a href="#s6"><span class="toc-num">6</span> Pipeline d'entra&icirc;nement</a>
+    <a href="#s7"><span class="toc-num">7</span> Conversion &amp; Quantification</a>
+    <a href="#s8"><span class="toc-num">8</span> Int&eacute;gration MY-IA</a>
+    <a href="#s9"><span class="toc-num">9</span> UI Administration</a>
+    <a href="#s10"><span class="toc-num">10</span> Installation &amp; D&eacute;pendances</a>
+    <a href="#s11"><span class="toc-num">11</span> Phases d'impl&eacute;mentation</a>
+    <a href="#s12"><span class="toc-num">12</span> Ressources mat&eacute;rielles</a>
+  </div>
+</div>
+
+<!-- ==================== SECTION 1 ==================== -->
+<div class="section" id="s1">
+  <div class="section-header">
+    <div class="section-icon icon-red">&#x2753;</div>
+    <div><h2>Pourquoi des mod&egrave;les personnalis&eacute;s ? <span class="section-num">&mdash; Section 1</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <h3><span class="h3-dot dot-red"></span> Limites des mod&egrave;les g&eacute;n&eacute;riques</h3>
+
+  <div class="cards">
+    <div class="card" style="border-top: 3px solid var(--danger);">
+      <div class="card-title">&#x274C; Vocabulaire g&eacute;n&eacute;rique</div>
+      <div class="card-text">
+        Les mod&egrave;les standards ne connaissent pas votre jargon m&eacute;tier, acronymes internes, ou terminologie sp&eacute;cifique.
+      </div>
+    </div>
+    <div class="card" style="border-top: 3px solid var(--danger);">
+      <div class="card-title">&#x274C; Style de r&eacute;ponse</div>
+      <div class="card-text">
+        Ton trop formel/informel, r&eacute;ponses trop longues/courtes, format non adapt&eacute; &agrave; vos besoins.
+      </div>
+    </div>
+    <div class="card" style="border-top: 3px solid var(--danger);">
+      <div class="card-title">&#x274C; Connaissances manquantes</div>
+      <div class="card-text">
+        Le mod&egrave;le ne conna&icirc;t pas vos produits, processus, ou informations internes.
+      </div>
+    </div>
+  </div>
+
+  <h3><span class="h3-dot dot-green"></span> Avantages des mod&egrave;les personnalis&eacute;s</h3>
+
+  <table>
+    <thead>
+      <tr><th>Aspect</th><th>Mod&egrave;le g&eacute;n&eacute;rique</th><th>Mod&egrave;le personnalis&eacute;</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Vocabulaire m&eacute;tier</td><td>&#x274C; Inconnu</td><td class="better">&#x2705; Int&eacute;gr&eacute;</td></tr>
+      <tr><td>Style de r&eacute;ponse</td><td>&#x274C; G&eacute;n&eacute;rique</td><td class="better">&#x2705; Adapt&eacute;</td></tr>
+      <tr><td>Pr&eacute;cision m&eacute;tier</td><td>&#x274C; Variable</td><td class="better">&#x2705; Optimis&eacute;e</td></tr>
+      <tr><td>Taille mod&egrave;le</td><td>Grande (7B+)</td><td class="better">Optimis&eacute;e (2-7B)</td></tr>
+      <tr><td>Latence</td><td>Variable</td><td class="better">R&eacute;duite</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-info">
+    <span class="callout-icon">&#x1F4A1;</span>
+    <span>
+      <strong>Cas d'usage id&eacute;al :</strong> Un mod&egrave;le 3B fine-tun&eacute; sur votre domaine peut surpasser un mod&egrave;le 7B g&eacute;n&eacute;rique pour vos t&acirc;ches sp&eacute;cifiques.
+    </span>
+  </div>
+</div>
+
+<!-- ==================== SECTION 2 ==================== -->
+<div class="section" id="s2">
+  <div class="section-header">
+    <div class="section-icon icon-blue">&#x1F3AF;</div>
+    <div><h2>Types de personnalisation <span class="section-num">&mdash; Section 2</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <div class="pipeline">
+NIVEAUX DE PERSONNALISATION (du plus simple au plus complexe)
+
+&boxdr;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxdl;
+&boxv; <strong>Niveau 1 : System Prompt</strong>                                       &boxv;
+&boxv;   Effort: &#x2B50;           GPU: Non          Temps: Minutes        &boxv;
+&boxv;   Personnalisation du comportement via instructions textuelles   &boxv;
+&boxv;   &rarr; D&eacute;j&agrave; impl&eacute;ment&eacute; dans MY-IA (Admin &gt; LLM &gt; System Prompt)    &boxv;
+&boxur;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxul;
+                              &blacktriangledown;
+&boxdr;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxdl;
+&boxv; <strong>Niveau 2 : RAG (Retrieval-Augmented Generation)</strong>                 &boxv;
+&boxv;   Effort: &#x2B50;&#x2B50;         GPU: Non          Temps: Heures         &boxv;
+&boxv;   Injection de contexte depuis vos documents                     &boxv;
+&boxv;   &rarr; D&eacute;j&agrave; impl&eacute;ment&eacute; dans MY-IA (Corpus, Documents, Sources)      &boxv;
+&boxur;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxul;
+                              &blacktriangledown;
+&boxdr;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxdl;
+&boxv; <strong style="color: var(--accent);">Niveau 3 : Fine-tuning LoRA/QLoRA</strong>                               &boxv;
+&boxv;   Effort: &#x2B50;&#x2B50;&#x2B50;       GPU: 8-24GB       Temps: Heures-Jours    &boxv;
+&boxv;   Entra&icirc;nement d'un adaptateur l&eacute;ger sur vos donn&eacute;es            &boxv;
+&boxv;   &rarr; <strong>CE PLAN</strong> : &Agrave; impl&eacute;menter                                    &boxv;
+&boxur;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxul;
+                              &blacktriangledown;
+&boxdr;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxdl;
+&boxv; <strong>Niveau 4 : Full Fine-tuning</strong>                                     &boxv;
+&boxv;   Effort: &#x2B50;&#x2B50;&#x2B50;&#x2B50;&#x2B50;   GPU: 48GB+        Temps: Jours-Semaines   &boxv;
+&boxv;   R&eacute;entra&icirc;nement complet du mod&egrave;le                               &boxv;
+&boxv;   &rarr; Rarement n&eacute;cessaire, tr&egrave;s co&ucirc;teux                           &boxv;
+&boxur;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxul;</div>
+
+  <h3><span class="h3-dot dot-blue"></span> Focus : Fine-tuning LoRA/QLoRA</h3>
+
+  <p><strong>LoRA</strong> (Low-Rank Adaptation) permet d'entra&icirc;ner un petit &laquo; adaptateur &raquo; au lieu de modifier tout le mod&egrave;le :</p>
+
+  <table>
+    <thead>
+      <tr><th>M&eacute;thode</th><th>VRAM requise</th><th>Param&egrave;tres entra&icirc;n&eacute;s</th><th>Qualit&eacute;</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Full Fine-tuning</td><td>48-80 GB</td><td>100%</td><td>Maximale</td></tr>
+      <tr><td class="better">LoRA</td><td class="better">16-24 GB</td><td>~1-5%</td><td>Excellente</td></tr>
+      <tr><td class="better">QLoRA</td><td class="better">8-16 GB</td><td>~1-5%</td><td>Tr&egrave;s bonne</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-success">
+    <span class="callout-icon">&#x2705;</span>
+    <span>
+      <strong>Recommandation :</strong> <strong>QLoRA</strong> offre le meilleur rapport qualit&eacute;/ressources pour un usage local sur Mac M1/M2/M3 ou GPU consumer.
+    </span>
+  </div>
+</div>
+
+<!-- ==================== SECTION 3 ==================== -->
+<div class="section" id="s3">
+  <div class="section-header">
+    <div class="section-icon icon-purple">&#x1F504;</div>
+    <div><h2>Architecture Ollama vs llama.cpp <span class="section-num">&mdash; Section 3</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <h3><span class="h3-dot dot-purple"></span> Formats de mod&egrave;les par provider</h3>
+
+  <div class="pipeline">
+&boxdr;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxdl;
+&boxv;                      PIPELINE DE CR&Eacute;ATION                        &boxv;
+&boxur;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxul;
+                              &boxv;
+        &boxdr;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&blacktriangleright;&blacktriangleleft;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxdl;
+        &boxv;                                               &boxv;
+        &blacktriangledown;                                               &blacktriangledown;
+&boxdr;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxdl;      &boxdr;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxdl;
+&boxv;          OLLAMA               &boxv;      &boxv;        LLAMA.CPP            &boxv;
+&boxvr;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxvl;      &boxvr;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxvl;
+&boxv;                            &boxv;      &boxv;                            &boxv;
+&boxv;  Format: Modelfile         &boxv;      &boxv;  Format: GGUF              &boxv;
+&boxv;  Base: safetensors/GGUF    &boxv;      &boxv;  Quantification: Q4_K_M    &boxv;
+&boxv;                            &boxv;      &boxv;                            &boxv;
+&boxv;  Commande:                 &boxv;      &boxv;  Commande:                 &boxv;
+&boxv;  ollama create mymodel     &boxv;      &boxv;  llama-server --model x    &boxv;
+&boxv;    -f Modelfile            &boxv;      &boxv;    --embedding             &boxv;
+&boxv;                            &boxv;      &boxv;                            &boxv;
+&boxv;  Stockage:                 &boxv;      &boxv;  Stockage:                 &boxv;
+&boxv;  ~/.ollama/models/         &boxv;      &boxv;  models/gguf/              &boxv;
+&boxv;                            &boxv;      &boxv;                            &boxv;
+&boxur;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxul;      &boxur;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxul;</div>
+
+  <h3><span class="h3-dot dot-blue"></span> Ollama : Modelfile</h3>
+
+  <pre><code># Modelfile pour mod&egrave;le personnalis&eacute;
+FROM ./my-finetuned-model.gguf
+
+# Ou depuis un mod&egrave;le de base + LoRA
+FROM mistral:7b
+ADAPTER ./my-lora-adapter.gguf
+
+# Configuration
+PARAMETER temperature 0.7
+PARAMETER top_p 0.9
+PARAMETER num_ctx 4096
+
+# System prompt par d&eacute;faut
+SYSTEM """
+Tu es un assistant sp&eacute;cialis&eacute; dans [DOMAINE].
+Tu utilises le vocabulaire technique de l'entreprise.
+"""
+
+# Template de prompt (optionnel)
+TEMPLATE """{{ .System }}
+
+### Instruction:
+{{ .Prompt }}
+
+### R&eacute;ponse:
+"""</code></pre>
+
+  <h3><span class="h3-dot dot-amber"></span> llama.cpp : GGUF direct</h3>
+
+  <pre><code># Lancement avec mod&egrave;le personnalis&eacute;
+./llama-server \
+  --model models/gguf/my-finetuned-model-q4_k_m.gguf \
+  --embedding \
+  --port 8081 \
+  --ctx-size 4096 \
+  --n-gpu-layers 99
+
+# Ou avec LoRA s&eacute;par&eacute;
+./llama-server \
+  --model models/gguf/mistral-7b-q4_k_m.gguf \
+  --lora models/gguf/my-lora-adapter.gguf \
+  --embedding \
+  --port 8081</code></pre>
+
+  <div class="callout callout-warning">
+    <span class="callout-icon">&#x26A0;&#xFE0F;</span>
+    <span>
+      <strong>Important :</strong> Les mod&egrave;les d'<strong>embedding</strong> doivent aussi &ecirc;tre coh&eacute;rents.
+      Si vous fine-tunez le LLM, gardez le m&ecirc;me mod&egrave;le d'embedding (nomic-embed-text) pour le RAG.
+    </span>
+  </div>
+</div>
+
+<!-- ==================== SECTION 4 ==================== -->
+<div class="section" id="s4">
+  <div class="section-header">
+    <div class="section-icon icon-teal">&#x1F6E0;&#xFE0F;</div>
+    <div><h2>Outils de fine-tuning <span class="section-num">&mdash; Section 4</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <h3><span class="h3-dot dot-teal"></span> Comparatif des outils</h3>
+
+  <div class="cards">
+    <div class="card tool-card recommended">
+      <div class="card-title">&#x2B50; Unsloth (Recommand&eacute;)</div>
+      <div class="card-text">
+        <strong>Site :</strong> <a href="https://github.com/unslothai/unsloth">github.com/unslothai/unsloth</a><br><br>
+        <strong>Avantages :</strong><br>
+        &bull; 2-5x plus rapide que HuggingFace<br>
+        &bull; 60-80% moins de VRAM<br>
+        &bull; Export GGUF int&eacute;gr&eacute;<br>
+        &bull; Gratuit et open-source<br><br>
+        <strong>GPU requis :</strong> 8GB+ (QLoRA) / 16GB+ (LoRA)<br>
+        <strong>Support Mac :</strong> Via MLX (exp&eacute;rimental)
+      </div>
+    </div>
+    <div class="card tool-card recommended">
+      <div class="card-title">&#x2B50; MLX (Mac Silicon)</div>
+      <div class="card-text">
+        <strong>Site :</strong> <a href="https://github.com/ml-explore/mlx">github.com/ml-explore/mlx</a><br><br>
+        <strong>Avantages :</strong><br>
+        &bull; Optimis&eacute; pour Apple Silicon<br>
+        &bull; Unified Memory (RAM = VRAM)<br>
+        &bull; Fine-tuning LoRA natif<br>
+        &bull; Conversion GGUF facile<br><br>
+        <strong>GPU requis :</strong> Mac M1/M2/M3 (16GB+ RAM)<br>
+        <strong>Id&eacute;al pour :</strong> D&eacute;veloppement local
+      </div>
+    </div>
+    <div class="card tool-card">
+      <div class="card-title">&#x1F539; Axolotl</div>
+      <div class="card-text">
+        <strong>Site :</strong> <a href="https://github.com/OpenAccess-AI-Collective/axolotl">github.com/OpenAccess-AI-Collective/axolotl</a><br><br>
+        <strong>Avantages :</strong><br>
+        &bull; Configuration YAML simple<br>
+        &bull; Support multi-GPU<br>
+        &bull; Beaucoup de formats de donn&eacute;es<br><br>
+        <strong>GPU requis :</strong> 24GB+ (LoRA) / 16GB+ (QLoRA)
+      </div>
+    </div>
+    <div class="card tool-card advanced">
+      <div class="card-title">&#x1F7E0; LLaMA-Factory</div>
+      <div class="card-text">
+        <strong>Site :</strong> <a href="https://github.com/hiyouga/LLaMA-Factory">github.com/hiyouga/LLaMA-Factory</a><br><br>
+        <strong>Avantages :</strong><br>
+        &bull; Interface Web int&eacute;gr&eacute;e<br>
+        &bull; 100+ mod&egrave;les support&eacute;s<br>
+        &bull; Visualisation des m&eacute;triques<br><br>
+        <strong>GPU requis :</strong> 16GB+ (QLoRA)
+      </div>
+    </div>
+  </div>
+
+  <h3><span class="h3-dot dot-green"></span> Recommandation par plateforme</h3>
+
+  <table>
+    <thead>
+      <tr><th>Plateforme</th><th>Outil recommand&eacute;</th><th>Raison</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="better">Mac M1/M2/M3</td><td class="better">MLX + mlx-lm</td><td>Natif Apple Silicon, unified memory</td></tr>
+      <tr><td>NVIDIA GPU (local)</td><td>Unsloth</td><td>Rapide, peu de VRAM</td></tr>
+      <tr><td>Cloud (RunPod, Vast.ai)</td><td>Axolotl ou Unsloth</td><td>Flexibilit&eacute;, multi-GPU</td></tr>
+      <tr><td>Interface graphique</td><td>LLaMA-Factory</td><td>UI Web, pas de code</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ==================== SECTION 5 ==================== -->
+<div class="section" id="s5">
+  <div class="section-header">
+    <div class="section-icon icon-amber">&#x1F4DD;</div>
+    <div><h2>Pr&eacute;paration des donn&eacute;es <span class="section-num">&mdash; Section 5</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <h3><span class="h3-dot dot-amber"></span> Formats de donn&eacute;es accept&eacute;s</h3>
+
+  <div class="cards">
+    <div class="card" style="border-top: 3px solid var(--success);">
+      <div class="card-title">&#x2705; Format Alpaca (Recommand&eacute;)</div>
+      <div class="card-text">
+        <pre><code>{
+  "instruction": "Explique la proc&eacute;dure de d&eacute;marrage",
+  "input": "",
+  "output": "Pour d&eacute;marrer le syst&egrave;me..."
+}</code></pre>
+      </div>
+    </div>
+    <div class="card" style="border-top: 3px solid var(--primary);">
+      <div class="card-title">&#x1F7E6; Format ChatML</div>
+      <div class="card-text">
+        <pre><code>{
+  "messages": [
+    {"role": "system", "content": "Tu es..."},
+    {"role": "user", "content": "Question"},
+    {"role": "assistant", "content": "R&eacute;ponse"}
+  ]
+}</code></pre>
+      </div>
+    </div>
+    <div class="card" style="border-top: 3px solid var(--accent);">
+      <div class="card-title">&#x1F7E0; Format ShareGPT</div>
+      <div class="card-text">
+        <pre><code>{
+  "conversations": [
+    {"from": "human", "value": "Question"},
+    {"from": "gpt", "value": "R&eacute;ponse"}
+  ]
+}</code></pre>
+      </div>
+    </div>
+  </div>
+
+  <h3><span class="h3-dot dot-blue"></span> Sources de donn&eacute;es pour MY-IA</h3>
+
+  <div class="pipeline">
+SOURCES INTERNES MY-IA
+&boxvr;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;
+&boxv;
+&boxvr;&boxh;&boxh; 1. Historique de conversations (chat_messages)
+&boxv;   &boxur;&boxh;&boxh; Export: question utilisateur + r&eacute;ponse valid&eacute;e
+&boxv;
+&boxvr;&boxh;&boxh; 2. Documents index&eacute;s (documents)
+&boxv;   &boxur;&boxh;&boxh; G&eacute;n&eacute;ration: Q&A synth&eacute;tiques depuis le contenu
+&boxv;
+&boxvr;&boxh;&boxh; 3. FAQ / Base de connaissances
+&boxv;   &boxur;&boxh;&boxh; Format: question &rarr; r&eacute;ponse attendue
+&boxv;
+&boxur;&boxh;&boxh; 4. Corrections manuelles
+    &boxur;&boxh;&boxh; Feedback utilisateur: "La bonne r&eacute;ponse &eacute;tait..."</div>
+
+  <h3><span class="h3-dot dot-green"></span> Script d'export depuis MY-IA</h3>
+
+  <pre><code># scripts/export_training_data.py
+
+import json
+from sqlalchemy import select
+from app.models import ChatMessage, Conversation
+
+async def export_conversations_to_alpaca(output_path: str):
+    """
+    Exporte les conversations MY-IA en format Alpaca.
+    """
+    async with async_session() as db:
+        # R&eacute;cup&eacute;rer les conversations avec feedback positif
+        result = await db.execute(
+            select(ChatMessage)
+            .where(ChatMessage.feedback_score >= 4)  # Bons feedbacks
+            .order_by(ChatMessage.created_at)
+        )
+        messages = result.scalars().all()
+
+        training_data = []
+        for i in range(0, len(messages) - 1, 2):
+            if messages[i].role == "user" and messages[i+1].role == "assistant":
+                training_data.append({
+                    "instruction": messages[i].content,
+                    "input": "",
+                    "output": messages[i+1].content
+                })
+
+        with open(output_path, "w", encoding="utf-8") as f:
+            json.dump(training_data, f, ensure_ascii=False, indent=2)
+
+        print(f"Export&eacute; {len(training_data)} exemples vers {output_path}")</code></pre>
+
+  <h3><span class="h3-dot dot-red"></span> Quantit&eacute; de donn&eacute;es recommand&eacute;e</h3>
+
+  <table>
+    <thead>
+      <tr><th>Objectif</th><th>Exemples minimum</th><th>Exemples id&eacute;al</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Adaptation de style</td><td>100-500</td><td>1,000+</td></tr>
+      <tr><td>Vocabulaire m&eacute;tier</td><td>500-1,000</td><td>5,000+</td></tr>
+      <tr><td>T&acirc;che sp&eacute;cifique</td><td>1,000-5,000</td><td>10,000+</td></tr>
+      <tr><td>Domaine complet</td><td>10,000+</td><td>50,000+</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-info">
+    <span class="callout-icon">&#x1F4A1;</span>
+    <span>
+      <strong>Qualit&eacute; &gt; Quantit&eacute; :</strong> 500 exemples de haute qualit&eacute; valent mieux que 5,000 exemples bruit&eacute;s.
+      V&eacute;rifiez manuellement un &eacute;chantillon de vos donn&eacute;es avant l'entra&icirc;nement.
+    </span>
+  </div>
+</div>
+
+<!-- ==================== SECTION 6 ==================== -->
+<div class="section" id="s6">
+  <div class="section-header">
+    <div class="section-icon icon-green">&#x1F680;</div>
+    <div><h2>Pipeline d'entra&icirc;nement <span class="section-num">&mdash; Section 6</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <h3><span class="h3-dot dot-green"></span> Pipeline complet</h3>
+
+  <div class="pipeline pipeline-new">
+<div class="pipeline-title">PIPELINE FINE-TUNING COMPLET</div>
+&boxdr;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxdl;
+&boxv; 1. PR&Eacute;PARATION    &boxv;
+&boxv;    DONN&Eacute;ES        &boxv;
+&boxur;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxul;
+        &boxv;
+        &boxv;  &bull; Export conversations MY-IA
+        &boxv;  &bull; G&eacute;n&eacute;ration Q&A synth&eacute;tiques
+        &boxv;  &bull; Nettoyage et validation
+        &boxv;  &bull; Split train/val (90/10)
+        &blacktriangledown;
+&boxdr;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxdl;
+&boxv; 2. CONFIGURATION  &boxv;
+&boxv;    ENTRA&Icirc;NEMENT   &boxv;
+&boxur;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxul;
+        &boxv;
+        &boxv;  &bull; Choix mod&egrave;le de base (Mistral, Llama, Qwen)
+        &boxv;  &bull; Hyperparams: lr=2e-4, epochs=3, batch=4
+        &boxv;  &bull; LoRA rank=16, alpha=32
+        &blacktriangledown;
+&boxdr;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxdl;
+&boxv; 3. ENTRA&Icirc;NEMENT   &boxv;  &larr; GPU requis (ou Cloud)
+&boxv;    QLoRA/LoRA     &boxv;
+&boxur;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxul;
+        &boxv;
+        &boxv;  &bull; Dur&eacute;e: 1-8h selon donn&eacute;es
+        &boxv;  &bull; Monitoring: loss, val_loss
+        &boxv;  &bull; Checkpoints automatiques
+        &blacktriangledown;
+&boxdr;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxdl;
+&boxv; 4. FUSION         &boxv;
+&boxv;    LoRA + Base    &boxv;
+&boxur;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxul;
+        &boxv;
+        &boxv;  &bull; Merger l'adaptateur avec le mod&egrave;le
+        &boxv;  &bull; Ou garder s&eacute;par&eacute; (--lora flag)
+        &blacktriangledown;
+&boxdr;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxdl;
+&boxv; 5. CONVERSION     &boxv;
+&boxv;    GGUF           &boxv;
+&boxur;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxul;
+        &boxv;
+        &boxv;  &bull; Quantification: Q4_K_M (recommand&eacute;)
+        &boxv;  &bull; Taille: ~4GB pour 7B
+        &blacktriangledown;
+&boxdr;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxdl;
+&boxv; 6. D&Eacute;PLOIEMENT    &boxv;
+&boxv;    Ollama/llama   &boxv;
+&boxur;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxul;
+        &boxv;
+        &blacktriangledown;
+    [MOD&Egrave;LE PERSONNALIS&Eacute; ACTIF]</div>
+
+  <h3><span class="h3-dot dot-blue"></span> Exemple avec Unsloth</h3>
+
+  <pre><code># train_custom_model.py
+from unsloth import FastLanguageModel
+from datasets import load_dataset
+from trl import SFTTrainer
+from transformers import TrainingArguments
+
+# 1. Charger le mod&egrave;le de base
+model, tokenizer = FastLanguageModel.from_pretrained(
+    model_name="unsloth/mistral-7b-v0.3-bnb-4bit",
+    max_seq_length=2048,
+    load_in_4bit=True,  # QLoRA
+)
+
+# 2. Ajouter LoRA
+model = FastLanguageModel.get_peft_model(
+    model,
+    r=16,              # Rank
+    lora_alpha=32,
+    lora_dropout=0.05,
+    target_modules=["q_proj", "k_proj", "v_proj", "o_proj"],
+)
+
+# 3. Charger les donn&eacute;es
+dataset = load_dataset("json", data_files="training_data.json")
+
+# 4. Entra&icirc;ner
+trainer = SFTTrainer(
+    model=model,
+    tokenizer=tokenizer,
+    train_dataset=dataset["train"],
+    dataset_text_field="text",
+    max_seq_length=2048,
+    args=TrainingArguments(
+        per_device_train_batch_size=4,
+        gradient_accumulation_steps=4,
+        num_train_epochs=3,
+        learning_rate=2e-4,
+        output_dir="./output",
+        logging_steps=10,
+        save_steps=100,
+    ),
+)
+
+trainer.train()
+
+# 5. Sauvegarder en GGUF
+model.save_pretrained_gguf(
+    "my-custom-model",
+    tokenizer,
+    quantization_method="q4_k_m"
+)</code></pre>
+
+  <h3><span class="h3-dot dot-amber"></span> Exemple avec MLX (Mac)</h3>
+
+  <pre><code># Sur Mac M1/M2/M3
+pip install mlx-lm
+
+# Fine-tuning LoRA
+python -m mlx_lm.lora \
+  --model mistralai/Mistral-7B-v0.3 \
+  --data training_data.json \
+  --train \
+  --iters 1000 \
+  --batch-size 4 \
+  --lora-layers 16
+
+# Fusion et conversion GGUF
+python -m mlx_lm.fuse \
+  --model mistralai/Mistral-7B-v0.3 \
+  --adapter-path adapters \
+  --save-path my-custom-model
+
+python -m mlx_lm.convert \
+  --model my-custom-model \
+  --quantize q4_k_m \
+  --output my-custom-model.gguf</code></pre>
+</div>
+
+<!-- ==================== SECTION 7 ==================== -->
+<div class="section" id="s7">
+  <div class="section-header">
+    <div class="section-icon icon-blue">&#x1F504;</div>
+    <div><h2>Conversion &amp; Quantification <span class="section-num">&mdash; Section 7</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <h3><span class="h3-dot dot-blue"></span> Niveaux de quantification GGUF</h3>
+
+  <table>
+    <thead>
+      <tr><th>Format</th><th>Taille (7B)</th><th>Qualit&eacute;</th><th>Vitesse</th><th>Recommandation</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>F16</td><td>~14 GB</td><td>&#x2B50;&#x2B50;&#x2B50;&#x2B50;&#x2B50;</td><td>Lent</td><td>R&eacute;f&eacute;rence seulement</td></tr>
+      <tr><td>Q8_0</td><td>~7 GB</td><td>&#x2B50;&#x2B50;&#x2B50;&#x2B50;&#x2B50;</td><td>Moyen</td><td>Si VRAM suffisante</td></tr>
+      <tr><td class="better">Q5_K_M</td><td class="better">~5 GB</td><td>&#x2B50;&#x2B50;&#x2B50;&#x2B50;</td><td>Rapide</td><td class="better">Meilleur compromis</td></tr>
+      <tr><td class="better">Q4_K_M</td><td class="better">~4 GB</td><td>&#x2B50;&#x2B50;&#x2B50;&#x2B50;</td><td>Tr&egrave;s rapide</td><td class="better">Recommand&eacute; (d&eacute;faut)</td></tr>
+      <tr><td>Q3_K_M</td><td>~3 GB</td><td>&#x2B50;&#x2B50;&#x2B50;</td><td>Tr&egrave;s rapide</td><td>Si RAM tr&egrave;s limit&eacute;e</td></tr>
+      <tr><td>Q2_K</td><td>~2.5 GB</td><td>&#x2B50;&#x2B50;</td><td>Ultra rapide</td><td>&Eacute;viter (qualit&eacute; d&eacute;grad&eacute;e)</td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-green"></span> Script de conversion</h3>
+
+  <pre><code># Depuis safetensors vers GGUF
+git clone https://github.com/ggerganov/llama.cpp
+cd llama.cpp
+
+# Conversion
+python convert_hf_to_gguf.py \
+  /path/to/my-finetuned-model \
+  --outfile my-model-f16.gguf \
+  --outtype f16
+
+# Quantification
+./llama-quantize \
+  my-model-f16.gguf \
+  my-model-q4_k_m.gguf \
+  Q4_K_M</code></pre>
+
+  <h3><span class="h3-dot dot-purple"></span> Structure de fichiers recommand&eacute;e</h3>
+
+  <div class="pipeline">models/
+&boxvr;&boxh;&boxh; gguf/
+&boxv;   &boxvr;&boxh;&boxh; base/
+&boxv;   &boxv;   &boxvr;&boxh;&boxh; mistral-7b-v0.3-q4_k_m.gguf
+&boxv;   &boxv;   &boxur;&boxh;&boxh; nomic-embed-text-v1.5.Q8_0.gguf
+&boxv;   &boxv;
+&boxv;   &boxur;&boxh;&boxh; custom/
+&boxv;       &boxvr;&boxh;&boxh; my-company-assistant-q4_k_m.gguf
+&boxv;       &boxvr;&boxh;&boxh; my-support-bot-q4_k_m.gguf
+&boxv;       &boxur;&boxh;&boxh; my-sales-expert-q4_k_m.gguf
+&boxv;
+&boxur;&boxh;&boxh; training/
+    &boxvr;&boxh;&boxh; datasets/
+    &boxv;   &boxur;&boxh;&boxh; my-company-qa.json
+    &boxur;&boxh;&boxh; checkpoints/
+        &boxur;&boxh;&boxh; my-company-assistant-lora/</div>
+</div>
+
+<!-- ==================== SECTION 8 ==================== -->
+<div class="section" id="s8">
+  <div class="section-header">
+    <div class="section-icon icon-purple">&#x1F517;</div>
+    <div><h2>Int&eacute;gration MY-IA <span class="section-num">&mdash; Section 8</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <h3><span class="h3-dot dot-purple"></span> Configuration dans system_configs</h3>
+
+  <table>
+    <thead>
+      <tr><th>Cl&eacute;</th><th>Exemple</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>llm.ollama.llm_model</code></td><td><code>my-company:latest</code></td><td>Mod&egrave;le personnalis&eacute; Ollama</td></tr>
+      <tr><td><code>llm.llamacpp.llm_model</code></td><td><code>my-company-q4_k_m.gguf</code></td><td>Mod&egrave;le personnalis&eacute; llama.cpp</td></tr>
+      <tr><td><code>llm.custom_models_path</code></td><td><code>/models/gguf/custom/</code></td><td>Dossier des mod&egrave;les custom</td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-blue"></span> D&eacute;ploiement Ollama</h3>
+
+  <pre><code># 1. Cr&eacute;er le Modelfile
+cat > Modelfile << 'EOF'
+FROM ./my-company-assistant-q4_k_m.gguf
+
+PARAMETER temperature 0.7
+PARAMETER num_ctx 4096
+
+SYSTEM """
+Tu es l'assistant IA de [ENTREPRISE].
+Tu r&eacute;ponds de mani&egrave;re professionnelle et pr&eacute;cise.
+"""
+EOF
+
+# 2. Cr&eacute;er le mod&egrave;le Ollama
+ollama create my-company -f Modelfile
+
+# 3. Tester
+ollama run my-company "Bonjour, pr&eacute;sente-toi"
+
+# 4. Configurer MY-IA (Admin UI)
+# Syst&egrave;me > LLM > Provider: Ollama
+# Mod&egrave;le LLM: my-company:latest</code></pre>
+
+  <h3><span class="h3-dot dot-amber"></span> D&eacute;ploiement llama.cpp</h3>
+
+  <pre><code># 1. Copier le mod&egrave;le
+cp my-company-assistant-q4_k_m.gguf /path/to/my-ia/models/gguf/custom/
+
+# 2. Lancer llama-server
+./llama-server \
+  --model models/gguf/custom/my-company-assistant-q4_k_m.gguf \
+  --embedding \
+  --port 8081 \
+  --ctx-size 4096 \
+  --n-gpu-layers 99
+
+# 3. Configurer MY-IA (Admin UI)
+# Syst&egrave;me > LLM > Provider: llama.cpp
+# Mod&egrave;le LLM: my-company-assistant-q4_k_m.gguf</code></pre>
+
+  <h3><span class="h3-dot dot-green"></span> Nouveau : S&eacute;lecteur de mod&egrave;le custom</h3>
+
+  <p>Fonctionnalit&eacute; &agrave; impl&eacute;menter dans l'Admin UI :</p>
+
+  <div class="pipeline">&boxdr;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxdl;
+&boxv; Syst&egrave;me &gt; LLM &gt; Mod&egrave;les                                       &boxv;
+&boxvr;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxvl;
+&boxv;                                                             &boxv;
+&boxv; Provider actif: [Ollama &#x25BC;]                                 &boxv;
+&boxv;                                                             &boxv;
+&boxv; &boxdr;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxdl;     &boxv;
+&boxv; &boxv; Mod&egrave;les disponibles                                  &boxv;     &boxv;
+&boxv; &boxvr;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxvl;     &boxv;
+&boxv; &boxv;  &#x25C9; mistral:7b              [Standard]              &boxv;     &boxv;
+&boxv; &boxv;  &#x25CB; llama3:8b               [Standard]              &boxv;     &boxv;
+&boxv; &boxv;  &#x25CB; my-company:latest       [Custom] &#x2B50;             &boxv;     &boxv;
+&boxv; &boxv;  &#x25CB; my-support-bot:latest   [Custom] &#x2B50;             &boxv;     &boxv;
+&boxv; &boxur;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxul;     &boxv;
+&boxv;                                                             &boxv;
+&boxv; [+ Importer un mod&egrave;le GGUF]  [&#x1F504; Rafra&icirc;chir la liste]      &boxv;
+&boxv;                                                             &boxv;
+&boxur;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxul;</div>
+</div>
+
+<!-- ==================== SECTION 9 ==================== -->
+<div class="section" id="s9">
+  <div class="section-header">
+    <div class="section-icon icon-teal">&#x1F5A5;&#xFE0F;</div>
+    <div><h2>UI Administration <span class="section-num">&mdash; Section 9</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <h3><span class="h3-dot dot-teal"></span> Nouvelles pages Admin</h3>
+
+  <div class="cards">
+    <div class="card" style="border-top: 3px solid var(--primary);">
+      <div class="card-title">&#x1F4CA; Dashboard Mod&egrave;les</div>
+      <div class="card-text">
+        <strong>Route :</strong> <code>/admin/models</code><br><br>
+        &bull; Liste des mod&egrave;les disponibles (standard + custom)<br>
+        &bull; Statut de chaque mod&egrave;le (actif, taille, provider)<br>
+        &bull; Boutons: Activer, T&eacute;l&eacute;charger, Supprimer
+      </div>
+    </div>
+    <div class="card" style="border-top: 3px solid var(--accent);">
+      <div class="card-title">&#x1F4DD; Export Donn&eacute;es d'entra&icirc;nement</div>
+      <div class="card-text">
+        <strong>Route :</strong> <code>/admin/models/export</code><br><br>
+        &bull; S&eacute;lection des conversations &agrave; exporter<br>
+        &bull; Filtres: date, feedback, utilisateur<br>
+        &bull; Format de sortie: Alpaca, ChatML, ShareGPT<br>
+        &bull; T&eacute;l&eacute;chargement JSON
+      </div>
+    </div>
+    <div class="card" style="border-top: 3px solid var(--success);">
+      <div class="card-title">&#x1F680; Progression Entra&icirc;nement</div>
+      <div class="card-text">
+        <strong>Route :</strong> <code>/admin/models/training</code><br><br>
+        &bull; Upload du dataset<br>
+        &bull; Configuration hyperparams<br>
+        &bull; Barre de progression en temps r&eacute;el<br>
+        &bull; Logs et m&eacute;triques (loss, val_loss)<br>
+        &bull; T&eacute;l&eacute;chargement du mod&egrave;le final
+      </div>
+    </div>
+  </div>
+
+  <h3><span class="h3-dot dot-green"></span> Maquette : Page Entra&icirc;nement</h3>
+
+  <div class="pipeline">&boxdr;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxdl;
+&boxv; &#x1F9E0; Entra&icirc;nement de Mod&egrave;le Personnalis&eacute;                              &boxv;
+&boxvr;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxvl;
+&boxv;                                                                     &boxv;
+&boxv;  &Eacute;tape 1: Donn&eacute;es                                                   &boxv;
+&boxv;  &boxdr;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxdl;   &boxv;
+&boxv;  &boxv; [&#x1F4C1; Importer JSON]  ou  [&#x1F4E4; Exporter depuis MY-IA]         &boxv;   &boxv;
+&boxv;  &boxv;                                                               &boxv;   &boxv;
+&boxv;  &boxv; Dataset charg&eacute;: training_data.json                          &boxv;   &boxv;
+&boxv;  &boxv; &bull; 1,247 exemples                                            &boxv;   &boxv;
+&boxv;  &boxv; &bull; Format: Alpaca                                            &boxv;   &boxv;
+&boxv;  &boxv; &bull; Taille: 2.3 MB                                            &boxv;   &boxv;
+&boxv;  &boxur;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxul;   &boxv;
+&boxv;                                                                     &boxv;
+&boxv;  &Eacute;tape 2: Configuration                                            &boxv;
+&boxv;  &boxdr;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxdl;   &boxv;
+&boxv;  &boxv; Mod&egrave;le de base: [mistral-7b-v0.3 &#x25BC;]                          &boxv;   &boxv;
+&boxv;  &boxv; M&eacute;thode:       [QLoRA (8GB VRAM) &#x25BC;]                          &boxv;   &boxv;
+&boxv;  &boxv; &Eacute;poques:       [3]     Learning rate: [2e-4]                 &boxv;   &boxv;
+&boxv;  &boxv; Batch size:    [4]     LoRA rank:      [16]                   &boxv;   &boxv;
+&boxv;  &boxur;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxul;   &boxv;
+&boxv;                                                                     &boxv;
+&boxv;  &Eacute;tape 3: Entra&icirc;nement                                             &boxv;
+&boxv;  &boxdr;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxdl;   &boxv;
+&boxv;  &boxv;                                                               &boxv;   &boxv;
+&boxv;  &boxv;  Progression: [####################..........] 67%           &boxv;   &boxv;
+&boxv;  &boxv;  &Eacute;poque 2/3 - Step 847/1247                                  &boxv;   &boxv;
+&boxv;  &boxv;                                                               &boxv;   &boxv;
+&boxv;  &boxv;  Loss: 0.42  &boxv;  Val Loss: 0.48  &boxv;  ETA: 23 min              &boxv;   &boxv;
+&boxv;  &boxv;                                                               &boxv;   &boxv;
+&boxv;  &boxv;  [&#x23F8; Pause]  [&#x23F9; Arr&ecirc;ter]                                     &boxv;   &boxv;
+&boxv;  &boxur;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxul;   &boxv;
+&boxv;                                                                     &boxv;
+&boxur;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxul;</div>
+
+  <h3><span class="h3-dot dot-blue"></span> API Backend pour l'entra&icirc;nement</h3>
+
+  <pre><code># app/features/admin/training/router.py
+
+@router.post("/training/start")
+async def start_training(
+    request: TrainingRequest,
+    background_tasks: BackgroundTasks,
+    admin: User = Depends(get_current_admin_user)
+):
+    """Lance l'entra&icirc;nement en arri&egrave;re-plan."""
+    job_id = str(uuid4())
+
+    background_tasks.add_task(
+        run_training_job,
+        job_id=job_id,
+        config=request.config,
+        dataset_path=request.dataset_path
+    )
+
+    return {"job_id": job_id, "status": "started"}
+
+
+@router.get("/training/{job_id}/status")
+async def get_training_status(job_id: str):
+    """R&eacute;cup&egrave;re la progression de l'entra&icirc;nement."""
+    status = TrainingJobManager.get_status(job_id)
+    return {
+        "job_id": job_id,
+        "status": status.status,  # "running", "completed", "failed"
+        "progress": status.progress,  # 0-100
+        "current_epoch": status.current_epoch,
+        "current_step": status.current_step,
+        "loss": status.loss,
+        "val_loss": status.val_loss,
+        "eta_seconds": status.eta_seconds
+    }</code></pre>
+</div>
+
+<!-- ==================== SECTION 10 ==================== -->
+<div class="section" id="s10">
+  <div class="section-header">
+    <div class="section-icon icon-amber">&#x1F4E6;</div>
+    <div><h2>Installation &amp; D&eacute;pendances <span class="section-num">&mdash; Section 10</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <h3><span class="h3-dot dot-amber"></span> D&eacute;pendances Python</h3>
+
+  <pre><code># requirements-training.txt (s&eacute;par&eacute; de l'app principale)
+
+# Fine-tuning
+unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git
+trl>=0.7.0
+peft>=0.7.0
+transformers>=4.36.0
+datasets>=2.16.0
+accelerate>=0.25.0
+
+# Quantification
+bitsandbytes>=0.41.0  # Pour QLoRA (NVIDIA)
+auto-gptq>=0.5.0      # Alternative quantification
+
+# Conversion GGUF
+llama-cpp-python>=0.2.0
+
+# Mac Silicon
+mlx>=0.2.0            # Si Mac M1/M2/M3
+mlx-lm>=0.0.6</code></pre>
+
+  <h3><span class="h3-dot dot-blue"></span> Installation par plateforme</h3>
+
+  <div class="cards">
+    <div class="card" style="border-top: 3px solid var(--primary);">
+      <div class="card-title">&#x1F34E; Mac M1/M2/M3</div>
+      <div class="card-text">
+        <pre><code># MLX pour fine-tuning natif
+pip install mlx mlx-lm
+
+# llama.cpp pour conversion
+brew install llama.cpp
+
+# Ou compiler avec Metal
+git clone https://github.com/ggerganov/llama.cpp
+cd llama.cpp && make LLAMA_METAL=1</code></pre>
+      </div>
+    </div>
+    <div class="card" style="border-top: 3px solid var(--success);">
+      <div class="card-title">&#x1F4BB; NVIDIA GPU (Linux/Windows)</div>
+      <div class="card-text">
+        <pre><code># CUDA Toolkit requis
+# https://developer.nvidia.com/cuda-downloads
+
+# Unsloth (recommand&eacute;)
+pip install "unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git"
+pip install --no-deps trl peft accelerate bitsandbytes
+
+# V&eacute;rifier GPU
+python -c "import torch; print(torch.cuda.is_available())"</code></pre>
+      </div>
+    </div>
+    <div class="card" style="border-top: 3px solid var(--accent);">
+      <div class="card-title">&#x2601;&#xFE0F; Cloud (RunPod, Vast.ai)</div>
+      <div class="card-text">
+        <pre><code># Template recommand&eacute;: RunPod pytorch 2.1+
+
+# Installation rapide
+pip install unsloth
+pip install --no-deps trl peft accelerate bitsandbytes
+
+# Ou utiliser l'image Docker
+docker pull unsloth/unsloth:latest</code></pre>
+      </div>
+    </div>
+  </div>
+
+  <h3><span class="h3-dot dot-red"></span> Outils externes</h3>
+
+  <table>
+    <thead>
+      <tr><th>Outil</th><th>Usage</th><th>Installation</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>llama.cpp</strong></td><td>Conversion GGUF</td><td><code>brew install llama.cpp</code> ou compiler</td></tr>
+      <tr><td><strong>Ollama</strong></td><td>D&eacute;ploiement mod&egrave;les</td><td><code>curl -fsSL https://ollama.ai/install.sh | sh</code></td></tr>
+      <tr><td><strong>HuggingFace CLI</strong></td><td>T&eacute;l&eacute;chargement mod&egrave;les</td><td><code>pip install huggingface_hub</code></td></tr>
+      <tr><td><strong>Weights & Biases</strong></td><td>Monitoring (optionnel)</td><td><code>pip install wandb</code></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ==================== SECTION 11 ==================== -->
+<div class="section" id="s11">
+  <div class="section-header">
+    <div class="section-icon icon-blue">&#x1F4CB;</div>
+    <div><h2>Phases d'impl&eacute;mentation <span class="section-num">&mdash; Section 11</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <div class="cards">
+    <div class="card" style="border-top: 3px solid var(--primary);">
+      <div class="card-title">&#x1F7E6; Phase 1 : Export des donn&eacute;es (1 jour)</div>
+      <div class="card-text">
+        <strong>Objectif :</strong> Exporter les conversations MY-IA<br><br>
+        <strong>Fichiers :</strong><br>
+        &bull; <code>scripts/export_training_data.py</code><br>
+        &bull; <code>app/features/admin/training/export.py</code><br><br>
+        <strong>Livrable :</strong> Script CLI + endpoint API d'export
+      </div>
+    </div>
+    <div class="card" style="border-top: 3px solid var(--primary);">
+      <div class="card-title">&#x1F7E6; Phase 2 : Pipeline d'entra&icirc;nement (2-3 jours)</div>
+      <div class="card-text">
+        <strong>Objectif :</strong> Automatiser le fine-tuning<br><br>
+        <strong>Fichiers :</strong><br>
+        &bull; <code>scripts/train_model.py</code><br>
+        &bull; <code>app/features/admin/training/service.py</code><br>
+        &bull; <code>app/features/admin/training/router.py</code><br><br>
+        <strong>Livrable :</strong> Script + API de lancement
+      </div>
+    </div>
+    <div class="card" style="border-top: 3px solid var(--accent);">
+      <div class="card-title">&#x1F7E0; Phase 3 : UI Admin (2-3 jours)</div>
+      <div class="card-text">
+        <strong>Objectif :</strong> Interface de gestion<br><br>
+        <strong>Fichiers :</strong><br>
+        &bull; <code>UI-BACK/js/modules/system/models.js</code><br>
+        &bull; <code>UI-BACK/js/modules/system/training.js</code><br>
+        &bull; <code>UI-SHARED/templates/admin/models.html</code><br><br>
+        <strong>Livrable :</strong> Pages Admin compl&egrave;tes
+      </div>
+    </div>
+    <div class="card" style="border-top: 3px solid var(--success);">
+      <div class="card-title">&#x1F7E2; Phase 4 : Int&eacute;gration providers (1 jour)</div>
+      <div class="card-text">
+        <strong>Objectif :</strong> D&eacute;ploiement automatique<br><br>
+        <strong>Fichiers :</strong><br>
+        &bull; <code>app/common/llm/model_manager.py</code><br>
+        &bull; Modification <code>system_configs</code><br><br>
+        <strong>Livrable :</strong> S&eacute;lecteur de mod&egrave;le dans Admin
+      </div>
+    </div>
+  </div>
+
+  <h3><span class="h3-dot dot-blue"></span> Fichiers &agrave; cr&eacute;er/modifier</h3>
+
+  <table>
+    <thead>
+      <tr><th>Fichier</th><th>Action</th><th>Phase</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>scripts/export_training_data.py</code></td><td>Cr&eacute;er</td><td>1</td></tr>
+      <tr><td><code>scripts/train_model.py</code></td><td>Cr&eacute;er</td><td>2</td></tr>
+      <tr><td><code>app/features/admin/training/__init__.py</code></td><td>Cr&eacute;er</td><td>2</td></tr>
+      <tr><td><code>app/features/admin/training/router.py</code></td><td>Cr&eacute;er</td><td>2</td></tr>
+      <tr><td><code>app/features/admin/training/service.py</code></td><td>Cr&eacute;er</td><td>2</td></tr>
+      <tr><td><code>app/features/admin/training/schemas.py</code></td><td>Cr&eacute;er</td><td>2</td></tr>
+      <tr><td><code>UI-BACK/js/modules/system/models.js</code></td><td>Cr&eacute;er</td><td>3</td></tr>
+      <tr><td><code>UI-BACK/js/modules/system/training.js</code></td><td>Cr&eacute;er</td><td>3</td></tr>
+      <tr><td><code>UI-SHARED/templates/admin/models.html</code></td><td>Cr&eacute;er</td><td>3</td></tr>
+      <tr><td><code>app/common/llm/model_manager.py</code></td><td>Cr&eacute;er</td><td>4</td></tr>
+      <tr><td><code>app/main.py</code></td><td>Modifier</td><td>2</td></tr>
+      <tr><td><code>requirements-training.txt</code></td><td>Cr&eacute;er</td><td>2</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ==================== SECTION 12 ==================== -->
+<div class="section" id="s12">
+  <div class="section-header">
+    <div class="section-icon icon-red">&#x1F4BB;</div>
+    <div><h2>Ressources mat&eacute;rielles <span class="section-num">&mdash; Section 12</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <h3><span class="h3-dot dot-red"></span> Configuration minimum par m&eacute;thode</h3>
+
+  <table class="comparison-table">
+    <thead>
+      <tr><th>M&eacute;thode</th><th>Mod&egrave;le</th><th>VRAM/RAM</th><th>Temps (1K exemples)</th><th>Co&ucirc;t Cloud</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>QLoRA</td>
+        <td>7B</td>
+        <td class="better">8-12 GB</td>
+        <td>1-2h</td>
+        <td>$0.50-1</td>
+      </tr>
+      <tr>
+        <td>LoRA</td>
+        <td>7B</td>
+        <td>16-24 GB</td>
+        <td>1-2h</td>
+        <td>$1-2</td>
+      </tr>
+      <tr>
+        <td>QLoRA</td>
+        <td>13B</td>
+        <td>12-16 GB</td>
+        <td>2-4h</td>
+        <td>$1-2</td>
+      </tr>
+      <tr>
+        <td>LoRA</td>
+        <td>13B</td>
+        <td>24-32 GB</td>
+        <td>2-4h</td>
+        <td>$2-4</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-green"></span> Options Cloud recommand&eacute;es</h3>
+
+  <div class="cards">
+    <div class="card tool-card recommended">
+      <div class="card-title">&#x2B50; RunPod</div>
+      <div class="card-text">
+        <strong>Site :</strong> <a href="https://runpod.io">runpod.io</a><br><br>
+        <strong>GPU recommand&eacute; :</strong> RTX 4090 (24GB)<br>
+        <strong>Co&ucirc;t :</strong> ~$0.40/h<br>
+        <strong>Avantages :</strong> Simple, templates pr&ecirc;ts, stockage persistant
+      </div>
+    </div>
+    <div class="card tool-card">
+      <div class="card-title">&#x1F539; Vast.ai</div>
+      <div class="card-text">
+        <strong>Site :</strong> <a href="https://vast.ai">vast.ai</a><br><br>
+        <strong>GPU recommand&eacute; :</strong> RTX 3090/4090<br>
+        <strong>Co&ucirc;t :</strong> ~$0.20-0.30/h<br>
+        <strong>Avantages :</strong> Moins cher, plus de choix GPU
+      </div>
+    </div>
+    <div class="card tool-card">
+      <div class="card-title">&#x1F539; Lambda Labs</div>
+      <div class="card-text">
+        <strong>Site :</strong> <a href="https://lambdalabs.com">lambdalabs.com</a><br><br>
+        <strong>GPU recommand&eacute; :</strong> A10G / A100<br>
+        <strong>Co&ucirc;t :</strong> ~$0.75-1.50/h<br>
+        <strong>Avantages :</strong> GPU pro, tr&egrave;s stable
+      </div>
+    </div>
+  </div>
+
+  <h3><span class="h3-dot dot-blue"></span> Configuration Mac M1/M2/M3</h3>
+
+  <table>
+    <thead>
+      <tr><th>Mac</th><th>RAM</th><th>Mod&egrave;le max</th><th>Temps (1K ex.)</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>M1/M2 (8GB)</td><td>8 GB</td><td>3B QLoRA</td><td>4-6h</td></tr>
+      <tr><td class="better">M1/M2 (16GB)</td><td>16 GB</td><td class="better">7B QLoRA</td><td>2-4h</td></tr>
+      <tr><td class="better">M1/M2 Pro (32GB)</td><td>32 GB</td><td class="better">13B QLoRA</td><td>3-5h</td></tr>
+      <tr><td>M2/M3 Max (64GB+)</td><td>64+ GB</td><td>30B+ LoRA</td><td>4-8h</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-success">
+    <span class="callout-icon">&#x2705;</span>
+    <span>
+      <strong>Recommandation pour MY-IA :</strong><br>
+      &bull; <strong>D&eacute;veloppement/test :</strong> Mac M1/M2 16GB avec MLX (mod&egrave;le 7B)<br>
+      &bull; <strong>Production :</strong> Cloud RunPod RTX 4090 pour fine-tuning rapide
+    </span>
+  </div>
+</div>
+
+</div><!-- .page -->
+
+</body>
+</html>

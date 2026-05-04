@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plan : Pagination Unifiee - MY-IA</title>
+    <link rel="stylesheet" href="../assets/doc-style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Plan : Systeme de Pagination Unifie</h1>
+            <div class="meta">
+                <span class="status in-progress">En cours</span>
+                <span class="date">2026-02-20</span>
+            </div>
+        </header>
+
+        <nav class="toc">
+            <h2>Table des matieres</h2>
+            <ol>
+                <li><a href="#objectif">Objectif</a></li>
+                <li><a href="#etat-actuel">Etat Actuel</a></li>
+                <li><a href="#solution">Solution Proposee</a></li>
+                <li><a href="#fichiers">Fichiers a Modifier</a></li>
+                <li><a href="#fonctionnalites">Fonctionnalites</a></li>
+                <li><a href="#implementation">Ordre d'Implementation</a></li>
+                <li><a href="#verification">Verification</a></li>
+            </ol>
+        </nav>
+
+        <!-- ============================================================ -->
+        <section id="objectif">
+            <h2>1. Objectif</h2>
+            <p>Creer un systeme de pagination mutualise pour tous les tableaux de l'admin, avec :</p>
+            <ul>
+                <li>Affichage en <strong>haut ET en bas</strong> des tableaux</li>
+                <li>Toutes les fonctionnalites attendues d'une pagination moderne</li>
+                <li>Adaptation automatique au module appelant</li>
+                <li>Selecteur de taille de page (10, 25, 50, 100)</li>
+                <li>Event delegation (pas de callbacks globaux)</li>
+            </ul>
+        </section>
+
+        <!-- ============================================================ -->
+        <section id="etat-actuel">
+            <h2>2. Etat Actuel</h2>
+
+            <h3>2.1 Modules avec Tableaux Pagines (7 modules)</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Module</th>
+                        <th>Fichier</th>
+                        <th>Pattern Actuel</th>
+                        <th>Page Size</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>Users</td><td><code>users.js</code></td><td>PaginationMixin</td><td>25</td></tr>
+                    <tr><td>Validation</td><td><code>validation.js</code></td><td>Custom</td><td>25</td></tr>
+                    <tr><td>Audit</td><td><code>audit.js</code></td><td>Custom onclick</td><td>50</td></tr>
+                    <tr><td>Documents</td><td><code>content-documents.js</code></td><td>PaginationMixin</td><td>20</td></tr>
+                    <tr><td>Logs</td><td><code>content-logs.js</code></td><td>Custom inline</td><td>50</td></tr>
+                    <tr><td>Conversations</td><td><code>content-conversations.js</code></td><td>PaginationMixin</td><td>50</td></tr>
+                    <tr><td>Sources</td><td><code>sources.js</code></td><td>Custom onclick</td><td>25</td></tr>
+                </tbody>
+            </table>
+
+            <h3>2.2 PaginationMixin Existant</h3>
+            <p><code>UI-SHARED/js/mixins/pagination.js</code></p>
+            <div class="card">
+                <h4>Points forts</h4>
+                <ul class="check">
+                    <li>Etat pagination (currentPage, pageSize, total, totalPages)</li>
+                    <li>Fenetre glissante de pages</li>
+                    <li>Methodes goToPage(), resetPagination(), updatePagination()</li>
+                </ul>
+                <h4>Limitations</h4>
+                <ul class="cross">
+                    <li>Pagination uniquement en bas</li>
+                    <li>Pas de selecteur de taille de page</li>
+                    <li>HTML inline (pas de templates)</li>
+                    <li>Textes non traduits (hardcodes)</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- ============================================================ -->
+        <section id="solution">
+            <h2>3. Solution Proposee</h2>
+
+            <h3>3.1 Nouveau Composant TablePagination</h3>
+            <p><code>UI-SHARED/js/components/table-pagination.js</code></p>
+            <pre><code>const TablePagination = {
+    render(containerId, options) { ... },
+
+    defaultOptions: {
+        currentPage: 1,
+        pageSize: 25,
+        total: 0,
+        pageSizes: [10, 25, 50, 100],
+        showPageSizeSelector: true,
+        showInfo: true,
+        itemLabel: 'elements',
+    }
+}</code></pre>
+
+            <h3>3.2 Template Unifie</h3>
+            <p><code>UI-SHARED/templates/components/pagination.html</code></p>
+            <pre><code>&lt;template id="table-pagination"&gt;
+    &lt;div class="table-pagination"&gt;
+        &lt;div class="pagination-info"&gt;
+            {{start}}-{{end}} / {{total}} {{itemLabel}}
+        &lt;/div&gt;
+        &lt;div class="pagination-size"&gt;
+            &lt;select data-action="change-page-size"&gt;...&lt;/select&gt;
+        &lt;/div&gt;
+        &lt;div class="pagination-controls"&gt;
+            {{{controls}}}
+        &lt;/div&gt;
+    &lt;/div&gt;
+&lt;/template&gt;</code></pre>
+
+            <h3>3.3 Event Delegation</h3>
+            <div class="card highlight">
+                <p>Les boutons utilisent <code>data-page="X"</code> au lieu de <code>onclick="Module.goToPage(X)"</code></p>
+                <p>Un seul listener sur le conteneur capture tous les clics.</p>
+                <p>Pas besoin d'exposer le module globalement.</p>
+            </div>
+
+            <h3>3.4 Mixin Refactorise</h3>
+            <pre><code>const PaginationMixin = {
+    _paginationConfig: {
+        topContainerId: null,      // ID conteneur haut
+        bottomContainerId: null,   // ID conteneur bas
+        showPageSizeSelector: true,
+        pageSizes: [10, 25, 50, 100],
+        itemLabel: 'elements',
+    },
+
+    initPagination(config) { ... },
+    renderPagination() { ... },     // Rend haut + bas
+    setPageSize(size) { ... },      // Change taille de page
+}</code></pre>
+        </section>
+
+        <!-- ============================================================ -->
+        <section id="fichiers">
+            <h2>4. Fichiers a Modifier</h2>
+
+            <h3>4.1 Nouveaux Fichiers</h3>
+            <ul>
+                <li><code>UI-SHARED/js/components/table-pagination.js</code> - Composant de rendu</li>
+                <li><code>UI-SHARED/templates/components/pagination.html</code> - Templates</li>
+            </ul>
+
+            <h3>4.2 Fichiers a Modifier</h3>
+            <ul>
+                <li><code>UI-SHARED/js/mixins/pagination.js</code> - Refactorisation mixin</li>
+                <li><code>UI-SHARED/locales/fr.json</code> - Cles i18n pagination</li>
+                <li><code>UI-SHARED/locales/en.json</code> - Cles i18n pagination</li>
+            </ul>
+
+            <h3>4.3 Templates Tableaux (ajouter conteneur top)</h3>
+            <ul>
+                <li><code>UI-SHARED/templates/admin/users.html</code></li>
+                <li><code>UI-SHARED/templates/admin/validation.html</code></li>
+                <li><code>UI-SHARED/templates/admin/audit.html</code></li>
+                <li><code>UI-SHARED/templates/admin/documents.html</code></li>
+                <li><code>UI-SHARED/templates/admin/logs.html</code></li>
+                <li><code>UI-SHARED/templates/admin/sources.html</code></li>
+            </ul>
+
+            <h3>4.4 Modules a Migrer (custom -&gt; mixin)</h3>
+            <ul>
+                <li><code>UI-BACK/js/modules/validation.js</code></li>
+                <li><code>UI-BACK/js/modules/audit.js</code></li>
+                <li><code>UI-BACK/js/modules/content-logs.js</code></li>
+                <li><code>UI-BACK/js/modules/sources.js</code></li>
+            </ul>
+
+            <h3>4.5 Modules a Mettre a Jour (config top/bottom)</h3>
+            <ul>
+                <li><code>UI-BACK/js/modules/users.js</code></li>
+                <li><code>UI-BACK/js/modules/content-documents.js</code></li>
+                <li><code>UI-BACK/js/modules/content-conversations.js</code></li>
+            </ul>
+        </section>
+
+        <!-- ============================================================ -->
+        <section id="fonctionnalites">
+            <h2>5. Fonctionnalites de la Pagination</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fonctionnalite</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td><strong>Info</strong></td><td>"1-25 / 212 sources"</td></tr>
+                    <tr><td><strong>Pages</strong></td><td>Fenetre glissante : 1 ... 5 6 [7] 8 9 ... 15</td></tr>
+                    <tr><td><strong>Navigation</strong></td><td>Boutons Prec/Suiv</td></tr>
+                    <tr><td><strong>Taille page</strong></td><td>Selecteur : 10, 25, 50, 100</td></tr>
+                    <tr><td><strong>Position</strong></td><td>Haut + Bas du tableau</td></tr>
+                    <tr><td><strong>i18n</strong></td><td>Tous les textes traduits</td></tr>
+                    <tr><td><strong>Responsive</strong></td><td>Adapte mobile</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- ============================================================ -->
+        <section id="implementation">
+            <h2>6. Ordre d'Implementation</h2>
+            <ol class="steps">
+                <li>
+                    <span class="step-status done">Done</span>
+                    <strong>Creer le composant TablePagination</strong> + template
+                </li>
+                <li>
+                    <span class="step-status pending">Pending</span>
+                    <strong>Refactoriser PaginationMixin</strong> pour utiliser TablePagination
+                </li>
+                <li>
+                    <span class="step-status pending">Pending</span>
+                    <strong>Ajouter les cles i18n</strong> (fr/en)
+                </li>
+                <li>
+                    <span class="step-status pending">Pending</span>
+                    <strong>Mettre a jour les templates tableaux</strong> (ajouter conteneur top)
+                </li>
+                <li>
+                    <span class="step-status pending">Pending</span>
+                    <strong>Migrer les modules custom</strong> (Validation, Audit, Logs, Sources)
+                </li>
+                <li>
+                    <span class="step-status pending">Pending</span>
+                    <strong>Mettre a jour les modules existants</strong> (Users, Documents, Conversations)
+                </li>
+                <li>
+                    <span class="step-status pending">Pending</span>
+                    <strong>Tester tous les modules</strong>
+                </li>
+            </ol>
+        </section>
+
+        <!-- ============================================================ -->
+        <section id="verification">
+            <h2>7. Verification</h2>
+
+            <h3>7.1 Tests Manuels</h3>
+            <p>Pour chaque module (Users, Validation, Audit, Documents, Logs, Conversations, Sources) :</p>
+            <ol>
+                <li>Verifier pagination haut ET bas affichees</li>
+                <li>Cliquer sur numeros de page → navigation correcte</li>
+                <li>Cliquer Prec/Suiv → navigation correcte</li>
+                <li>Changer taille de page → rechargement avec nouvelle taille</li>
+                <li>Verifier info "X-Y / Total" correcte</li>
+                <li>Verifier traductions FR/EN</li>
+            </ol>
+
+            <h3>7.2 Tests Backend</h3>
+            <pre><code>docker-compose exec app python -m pytest tests/sources/test_service.py -v</code></pre>
+        </section>
+
+        <footer>
+            <p>Plan cree le 2026-02-20 | MY-IA Documentation</p>
+        </footer>
+    </div>
+</body>
+</html>

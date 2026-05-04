@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MY-IA &mdash; Architecture technique</title>
+  <link rel="stylesheet" href="../assets/doc-style.css">
+</head>
+<body>
+
+<!-- ==================== HEADER ==================== -->
+<div class="header">
+  <div class="page">
+    <div class="header-icon">&#x1F3D7;&#xFE0F;</div>
+    <div>
+      <h1>Architecture technique</h1>
+      <div class="subtitle">
+        Vue d'ensemble de l'architecture MY-IA pour les d&eacute;veloppeurs et int&eacute;grateurs.
+      </div>
+      <div class="meta">
+        <span>&#x23F1; 15 min</span>
+        <span>D&eacute;veloppeur</span>
+        <span>v2.0</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+
+<!-- Navigation -->
+<div class="callout callout-info">
+  <span class="callout-icon">&#x1F3E0;</span>
+  <span><a href="../index.html">&larr; Retour &agrave; l'accueil</a> &nbsp;|&nbsp; <a href="api.html">API</a> &nbsp;|&nbsp; <a href="personnalisation.html">Personnalisation</a> &nbsp;|&nbsp; <a href="deploiement.html">D&eacute;ploiement</a></span>
+</div>
+
+<!-- ==================== TOC ==================== -->
+<div class="toc">
+  <h2>Sommaire</h2>
+  <div class="toc-grid">
+    <a href="#overview" class="toc-item"><span class="toc-number">1</span>Vue d'ensemble</a>
+    <a href="#stack" class="toc-item"><span class="toc-number">2</span>Stack technique</a>
+    <a href="#services" class="toc-item"><span class="toc-number">3</span>Services Docker</a>
+    <a href="#backend" class="toc-item"><span class="toc-number">4</span>Architecture backend</a>
+    <a href="#frontend" class="toc-item"><span class="toc-number">5</span>Architecture frontend</a>
+    <a href="#rag" class="toc-item"><span class="toc-number">6</span>Pipeline RAG</a>
+    <a href="#data" class="toc-item"><span class="toc-number">7</span>Mod&egrave;le de donn&eacute;es</a>
+    <a href="#security" class="toc-item"><span class="toc-number">8</span>S&eacute;curit&eacute;</a>
+  </div>
+</div>
+
+<!-- ==================== VUE D'ENSEMBLE ==================== -->
+<div class="section" id="overview">
+  <div class="section-header">
+    <div class="section-icon icon-blue">&#x1F4CB;</div>
+    <div><h2>1. Vue d'ensemble</h2></div>
+  </div>
+
+  <p>MY-IA est une application <strong>RAG (Retrieval-Augmented Generation)</strong> compl&egrave;te, con&ccedil;ue pour &ecirc;tre d&eacute;ploy&eacute;e on-premise. Elle combine un LLM local avec une base de documents vectoris&eacute;e pour fournir des r&eacute;ponses contextualis&eacute;es.</p>
+
+  <h3><span class="h3-dot dot-blue"></span> Flux principal</h3>
+
+  <div class="flow">
+    <div class="flow-step flow-blue">&#x1F464;<br>Utilisateur<span class="flow-label">Interface web</span></div>
+    <div class="flow-arrow">&#x25B6;</div>
+    <div class="flow-step flow-teal">&#x1F310;<br>Frontend<span class="flow-label">Nginx + JS</span></div>
+    <div class="flow-arrow">&#x25B6;</div>
+    <div class="flow-step flow-green">&#x2699;&#xFE0F;<br>API<span class="flow-label">FastAPI</span></div>
+    <div class="flow-arrow">&#x25B6;</div>
+    <div class="flow-step flow-amber">&#x1F9E0;<br>LLM<span class="flow-label">Ollama</span></div>
+  </div>
+
+  <h3><span class="h3-dot dot-blue"></span> Principes cl&eacute;s</h3>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-title">&#x1F3E0; On-premise</div>
+      <div class="card-text">Donn&eacute;es et mod&egrave;les restent sur votre infrastructure. Aucune fuite vers le cloud.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F504; Modulaire</div>
+      <div class="card-text">Chaque composant peut &ecirc;tre remplac&eacute; ou &eacute;tendu ind&eacute;pendamment.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F680; Scalable</div>
+      <div class="card-text">Architecture container qui s'adapte de 10 &agrave; 10 000 utilisateurs.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F512; S&eacute;curis&eacute;</div>
+      <div class="card-text">Authentification JWT, chiffrement, audit complet des actions.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== STACK ==================== -->
+<div class="section" id="stack">
+  <div class="section-header">
+    <div class="section-icon icon-teal">&#x1F4DA;</div>
+    <div><h2>2. Stack technique</h2></div>
+  </div>
+
+  <div class="two-cols">
+    <div>
+      <h3><span class="h3-dot dot-blue"></span> Backend</h3>
+      <table>
+        <thead><tr><th>Composant</th><th>Technologie</th></tr></thead>
+        <tbody>
+          <tr><td>Framework</td><td>FastAPI (Python 3.12)</td></tr>
+          <tr><td>Base relationnelle</td><td>PostgreSQL 16</td></tr>
+          <tr><td>Base vectorielle</td><td>ChromaDB 1.4+</td></tr>
+          <tr><td>Authentification</td><td>FastAPI Users (JWT)</td></tr>
+          <tr><td>ORM</td><td>SQLAlchemy 2.0 (async)</td></tr>
+          <tr><td>Validation</td><td>Pydantic v2</td></tr>
+          <tr><td>Rate limiting</td><td>SlowAPI</td></tr>
+          <tr><td>M&eacute;triques</td><td>Prometheus Client</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <h3><span class="h3-dot dot-teal"></span> Frontend</h3>
+      <table>
+        <thead><tr><th>Composant</th><th>Technologie</th></tr></thead>
+        <tbody>
+          <tr><td>Serveur web</td><td>Nginx (Alpine)</td></tr>
+          <tr><td>JavaScript</td><td>Vanilla JS (ES6 modules)</td></tr>
+          <tr><td>CSS</td><td>Design system custom</td></tr>
+          <tr><td>Internationalisation</td><td>JSON (fr/en)</td></tr>
+          <tr><td>Templates</td><td>Syst&egrave;me Handlebars-like</td></tr>
+          <tr><td>Build</td><td>Aucun (fichiers servis tels quels)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <h3><span class="h3-dot dot-green"></span> Intelligence artificielle</h3>
+  <table>
+    <thead><tr><th>Composant</th><th>Options</th><th>Usage</th><th>Ressources</th></tr></thead>
+    <tbody>
+      <tr><td>LLM Provider</td><td>Ollama, llama.cpp</td><td>G&eacute;n&eacute;ration de r&eacute;ponses</td><td>CPU ou GPU</td></tr>
+      <tr><td>Mod&egrave;le chat</td><td>Mistral 7B, Llama3 8B, Qwen2</td><td>Conversations</td><td>8-16 Go VRAM</td></tr>
+      <tr><td>Embeddings</td><td>nomic-embed-text, all-minilm</td><td>Vectorisation documents</td><td>2-4 Go VRAM</td></tr>
+      <tr><td>Speech-to-Text</td><td>Faster Whisper (base/small)</td><td>Transcription vocale</td><td>2-4 Go VRAM</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-info">
+    <span class="callout-icon">&#x1F4A1;</span>
+    <span><strong>GPU recommand&eacute; :</strong> NVIDIA avec 8+ Go VRAM pour des r&eacute;ponses rapides. Sur Mac, Ollama utilise Metal nativement (hors Docker).</span>
+  </div>
+</div>
+
+<!-- ==================== SERVICES ==================== -->
+<div class="section" id="services">
+  <div class="section-header">
+    <div class="section-icon icon-green">&#x1F433;</div>
+    <div><h2>3. Services Docker</h2></div>
+  </div>
+
+  <p>MY-IA se compose de plusieurs containers orchestr&eacute;s par Docker Compose :</p>
+
+  <table>
+    <thead><tr><th>Service</th><th>Image</th><th>Port</th><th>R&ocirc;le</th><th>Persistance</th></tr></thead>
+    <tbody>
+      <tr><td><code>app</code></td><td>Build local (Python)</td><td>8080</td><td>API FastAPI</td><td>-</td></tr>
+      <tr><td><code>postgres</code></td><td>postgres:16-alpine</td><td>5432</td><td>Base de donn&eacute;es</td><td>Volume <code>postgres_data</code></td></tr>
+      <tr><td><code>chroma</code></td><td>chromadb/chroma</td><td>8000</td><td>Base vectorielle</td><td>Volume <code>chroma_data</code></td></tr>
+      <tr><td><code>ui-front</code></td><td>Build local (Nginx)</td><td>3000</td><td>Interface utilisateurs</td><td>-</td></tr>
+      <tr><td><code>ui-back</code></td><td>Build local (Nginx)</td><td>8081</td><td>Interface admin</td><td>-</td></tr>
+      <tr><td><code>whisper</code></td><td>faster-whisper-server</td><td>9001</td><td>Speech-to-text</td><td>Cache mod&egrave;le</td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-green"></span> Diagramme r&eacute;seau</h3>
+
+  <div class="vflow">
+    <div class="vflow-step active">
+      <div class="step-title">&#x1F310; Internet / Intranet</div>
+      <div class="step-desc">Utilisateurs et administrateurs acc&egrave;dent via HTTPS</div>
+    </div>
+    <div class="vflow-branch">
+      <div class="branch-item">
+        <div class="branch-title">:3000 &rarr; ui-front</div>
+        <div class="branch-desc">Interface utilisateurs</div>
+      </div>
+      <div class="branch-item">
+        <div class="branch-title">:8081 &rarr; ui-back</div>
+        <div class="branch-desc">Interface admin</div>
+      </div>
+    </div>
+    <div class="vflow-step active">
+      <div class="step-title">&#x2699;&#xFE0F; R&eacute;seau interne Docker</div>
+      <div class="step-desc">Communication entre services sans exposition externe</div>
+    </div>
+    <div class="vflow-branch">
+      <div class="branch-item">
+        <div class="branch-title">app &harr; postgres</div>
+        <div class="branch-desc">Donn&eacute;es relationnelles</div>
+      </div>
+      <div class="branch-item">
+        <div class="branch-title">app &harr; chroma</div>
+        <div class="branch-desc">Recherche vectorielle</div>
+      </div>
+      <div class="branch-item">
+        <div class="branch-title">app &harr; ollama</div>
+        <div class="branch-desc">G&eacute;n&eacute;ration LLM</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout callout-info">
+    <span class="callout-icon">&#x1F4A1;</span>
+    <span><strong>Ollama :</strong> Peut tourner en container ou en natif (recommand&eacute; sur Mac pour acc&egrave;s GPU Metal). La variable <code>OLLAMA_HOST</code> d&eacute;finit l'URL.</span>
+  </div>
+</div>
+
+<!-- ==================== BACKEND ==================== -->
+<div class="section" id="backend">
+  <div class="section-header">
+    <div class="section-icon icon-purple">&#x1F4C2;</div>
+    <div><h2>4. Architecture backend</h2></div>
+  </div>
+
+  <h3><span class="h3-dot dot-purple"></span> Structure du code (app/)</h3>
+
+  <pre><code>app/
+&#x251C;&#x2500;&#x2500; main.py              # Point d'entr&eacute;e minimal (routes + lifecycle)
+&#x251C;&#x2500;&#x2500; db.py                # Configuration SQLAlchemy (engine, session)
+&#x251C;&#x2500;&#x2500; models.py            # Mod&egrave;les SQLAlchemy (User, Document, etc.)
+&#x251C;&#x2500;&#x2500; core/
+&#x2502;   &#x251C;&#x2500;&#x2500; config.py        # Configuration Pydantic Settings
+&#x2502;   &#x2514;&#x2500;&#x2500; deps.py          # Injection de d&eacute;pendances
+&#x251C;&#x2500;&#x2500; common/
+&#x2502;   &#x251C;&#x2500;&#x2500; llm/             # Abstraction LLM (base, factory, ollama, llamacpp)
+&#x2502;   &#x251C;&#x2500;&#x2500; utils/           # Utilitaires (chroma, crypto, audit)
+&#x2502;   &#x251C;&#x2500;&#x2500; exceptions/      # Exceptions HTTP custom
+&#x2502;   &#x2514;&#x2500;&#x2500; schemas/         # Sch&eacute;mas Pydantic partag&eacute;s
+&#x2514;&#x2500;&#x2500; features/            # Modules m&eacute;tier (1 dossier = 1 feature)
+    &#x251C;&#x2500;&#x2500; auth/            # Authentification (login, register, JWT)
+    &#x251C;&#x2500;&#x2500; users/           # Gestion utilisateurs
+    &#x251C;&#x2500;&#x2500; chat/            # Chat RAG (messages, streaming)
+    &#x251C;&#x2500;&#x2500; conversations/   # Historique conversations
+    &#x251C;&#x2500;&#x2500; documents/       # Upload et indexation
+    &#x251C;&#x2500;&#x2500; collections/     # Collections de documents
+    &#x251C;&#x2500;&#x2500; corpus/          # Regroupement de collections
+    &#x251C;&#x2500;&#x2500; sources/         # Sources externes (web, API)
+    &#x251C;&#x2500;&#x2500; admin/           # CRUD admin (20+ endpoints)
+    &#x251C;&#x2500;&#x2500; audit/           # Logs d'audit
+    &#x2514;&#x2500;&#x2500; health/          # Health check et m&eacute;triques</code></pre>
+
+  <h3><span class="h3-dot dot-purple"></span> Pattern Feature</h3>
+
+  <p>Chaque feature suit le pattern <strong>Router &rarr; Service &rarr; Repository</strong> :</p>
+
+  <div class="flow">
+    <div class="flow-step flow-blue">&#x1F517;<br>router.py<span class="flow-label">Endpoints HTTP</span></div>
+    <div class="flow-arrow">&#x25B6;</div>
+    <div class="flow-step flow-teal">&#x2699;&#xFE0F;<br>service.py<span class="flow-label">Logique m&eacute;tier</span></div>
+    <div class="flow-arrow">&#x25B6;</div>
+    <div class="flow-step flow-green">&#x1F4BE;<br>repository.py<span class="flow-label">Acc&egrave;s donn&eacute;es</span></div>
+  </div>
+
+  <table>
+    <thead><tr><th>Fichier</th><th>Responsabilit&eacute;</th><th>Imports autoris&eacute;s</th></tr></thead>
+    <tbody>
+      <tr><td><code>router.py</code></td><td>D&eacute;finit les endpoints FastAPI</td><td>service, schemas, deps</td></tr>
+      <tr><td><code>service.py</code></td><td>Logique m&eacute;tier (async)</td><td>repository, models, utils</td></tr>
+      <tr><td><code>repository.py</code></td><td>Requ&ecirc;tes SQLAlchemy</td><td>models uniquement</td></tr>
+      <tr><td><code>schemas.py</code></td><td>DTOs Pydantic (request/response)</td><td>-</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-warning">
+    <span class="callout-icon">&#x26A0;&#xFE0F;</span>
+    <span><strong>R&egrave;gle :</strong> Jamais de logique m&eacute;tier dans <code>main.py</code> ou <code>router.py</code>. Tout passe par le service.</span>
+  </div>
+</div>
+
+<!-- ==================== FRONTEND ==================== -->
+<div class="section" id="frontend">
+  <div class="section-header">
+    <div class="section-icon icon-blue">&#x1F3A8;</div>
+    <div><h2>5. Architecture frontend</h2></div>
+  </div>
+
+  <h3><span class="h3-dot dot-blue"></span> Structure des dossiers</h3>
+
+  <pre><code>UI-SHARED/               # Code partag&eacute; front/back
+&#x251C;&#x2500;&#x2500; js/
+&#x2502;   &#x251C;&#x2500;&#x2500; services/        # API, auth, templates, icons
+&#x2502;   &#x251C;&#x2500;&#x2500; components/      # Toast, modal, progress, etc.
+&#x2502;   &#x251C;&#x2500;&#x2500; mixins/          # Comportements r&eacute;utilisables
+&#x2502;   &#x251C;&#x2500;&#x2500; utils/           # Formatage, DOM helpers
+&#x2502;   &#x2514;&#x2500;&#x2500; config/          # Configuration, registres
+&#x251C;&#x2500;&#x2500; css/
+&#x2502;   &#x251C;&#x2500;&#x2500; base/            # Reset, variables, typographie
+&#x2502;   &#x2514;&#x2500;&#x2500; components/      # Styles composants
+&#x251C;&#x2500;&#x2500; templates/           # Templates HTML externes
+&#x2514;&#x2500;&#x2500; locales/             # Traductions (fr.json, en.json)
+
+UI-FRONT/                # Interface utilisateurs
+&#x251C;&#x2500;&#x2500; index.html
+&#x2514;&#x2500;&#x2500; js/modules/          # Modules sp&eacute;cifiques (chat, docs, etc.)
+
+UI-BACK/                 # Interface administration
+&#x251C;&#x2500;&#x2500; index.html
+&#x2514;&#x2500;&#x2500; js/modules/          # Modules admin (users, config, etc.)</code></pre>
+
+  <h3><span class="h3-dot dot-blue"></span> Principes de d&eacute;veloppement</h3>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-title">&#x1F6AB; Pas de HTML inline</div>
+      <div class="card-text">Tout le HTML dynamique passe par <code>Templates.*</code> ou templates externes.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F6AB; Pas de CSS inline</div>
+      <div class="card-text">Utiliser les classes CSS du design system, jamais <code>style="..."</code>.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F504; Code partag&eacute;</div>
+      <div class="card-text">Tout code commun va dans <code>UI-SHARED/</code>, jamais de duplication.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F30D; i18n obligatoire</div>
+      <div class="card-text">Toutes les cha&icirc;nes via <code>t('cle')</code>, pas de texte hardcod&eacute;.</div>
+    </div>
+  </div>
+
+  <h3><span class="h3-dot dot-teal"></span> Services principaux</h3>
+
+  <table>
+    <thead><tr><th>Service</th><th>Fichier</th><th>Usage</th></tr></thead>
+    <tbody>
+      <tr><td><code>adminApi</code> / <code>userApi</code></td><td>api.js</td><td>Appels HTTP avec auth automatique</td></tr>
+      <tr><td><code>AuthService</code></td><td>auth.js</td><td>Login, logout, gestion tokens</td></tr>
+      <tr><td><code>Templates</code></td><td>templates.js</td><td>G&eacute;n&eacute;ration HTML (card, callout, etc.)</td></tr>
+      <tr><td><code>Icons</code></td><td>icons.js</td><td>Ic&ocirc;nes SVG centralis&eacute;es</td></tr>
+      <tr><td><code>showToast</code></td><td>toast.js</td><td>Notifications utilisateur</td></tr>
+      <tr><td><code>showConfirm</code></td><td>confirm.js</td><td>Modales de confirmation</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ==================== RAG ==================== -->
+<div class="section" id="rag">
+  <div class="section-header">
+    <div class="section-icon icon-amber">&#x1F504;</div>
+    <div><h2>6. Pipeline RAG</h2></div>
+  </div>
+
+  <p>Le processus complet de r&eacute;ponse &agrave; une question :</p>
+
+  <div class="vflow">
+    <div class="vflow-step active">
+      <div class="step-title">1. R&eacute;ception de la question</div>
+      <div class="step-desc">L'utilisateur envoie un message via <code>POST /api/chat/stream</code></div>
+    </div>
+    <div class="vflow-step active">
+      <div class="step-title">2. V&eacute;rification du contexte</div>
+      <div class="step-desc">D&eacute;termination de la collection et du corpus associ&eacute;</div>
+    </div>
+    <div class="vflow-step active">
+      <div class="step-title">3. G&eacute;n&eacute;ration des embeddings</div>
+      <div class="step-desc">La question est transform&eacute;e en vecteur via le mod&egrave;le d'embeddings (nomic-embed-text)</div>
+    </div>
+    <div class="vflow-step active">
+      <div class="step-title">4. Recherche vectorielle</div>
+      <div class="step-desc">ChromaDB trouve les <strong>top_k</strong> passages les plus similaires (cosine similarity)</div>
+    </div>
+    <div class="vflow-step active">
+      <div class="step-title">5. Recherche multi-collection (si corpus)</div>
+      <div class="step-desc">Si la collection a un corpus, recherche dans toutes les collections du corpus</div>
+    </div>
+    <div class="vflow-step active">
+      <div class="step-title">6. Construction du prompt</div>
+      <div class="step-desc">Injection du contexte trouv&eacute; + historique conversation + prompt syst&egrave;me</div>
+    </div>
+    <div class="vflow-step">
+      <div class="step-title">7. G&eacute;n&eacute;ration stream&eacute;e</div>
+      <div class="step-desc">Le LLM g&eacute;n&egrave;re la r&eacute;ponse token par token via SSE</div>
+    </div>
+  </div>
+
+  <h3><span class="h3-dot dot-amber"></span> Structure Corpus / Collections</h3>
+
+  <div class="flow">
+    <div class="flow-step flow-blue">&#x1F4C1;<br>Documents<span class="flow-label">PDF, DOCX, etc.</span></div>
+    <div class="flow-arrow">&#x25B6;</div>
+    <div class="flow-step flow-teal">&#x1F4DA;<br>Collections<span class="flow-label">Regroupement</span></div>
+    <div class="flow-arrow">&#x25B6;</div>
+    <div class="flow-step flow-green">&#x1F4E6;<br>Corpus<span class="flow-label">Multi-collection</span></div>
+    <div class="flow-arrow">&#x25B6;</div>
+    <div class="flow-step flow-amber">&#x1F50E;<br>Recherche RAG<span class="flow-label">Contextuelle</span></div>
+  </div>
+
+  <div class="callout callout-success">
+    <span class="callout-icon">&#x2705;</span>
+    <span><strong>Optimisation :</strong> Les sources d&eacute;j&agrave; index&eacute;es (<code>chunk_count > 0</code>) utilisent le cache ChromaDB sans crawl live &mdash; gain de performance 900x.</span>
+  </div>
+</div>
+
+<!-- ==================== DATA MODEL ==================== -->
+<div class="section" id="data">
+  <div class="section-header">
+    <div class="section-icon icon-red">&#x1F4CA;</div>
+    <div><h2>7. Mod&egrave;le de donn&eacute;es</h2></div>
+  </div>
+
+  <h3><span class="h3-dot dot-red"></span> Entit&eacute;s principales (PostgreSQL)</h3>
+
+  <table>
+    <thead><tr><th>Table</th><th>Description</th><th>Relations</th></tr></thead>
+    <tbody>
+      <tr><td><code>users</code></td><td>Utilisateurs de l'application</td><td>&#x2192; role, preferences, conversations</td></tr>
+      <tr><td><code>roles</code></td><td>R&ocirc;les (user, admin)</td><td>&#x2192; permissions</td></tr>
+      <tr><td><code>conversations</code></td><td>Sessions de chat</td><td>&#x2192; user, messages, collection</td></tr>
+      <tr><td><code>messages</code></td><td>Messages dans les conversations</td><td>&#x2192; conversation</td></tr>
+      <tr><td><code>collections</code></td><td>Collections de documents</td><td>&#x2192; corpus, documents</td></tr>
+      <tr><td><code>corpus</code></td><td>Regroupement de collections</td><td>&#x2192; collections, sources</td></tr>
+      <tr><td><code>documents</code></td><td>Documents upload&eacute;s</td><td>&#x2192; collection, user</td></tr>
+      <tr><td><code>sources</code></td><td>Sources externes (web, API)</td><td>&#x2192; corpus</td></tr>
+      <tr><td><code>system_configs</code></td><td>Configuration syst&egrave;me</td><td>-</td></tr>
+      <tr><td><code>audit_logs</code></td><td>Historique des actions</td><td>&#x2192; user</td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-purple"></span> Donn&eacute;es vectorielles (ChromaDB)</h3>
+
+  <table>
+    <thead><tr><th>Collection ChromaDB</th><th>Contenu</th><th>M&eacute;tadonn&eacute;es</th></tr></thead>
+    <tbody>
+      <tr><td><code>collection_{uuid}</code></td><td>Chunks des documents</td><td>document_id, page, source</td></tr>
+      <tr><td><code>source_{uuid}</code></td><td>Chunks des sources externes</td><td>url, date_indexed</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ==================== SECURITY ==================== -->
+<div class="section" id="security">
+  <div class="section-header">
+    <div class="section-icon icon-green">&#x1F512;</div>
+    <div><h2>8. S&eacute;curit&eacute;</h2></div>
+  </div>
+
+  <h3><span class="h3-dot dot-green"></span> Authentification</h3>
+
+  <div class="flow">
+    <div class="flow-step flow-blue">&#x1F511;<br>Login<span class="flow-label">Email + Password</span></div>
+    <div class="flow-arrow">&#x25B6;</div>
+    <div class="flow-step flow-teal">&#x1F4DD;<br>JWT<span class="flow-label">Access token</span></div>
+    <div class="flow-arrow">&#x25B6;</div>
+    <div class="flow-step flow-green">&#x2705;<br>Middleware<span class="flow-label">V&eacute;rification</span></div>
+    <div class="flow-arrow">&#x25B6;</div>
+    <div class="flow-step flow-amber">&#x1F464;<br>User<span class="flow-label">Contexte inject&eacute;</span></div>
+  </div>
+
+  <h3><span class="h3-dot dot-green"></span> Mesures de s&eacute;curit&eacute;</h3>
+
+  <ul class="checklist">
+    <li class="done">Mots de passe hash&eacute;s avec <strong>bcrypt</strong> (via pwdlib)</li>
+    <li class="done">Tokens JWT avec expiration configurable</li>
+    <li class="done">HTTPS obligatoire en production (certificats SSL)</li>
+    <li class="done">Rate limiting par IP (SlowAPI)</li>
+    <li class="done">CORS configurable (origines autoris&eacute;es)</li>
+    <li class="done">Audit log de toutes les actions sensibles</li>
+    <li class="done">Validation Pydantic sur toutes les entr&eacute;es</li>
+    <li class="done">Pr&eacute;vention injection SQL (SQLAlchemy ORM)</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-amber"></span> Permissions</h3>
+
+  <table>
+    <thead><tr><th>R&ocirc;le</th><th>Acc&egrave;s</th><th>Actions</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge badge-success">user</span></td><td>UI-FRONT uniquement</td><td>Chat, upload docs perso, pr&eacute;f&eacute;rences</td></tr>
+      <tr><td><span class="badge badge-primary">admin</span></td><td>UI-FRONT + UI-BACK</td><td>Tout + gestion users/config</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ==================== FOOTER ==================== -->
+<div class="footer">
+  MY-IA &mdash; Architecture technique &mdash; v2.0 &mdash; <a href="../index.html">Retour &agrave; l'accueil</a>
+</div>
+
+</div>
+
+</body>
+</html>

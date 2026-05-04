@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MY-IA &mdash; D&eacute;ploiement</title>
+  <link rel="stylesheet" href="../assets/doc-style.css">
+</head>
+<body>
+
+<!-- ==================== HEADER ==================== -->
+<div class="header">
+  <div class="page">
+    <div class="header-icon">&#x1F680;</div>
+    <div>
+      <h1>Guide de d&eacute;ploiement</h1>
+      <div class="subtitle">
+        D&eacute;ployez MY-IA en production : serveur, cloud, haute disponibilit&eacute;.
+      </div>
+      <div class="meta">
+        <span>&#x23F1; 30 min</span>
+        <span>D&eacute;veloppeur / DevOps</span>
+        <span>v2.0</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+
+<!-- Navigation -->
+<div class="callout callout-info">
+  <span class="callout-icon">&#x1F3E0;</span>
+  <span><a href="../index.html">&larr; Retour &agrave; l'accueil</a> &nbsp;|&nbsp; <a href="architecture.html">Architecture</a> &nbsp;|&nbsp; <a href="api.html">API</a> &nbsp;|&nbsp; <a href="personnalisation.html">Personnalisation</a></span>
+</div>
+
+<!-- ==================== TOC ==================== -->
+<div class="toc">
+  <h2>Sommaire</h2>
+  <div class="toc-grid">
+    <a href="#prereqs" class="toc-item"><span class="toc-number">1</span>Pr&eacute;requis</a>
+    <a href="#install" class="toc-item"><span class="toc-number">2</span>Installation</a>
+    <a href="#config" class="toc-item"><span class="toc-number">3</span>Configuration</a>
+    <a href="#ssl" class="toc-item"><span class="toc-number">4</span>SSL &amp; Reverse proxy</a>
+    <a href="#monitoring" class="toc-item"><span class="toc-number">5</span>Monitoring</a>
+    <a href="#backup" class="toc-item"><span class="toc-number">6</span>Sauvegardes</a>
+    <a href="#update" class="toc-item"><span class="toc-number">7</span>Mises &agrave; jour</a>
+    <a href="#troubleshooting" class="toc-item"><span class="toc-number">8</span>D&eacute;pannage</a>
+  </div>
+</div>
+
+<!-- ==================== PREREQUIS ==================== -->
+<div class="section" id="prereqs">
+  <div class="section-header">
+    <div class="section-icon icon-blue">&#x2705;</div>
+    <div><h2>1. Pr&eacute;requis</h2></div>
+  </div>
+
+  <h3><span class="h3-dot dot-blue"></span> Ressources mat&eacute;rielles</h3>
+
+  <table>
+    <thead><tr><th>Profil</th><th>Utilisateurs</th><th>CPU</th><th>RAM</th><th>Disque</th><th>GPU</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="badge badge-success">Small</span></td>
+        <td>&lt; 50</td>
+        <td>4 cores</td>
+        <td>16 Go</td>
+        <td>100 Go SSD</td>
+        <td>Optionnel</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-primary">Medium</span></td>
+        <td>50 &ndash; 200</td>
+        <td>8 cores</td>
+        <td>32 Go</td>
+        <td>250 Go SSD</td>
+        <td>NVIDIA 8 Go</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-purple">Large</span></td>
+        <td>200+</td>
+        <td>16 cores</td>
+        <td>64 Go</td>
+        <td>500 Go SSD</td>
+        <td>NVIDIA 16+ Go</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-info">
+    <span class="callout-icon">&#x1F4A1;</span>
+    <span><strong>GPU :</strong> Un GPU NVIDIA est fortement recommand&eacute; pour des r&eacute;ponses rapides. Sans GPU, le CPU sera utilis&eacute; (r&eacute;ponses 5-10x plus lentes).</span>
+  </div>
+
+  <h3><span class="h3-dot dot-blue"></span> Pr&eacute;requis logiciels</h3>
+
+  <table>
+    <thead><tr><th>Logiciel</th><th>Version min.</th><th>V&eacute;rification</th></tr></thead>
+    <tbody>
+      <tr><td>OS</td><td>Ubuntu 22.04 / Debian 12 / RHEL 9</td><td><code>cat /etc/os-release</code></td></tr>
+      <tr><td>Docker</td><td>24.0+</td><td><code>docker --version</code></td></tr>
+      <tr><td>Docker Compose</td><td>2.20+</td><td><code>docker compose version</code></td></tr>
+      <tr><td>Git</td><td>2.30+</td><td><code>git --version</code></td></tr>
+      <tr><td>NVIDIA Driver</td><td>535+ (si GPU)</td><td><code>nvidia-smi</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-blue"></span> Ports r&eacute;seau</h3>
+
+  <table>
+    <thead><tr><th>Port</th><th>Service</th><th>Acc&egrave;s</th></tr></thead>
+    <tbody>
+      <tr><td>80</td><td>HTTP (redirection)</td><td>Public</td></tr>
+      <tr><td>443</td><td>HTTPS</td><td>Public</td></tr>
+      <tr><td>3000</td><td>Interface utilisateurs</td><td>Interne/Proxy</td></tr>
+      <tr><td>8081</td><td>Interface admin</td><td>Restreint</td></tr>
+      <tr><td>8080</td><td>API FastAPI</td><td>Interne uniquement</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ==================== INSTALLATION ==================== -->
+<div class="section" id="install">
+  <div class="section-header">
+    <div class="section-icon icon-teal">&#x1F4E6;</div>
+    <div><h2>2. Installation</h2></div>
+  </div>
+
+  <h3><span class="h3-dot dot-teal"></span> &Eacute;tape 1 : Pr&eacute;paration du serveur</h3>
+
+  <pre><code># Mise &agrave; jour syst&egrave;me
+sudo apt update &amp;&amp; sudo apt upgrade -y
+
+# Installation des d&eacute;pendances
+sudo apt install -y curl git ca-certificates gnupg
+
+# Installation Docker (script officiel)
+curl -fsSL https://get.docker.com | sh
+sudo usermod -aG docker $USER
+
+# Red&eacute;marrer la session pour appliquer le groupe docker
+exit</code></pre>
+
+  <h3><span class="h3-dot dot-teal"></span> &Eacute;tape 2 : Installation du driver NVIDIA (si GPU)</h3>
+
+  <pre><code># Ubuntu 22.04 avec GPU NVIDIA
+sudo apt install -y nvidia-driver-535 nvidia-container-toolkit
+
+# V&eacute;rifier l'installation
+nvidia-smi
+
+# Configurer Docker pour GPU
+sudo nvidia-ctk runtime configure --runtime=docker
+sudo systemctl restart docker</code></pre>
+
+  <h3><span class="h3-dot dot-teal"></span> &Eacute;tape 3 : D&eacute;ploiement MY-IA</h3>
+
+  <pre><code># Cloner le projet
+git clone https://github.com/votre-org/my-ia.git /opt/my-ia
+cd /opt/my-ia
+
+# Configuration initiale
+cp env.template .env
+nano .env  # Configurer les variables (voir section Configuration)
+
+# D&eacute;marrer l'application
+./scripts/start.sh
+
+# V&eacute;rifier que tous les containers tournent
+docker compose ps</code></pre>
+
+  <h3><span class="h3-dot dot-teal"></span> &Eacute;tape 4 : V&eacute;rification</h3>
+
+  <pre><code># V&eacute;rifier la sant&eacute; de l'API
+curl http://localhost:8080/api/health
+
+# R&eacute;ponse attendue
+{"status": "healthy", "llm": {"provider": "ollama", "model": "mistral"}, "chroma": true}</code></pre>
+
+  <div class="callout callout-success">
+    <span class="callout-icon">&#x2705;</span>
+    <span><strong>Succ&egrave;s :</strong> L'application est accessible sur <code>http://votre-serveur:3000</code> (utilisateurs) et <code>:8081</code> (admin).</span>
+  </div>
+</div>
+
+<!-- ==================== CONFIGURATION ==================== -->
+<div class="section" id="config">
+  <div class="section-header">
+    <div class="section-icon icon-green">&#x2699;&#xFE0F;</div>
+    <div><h2>3. Configuration</h2></div>
+  </div>
+
+  <h3><span class="h3-dot dot-green"></span> Variables d'environnement critiques</h3>
+
+  <table>
+    <thead><tr><th>Variable</th><th>Description</th><th>Exemple production</th></tr></thead>
+    <tbody>
+      <tr><td><code>DEPLOY_ENV</code></td><td>Environnement</td><td><code>prod</code></td></tr>
+      <tr><td><code>SECRET_KEY</code></td><td>Cl&eacute; secr&egrave;te JWT (64 chars)</td><td>(g&eacute;n&eacute;r&eacute; automatiquement)</td></tr>
+      <tr><td><code>DATABASE_URL</code></td><td>Connexion PostgreSQL</td><td><code>postgresql+asyncpg://...</code></td></tr>
+      <tr><td><code>CHROMA_HOST</code></td><td>URL ChromaDB</td><td><code>http://chroma:8000</code></td></tr>
+      <tr><td><code>OLLAMA_HOST</code></td><td>URL Ollama</td><td><code>http://host.docker.internal:11434</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-green"></span> Configuration de s&eacute;curit&eacute;</h3>
+
+  <div class="callout callout-warning">
+    <span class="callout-icon">&#x26A0;&#xFE0F;</span>
+    <span><strong>Obligatoire en production :</strong></span>
+  </div>
+
+  <ul class="checklist">
+    <li class="done">Changer <strong>tous les mots de passe</strong> par d&eacute;faut</li>
+    <li class="done">Configurer une <strong>SECRET_KEY</strong> unique (64 caract&egrave;res al&eacute;atoires)</li>
+    <li class="done">Activer <strong>HTTPS</strong> avec certificats SSL valides</li>
+    <li class="done">Configurer <strong>ALLOWED_HOSTS</strong> avec votre domaine</li>
+    <li class="done">Activer le <strong>firewall</strong> (ufw ou iptables)</li>
+    <li class="done">Configurer les <strong>sauvegardes automatiques</strong></li>
+    <li>Optionnel : activer le rate limiting</li>
+    <li>Optionnel : configurer les webhooks d'alerte</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-green"></span> Configuration du firewall</h3>
+
+  <pre><code># Activer ufw
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+
+# Autoriser SSH
+sudo ufw allow ssh
+
+# Autoriser HTTP/HTTPS
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+
+# Activer le firewall
+sudo ufw enable
+sudo ufw status</code></pre>
+</div>
+
+<!-- ==================== SSL ==================== -->
+<div class="section" id="ssl">
+  <div class="section-header">
+    <div class="section-icon icon-purple">&#x1F512;</div>
+    <div><h2>4. SSL &amp; Reverse proxy</h2></div>
+  </div>
+
+  <h3><span class="h3-dot dot-purple"></span> Option 1 : Let's Encrypt (gratuit)</h3>
+
+  <pre><code># Installer Certbot
+sudo apt install certbot
+
+# G&eacute;n&eacute;rer les certificats (arr&ecirc;ter le serveur web d'abord)
+sudo certbot certonly --standalone -d myia.entreprise.com
+
+# Copier vers MY-IA
+sudo cp /etc/letsencrypt/live/myia.entreprise.com/fullchain.pem /opt/my-ia/ssl/
+sudo cp /etc/letsencrypt/live/myia.entreprise.com/privkey.pem /opt/my-ia/ssl/
+sudo chown -R $(whoami):$(whoami) /opt/my-ia/ssl/
+
+# Configurer le renouvellement automatique
+sudo certbot renew --dry-run</code></pre>
+
+  <h3><span class="h3-dot dot-purple"></span> Option 2 : Certificat entreprise</h3>
+
+  <pre><code># Copier vos certificats
+cp /path/to/certificate.crt /opt/my-ia/ssl/fullchain.pem
+cp /path/to/private.key /opt/my-ia/ssl/privkey.pem
+
+# V&eacute;rifier les permissions
+chmod 600 /opt/my-ia/ssl/privkey.pem</code></pre>
+
+  <h3><span class="h3-dot dot-purple"></span> Configuration Nginx (reverse proxy externe)</h3>
+
+  <p>Si vous utilisez un Nginx externe comme reverse proxy :</p>
+
+  <pre><code># /etc/nginx/sites-available/myia
+server {
+    listen 80;
+    server_name myia.entreprise.com;
+    return 301 https://$server_name$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name myia.entreprise.com;
+
+    ssl_certificate /etc/letsencrypt/live/myia.entreprise.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/myia.entreprise.com/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+
+    # Interface utilisateurs
+    location / {
+        proxy_pass https://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+
+    # API
+    location /api/ {
+        proxy_pass http://localhost:8080/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+
+# Interface admin (sous-domaine s&eacute;par&eacute;)
+server {
+    listen 443 ssl http2;
+    server_name admin.myia.entreprise.com;
+
+    ssl_certificate /etc/letsencrypt/live/myia.entreprise.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/myia.entreprise.com/privkey.pem;
+
+    # Restreindre l'acc&egrave;s par IP (optionnel)
+    # allow 192.168.1.0/24;
+    # deny all;
+
+    location / {
+        proxy_pass https://localhost:8081;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}</code></pre>
+
+  <pre><code># Activer le site et recharger
+sudo ln -s /etc/nginx/sites-available/myia /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl reload nginx</code></pre>
+</div>
+
+<!-- ==================== MONITORING ==================== -->
+<div class="section" id="monitoring">
+  <div class="section-header">
+    <div class="section-icon icon-amber">&#x1F4CA;</div>
+    <div><h2>5. Monitoring</h2></div>
+  </div>
+
+  <h3><span class="h3-dot dot-amber"></span> Endpoints de sant&eacute;</h3>
+
+  <table>
+    <thead><tr><th>Endpoint</th><th>Description</th><th>Fr&eacute;quence</th></tr></thead>
+    <tbody>
+      <tr><td><code>/api/health</code></td><td>Sant&eacute; globale (API, LLM, ChromaDB)</td><td>Toutes les 30s</td></tr>
+      <tr><td><code>/api/health/liveness</code></td><td>API en vie (Kubernetes)</td><td>Toutes les 10s</td></tr>
+      <tr><td><code>/api/health/readiness</code></td><td>API pr&ecirc;te (Kubernetes)</td><td>Toutes les 10s</td></tr>
+      <tr><td><code>/api/metrics</code></td><td>M&eacute;triques Prometheus</td><td>Scrape 15s</td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-amber"></span> M&eacute;triques Prometheus</h3>
+
+  <pre><code># Exemple de scrape config pour Prometheus
+scrape_configs:
+  - job_name: 'myia'
+    static_configs:
+      - targets: ['myia.entreprise.com:8080']
+    metrics_path: '/api/metrics'
+    scheme: 'https'</code></pre>
+
+  <h3><span class="h3-dot dot-amber"></span> Logs</h3>
+
+  <pre><code># Voir les logs en temps r&eacute;el
+docker compose logs -f app
+
+# Logs d'un service sp&eacute;cifique
+docker compose logs -f postgres
+docker compose logs -f chroma
+
+# Logs avec horodatage et limite
+docker compose logs --since 1h --timestamps app</code></pre>
+
+  <h3><span class="h3-dot dot-amber"></span> Alertes recommand&eacute;es</h3>
+
+  <ul class="feature-list">
+    <li><strong>Health check &eacute;chou&eacute;</strong> &mdash; /api/health retourne autre chose que "healthy"</li>
+    <li><strong>Latence &eacute;lev&eacute;e</strong> &mdash; Temps de r&eacute;ponse &gt; 5s</li>
+    <li><strong>Espace disque</strong> &mdash; &lt; 20% disponible</li>
+    <li><strong>M&eacute;moire</strong> &mdash; Utilisation &gt; 90%</li>
+    <li><strong>Erreurs 5xx</strong> &mdash; Taux &gt; 1%</li>
+  </ul>
+</div>
+
+<!-- ==================== BACKUP ==================== -->
+<div class="section" id="backup">
+  <div class="section-header">
+    <div class="section-icon icon-red">&#x1F4BE;</div>
+    <div><h2>6. Sauvegardes</h2></div>
+  </div>
+
+  <h3><span class="h3-dot dot-red"></span> &Eacute;l&eacute;ments &agrave; sauvegarder</h3>
+
+  <table>
+    <thead><tr><th>Composant</th><th>Emplacement</th><th>Priorit&eacute;</th></tr></thead>
+    <tbody>
+      <tr><td>Base PostgreSQL</td><td>Volume <code>postgres_data</code></td><td><span class="badge badge-danger">Critique</span></td></tr>
+      <tr><td>Base ChromaDB</td><td>Volume <code>chroma_data</code></td><td><span class="badge badge-danger">Critique</span></td></tr>
+      <tr><td>Documents upload&eacute;s</td><td><code>/opt/my-ia/storage/</code></td><td><span class="badge badge-warning">Important</span></td></tr>
+      <tr><td>Configuration</td><td><code>/opt/my-ia/.env</code></td><td><span class="badge badge-warning">Important</span></td></tr>
+      <tr><td>Certificats SSL</td><td><code>/opt/my-ia/ssl/</code></td><td><span class="badge badge-primary">Normal</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-red"></span> Sauvegarde manuelle</h3>
+
+  <pre><code># Arr&ecirc;ter les services (optionnel mais recommand&eacute;)
+./scripts/stop.sh
+
+# Sauvegarder PostgreSQL
+docker compose exec postgres pg_dump -U myia_user myia_db &gt; backup_$(date +%Y%m%d).sql
+
+# Sauvegarder les volumes
+docker run --rm \
+  -v myia_postgres_data:/data \
+  -v $(pwd)/backups:/backup \
+  alpine tar czf /backup/postgres_$(date +%Y%m%d).tar.gz /data
+
+docker run --rm \
+  -v myia_chroma_data:/data \
+  -v $(pwd)/backups:/backup \
+  alpine tar czf /backup/chroma_$(date +%Y%m%d).tar.gz /data
+
+# Sauvegarder les fichiers
+tar czf backups/storage_$(date +%Y%m%d).tar.gz storage/
+cp .env backups/env_$(date +%Y%m%d).bak
+
+# Red&eacute;marrer
+./scripts/start.sh</code></pre>
+
+  <h3><span class="h3-dot dot-red"></span> Sauvegarde automatique (cron)</h3>
+
+  <pre><code># Cr&eacute;er le script de sauvegarde
+cat &gt; /opt/my-ia/scripts/backup-cron.sh &lt;&lt; 'EOF'
+#!/bin/bash
+cd /opt/my-ia
+DATE=$(date +%Y%m%d_%H%M)
+BACKUP_DIR=/opt/my-ia/backups
+
+# PostgreSQL
+docker compose exec -T postgres pg_dump -U myia_user myia_db | gzip &gt; $BACKUP_DIR/db_$DATE.sql.gz
+
+# Rotation (garder 7 jours)
+find $BACKUP_DIR -name "db_*.sql.gz" -mtime +7 -delete
+
+# Optionnel : envoyer vers stockage distant (S3, rsync, etc.)
+# aws s3 cp $BACKUP_DIR/db_$DATE.sql.gz s3://bucket/backups/
+EOF
+
+chmod +x /opt/my-ia/scripts/backup-cron.sh
+
+# Ajouter au crontab (sauvegarde quotidienne &agrave; 2h)
+(crontab -l 2&gt;/dev/null; echo "0 2 * * * /opt/my-ia/scripts/backup-cron.sh &gt;&gt; /var/log/myia-backup.log 2&gt;&amp;1") | crontab -</code></pre>
+
+  <h3><span class="h3-dot dot-red"></span> Restauration</h3>
+
+  <pre><code># Restaurer PostgreSQL
+gunzip -c backups/db_20240115.sql.gz | docker compose exec -T postgres psql -U myia_user myia_db
+
+# Restaurer un volume
+docker run --rm \
+  -v myia_postgres_data:/data \
+  -v $(pwd)/backups:/backup \
+  alpine sh -c "cd /data &amp;&amp; tar xzf /backup/postgres_20240115.tar.gz --strip-components=1"</code></pre>
+</div>
+
+<!-- ==================== UPDATE ==================== -->
+<div class="section" id="update">
+  <div class="section-header">
+    <div class="section-icon icon-blue">&#x1F504;</div>
+    <div><h2>7. Mises &agrave; jour</h2></div>
+  </div>
+
+  <h3><span class="h3-dot dot-blue"></span> Proc&eacute;dure standard</h3>
+
+  <div class="vflow">
+    <div class="vflow-step active">
+      <div class="step-title">1. Sauvegarder</div>
+      <div class="step-desc">Ex&eacute;cuter le script de sauvegarde</div>
+    </div>
+    <div class="vflow-step active">
+      <div class="step-title">2. Arr&ecirc;ter l'application</div>
+      <div class="step-desc"><code>./scripts/stop.sh</code></div>
+    </div>
+    <div class="vflow-step active">
+      <div class="step-title">3. R&eacute;cup&eacute;rer la nouvelle version</div>
+      <div class="step-desc"><code>git pull origin main</code></div>
+    </div>
+    <div class="vflow-step active">
+      <div class="step-title">4. Rebuild si n&eacute;cessaire</div>
+      <div class="step-desc"><code>docker compose build</code> (si requirements chang&eacute;s)</div>
+    </div>
+    <div class="vflow-step active">
+      <div class="step-title">5. Red&eacute;marrer</div>
+      <div class="step-desc"><code>./scripts/start.sh</code></div>
+    </div>
+    <div class="vflow-step">
+      <div class="step-title">6. V&eacute;rifier</div>
+      <div class="step-desc"><code>curl https://myia.entreprise.com/api/health</code></div>
+    </div>
+  </div>
+
+  <h3><span class="h3-dot dot-blue"></span> Script de d&eacute;ploiement</h3>
+
+  <pre><code># Utiliser le script de d&eacute;ploiement int&eacute;gr&eacute;
+./scripts/deploy.sh remote
+
+# Le script effectue automatiquement :
+# 1. Push git vers origin
+# 2. SSH vers le serveur
+# 3. git pull sur le serveur
+# 4. Restart des containers
+# 5. V&eacute;rification health check</code></pre>
+
+  <h3><span class="h3-dot dot-blue"></span> Rollback</h3>
+
+  <pre><code># En cas de probl&egrave;me, revenir &agrave; la version pr&eacute;c&eacute;dente
+git log --oneline -5  # Trouver le commit pr&eacute;c&eacute;dent
+git checkout &lt;commit-hash&gt;
+./scripts/start.sh</code></pre>
+
+  <div class="callout callout-success">
+    <span class="callout-icon">&#x2705;</span>
+    <span><strong>Zero downtime :</strong> Pour les mises &agrave; jour sans interruption, utilisez un load balancer avec deux instances en rolling update.</span>
+  </div>
+</div>
+
+<!-- ==================== TROUBLESHOOTING ==================== -->
+<div class="section" id="troubleshooting">
+  <div class="section-header">
+    <div class="section-icon icon-red">&#x1F527;</div>
+    <div><h2>8. D&eacute;pannage</h2></div>
+  </div>
+
+  <h3><span class="h3-dot dot-red"></span> Probl&egrave;mes courants</h3>
+
+  <table>
+    <thead><tr><th>Sympt&ocirc;me</th><th>Cause probable</th><th>Solution</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Container ne d&eacute;marre pas</td>
+        <td>Port d&eacute;j&agrave; utilis&eacute;</td>
+        <td><code>docker compose logs app</code> puis lib&eacute;rer le port</td>
+      </tr>
+      <tr>
+        <td>Erreur "Connection refused"</td>
+        <td>Service non d&eacute;marr&eacute;</td>
+        <td>V&eacute;rifier <code>docker compose ps</code></td>
+      </tr>
+      <tr>
+        <td>R&eacute;ponses LLM tr&egrave;s lentes</td>
+        <td>Pas de GPU / mod&egrave;le trop gros</td>
+        <td>V&eacute;rifier <code>nvidia-smi</code>, r&eacute;duire la taille du mod&egrave;le</td>
+      </tr>
+      <tr>
+        <td>Erreur "Out of memory"</td>
+        <td>RAM insuffisante</td>
+        <td>Augmenter la RAM ou r&eacute;duire la taille des mod&egrave;les</td>
+      </tr>
+      <tr>
+        <td>Erreur SSL "certificate expired"</td>
+        <td>Certificat non renouvel&eacute;</td>
+        <td><code>sudo certbot renew</code></td>
+      </tr>
+      <tr>
+        <td>Login &eacute;choue</td>
+        <td>Pool SQLAlchemy cach&eacute;</td>
+        <td><code>docker restart myia_app</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-red"></span> Commandes de diagnostic</h3>
+
+  <pre><code># &Eacute;tat des containers
+docker compose ps
+
+# Utilisation des ressources
+docker stats
+
+# Espace disque des volumes
+docker system df -v
+
+# Logs avec filtrage
+docker compose logs --since 30m app | grep -i error
+
+# Connexion &agrave; PostgreSQL
+docker compose exec postgres psql -U myia_user myia_db
+
+# Test de l'API
+curl -s http://localhost:8080/api/health | jq .</code></pre>
+
+  <h3><span class="h3-dot dot-red"></span> R&eacute;initialisation compl&egrave;te</h3>
+
+  <div class="callout callout-danger">
+    <span class="callout-icon">&#x26A0;&#xFE0F;</span>
+    <span><strong>Attention :</strong> Cette proc&eacute;dure supprime toutes les donn&eacute;es. &Agrave; utiliser uniquement en dernier recours.</span>
+  </div>
+
+  <pre><code># Arr&ecirc;ter et supprimer tout
+./scripts/stop.sh --volumes
+
+# Supprimer les images
+docker compose down --rmi all
+
+# R&eacute;installer
+./scripts/start.sh</code></pre>
+
+  <h3><span class="h3-dot dot-red"></span> Support</h3>
+
+  <p>Si le probl&egrave;me persiste :</p>
+
+  <ul class="feature-list">
+    <li><strong>Documentation</strong> &mdash; V&eacute;rifiez les guides dans <code>/docs</code></li>
+    <li><strong>Logs complets</strong> &mdash; <code>docker compose logs &gt; logs.txt</code></li>
+    <li><strong>GitHub Issues</strong> &mdash; Ouvrez un ticket avec les logs</li>
+    <li><strong>Contact</strong> &mdash; support@votre-entreprise.com</li>
+  </ul>
+</div>
+
+<!-- ==================== FOOTER ==================== -->
+<div class="footer">
+  MY-IA &mdash; Guide de d&eacute;ploiement &mdash; v2.0 &mdash; <a href="../index.html">Retour &agrave; l'accueil</a>
+</div>
+
+</div>
+
+</body>
+</html>

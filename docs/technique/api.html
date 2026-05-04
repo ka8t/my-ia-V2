@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MY-IA &mdash; R&eacute;f&eacute;rence API</title>
+  <link rel="stylesheet" href="../assets/doc-style.css">
+</head>
+<body>
+
+<!-- ==================== HEADER ==================== -->
+<div class="header">
+  <div class="page">
+    <div class="header-icon">&#x1F517;</div>
+    <div>
+      <h1>R&eacute;f&eacute;rence API</h1>
+      <div class="subtitle">
+        Documentation compl&egrave;te de l'API REST MY-IA pour l'int&eacute;gration dans vos applications.
+      </div>
+      <div class="meta">
+        <span>&#x23F1; 20 min</span>
+        <span>D&eacute;veloppeur</span>
+        <span>v2.0</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+
+<!-- Navigation -->
+<div class="callout callout-info">
+  <span class="callout-icon">&#x1F3E0;</span>
+  <span><a href="../index.html">&larr; Retour &agrave; l'accueil</a> &nbsp;|&nbsp; <a href="architecture.html">Architecture</a> &nbsp;|&nbsp; <a href="personnalisation.html">Personnalisation</a> &nbsp;|&nbsp; <a href="deploiement.html">D&eacute;ploiement</a></span>
+</div>
+
+<!-- ==================== TOC ==================== -->
+<div class="toc">
+  <h2>Sommaire</h2>
+  <div class="toc-grid">
+    <a href="#general" class="toc-item"><span class="toc-number">1</span>Informations g&eacute;n&eacute;rales</a>
+    <a href="#auth" class="toc-item"><span class="toc-number">2</span>Authentification</a>
+    <a href="#chat" class="toc-item"><span class="toc-number">3</span>Chat &amp; Conversations</a>
+    <a href="#documents" class="toc-item"><span class="toc-number">4</span>Documents</a>
+    <a href="#collections" class="toc-item"><span class="toc-number">5</span>Collections &amp; Corpus</a>
+    <a href="#admin" class="toc-item"><span class="toc-number">6</span>Administration</a>
+    <a href="#webhooks" class="toc-item"><span class="toc-number">7</span>Webhooks &amp; Events</a>
+    <a href="#errors" class="toc-item"><span class="toc-number">8</span>Codes d'erreur</a>
+  </div>
+</div>
+
+<!-- ==================== GENERAL ==================== -->
+<div class="section" id="general">
+  <div class="section-header">
+    <div class="section-icon icon-blue">&#x1F310;</div>
+    <div><h2>1. Informations g&eacute;n&eacute;rales</h2></div>
+  </div>
+
+  <h3><span class="h3-dot dot-blue"></span> URL de base</h3>
+  <pre><code>https://votre-serveur/api</code></pre>
+
+  <p>Tous les endpoints sont pr&eacute;fix&eacute;s par <code>/api</code>. Le proxy Nginx route automatiquement vers le backend FastAPI.</p>
+
+  <h3><span class="h3-dot dot-blue"></span> Authentification</h3>
+  <p>L'API utilise des tokens <strong>JWT (Bearer)</strong>. Incluez le token dans l'en-t&ecirc;te de chaque requ&ecirc;te :</p>
+  <pre><code>Authorization: Bearer &lt;votre_access_token&gt;</code></pre>
+
+  <h3><span class="h3-dot dot-blue"></span> Format des requ&ecirc;tes</h3>
+
+  <table>
+    <thead><tr><th>Type</th><th>Content-Type</th><th>Usage</th></tr></thead>
+    <tbody>
+      <tr><td>JSON</td><td><code>application/json</code></td><td>La plupart des endpoints</td></tr>
+      <tr><td>Form Data</td><td><code>application/x-www-form-urlencoded</code></td><td>Login uniquement</td></tr>
+      <tr><td>Multipart</td><td><code>multipart/form-data</code></td><td>Upload de fichiers</td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-blue"></span> Format des r&eacute;ponses</h3>
+  <p>Toutes les r&eacute;ponses sont en JSON.</p>
+
+  <div class="two-cols">
+    <div>
+      <p><strong>Succ&egrave;s (200, 201) :</strong></p>
+      <pre><code>{
+  "data": { ... },
+  "message": "Op&eacute;ration r&eacute;ussie"
+}</code></pre>
+    </div>
+    <div>
+      <p><strong>Erreur (4xx, 5xx) :</strong></p>
+      <pre><code>{
+  "detail": "Message d'erreur",
+  "code": "ERROR_CODE"
+}</code></pre>
+    </div>
+  </div>
+
+  <h3><span class="h3-dot dot-teal"></span> Pagination</h3>
+  <p>Les endpoints qui retournent des listes supportent la pagination :</p>
+
+  <table>
+    <thead><tr><th>Param&egrave;tre</th><th>Type</th><th>D&eacute;faut</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>skip</code></td><td>int</td><td>0</td><td>Nombre d'&eacute;l&eacute;ments &agrave; sauter</td></tr>
+      <tr><td><code>limit</code></td><td>int</td><td>20</td><td>Nombre max d'&eacute;l&eacute;ments (max 100)</td></tr>
+    </tbody>
+  </table>
+
+  <pre><code>GET /api/documents?skip=20&amp;limit=10</code></pre>
+</div>
+
+<!-- ==================== AUTH ==================== -->
+<div class="section" id="auth">
+  <div class="section-header">
+    <div class="section-icon icon-teal">&#x1F511;</div>
+    <div><h2>2. Authentification</h2></div>
+  </div>
+
+  <h3><span class="h3-dot dot-teal"></span> POST /auth/login</h3>
+  <p>Obtenir un token d'acc&egrave;s.</p>
+
+  <table>
+    <thead><tr><th>Param&egrave;tre</th><th>Type</th><th>Requis</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>username</code></td><td>string</td><td>Oui</td><td>Email de l'utilisateur</td></tr>
+      <tr><td><code>password</code></td><td>string</td><td>Oui</td><td>Mot de passe</td></tr>
+    </tbody>
+  </table>
+
+  <pre><code># Requ&ecirc;te (form-urlencoded)
+curl -X POST https://api/auth/login \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "username=user@example.com&amp;password=MyPassword123!"
+
+# R&eacute;ponse (200 OK)
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer"
+}</code></pre>
+
+  <div class="callout callout-warning">
+    <span class="callout-icon">&#x26A0;&#xFE0F;</span>
+    <span><strong>Note :</strong> Le token expire apr&egrave;s la dur&eacute;e configur&eacute;e (d&eacute;faut : 24h). Utilisez le refresh token ou reconnectez-vous.</span>
+  </div>
+
+  <h3><span class="h3-dot dot-teal"></span> POST /auth/register</h3>
+  <p>Cr&eacute;er un nouveau compte (si l'inscription est activ&eacute;e).</p>
+
+  <pre><code># Requ&ecirc;te
+curl -X POST https://api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "nouveau@example.com",
+    "password": "SecurePass123!",
+    "username": "Nouveau User"
+  }'
+
+# R&eacute;ponse (201 Created)
+{
+  "id": "uuid",
+  "email": "nouveau@example.com",
+  "username": "Nouveau User",
+  "is_active": true
+}</code></pre>
+
+  <h3><span class="h3-dot dot-teal"></span> GET /users/me</h3>
+  <p>R&eacute;cup&eacute;rer les informations de l'utilisateur connect&eacute;.</p>
+
+  <pre><code># Requ&ecirc;te
+curl -X GET https://api/users/me \
+  -H "Authorization: Bearer &lt;token&gt;"
+
+# R&eacute;ponse
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "email": "user@example.com",
+  "username": "John Doe",
+  "role": "user",
+  "is_active": true,
+  "preferences": {
+    "theme": "dark",
+    "language": "fr"
+  }
+}</code></pre>
+
+  <h3><span class="h3-dot dot-teal"></span> PATCH /users/me</h3>
+  <p>Modifier son profil ou ses pr&eacute;f&eacute;rences.</p>
+
+  <pre><code># Requ&ecirc;te
+curl -X PATCH https://api/users/me \
+  -H "Authorization: Bearer &lt;token&gt;" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "John Updated",
+    "preferences": {
+      "theme": "light"
+    }
+  }'</code></pre>
+</div>
+
+<!-- ==================== CHAT ==================== -->
+<div class="section" id="chat">
+  <div class="section-header">
+    <div class="section-icon icon-green">&#x1F4AC;</div>
+    <div><h2>3. Chat &amp; Conversations</h2></div>
+  </div>
+
+  <h3><span class="h3-dot dot-green"></span> POST /chat/stream</h3>
+  <p>Envoyer un message et recevoir une r&eacute;ponse en streaming (SSE).</p>
+
+  <table>
+    <thead><tr><th>Param&egrave;tre</th><th>Type</th><th>Requis</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>message</code></td><td>string</td><td>Oui</td><td>Question de l'utilisateur</td></tr>
+      <tr><td><code>conversation_id</code></td><td>uuid</td><td>Non</td><td>ID de conversation existante (null = nouvelle)</td></tr>
+      <tr><td><code>mode_id</code></td><td>uuid</td><td>Non</td><td>Mode de conversation sp&eacute;cifique</td></tr>
+      <tr><td><code>collection_id</code></td><td>uuid</td><td>Non</td><td>Collection &agrave; utiliser pour le RAG</td></tr>
+    </tbody>
+  </table>
+
+  <pre><code># Requ&ecirc;te
+curl -X POST https://api/chat/stream \
+  -H "Authorization: Bearer &lt;token&gt;" \
+  -H "Content-Type: application/json" \
+  -H "Accept: text/event-stream" \
+  -d '{
+    "message": "Quelle est la proc&eacute;dure de cong&eacute;s ?",
+    "conversation_id": null
+  }'
+
+# R&eacute;ponse (Server-Sent Events)
+data: {"type": "start", "conversation_id": "uuid"}
+data: {"type": "token", "content": "La"}
+data: {"type": "token", "content": " proc&eacute;dure"}
+data: {"type": "token", "content": " de"}
+...
+data: {"type": "sources", "sources": [{"document": "RH.pdf", "page": 12}]}
+data: {"type": "done"}</code></pre>
+
+  <div class="callout callout-info">
+    <span class="callout-icon">&#x1F4A1;</span>
+    <span><strong>SSE :</strong> Utilisez <code>EventSource</code> en JavaScript ou une librairie SSE pour consommer le flux.</span>
+  </div>
+
+  <h3><span class="h3-dot dot-green"></span> POST /chat</h3>
+  <p>Version non-stream&eacute;e (attendre la r&eacute;ponse compl&egrave;te).</p>
+
+  <pre><code># R&eacute;ponse compl&egrave;te
+{
+  "response": "La proc&eacute;dure de cong&eacute;s est la suivante...",
+  "sources": [
+    {"document": "RH-Procedures.pdf", "page": 12, "score": 0.89}
+  ],
+  "conversation_id": "550e8400-e29b-41d4-a716-446655440000"
+}</code></pre>
+
+  <h3><span class="h3-dot dot-green"></span> GET /conversations</h3>
+  <p>Lister les conversations de l'utilisateur.</p>
+
+  <pre><code>GET /api/conversations?skip=0&amp;limit=20
+
+# R&eacute;ponse
+{
+  "items": [
+    {
+      "id": "uuid",
+      "title": "Proc&eacute;dure de cong&eacute;s",
+      "created_at": "2024-01-15T10:30:00Z",
+      "updated_at": "2024-01-15T10:35:00Z",
+      "message_count": 4
+    }
+  ],
+  "total": 15
+}</code></pre>
+
+  <h3><span class="h3-dot dot-green"></span> GET /conversations/{id}</h3>
+  <p>R&eacute;cup&eacute;rer une conversation avec ses messages.</p>
+
+  <h3><span class="h3-dot dot-green"></span> DELETE /conversations/{id}</h3>
+  <p>Supprimer une conversation.</p>
+
+  <pre><code>DELETE /api/conversations/550e8400-e29b-41d4-a716-446655440000
+
+# R&eacute;ponse (204 No Content)</code></pre>
+</div>
+
+<!-- ==================== DOCUMENTS ==================== -->
+<div class="section" id="documents">
+  <div class="section-header">
+    <div class="section-icon icon-purple">&#x1F4C4;</div>
+    <div><h2>4. Documents</h2></div>
+  </div>
+
+  <h3><span class="h3-dot dot-purple"></span> POST /documents/upload</h3>
+  <p>Uploader et indexer un document.</p>
+
+  <table>
+    <thead><tr><th>Param&egrave;tre</th><th>Type</th><th>Requis</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>file</code></td><td>file</td><td>Oui</td><td>Fichier &agrave; uploader</td></tr>
+      <tr><td><code>collection_id</code></td><td>uuid</td><td>Non</td><td>Collection cible (d&eacute;faut: collection priv&eacute;e)</td></tr>
+      <tr><td><code>visibility</code></td><td>string</td><td>Non</td><td><code>private</code> ou <code>public</code></td></tr>
+    </tbody>
+  </table>
+
+  <pre><code># Requ&ecirc;te
+curl -X POST https://api/documents/upload \
+  -H "Authorization: Bearer &lt;token&gt;" \
+  -F "file=@document.pdf" \
+  -F "collection_id=550e8400-e29b-41d4-a716-446655440000"
+
+# R&eacute;ponse (202 Accepted)
+{
+  "id": "uuid",
+  "filename": "document.pdf",
+  "status": "processing",
+  "message": "Document en cours d'indexation"
+}</code></pre>
+
+  <h3><span class="h3-dot dot-purple"></span> Formats support&eacute;s</h3>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-title">&#x1F4C4; Documents</div>
+      <div class="card-text">PDF, DOCX, DOC, ODT, RTF, TXT</div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F4CA; Tableurs</div>
+      <div class="card-text">XLSX, XLS, CSV, ODS</div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F3AC; Pr&eacute;sentations</div>
+      <div class="card-text">PPTX, PPT, ODP</div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F310; Web</div>
+      <div class="card-text">HTML, XML, JSON, MD</div>
+    </div>
+  </div>
+
+  <h3><span class="h3-dot dot-purple"></span> GET /documents</h3>
+  <p>Lister les documents accessibles.</p>
+
+  <table>
+    <thead><tr><th>Param&egrave;tre</th><th>Type</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>collection_id</code></td><td>uuid</td><td>Filtrer par collection</td></tr>
+      <tr><td><code>status</code></td><td>string</td><td>Filtrer par statut (<code>ready</code>, <code>processing</code>, <code>error</code>)</td></tr>
+      <tr><td><code>search</code></td><td>string</td><td>Recherche par nom de fichier</td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-purple"></span> GET /documents/{id}</h3>
+  <p>D&eacute;tails d'un document.</p>
+
+  <pre><code># R&eacute;ponse
+{
+  "id": "uuid",
+  "filename": "document.pdf",
+  "file_size": 1048576,
+  "mime_type": "application/pdf",
+  "status": "ready",
+  "chunk_count": 45,
+  "collection_id": "uuid",
+  "created_at": "2024-01-15T10:30:00Z",
+  "indexed_at": "2024-01-15T10:32:00Z"
+}</code></pre>
+
+  <h3><span class="h3-dot dot-purple"></span> DELETE /documents/{id}</h3>
+  <p>Supprimer un document (et ses chunks dans ChromaDB).</p>
+
+  <h3><span class="h3-dot dot-purple"></span> POST /documents/{id}/reindex</h3>
+  <p>R&eacute;indexer un document.</p>
+</div>
+
+<!-- ==================== COLLECTIONS ==================== -->
+<div class="section" id="collections">
+  <div class="section-header">
+    <div class="section-icon icon-amber">&#x1F4DA;</div>
+    <div><h2>5. Collections &amp; Corpus</h2></div>
+  </div>
+
+  <h3><span class="h3-dot dot-amber"></span> Collections</h3>
+  <p>Les collections regroupent des documents pour la recherche RAG.</p>
+
+  <table>
+    <thead><tr><th>Endpoint</th><th>M&eacute;thode</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>/collections</code></td><td>GET</td><td>Lister les collections accessibles</td></tr>
+      <tr><td><code>/collections/{id}</code></td><td>GET</td><td>D&eacute;tails d'une collection</td></tr>
+      <tr><td><code>/admin/collections</code></td><td>POST</td><td>Cr&eacute;er une collection (admin)</td></tr>
+      <tr><td><code>/admin/collections/{id}</code></td><td>PATCH</td><td>Modifier une collection (admin)</td></tr>
+      <tr><td><code>/admin/collections/{id}</code></td><td>DELETE</td><td>Supprimer une collection (admin)</td></tr>
+    </tbody>
+  </table>
+
+  <pre><code># Cr&eacute;er une collection
+curl -X POST https://api/admin/collections \
+  -H "Authorization: Bearer &lt;admin_token&gt;" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "documentation-rh",
+    "display_name": "Documentation RH",
+    "type": "public",
+    "description": "Documents des ressources humaines"
+  }'</code></pre>
+
+  <h3><span class="h3-dot dot-amber"></span> Corpus</h3>
+  <p>Les corpus regroupent plusieurs collections pour une recherche multi-collection.</p>
+
+  <table>
+    <thead><tr><th>Endpoint</th><th>M&eacute;thode</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>/admin/corpus</code></td><td>GET</td><td>Lister les corpus</td></tr>
+      <tr><td><code>/admin/corpus</code></td><td>POST</td><td>Cr&eacute;er un corpus</td></tr>
+      <tr><td><code>/admin/corpus/{id}</code></td><td>PATCH</td><td>Modifier un corpus</td></tr>
+      <tr><td><code>/admin/corpus/{id}</code></td><td>DELETE</td><td>Supprimer un corpus</td></tr>
+      <tr><td><code>/admin/corpus/{id}/sources</code></td><td>GET</td><td>Sources externes du corpus</td></tr>
+    </tbody>
+  </table>
+
+  <div class="flow">
+    <div class="flow-step flow-blue">&#x1F4C1;<br>Documents<span class="flow-label">Fichiers</span></div>
+    <div class="flow-arrow">&#x25B6;</div>
+    <div class="flow-step flow-teal">&#x1F4DA;<br>Collections<span class="flow-label">Regroupement</span></div>
+    <div class="flow-arrow">&#x25B6;</div>
+    <div class="flow-step flow-green">&#x1F4E6;<br>Corpus<span class="flow-label">Multi-collection</span></div>
+    <div class="flow-arrow">&#x25B6;</div>
+    <div class="flow-step flow-amber">&#x1F50E;<br>Recherche<span class="flow-label">RAG</span></div>
+  </div>
+</div>
+
+<!-- ==================== ADMIN ==================== -->
+<div class="section" id="admin">
+  <div class="section-header">
+    <div class="section-icon icon-red">&#x1F6E1;&#xFE0F;</div>
+    <div><h2>6. Administration</h2></div>
+  </div>
+
+  <div class="callout callout-warning">
+    <span class="callout-icon">&#x26A0;&#xFE0F;</span>
+    <span><strong>Acc&egrave;s restreint :</strong> Les endpoints <code>/admin/*</code> n&eacute;cessitent le r&ocirc;le <code>admin</code>.</span>
+  </div>
+
+  <h3><span class="h3-dot dot-red"></span> Utilisateurs</h3>
+  <table>
+    <thead><tr><th>Endpoint</th><th>M&eacute;thode</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>/admin/users</code></td><td>GET</td><td>Lister tous les utilisateurs</td></tr>
+      <tr><td><code>/admin/users</code></td><td>POST</td><td>Cr&eacute;er un utilisateur</td></tr>
+      <tr><td><code>/admin/users/{id}</code></td><td>GET</td><td>D&eacute;tails d'un utilisateur</td></tr>
+      <tr><td><code>/admin/users/{id}</code></td><td>PATCH</td><td>Modifier un utilisateur</td></tr>
+      <tr><td><code>/admin/users/{id}</code></td><td>DELETE</td><td>Supprimer un utilisateur</td></tr>
+      <tr><td><code>/admin/users/{id}/reset-password</code></td><td>POST</td><td>R&eacute;initialiser le mot de passe</td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-red"></span> Configuration</h3>
+  <table>
+    <thead><tr><th>Endpoint</th><th>M&eacute;thode</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>/admin/config/{category}</code></td><td>GET</td><td>R&eacute;cup&eacute;rer la configuration</td></tr>
+      <tr><td><code>/admin/config/{category}</code></td><td>PATCH</td><td>Modifier la configuration</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>Cat&eacute;gories disponibles :</strong></p>
+  <ul class="feature-list">
+    <li><strong>general</strong> &mdash; Nom de l'application, logo, description</li>
+    <li><strong>chat</strong> &mdash; Prompt syst&egrave;me, param&egrave;tres LLM</li>
+    <li><strong>llm-provider</strong> &mdash; Provider actif (Ollama/llama.cpp), mod&egrave;les</li>
+    <li><strong>security</strong> &mdash; Politique mots de passe, inscription</li>
+    <li><strong>rag</strong> &mdash; Param&egrave;tres de recherche (top_k, threshold)</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-red"></span> Analytics</h3>
+  <table>
+    <thead><tr><th>Endpoint</th><th>M&eacute;thode</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>/admin/analytics/overview</code></td><td>GET</td><td>Statistiques globales</td></tr>
+      <tr><td><code>/admin/analytics/top-users</code></td><td>GET</td><td>Utilisateurs les plus actifs</td></tr>
+      <tr><td><code>/admin/analytics/top-queries</code></td><td>GET</td><td>Questions les plus fr&eacute;quentes</td></tr>
+      <tr><td><code>/admin/analytics/usage</code></td><td>GET</td><td>Utilisation par p&eacute;riode</td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-red"></span> Audit</h3>
+  <table>
+    <thead><tr><th>Endpoint</th><th>M&eacute;thode</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>/admin/audit/logs</code></td><td>GET</td><td>Historique des actions</td></tr>
+      <tr><td><code>/admin/audit/export</code></td><td>GET</td><td>Exporter les logs (CSV)</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ==================== WEBHOOKS ==================== -->
+<div class="section" id="webhooks">
+  <div class="section-header">
+    <div class="section-icon icon-purple">&#x1F514;</div>
+    <div><h2>7. Webhooks &amp; Events</h2></div>
+  </div>
+
+  <p>MY-IA peut envoyer des notifications &agrave; des syst&egrave;mes externes via webhooks.</p>
+
+  <h3><span class="h3-dot dot-purple"></span> &Eacute;v&eacute;nements disponibles</h3>
+
+  <table>
+    <thead><tr><th>&Eacute;v&eacute;nement</th><th>D&eacute;clencheur</th><th>Payload</th></tr></thead>
+    <tbody>
+      <tr><td><code>conversation.created</code></td><td>Nouvelle conversation</td><td>conversation_id, user_id</td></tr>
+      <tr><td><code>document.uploaded</code></td><td>Document upload&eacute;</td><td>document_id, filename, user_id</td></tr>
+      <tr><td><code>document.indexed</code></td><td>Document index&eacute;</td><td>document_id, chunk_count</td></tr>
+      <tr><td><code>user.created</code></td><td>Nouvel utilisateur</td><td>user_id, email</td></tr>
+      <tr><td><code>user.login</code></td><td>Connexion r&eacute;ussie</td><td>user_id, ip_address</td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-purple"></span> Format du webhook</h3>
+
+  <pre><code>POST https://votre-serveur/webhook
+
+{
+  "event": "document.indexed",
+  "timestamp": "2024-01-15T10:32:00Z",
+  "data": {
+    "document_id": "uuid",
+    "filename": "document.pdf",
+    "chunk_count": 45
+  }
+}</code></pre>
+
+  <div class="callout callout-info">
+    <span class="callout-icon">&#x1F4A1;</span>
+    <span><strong>S&eacute;curit&eacute; :</strong> Les webhooks incluent un header <code>X-Webhook-Signature</code> pour v&eacute;rifier l'authenticit&eacute;.</span>
+  </div>
+</div>
+
+<!-- ==================== ERRORS ==================== -->
+<div class="section" id="errors">
+  <div class="section-header">
+    <div class="section-icon icon-red">&#x26A0;&#xFE0F;</div>
+    <div><h2>8. Codes d'erreur</h2></div>
+  </div>
+
+  <h3><span class="h3-dot dot-red"></span> Codes HTTP</h3>
+
+  <table>
+    <thead><tr><th>Code</th><th>Signification</th><th>Action</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge badge-success">200</span></td><td>Succ&egrave;s</td><td>-</td></tr>
+      <tr><td><span class="badge badge-success">201</span></td><td>Cr&eacute;&eacute;</td><td>-</td></tr>
+      <tr><td><span class="badge badge-success">204</span></td><td>Supprim&eacute; (pas de contenu)</td><td>-</td></tr>
+      <tr><td><span class="badge badge-warning">400</span></td><td>Requ&ecirc;te invalide</td><td>V&eacute;rifier les param&egrave;tres</td></tr>
+      <tr><td><span class="badge badge-warning">401</span></td><td>Non authentifi&eacute;</td><td>Fournir un token valide</td></tr>
+      <tr><td><span class="badge badge-warning">403</span></td><td>Acc&egrave;s refus&eacute;</td><td>Permissions insuffisantes</td></tr>
+      <tr><td><span class="badge badge-warning">404</span></td><td>Ressource introuvable</td><td>V&eacute;rifier l'ID/URL</td></tr>
+      <tr><td><span class="badge badge-warning">422</span></td><td>Validation &eacute;chou&eacute;e</td><td>Corriger les donn&eacute;es</td></tr>
+      <tr><td><span class="badge badge-warning">429</span></td><td>Trop de requ&ecirc;tes</td><td>Attendre avant de r&eacute;essayer</td></tr>
+      <tr><td><span class="badge badge-danger">500</span></td><td>Erreur serveur</td><td>Contacter le support</td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-red"></span> Codes d'erreur applicatifs</h3>
+
+  <table>
+    <thead><tr><th>Code</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>AUTH_INVALID_CREDENTIALS</code></td><td>Email ou mot de passe incorrect</td></tr>
+      <tr><td><code>AUTH_USER_INACTIVE</code></td><td>Compte d&eacute;sactiv&eacute;</td></tr>
+      <tr><td><code>AUTH_TOKEN_EXPIRED</code></td><td>Token JWT expir&eacute;</td></tr>
+      <tr><td><code>DOCUMENT_TOO_LARGE</code></td><td>Fichier d&eacute;passe la limite (50 Mo)</td></tr>
+      <tr><td><code>DOCUMENT_UNSUPPORTED</code></td><td>Format de fichier non support&eacute;</td></tr>
+      <tr><td><code>LLM_UNAVAILABLE</code></td><td>Service LLM inaccessible</td></tr>
+      <tr><td><code>CHROMA_ERROR</code></td><td>Erreur base vectorielle</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ==================== OPENAPI ==================== -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-icon icon-blue">&#x1F4D6;</div>
+    <div><h2>Documentation interactive</h2></div>
+  </div>
+
+  <p>MY-IA expose une documentation OpenAPI interactive accessible directement depuis le serveur :</p>
+
+  <ul class="feature-list">
+    <li><strong>Swagger UI</strong> &mdash; <code>https://votre-serveur/api/docs</code></li>
+    <li><strong>ReDoc</strong> &mdash; <code>https://votre-serveur/api/redoc</code></li>
+    <li><strong>OpenAPI JSON</strong> &mdash; <code>https://votre-serveur/api/openapi.json</code></li>
+  </ul>
+
+  <div class="callout callout-success">
+    <span class="callout-icon">&#x2705;</span>
+    <span>Utilisez <strong>Swagger UI</strong> pour tester les endpoints directement depuis votre navigateur avec authentification.</span>
+  </div>
+</div>
+
+<!-- ==================== FOOTER ==================== -->
+<div class="footer">
+  MY-IA &mdash; R&eacute;f&eacute;rence API &mdash; v2.0 &mdash; <a href="../index.html">Retour &agrave; l'accueil</a>
+</div>
+
+</div>
+
+</body>
+</html>

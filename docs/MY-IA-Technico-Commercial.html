@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MY-IA — Documentation Technico-Commerciale</title>
+    <link rel="stylesheet" href="assets/doc-style.css">
+    <style>
+        /* Charts CSS */
+        .chart-container { margin: 24px 0; }
+        .bar-chart { display: flex; flex-direction: column; gap: 12px; }
+        .bar-group { display: flex; flex-direction: column; gap: 4px; padding: 12px 0; border-bottom: 1px solid var(--gray-100); }
+        .bar-group:last-child { border-bottom: none; }
+        .bar-group-label { font-size: 14px; font-weight: 700; color: var(--gray-800); margin-bottom: 8px; }
+        .bar-row { display: flex; align-items: center; gap: 12px; }
+        .bar-label { width: 80px; font-size: 12px; color: var(--gray-600); flex-shrink: 0; }
+        .bar-track { flex: 1; height: 24px; background: var(--gray-100); border-radius: 6px; overflow: visible; }
+        .bar-fill { height: 100%; border-radius: 6px; min-width: 8px; }
+        .bar-fill.cloud { background: linear-gradient(90deg, #ef4444, #dc2626); }
+        .bar-fill.myia { background: linear-gradient(90deg, #22c55e, #16a34a); }
+        .bar-value { width: 100px; font-size: 13px; font-weight: 700; flex-shrink: 0; text-align: right; }
+        .bar-value.cloud { color: #dc2626; }
+        .bar-value.myia { color: #16a34a; }
+        .chart-legend { display: flex; justify-content: center; gap: 24px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--gray-200); font-size: 13px; }
+        .legend-item { display: flex; align-items: center; gap: 8px; }
+        .legend-dot { width: 16px; height: 16px; border-radius: 4px; }
+        .legend-dot.cloud { background: #ef4444; }
+        .legend-dot.myia { background: #22c55e; }
+        .donut-container { display: flex; justify-content: center; gap: 48px; flex-wrap: wrap; margin: 24px 0; }
+        .donut-item { text-align: center; }
+        .donut { width: 120px; height: 120px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; }
+        .donut-inner { width: 80px; height: 80px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-direction: column; }
+        .donut-value { font-size: 22px; font-weight: 800; color: var(--gray-800); }
+        .donut-label { font-size: 10px; color: var(--gray-500); }
+        .donut-title { font-size: 13px; font-weight: 600; color: var(--gray-700); }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>MY-IA — Fiche Technico-Commerciale</h1>
+        <p class="subtitle">Spécifications techniques et fonctionnelles pour intégrateurs et DSI</p>
+    </div>
+
+    <div class="page">
+        <nav class="toc">
+            <h2>Table des matières</h2>
+            <ul>
+                <li><a href="#overview">1. Vue d'ensemble</a></li>
+                <li><a href="#architecture">2. Architecture</a></li>
+                <li><a href="#fonctionnalites">3. Fonctionnalités détaillées</a></li>
+                <li><a href="#securite">4. Sécurité & Conformité</a></li>
+                <li><a href="#integration">5. Intégration & API</a></li>
+                <li><a href="#prerequis">6. Prérequis techniques</a></li>
+                <li><a href="#deploiement">7. Déploiement</a></li>
+                <li><a href="#support">8. Support, Services & Tarification</a></li>
+            </ul>
+        </nav>
+
+        <!-- Section 1 -->
+        <section id="overview" class="section">
+            <h2><span class="section-number">1</span> Vue d'ensemble</h2>
+
+            <p><strong>MY-IA</strong> est une solution d'IA conversationnelle privée avec RAG (Retrieval-Augmented Generation), déployable on-premise ou sur infrastructure dédiée.</p>
+
+            <h3>Proposition de valeur</h3>
+            <div class="cards">
+                <div class="card">
+                    <div class="card-title">Souveraineté</div>
+                    <div class="card-text">100% des données restent sur votre infrastructure. Aucun appel vers des API cloud.</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">RGPD Natif</div>
+                    <div class="card-text">Audit complet, droit à l'oubli, export des données. Conformité par conception.</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Coût Maîtrisé</div>
+                    <div class="card-text">Pas d'abonnement par utilisateur. Coût = infrastructure uniquement.</div>
+                </div>
+            </div>
+
+            <h3>Métriques clés</h3>
+            <table>
+                <tbody>
+                    <tr><td>Modules backend</td><td>27</td></tr>
+                    <tr><td>Endpoints API REST</td><td>~150</td></tr>
+                    <tr><td>Lignes de code</td><td>~50 000</td></tr>
+                    <tr><td>Tests automatisés</td><td>~130 (unitaires + E2E)</td></tr>
+                    <tr><td>Langues interface</td><td>Français, Anglais</td></tr>
+                    <tr><td>Thèmes UI</td><td>6+</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Section 2 -->
+        <section id="architecture" class="section">
+            <h2><span class="section-number">2</span> Architecture</h2>
+
+            <h3>Stack technique</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Couche</th>
+                        <th>Technologie</th>
+                        <th>Version</th>
+                        <th>Rôle</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Backend</td>
+                        <td>FastAPI (Python)</td>
+                        <td>3.11+</td>
+                        <td>API REST async, OpenAPI auto-documentée</td>
+                    </tr>
+                    <tr>
+                        <td>Base relationnelle</td>
+                        <td>PostgreSQL</td>
+                        <td>15+</td>
+                        <td>Données métier, configuration, audit</td>
+                    </tr>
+                    <tr>
+                        <td>ORM</td>
+                        <td>SQLAlchemy</td>
+                        <td>2.0</td>
+                        <td>Mapping objet-relationnel async</td>
+                    </tr>
+                    <tr>
+                        <td>Base vectorielle</td>
+                        <td>ChromaDB</td>
+                        <td>1.4+</td>
+                        <td>Embeddings, recherche sémantique</td>
+                    </tr>
+                    <tr>
+                        <td>LLM Runtime</td>
+                        <td>Ollama / llama.cpp</td>
+                        <td>Latest</td>
+                        <td>Inférence locale (CPU/GPU)</td>
+                    </tr>
+                    <tr>
+                        <td>Speech-to-Text</td>
+                        <td>Whisper</td>
+                        <td>Large-v3</td>
+                        <td>Transcription audio locale</td>
+                    </tr>
+                    <tr>
+                        <td>Frontend</td>
+                        <td>Vanilla JS + CSS</td>
+                        <td>ES6+</td>
+                        <td>SPA légère, pas de framework lourd</td>
+                    </tr>
+                    <tr>
+                        <td>Containerisation</td>
+                        <td>Docker Compose</td>
+                        <td>2.x</td>
+                        <td>Orchestration multi-containers</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Composants applicatifs</h3>
+            <h4>Frontend (3 modules)</h4>
+            <div class="cards">
+                <div class="card">
+                    <div class="card-title"><span class="badge badge-primary">UI-FRONT</span></div>
+                    <div class="card-text">Interface utilisateur : chat, documents, préférences</div>
+                </div>
+                <div class="card">
+                    <div class="card-title"><span class="badge badge-accent">UI-BACK</span></div>
+                    <div class="card-text">Console admin : dashboard, users, config, audit</div>
+                </div>
+                <div class="card">
+                    <div class="card-title"><span class="badge badge-purple">UI-SHARED</span></div>
+                    <div class="card-text">Composants partagés : templates, i18n, services</div>
+                </div>
+            </div>
+
+            <h4>Backend (27 modules)</h4>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Module</th>
+                        <th>Fonction</th>
+                        <th>Endpoints</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>auth</td><td>JWT, OAuth (Google/GitHub), refresh tokens</td><td>12</td></tr>
+                    <tr><td>chat</td><td>RAG conversationnel, streaming SSE</td><td>4</td></tr>
+                    <tr><td>conversations</td><td>Historique, sessions, messages</td><td>10</td></tr>
+                    <tr><td>documents</td><td>Upload, versioning, téléchargement</td><td>12</td></tr>
+                    <tr><td>ingestion</td><td>Parsing multi-format, chunking, embedding</td><td>3</td></tr>
+                    <tr><td>collections</td><td>Groupements ChromaDB, sync</td><td>15</td></tr>
+                    <tr><td>corpus</td><td>Ensembles thématiques, priorités</td><td>18</td></tr>
+                    <tr><td>sources</td><td>Contextes externes (API, crawlers)</td><td>10</td></tr>
+                    <tr><td>speech</td><td>Transcription Whisper, TTS</td><td>3</td></tr>
+                    <tr><td>preferences</td><td>Préférences utilisateur</td><td>3</td></tr>
+                    <tr><td>admin/users</td><td>CRUD utilisateurs, rôles, approbation</td><td>12</td></tr>
+                    <tr><td>admin/config</td><td>Configuration système (100% BDD)</td><td>8</td></tr>
+                    <tr><td>admin/dashboard</td><td>Métriques, KPIs, tendances</td><td>5</td></tr>
+                    <tr><td>audit</td><td>Journal d'activité, export</td><td>6</td></tr>
+                    <tr><td>logs</td><td>Logs applicatifs, alertes</td><td>6</td></tr>
+                    <tr><td>health</td><td>Health checks, métriques Prometheus</td><td>3</td></tr>
+                    <tr><td>geo</td><td>Pays, villes, codes postaux</td><td>5</td></tr>
+                </tbody>
+            </table>
+
+            <h4>Flux de données</h4>
+            <div class="flow">
+                <div class="flow-step flow-blue">Utilisateur<span class="flow-label">Chat / Upload</span></div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-step flow-teal">FastAPI<span class="flow-label">Backend</span></div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-step flow-amber">ChromaDB<span class="flow-label">Recherche RAG</span></div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-step flow-green">LLM<span class="flow-label">Génération</span></div>
+            </div>
+        </section>
+
+        <!-- Section 3 -->
+        <section id="fonctionnalites" class="section">
+            <h2><span class="section-number">3</span> Fonctionnalités détaillées</h2>
+
+            <h3>3.1 Chat IA avec RAG</h3>
+            <table>
+                <thead>
+                    <tr><th>Fonctionnalité</th><th>Description</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>Recherche sémantique</td><td>ChromaDB avec embeddings (nomic-embed-text, mxbai-embed-large)</td></tr>
+                    <tr><td>Streaming SSE</td><td>Réponses progressives en temps réel</td></tr>
+                    <tr><td>Modes de conversation</td><td>Configurables (assistant, recherche, créatif...)</td></tr>
+                    <tr><td>Citation des sources</td><td>Références cliquables vers documents source</td></tr>
+                    <tr><td>Filtrage par corpus</td><td>Recherche ciblée par thème/collection</td></tr>
+                    <tr><td>Multi-provider LLM</td><td>Ollama ou llama.cpp, switch à chaud</td></tr>
+                    <tr><td>Modèles supportés</td><td>Mistral, Llama 3, Gemma 2, Qwen, DeepSeek, Phi-3...</td></tr>
+                </tbody>
+            </table>
+
+            <h3>3.2 Gestion documentaire</h3>
+            <table>
+                <thead>
+                    <tr><th>Format</th><th>Extensions</th><th>Traitement</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>PDF</td><td>.pdf</td><td>Extraction texte + OCR si image</td></tr>
+                    <tr><td>Office</td><td>.docx, .xlsx, .pptx</td><td>Parsing natif</td></tr>
+                    <tr><td>Images</td><td>.png, .jpg, .tiff, .webp</td><td>OCR (Tesseract)</td></tr>
+                    <tr><td>Texte</td><td>.txt, .md, .html, .csv, .json</td><td>Extraction directe</td></tr>
+                    <tr><td>Email</td><td>.eml, .msg</td><td>Parsing headers + body</td></tr>
+                </tbody>
+            </table>
+
+            <ul class="feature-list">
+                <li><strong>Chunking sémantique</strong> — Découpage intelligent par paragraphes/sections</li>
+                <li><strong>Déduplication</strong> — Hash SHA-256, pas de doublons</li>
+                <li><strong>Versioning</strong> — Historique des modifications avec restauration</li>
+                <li><strong>Visibilité</strong> — Public (partagé) ou privé (personnel)</li>
+                <li><strong>Quotas</strong> — Limites de stockage par utilisateur</li>
+                <li><strong>Upload async</strong> — Progression temps réel, indexation en arrière-plan</li>
+            </ul>
+
+            <h3>3.3 Organisation du contenu</h3>
+            <table>
+                <thead>
+                    <tr><th>Entité</th><th>Description</th><th>Relations</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>Documents</td><td>Fichiers uploadés avec métadonnées</td><td>→ Collections, Corpus</td></tr>
+                    <tr><td>Sources</td><td>Contextes externes (API, crawlers)</td><td>→ Collections, Corpus</td></tr>
+                    <tr><td>Collections</td><td>Regroupements indexés dans ChromaDB</td><td>→ Corpus</td></tr>
+                    <tr><td>Corpus</td><td>Ensembles thématiques avec priorités</td><td>Agrège tout</td></tr>
+                </tbody>
+            </table>
+            <div class="callout callout-info">
+                <span class="callout-icon">🔄</span>
+                <div><strong>Actions en cascade</strong> : Réindexer un corpus réindexe automatiquement toutes ses collections et leurs documents/sources.</div>
+            </div>
+
+            <h3>3.4 Speech-to-Text</h3>
+            <table>
+                <tbody>
+                    <tr><td>Moteur</td><td>Whisper (OpenAI) — exécution locale</td></tr>
+                    <tr><td>Modèles</td><td>tiny, base, small, medium, large-v3</td></tr>
+                    <tr><td>Formats audio</td><td>WebM, WAV, MP3, OGG, FLAC, M4A</td></tr>
+                    <tr><td>Langues</td><td>99+ langues (détection automatique)</td></tr>
+                    <tr><td>TTS</td><td>Lecture vocale via Web Speech API</td></tr>
+                </tbody>
+            </table>
+
+            <h3>3.5 Administration</h3>
+            <h4>Dashboard</h4>
+            <ul>
+                <li>Métriques temps réel (utilisateurs actifs, conversations, documents)</li>
+                <li>Tendances d'usage quotidiennes/hebdomadaires</li>
+                <li>Top utilisateurs et requêtes fréquentes</li>
+                <li>Santé des services (LLM, ChromaDB, PostgreSQL)</li>
+            </ul>
+
+            <h4>Configuration système (100% en BDD)</h4>
+            <table>
+                <thead>
+                    <tr><th>Section</th><th>Paramètres</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>LLM</td><td>provider, model, temperature, max_tokens, top_p</td></tr>
+                    <tr><td>RAG</td><td>top_k, similarity_threshold, chunking_strategy, chunk_size, overlap</td></tr>
+                    <tr><td>Storage</td><td>max_file_size, allowed_mime_types, blocked_extensions</td></tr>
+                    <tr><td>Chat</td><td>modes, system_prompts, streaming_enabled</td></tr>
+                    <tr><td>Speech</td><td>enabled, model, auto_send, tts_enabled</td></tr>
+                    <tr><td>SMTP</td><td>host, port, user, password, tls, from_address</td></tr>
+                    <tr><td>Indexation</td><td>embedding_model, batch_size, parallel_workers</td></tr>
+                    <tr><td>Logging</td><td>level, retention_days, categories</td></tr>
+                    <tr><td>Password</td><td>min_length, require_uppercase, require_digit, expiry_days</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Section 4 -->
+        <section id="securite" class="section">
+            <h2><span class="section-number">4</span> Sécurité & Conformité</h2>
+
+            <h3>Authentification</h3>
+            <table>
+                <tbody>
+                    <tr><td>JWT</td><td>Access tokens (15 min) + Refresh tokens (7 jours)</td></tr>
+                    <tr><td>OAuth 2.0</td><td>Google, GitHub (extensible)</td></tr>
+                    <tr><td>Vérification email</td><td>Double opt-in avec tokens signés</td></tr>
+                    <tr><td>Reset password</td><td>Tokens à usage unique, expiration 1h</td></tr>
+                    <tr><td>Auto-logout</td><td>Déconnexion après 30 min d'inactivité</td></tr>
+                </tbody>
+            </table>
+
+            <h3>Contrôle d'accès (RBAC)</h3>
+            <table>
+                <thead>
+                    <tr><th>Rôle</th><th>Permissions</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>Admin</td><td>Accès complet (config, users, audit, all features)</td></tr>
+                    <tr><td>Validateur</td><td>Approbation contenu, modération</td></tr>
+                    <tr><td>Contributeur</td><td>Upload documents, gestion corpus</td></tr>
+                    <tr><td>Utilisateur</td><td>Chat, documents personnels uniquement</td></tr>
+                </tbody>
+            </table>
+
+            <h3>Politique mot de passe</h3>
+            <ul>
+                <li>Longueur minimale configurable (défaut : 12)</li>
+                <li>Exigences : majuscule, minuscule, chiffre, caractère spécial</li>
+                <li>Expiration automatique (configurable)</li>
+                <li>Historique (empêche réutilisation des N derniers)</li>
+                <li>Hachage : Argon2id (via pwdlib)</li>
+            </ul>
+
+            <h3>Audit & Traçabilité</h3>
+            <ul>
+                <li>Journal complet : qui, quoi, quand, IP, user-agent</li>
+                <li>Actions tracées : login, logout, CRUD, config changes, accès documents</li>
+                <li>Export : CSV, JSON</li>
+                <li>Rétention configurable</li>
+                <li>Alertes sur actions sensibles</li>
+            </ul>
+
+            <h3>Conformité RGPD</h3>
+            <div class="callout callout-success">
+                <span class="callout-icon">✓</span>
+                <div>
+                    <strong>Privacy by Design</strong><br>
+                    • Données 100% locales<br>
+                    • Droit à l'oubli (suppression utilisateur + données)<br>
+                    • Export des données personnelles<br>
+                    • Audit trail complet<br>
+                    • Pas de tracking, pas de télémétrie
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 5 -->
+        <section id="integration" class="section">
+            <h2><span class="section-number">5</span> Intégration & API</h2>
+
+            <h3>API REST</h3>
+            <ul>
+                <li><strong>Documentation</strong> : OpenAPI 3.0 auto-générée (/docs, /redoc)</li>
+                <li><strong>Authentification</strong> : Bearer JWT ou API Key</li>
+                <li><strong>Format</strong> : JSON (application/json)</li>
+                <li><strong>Pagination</strong> : offset/limit avec total_count</li>
+                <li><strong>Erreurs</strong> : Format standardisé {detail, code, field}</li>
+            </ul>
+
+            <h3>Endpoints principaux</h3>
+            <table>
+                <thead>
+                    <tr><th>Endpoint</th><th>Méthode</th><th>Description</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>/auth/jwt/login</td><td>POST</td><td>Authentification</td></tr>
+                    <tr><td>/chat/stream</td><td>POST</td><td>Chat RAG avec streaming</td></tr>
+                    <tr><td>/api/user/documents</td><td>GET/POST</td><td>Liste/Upload documents</td></tr>
+                    <tr><td>/conversations</td><td>GET/POST</td><td>Gestion conversations</td></tr>
+                    <tr><td>/collections</td><td>GET</td><td>Liste collections</td></tr>
+                    <tr><td>/admin/config</td><td>GET/PATCH</td><td>Configuration système</td></tr>
+                    <tr><td>/health</td><td>GET</td><td>Health check</td></tr>
+                    <tr><td>/metrics</td><td>GET</td><td>Métriques Prometheus</td></tr>
+                </tbody>
+            </table>
+
+            <h3>Webhooks (prévu)</h3>
+            <p>Notifications sur événements : nouveau document, conversation terminée, alerte sécurité.</p>
+
+            <h3>Intégrations possibles</h3>
+            <ul>
+                <li><strong>SSO</strong> : SAML, LDAP (via extension OAuth)</li>
+                <li><strong>Monitoring</strong> : Prometheus, Grafana</li>
+                <li><strong>Logs</strong> : ELK, Loki (export JSON)</li>
+                <li><strong>Stockage</strong> : S3-compatible (prévu)</li>
+            </ul>
+        </section>
+
+        <!-- Section 6 -->
+        <section id="prerequis" class="section">
+            <h2><span class="section-number">6</span> Prérequis techniques</h2>
+
+            <h3>Configuration minimale</h3>
+            <table>
+                <thead>
+                    <tr><th>Composant</th><th>Minimum</th><th>Recommandé</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>CPU</td><td>4 cores</td><td>8+ cores</td></tr>
+                    <tr><td>RAM</td><td>16 Go</td><td>32 Go+</td></tr>
+                    <tr><td>Stockage</td><td>50 Go SSD</td><td>200 Go+ NVMe</td></tr>
+                    <tr><td>GPU (optionnel)</td><td>-</td><td>NVIDIA 8 Go+ VRAM</td></tr>
+                </tbody>
+            </table>
+
+            <h3>Systèmes supportés</h3>
+            <ul>
+                <li><strong>Linux</strong> : Ubuntu 22.04+, Debian 12+, RHEL 9+</li>
+                <li><strong>macOS</strong> : 13+ (Ventura) — Apple Silicon natif</li>
+                <li><strong>Windows</strong> : WSL2 avec Docker Desktop</li>
+            </ul>
+
+            <h3>Dépendances</h3>
+            <ul>
+                <li>Docker 24+ et Docker Compose 2.x</li>
+                <li>Ports : 3000 (front), 8080 (API), 8081 (admin), 5432 (PostgreSQL)</li>
+                <li>Certificats SSL (auto-signés ou Let's Encrypt)</li>
+            </ul>
+
+            <h3>Modèles LLM recommandés</h3>
+            <table>
+                <thead>
+                    <tr><th>Usage</th><th>Modèle</th><th>VRAM/RAM</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>Léger (CPU)</td><td>Phi-3 Mini, Gemma 2 2B</td><td>4-6 Go</td></tr>
+                    <tr><td>Équilibré</td><td>Mistral 7B, Llama 3 8B</td><td>8-12 Go</td></tr>
+                    <tr><td>Performance</td><td>Llama 3.1 70B, Mixtral 8x7B</td><td>48 Go+</td></tr>
+                    <tr><td>Embedding</td><td>nomic-embed-text, mxbai-embed-large</td><td>2 Go</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Section 7 -->
+        <section id="deploiement" class="section">
+            <h2><span class="section-number">7</span> Déploiement</h2>
+
+            <h3>Installation rapide</h3>
+            <pre><code>git clone https://github.com/your-repo/my-ia.git
+cd my-ia
+cp .env.example .env
+# Configurer les credentials PostgreSQL dans .env
+docker-compose up -d</code></pre>
+
+            <h3>Modes de déploiement</h3>
+            <table>
+                <thead>
+                    <tr><th>Mode</th><th>Description</th><th>Cas d'usage</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>Standalone</td><td>Docker Compose sur une machine</td><td>PME, usage personnel</td></tr>
+                    <tr><td>VPS dédié</td><td>Serveur cloud isolé</td><td>Équipes distantes</td></tr>
+                    <tr><td>On-premise</td><td>Infrastructure interne</td><td>Grandes organisations, secteur public</td></tr>
+                    <tr><td>Kubernetes</td><td>Orchestration avancée (prévu)</td><td>Scalabilité horizontale</td></tr>
+                </tbody>
+            </table>
+
+            <h3>Sauvegarde</h3>
+            <ul>
+                <li><strong>PostgreSQL</strong> : pg_dump quotidien</li>
+                <li><strong>ChromaDB</strong> : Export des collections</li>
+                <li><strong>Fichiers</strong> : Répertoire /data/storage</li>
+                <li><strong>Configuration</strong> : Export via API /admin/config/export</li>
+            </ul>
+
+            <h3>Mise à jour</h3>
+            <pre><code>git pull origin main
+docker-compose pull
+docker-compose up -d --build
+# Migrations automatiques au démarrage</code></pre>
+        </section>
+
+        <!-- Section 8 -->
+        <section id="support" class="section">
+            <h2><span class="section-number">8</span> Support, Services & Tarification</h2>
+
+            <h3>Coût de la solution</h3>
+            <table>
+                <thead>
+                    <tr><th>Poste</th><th>Coût</th><th>Détail</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Logiciel MY-IA</td>
+                        <td><span class="badge badge-success">0 €</span></td>
+                        <td>Open source, licence libre</td>
+                    </tr>
+                    <tr>
+                        <td>Modèles IA (Ollama)</td>
+                        <td><span class="badge badge-success">0 €</span></td>
+                        <td>Mistral, Llama, Gemma... gratuits</td>
+                    </tr>
+                    <tr>
+                        <td>Utilisateurs supplémentaires</td>
+                        <td><span class="badge badge-success">0 €</span></td>
+                        <td>Pas de licence par siège</td>
+                    </tr>
+                    <tr>
+                        <td>Hébergement (machine existante)</td>
+                        <td><span class="badge badge-success">0 €</span></td>
+                        <td>Utilisation de votre infrastructure</td>
+                    </tr>
+                    <tr>
+                        <td>Hébergement (VPS dédié)</td>
+                        <td>30-50 €/mois</td>
+                        <td>OVH, Scaleway, Hetzner...</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Support professionnel</h3>
+
+            <h4>Formule Essentiel — 150 €/mois</h4>
+            <table>
+                <tbody>
+                    <tr><td>Canal</td><td>Email</td></tr>
+                    <tr><td>Temps de réponse</td><td>48h ouvrées</td></tr>
+                    <tr><td>Volume tickets</td><td>5 tickets/mois</td></tr>
+                    <tr><td>Support distant</td><td>1 session de 30 min/mois</td></tr>
+                    <tr><td>Mises à jour</td><td>Correctifs sécurité et versions mineures</td></tr>
+                    <tr><td>Documentation</td><td>Accès base de connaissances</td></tr>
+                    <tr><td>Horaires</td><td>Lundi-vendredi, 9h-18h</td></tr>
+                </tbody>
+            </table>
+
+            <h4>Formule Business — 300 €/mois</h4>
+            <table>
+                <tbody>
+                    <tr><td>Canal</td><td>Email + Téléphone</td></tr>
+                    <tr><td>Temps de réponse</td><td>24h ouvrées (email), 4h (téléphone critique)</td></tr>
+                    <tr><td>Volume tickets</td><td>Illimité</td></tr>
+                    <tr><td>Support distant</td><td>2 sessions de 1h/mois</td></tr>
+                    <tr><td>Monitoring</td><td>Surveillance proactive de l'instance</td></tr>
+                    <tr><td>Rapports</td><td>Rapport mensuel de santé et usage</td></tr>
+                    <tr><td>Mises à jour</td><td>Toutes versions + accès anticipé bêta</td></tr>
+                    <tr><td>Horaires</td><td>Lundi-vendredi, 9h-18h</td></tr>
+                </tbody>
+            </table>
+
+            <h4>Formule Enterprise — Sur devis</h4>
+            <table>
+                <tbody>
+                    <tr><td>Canal</td><td>Email + Téléphone + Visio dédiée</td></tr>
+                    <tr><td>Temps de réponse</td><td>Selon SLA (voir tableau ci-dessous)</td></tr>
+                    <tr><td>Interlocuteur</td><td>Chef de projet technique dédié</td></tr>
+                    <tr><td>Disponibilité</td><td>SLA 99.5% garanti</td></tr>
+                    <tr><td>Support distant</td><td>Illimité</td></tr>
+                    <tr><td>Évolutions</td><td>Développements sur mesure inclus (quota annuel)</td></tr>
+                    <tr><td>Sécurité</td><td>Audit annuel inclus</td></tr>
+                    <tr><td>Formation</td><td>1 jour/an inclus</td></tr>
+                    <tr><td>Gouvernance</td><td>Comité de suivi trimestriel</td></tr>
+                    <tr><td>Horaires</td><td>Lundi-vendredi, 8h-20h (astreinte optionnelle)</td></tr>
+                </tbody>
+            </table>
+
+            <div class="callout callout-info">
+                <span class="callout-icon">💡</span>
+                <div>
+                    <strong>Base de calcul</strong><br>
+                    Taux horaire de référence : 75 €/h.<br>
+                    • Essentiel ≈ 2h de support effectif/mois + accès outils<br>
+                    • Business ≈ 4h de support effectif/mois + monitoring + rapports<br>
+                    • Enterprise : dimensionné selon le périmètre (nombre d'utilisateurs, criticité, SLA)
+                </div>
+            </div>
+
+            <h3>Comparatif coût annuel (vs solutions cloud)</h3>
+
+            <!-- Graphique barres comparatif -->
+            <div class="chart-container">
+                <div class="bar-chart">
+                    <div class="bar-group">
+                        <div class="bar-group-label">10 utilisateurs</div>
+                        <div class="bar-row">
+                            <div class="bar-label">Cloud</div>
+                            <div class="bar-track"><div class="bar-fill cloud" style="width: 10%;"></div></div>
+                            <div class="bar-value cloud">2 400 €</div>
+                        </div>
+                        <div class="bar-row">
+                            <div class="bar-label">MY-IA</div>
+                            <div class="bar-track"><div class="bar-fill myia" style="width: 9.5%;"></div></div>
+                            <div class="bar-value myia">2 280 €</div>
+                        </div>
+                    </div>
+                    <div class="bar-group">
+                        <div class="bar-group-label">25 utilisateurs</div>
+                        <div class="bar-row">
+                            <div class="bar-label">Cloud</div>
+                            <div class="bar-track"><div class="bar-fill cloud" style="width: 25%;"></div></div>
+                            <div class="bar-value cloud">6 000 €</div>
+                        </div>
+                        <div class="bar-row">
+                            <div class="bar-label">MY-IA</div>
+                            <div class="bar-track"><div class="bar-fill myia" style="width: 10%;"></div></div>
+                            <div class="bar-value myia">2 400 €</div>
+                        </div>
+                    </div>
+                    <div class="bar-group">
+                        <div class="bar-group-label">50 utilisateurs</div>
+                        <div class="bar-row">
+                            <div class="bar-label">Cloud</div>
+                            <div class="bar-track"><div class="bar-fill cloud" style="width: 50%;"></div></div>
+                            <div class="bar-value cloud">12 000 €</div>
+                        </div>
+                        <div class="bar-row">
+                            <div class="bar-label">MY-IA</div>
+                            <div class="bar-track"><div class="bar-fill myia" style="width: 10%;"></div></div>
+                            <div class="bar-value myia">2 400 €</div>
+                        </div>
+                    </div>
+                    <div class="bar-group">
+                        <div class="bar-group-label">100 utilisateurs</div>
+                        <div class="bar-row">
+                            <div class="bar-label">Cloud</div>
+                            <div class="bar-track"><div class="bar-fill cloud" style="width: 100%;"></div></div>
+                            <div class="bar-value cloud">24 000 €</div>
+                        </div>
+                        <div class="bar-row">
+                            <div class="bar-label">MY-IA</div>
+                            <div class="bar-track"><div class="bar-fill myia" style="width: 11.25%;"></div></div>
+                            <div class="bar-value myia">2 700 €</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-legend">
+                    <div class="legend-item"><div class="legend-dot cloud"></div> ChatGPT / Claude (20€/user/mois)</div>
+                    <div class="legend-item"><div class="legend-dot myia"></div> MY-IA + Support Essentiel</div>
+                </div>
+            </div>
+
+            <!-- Donuts économies -->
+            <h4>Taux d'économie par taille d'équipe</h4>
+            <div class="donut-container">
+                <div class="donut-item">
+                    <div class="donut" style="background: conic-gradient(#0d9488 0% 5%, #e5e7eb 5% 100%);">
+                        <div class="donut-inner">
+                            <div class="donut-value">5%</div>
+                            <div class="donut-label">économie</div>
+                        </div>
+                    </div>
+                    <div class="donut-title">10 users</div>
+                </div>
+                <div class="donut-item">
+                    <div class="donut" style="background: conic-gradient(#0d9488 0% 60%, #e5e7eb 60% 100%);">
+                        <div class="donut-inner">
+                            <div class="donut-value">60%</div>
+                            <div class="donut-label">économie</div>
+                        </div>
+                    </div>
+                    <div class="donut-title">25 users</div>
+                </div>
+                <div class="donut-item">
+                    <div class="donut" style="background: conic-gradient(#0d9488 0% 80%, #e5e7eb 80% 100%);">
+                        <div class="donut-inner">
+                            <div class="donut-value">80%</div>
+                            <div class="donut-label">économie</div>
+                        </div>
+                    </div>
+                    <div class="donut-title">50 users</div>
+                </div>
+                <div class="donut-item">
+                    <div class="donut" style="background: conic-gradient(#0d9488 0% 89%, #e5e7eb 89% 100%);">
+                        <div class="donut-inner">
+                            <div class="donut-value">89%</div>
+                            <div class="donut-label">économie</div>
+                        </div>
+                    </div>
+                    <div class="donut-title">100 users</div>
+                </div>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Équipe</th>
+                        <th>ChatGPT/Claude<br><small>(20€/user/mois)</small></th>
+                        <th>MY-IA + Support Essentiel<br><small>(VPS + 150€/mois)</small></th>
+                        <th>Économie</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>10 utilisateurs</strong></td>
+                        <td>2 400 €/an</td>
+                        <td>2 280 €/an</td>
+                        <td><span class="badge badge-success">120 €</span> + souveraineté</td>
+                    </tr>
+                    <tr>
+                        <td><strong>25 utilisateurs</strong></td>
+                        <td>6 000 €/an</td>
+                        <td>2 400 €/an</td>
+                        <td><span class="badge badge-success">3 600 €</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>50 utilisateurs</strong></td>
+                        <td>12 000 €/an</td>
+                        <td>2 400 €/an</td>
+                        <td><span class="badge badge-success">9 600 €</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>100 utilisateurs</strong></td>
+                        <td>24 000 €/an</td>
+                        <td>2 700 €/an</td>
+                        <td><span class="badge badge-success">21 300 €</span></td>
+                    </tr>
+                </tbody>
+            </table>
+            <p><small>Calcul MY-IA : VPS (~40€/mois) + Support Essentiel (150€/mois) = 190€/mois = 2 280€/an. VPS renforcé pour 100+ users : ~60€/mois.</small></p>
+
+            <div class="callout callout-success">
+                <span class="callout-icon">📈</span>
+                <div>
+                    <strong>Rentable dès 10 utilisateurs</strong> — Même avec support professionnel inclus, MY-IA reste compétitif face aux solutions cloud. Au-delà de 25 utilisateurs, l'économie devient significative.
+                </div>
+            </div>
+
+            <h3>Services complémentaires</h3>
+            <table>
+                <thead>
+                    <tr><th>Service</th><th>Description</th><th>Tarif indicatif</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Installation assistée</strong></td>
+                        <td>Déploiement sur votre infrastructure, configuration initiale</td>
+                        <td>500 - 1 500 €</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Migration de données</strong></td>
+                        <td>Import de vos documents existants, indexation initiale</td>
+                        <td>Sur devis</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Personnalisation</strong></td>
+                        <td>Développements spécifiques, intégrations sur mesure</td>
+                        <td>600 €/jour</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Audit sécurité</strong></td>
+                        <td>Revue de configuration, tests de pénétration, rapport</td>
+                        <td>Sur devis</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>SLA (Formule Business & Enterprise)</h3>
+            <table>
+                <thead>
+                    <tr><th>Priorité</th><th>Description</th><th>Temps de réponse</th><th>Temps de résolution</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="badge badge-danger">Critique</span></td>
+                        <td>Service indisponible</td>
+                        <td>&lt; 2h</td>
+                        <td>&lt; 8h</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-warning">Haute</span></td>
+                        <td>Fonctionnalité majeure impactée</td>
+                        <td>&lt; 4h</td>
+                        <td>&lt; 24h</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-primary">Normale</span></td>
+                        <td>Question, demande d'évolution</td>
+                        <td>&lt; 24h</td>
+                        <td>&lt; 72h</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Formation</h3>
+            <table>
+                <thead>
+                    <tr><th>Public</th><th>Durée</th><th>Contenu</th><th>Tarif indicatif</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Utilisateurs</strong></td>
+                        <td>2h</td>
+                        <td>Prise en main interface, bonnes pratiques RAG</td>
+                        <td>300 €</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Administrateurs</strong></td>
+                        <td>4h</td>
+                        <td>Configuration système, gestion utilisateurs, audit</td>
+                        <td>600 €</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Équipe technique</strong></td>
+                        <td>1 jour</td>
+                        <td>Déploiement, intégration API, maintenance, troubleshooting</td>
+                        <td>1 200 €</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <footer>
+            <p><em>MY-IA — L'intelligence artificielle privée pour les professionnels exigeants</em></p>
+            <p><small>Document technique v1.0 — Février 2026</small></p>
+        </footer>
+    </div>
+</body>
+</html>

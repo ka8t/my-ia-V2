@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Plan de migration — Stack JS → Python/API (MY-IA V2)</title>
+<link rel="stylesheet" href="../assets/doc-style.css">
+</head>
+<body>
+
+<header class="header">
+  <div class="page">
+    <div class="header-icon">🐍</div>
+    <h1>Migration MY-IA → V2 Python/API</h1>
+    <p class="subtitle">Refonte complète : abandon de la stack JS (UI-FRONT/UI-BACK/UI-SHARED) au profit d'une stack 100% Python (FastAPI + Jinja2 + HTMX).</p>
+    <div class="meta">
+      <span class="badge badge-primary">Plan</span>
+      <span class="badge badge-warning">En préparation</span>
+      <span class="meta-item">Auteur : KL</span>
+      <span class="meta-item">Date : 2026-05-04</span>
+      <span class="meta-item">Origine : tag v1.0.0-js-final</span>
+    </div>
+  </div>
+</header>
+
+<main class="page">
+
+<!-- ============================================================ -->
+<!-- TOC                                                            -->
+<!-- ============================================================ -->
+<nav class="toc">
+  <h2>Table des matières</h2>
+  <div class="toc-grid">
+    <a href="#contexte">1. Contexte & motivations</a>
+    <a href="#stack">2. Stack cible</a>
+    <a href="#architecture">3. Architecture cible</a>
+    <a href="#templates">4. Nouveau système de templates</a>
+    <a href="#phases">5. Phases du plan</a>
+    <a href="#risques">6. Risques & mitigations</a>
+    <a href="#kpi">7. KPI / critères de succès</a>
+    <a href="#decisions">8. Décisions à valider</a>
+  </div>
+</nav>
+
+<!-- ============================================================ -->
+<!-- 1. Contexte                                                    -->
+<!-- ============================================================ -->
+<section class="section" id="contexte">
+  <div class="section-header">
+    <span class="section-number">1</span>
+    <h2>Contexte & motivations</h2>
+  </div>
+
+  <div class="cards">
+    <div class="card">
+      <h3>État actuel (v1.0.0-js-final)</h3>
+      <ul>
+        <li>Backend FastAPI mature — 18 features, RAG complet</li>
+        <li>3 frontends JS séparés : UI-FRONT, UI-BACK, UI-SHARED</li>
+        <li>Système de templates maison (<code>Templates.render()</code>)</li>
+        <li>Duplication de code entre admin et user</li>
+        <li>State management UI fragile (modules JS, pas de framework)</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3>Pourquoi migrer ?</h3>
+      <ul>
+        <li>Réduire la surface de code : <strong>une seule stack</strong></li>
+        <li>Cohérence types Pydantic ↔ rendu UI (pas de duplication)</li>
+        <li>Streaming natif (chat RAG) via HTMX SSE</li>
+        <li>Déploiement simplifié : un seul container web</li>
+        <li>Productivité : un seul langage à maintenir</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3>Ce qu'on garde</h3>
+      <ul>
+        <li>Logique métier <code>app/features/</code></li>
+        <li>Modèles SQLAlchemy + Alembic</li>
+        <li>Abstraction LLM (<code>app/common/llm/</code>)</li>
+        <li>Pipeline RAG (chunking, embeddings, ChromaDB)</li>
+        <li>Config en BDD (<code>system_configs</code>)</li>
+        <li>Locales <code>fr/en</code> (portés vers Jinja)</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3>Ce qu'on jette</h3>
+      <ul>
+        <li><code>UI-FRONT/</code>, <code>UI-BACK/</code>, <code>UI-SHARED/</code></li>
+        <li>Containers nginx <code>ui_front</code>, <code>ui_back</code></li>
+        <li>Templates JS (<code>Templates.js</code>)</li>
+        <li>Module <code>icon-registry.js</code> → macros Jinja SVG</li>
+        <li>Système d'i18n JS → Babel/jinja2 i18n</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 2. Stack                                                       -->
+<!-- ============================================================ -->
+<section class="section" id="stack">
+  <div class="section-header">
+    <span class="section-number">2</span>
+    <h2>Stack cible</h2>
+  </div>
+
+  <div class="cards">
+    <div class="card">
+      <h3>Backend (inchangé / consolidé)</h3>
+      <ul class="feature-list">
+        <li>Python 3.11+ — FastAPI</li>
+        <li>SQLAlchemy 2.0 async + Alembic</li>
+        <li>PostgreSQL 16 + ChromaDB</li>
+        <li>fastapi-users (JWT API + cookies session)</li>
+        <li>Ollama / llama.cpp</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3>Frontend (nouveau)</h3>
+      <ul class="feature-list">
+        <li><strong>Jinja2</strong> — moteur de templates</li>
+        <li><strong>HTMX</strong> — interactivité, SSE, partials</li>
+        <li><strong>Alpine.js</strong> — micro-interactions DOM</li>
+        <li>CSS custom (réutilisé de <code>UI-SHARED/css/</code>)</li>
+        <li>SVG inline via macros Jinja</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3>Tests</h3>
+      <ul class="feature-list">
+        <li>pytest (unit + integration)</li>
+        <li>Playwright (E2E HTML rendu)</li>
+        <li>httpx pour assertions HTTP</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3>Dev tooling</h3>
+      <ul class="feature-list">
+        <li>ruff (lint + format)</li>
+        <li>mypy (typage strict)</li>
+        <li>pre-commit hooks</li>
+        <li>Docker / docker-compose</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout callout-info">
+    <strong>💡 Pourquoi Jinja2+HTMX plutôt que Reflex/NiceGUI ?</strong>
+    HTMX permet une interactivité progressive sans runtime JS lourd. Reflex et NiceGUI génèrent un client React/Vue en arrière-plan : on perd le contrôle fin du DOM et on alourdit le bundle. Jinja2 reste l'outil natif FastAPI, le plus mûr et le plus simple à debug.
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 3. Architecture                                                -->
+<!-- ============================================================ -->
+<section class="section" id="architecture">
+  <div class="section-header">
+    <span class="section-number">3</span>
+    <h2>Architecture cible</h2>
+  </div>
+
+  <pre><code>my-ia-V2/
+├── app/
+│   ├── main.py                    # FastAPI app + montage routers
+│   ├── core/                      # config, deps, bootstrap, logging
+│   ├── common/                    # llm, rag, storage, crypto, i18n, utils
+│   ├── features/                  # Router → Service → Repository → Schemas
+│   │   └── [feature]/
+│   ├── api/                       # Routes JSON pures (/api/v1/*)
+│   │   └── v1/
+│   ├── web/                       # Routes HTML (Jinja2)
+│   │   ├── auth.py
+│   │   ├── chat.py
+│   │   ├── admin.py
+│   │   └── ...
+│   ├── templates/                 # Jinja2 templates
+│   │   ├── layouts/               # base.html, admin.html, auth.html
+│   │   ├── pages/                 # auth/, chat/, admin/, ...
+│   │   ├── partials/              # chat-message.html, table-row.html
+│   │   └── macros/                # card, button, form, icon, table
+│   ├── static/                    # css, js (htmx, alpine), images
+│   ├── locales/                   # fr.po / en.po (Babel)
+│   └── alembic/
+├── tests/
+│   ├── unit/
+│   ├── integration/
+│   └── e2e/                       # Playwright
+├── scripts/
+├── docs/
+├── docker-compose.yml             # postgres, chroma, app, whisper, ollama
+└── Dockerfile</code></pre>
+
+  <div class="callout callout-warning">
+    <strong>⚠️ Séparation API / Web</strong> :
+    <code>/api/v1/*</code> retourne du JSON (clients tiers, futur mobile) ;
+    <code>/web/*</code> ou racine retourne du HTML (Jinja).
+    Les deux partagent <strong>les mêmes services</strong> (<code>app/features/*/service.py</code>).
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 4. Système de templates                                        -->
+<!-- ============================================================ -->
+<section class="section" id="templates">
+  <div class="section-header">
+    <span class="section-number">4</span>
+    <h2>Nouveau système de templates</h2>
+  </div>
+
+  <h3>Hiérarchie</h3>
+  <pre><code>templates/
+├── layouts/
+│   ├── base.html                # &lt;html&gt;, &lt;head&gt;, blocks: title, content, scripts
+│   ├── auth.html                # extends base — layout login/register
+│   ├── user.html                # extends base — layout app utilisateur
+│   └── admin.html               # extends base — layout admin
+│
+├── pages/
+│   ├── auth/{login,register,reset-password}.html
+│   ├── chat/{conversation,history}.html
+│   ├── documents/{list,upload,detail}.html
+│   ├── admin/users/{list,detail}.html
+│   └── admin/system/{llm,rag,storage,...}.html
+│
+├── partials/                    # Fragments rendus par HTMX (hx-target)
+│   ├── chat/{message,suggestions,sources}.html
+│   ├── tables/{users-row,documents-row}.html
+│   └── notifications/toast.html
+│
+└── macros/
+    ├── card.html                # {{ card(title, body, badge) }}
+    ├── form.html                # {{ field(name, type, label, required) }}
+    ├── table.html               # {{ table(headers, rows, sortable=True) }}
+    ├── icon.html                # {{ icon('user') }} → SVG inline
+    ├── badge.html               # {{ badge('active', color='success') }}
+    └── toast.html               # {{ toast(level, message) }}</code></pre>
+
+  <h3>Mapping ancien → nouveau</h3>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Ancien (JS)</th>
+        <th>Nouveau (Jinja2)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td><code>Templates.card({...})</code></td><td><code>{{ card(title=..., body=...) }}</code></td></tr>
+      <tr><td><code>Templates.render('user-row', data)</code></td><td><code>{% include 'partials/tables/users-row.html' %}</code></td></tr>
+      <tr><td><code>Icons.userCircle()</code></td><td><code>{{ icon('user-circle') }}</code></td></tr>
+      <tr><td><code>t('login.title')</code></td><td><code>{{ _('login.title') }}</code> (Babel)</td></tr>
+      <tr><td><code>showToast('success', t(...))</code></td><td><code>HX-Trigger: showToast</code> + <code>{{ toast(...) }}</code></td></tr>
+      <tr><td>API call <code>fetch()</code> + render JS</td><td><code>hx-get</code> / <code>hx-post</code> → partial Jinja</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Règles d'or (V2)</h3>
+  <ul class="feature-list">
+    <li><strong>Tout HTML rendu côté serveur</strong> via Jinja — jamais de manipulation DOM JS pour générer du contenu</li>
+    <li><strong>Macros mutualisées</strong> : pas de HTML dupliqué entre pages</li>
+    <li><strong>HTMX pour les updates</strong> : <code>hx-get</code>, <code>hx-post</code>, <code>hx-swap</code></li>
+    <li><strong>Alpine.js</strong> uniquement pour : toggles, dropdowns, modals locaux (pas de state global)</li>
+    <li><strong>i18n</strong> : <code>{{ _('cle') }}</code> partout, jamais de texte hardcodé</li>
+    <li><strong>Tableaux triables</strong> : via <code>hx-get?sort=col</code> (re-render serveur)</li>
+    <li><strong>Toasts</strong> : Warning/Error persistants, Success/Info temporaires (CSS animation)</li>
+    <li><strong>SVG icons</strong> : macro <code>icon()</code> + fichiers <code>static/icons/*.svg</code> chargés à build</li>
+  </ul>
+</section>
+
+<!-- ============================================================ -->
+<!-- 5. Phases                                                      -->
+<!-- ============================================================ -->
+<section class="section" id="phases">
+  <div class="section-header">
+    <span class="section-number">5</span>
+    <h2>Phases du plan</h2>
+  </div>
+
+  <div class="vflow">
+
+    <div class="vflow-step">
+      <div class="vflow-marker">0</div>
+      <div class="vflow-content">
+        <h3>Phase 0 — Décisions & squelette <span class="badge badge-info">1-2j</span></h3>
+        <ul class="checklist">
+          <li>Valider stack (Jinja2+HTMX confirmé ou alternative)</li>
+          <li>Décider UI unifiée vs séparée (front/admin)</li>
+          <li>Stratégie : progressive vs big bang</li>
+          <li>Initialiser repo my-ia-V2 (✅ fait)</li>
+          <li>Bootstrap projet : <code>app/main.py</code>, <code>requirements.txt</code>, Dockerfile, docker-compose</li>
+          <li>CLAUDE.md adapté à la nouvelle stack</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="vflow-step">
+      <div class="vflow-marker">1</div>
+      <div class="vflow-content">
+        <h3>Phase 1 — Backend consolidé <span class="badge badge-info">3-5j</span></h3>
+        <ul class="checklist">
+          <li>Reprendre <code>app/</code> de my-ia (features, models, alembic)</li>
+          <li>Versionner toutes les routes API sous <code>/api/v1/</code></li>
+          <li>OpenAPI complet (descriptions, exemples)</li>
+          <li>Séparer routes JSON (<code>app/api/v1/</code>) des futures routes HTML (<code>app/web/</code>)</li>
+          <li>Tests d'intégration sur endpoints critiques (auth, chat, upload, RAG)</li>
+          <li>Brancher i18n Babel</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="vflow-step">
+      <div class="vflow-marker">2</div>
+      <div class="vflow-content">
+        <h3>Phase 2 — Squelette frontend Jinja <span class="badge badge-info">3-4j</span></h3>
+        <ul class="checklist">
+          <li>Créer <code>app/templates/layouts/{base,auth,user,admin}.html</code></li>
+          <li>Créer macros : card, form, table, icon, badge, toast</li>
+          <li>Créer <code>app/static/css/</code> (port de UI-SHARED/css adapté)</li>
+          <li>Intégrer HTMX + Alpine.js (CDN ou bundle local)</li>
+          <li>Page pilote : <strong>login</strong> (la plus simple, isolée)</li>
+          <li>Auth web : cookies session HttpOnly + CSRF</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="vflow-step">
+      <div class="vflow-marker">3</div>
+      <div class="vflow-content">
+        <h3>Phase 3 — Migration page par page <span class="badge badge-warning">3-4 semaines</span></h3>
+        <p>Ordre recommandé (du plus simple au plus complexe) :</p>
+        <ol>
+          <li><strong>Auth</strong> — login, register, reset password, profile</li>
+          <li><strong>User front</strong> — home, conversations list, settings, upload</li>
+          <li><strong>Chat</strong> — streaming via HTMX SSE (ou WebSocket)</li>
+          <li><strong>Admin core</strong> — users, documents, sources, collections</li>
+          <li><strong>Admin system/*</strong> — 14 sous-modules (LLM, RAG, storage, etc.)</li>
+          <li><strong>Admin avancé</strong> — audit, logs, validation, dashboard</li>
+        </ol>
+        <p>À chaque page : tests E2E Playwright + suppression du module JS équivalent côté <code>my-ia</code> (référence).</p>
+      </div>
+    </div>
+
+    <div class="vflow-step">
+      <div class="vflow-marker">4</div>
+      <div class="vflow-content">
+        <h3>Phase 4 — Décommissionnement (sur my-ia) <span class="badge badge-info">2-3j</span></h3>
+        <ul class="checklist">
+          <li>Geler my-ia (aucune nouvelle feature)</li>
+          <li>Décommissionner production VPS my-ia → bascule my-ia-V2</li>
+          <li>Migration BDD : aucune (même Postgres, même schéma)</li>
+          <li>Migration ChromaDB : aucune (même vector store)</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="vflow-step">
+      <div class="vflow-marker">5</div>
+      <div class="vflow-content">
+        <h3>Phase 5 — Cleanup & docs <span class="badge badge-info">1-2j</span></h3>
+        <ul class="checklist">
+          <li>Doc HTML : <code>docs/MY-IA-Technique.html</code> (nouvelle archi)</li>
+          <li>Doc HTML : <code>docs/Plans/Closed/PLAN-MIGRATION-PYTHON.html</code></li>
+          <li>Mémoire MEMORY.md mise à jour</li>
+          <li>Tag release <code>v2.0.0</code> sur main</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="callout callout-info">
+    <strong>📅 Estimation totale :</strong> ~5-6 semaines en mode focus, selon profondeur des tests E2E et complexité des pages admin.
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 6. Risques                                                     -->
+<!-- ============================================================ -->
+<section class="section" id="risques">
+  <div class="section-header">
+    <span class="section-number">6</span>
+    <h2>Risques & mitigations</h2>
+  </div>
+
+  <table class="data-table">
+    <thead>
+      <tr><th>Risque</th><th>Impact</th><th>Mitigation</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Streaming chat (SSE) plus complexe en HTMX qu'en JS natif</td>
+        <td>Moyen</td>
+        <td>Prototype avant phase 3 ; fallback WebSocket via fastapi-ws</td>
+      </tr>
+      <tr>
+        <td>Perte d'interactivité riche (drag&amp;drop upload, autocomplete sources)</td>
+        <td>Moyen</td>
+        <td>Alpine.js + HTMX patterns ; isoler quelques composants en JS pur si besoin</td>
+      </tr>
+      <tr>
+        <td>i18n : 1900+ clés à porter de JSON vers Babel</td>
+        <td>Faible</td>
+        <td>Script de conversion automatique JSON → .po</td>
+      </tr>
+      <tr>
+        <td>Régression admin sur les 14 modules system/*</td>
+        <td>Élevé</td>
+        <td>Tests E2E Playwright systématiques + checklist par module</td>
+      </tr>
+      <tr>
+        <td>Performance rendu serveur vs JS</td>
+        <td>Faible</td>
+        <td>Cache fragments Jinja, HTMX <code>hx-target</code> pour partials</td>
+      </tr>
+      <tr>
+        <td>Bundle CSS volumineux à porter</td>
+        <td>Faible</td>
+        <td>Audit CSS au passage, suppression du non utilisé</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============================================================ -->
+<!-- 7. KPI                                                         -->
+<!-- ============================================================ -->
+<section class="section" id="kpi">
+  <div class="section-header">
+    <span class="section-number">7</span>
+    <h2>KPI / critères de succès</h2>
+  </div>
+
+  <div class="cards">
+    <div class="card">
+      <h3>Réduction code</h3>
+      <p>LOC totales V2 ≤ <strong>50%</strong> de v1 (suppression UI-FRONT/BACK/SHARED).</p>
+    </div>
+    <div class="card">
+      <h3>Bundle client</h3>
+      <p>Total JS chargé en page ≤ <strong>50 Ko</strong> (HTMX + Alpine ≈ 30 Ko).</p>
+    </div>
+    <div class="card">
+      <h3>Couverture tests</h3>
+      <p>Tests unitaires ≥ <strong>70%</strong> ; toutes les pages couvertes par un test E2E.</p>
+    </div>
+    <div class="card">
+      <h3>TTFB chat</h3>
+      <p>Premier token streamé en ≤ <strong>500ms</strong> après envoi message (égal à v1).</p>
+    </div>
+    <div class="card">
+      <h3>Containers Docker</h3>
+      <p>De 9 services → <strong>6</strong> (suppression ui_front, ui_back, fusion nginx).</p>
+    </div>
+    <div class="card">
+      <h3>Build time</h3>
+      <p>Image Docker app ≤ <strong>2 min</strong> sur M1 (sans cache).</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 8. Décisions à valider                                         -->
+<!-- ============================================================ -->
+<section class="section" id="decisions">
+  <div class="section-header">
+    <span class="section-number">8</span>
+    <h2>Décisions à valider avant Phase 1</h2>
+  </div>
+
+  <ul class="checklist">
+    <li><strong>Stack frontend</strong> : Jinja2+HTMX (recommandé) ou alternative (NiceGUI / Reflex / FastUI) ?</li>
+    <li><strong>Architecture UI</strong> : une seule app web unifiée (avec routes <code>/admin/*</code>) ou deux apps Jinja distinctes ?</li>
+    <li><strong>Stratégie</strong> : progressive (recommandé, ancien reste en parallèle) ou big bang ?</li>
+    <li><strong>Auth web</strong> : cookies session HttpOnly + CSRF, ou JWT en localStorage côté HTML ?</li>
+    <li><strong>Tests E2E</strong> : Playwright (recommandé) ou pytest+httpx assertions HTML ?</li>
+    <li><strong>i18n</strong> : Babel/.po (standard) ou rester sur JSON parsé en Python ?</li>
+    <li><strong>Streaming chat</strong> : SSE via HTMX (recommandé) ou WebSocket ?</li>
+    <li><strong>CSS</strong> : porter UI-SHARED/css/ tel quel, ou repartir de Tailwind ?</li>
+  </ul>
+
+  <div class="callout callout-danger">
+    <strong>🚨 À acter avant tout code Phase 1.</strong>
+    Une fois la stack et la stratégie validées, ce plan sera complété par les sous-plans détaillés (un par phase) et déposé dans <code>docs/Plans/</code>.
+  </div>
+</section>
+
+</main>
+
+<footer class="footer">
+  <p>MY-IA V2 — Plan de migration Python/API · Document vivant, mis à jour à chaque phase</p>
+</footer>
+
+</body>
+</html>

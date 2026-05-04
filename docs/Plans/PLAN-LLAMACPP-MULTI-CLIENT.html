@@ -1,0 +1,1837 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MY-IA &mdash; Plan llama.cpp Multi-Client HTTP</title>
+  <link rel="stylesheet" href="../assets/doc-style.css">
+  <style>
+    /* Styles spécifiques au plan */
+    .status-done { color: #22c55e; font-weight: bold; }
+    .status-partial { color: #f59e0b; font-weight: bold; }
+    .status-missing { color: #ef4444; font-weight: bold; }
+    .card-todo { border-left: 4px solid #3b82f6; background: #eff6ff; }
+    .priority-high { color: #ef4444; font-weight: bold; }
+    .priority-medium { color: #f59e0b; }
+    .ascii-art { background: var(--gray-800); color: #e5e7eb; padding: 16px 20px; border-radius: 8px; font-family: monospace; font-size: 12px; line-height: 1.4; overflow-x: auto; white-space: pre; }
+    .checklist-plan { list-style: none; padding-left: 0; }
+    .checklist-plan li { padding: 0.25rem 0; display: flex; align-items: center; gap: 0.5rem; }
+    .checklist-plan input[type="checkbox"] { margin-right: 0.5rem; }
+  </style>
+</head>
+<body>
+
+<!-- ==================== HEADER ==================== -->
+<div class="header">
+  <div class="page">
+    <div class="header-icon">🦙</div>
+    <div>
+      <h1>Plan llama.cpp Multi-Client HTTP</h1>
+      <div class="subtitle">
+        Intégration complète du provider llama.cpp avec support multi-client, restart API, et synchronisation config BDD.
+      </div>
+      <div class="meta">
+        <span>2026-02-21</span>
+        <span class="status-partial">⚠️ Section 14 en cours</span>
+        <span>Priorité haute</span>
+        <span>15 sections</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+
+<!-- ==================== TABLE OF CONTENTS ==================== -->
+<div class="toc">
+  <h2>Table des matières</h2>
+  <div class="toc-grid">
+    <a href="#s1"><span class="toc-num">1</span> Contexte et objectifs</a>
+    <a href="#s2"><span class="toc-num">2</span> Architecture cible</a>
+    <a href="#s3"><span class="toc-num">3</span> Installation llama-server</a>
+    <a href="#s4"><span class="toc-num">4</span> Comparaison Ollama vs llama.cpp</a>
+    <a href="#s5"><span class="toc-num">5</span> Composants manquants</a>
+    <a href="#s6"><span class="toc-num">6</span> Phase 1: LlamaCppConfig</a>
+    <a href="#s7"><span class="toc-num">7</span> Phase 2: Chargement BDD</a>
+    <a href="#s8"><span class="toc-num">8</span> Phase 3: Endpoints admin</a>
+    <a href="#s9"><span class="toc-num">9</span> Phase 4: Gestion serveur natif</a>
+    <a href="#s10"><span class="toc-num">10</span> Phase 5: Tests</a>
+    <a href="#s11"><span class="toc-num">11</span> Fichiers impactés</a>
+    <a href="#s12"><span class="toc-num">12</span> Risques et mitigations</a>
+    <a href="#s13"><span class="toc-num">13</span> Checklist de validation</a>
+    <a href="#s14"><span class="toc-num">14</span> Chemins de configuration</a>
+  </div>
+</div>
+
+<!-- ==================== SECTION 1 ==================== -->
+<div class="section" id="s1">
+  <div class="section-header">
+    <div class="section-icon icon-blue">🎯</div>
+    <div><h2>Contexte et objectifs <span class="section-num">&mdash; Section 1</span></h2></div>
+  </div>
+
+  <h3><span class="h3-dot dot-red"></span> Problématique</h3>
+  <p>Le provider <code>LlamaCppProvider</code> existe mais ne charge pas sa configuration depuis la BDD comme le fait <code>OllamaProvider</code>. Il utilise uniquement les valeurs par défaut de <code>settings</code> (variables d'environnement).</p>
+  <p>De plus, llama-server doit tourner en <strong>natif</strong> (pas dans Docker) pour bénéficier de l'accélération GPU Metal sur Mac Apple Silicon.</p>
+
+  <h3><span class="h3-dot dot-green"></span> Objectifs</h3>
+  <ul class="feature-list">
+    <li><strong>Charger config depuis BDD</strong> &mdash; avec cache TTL (comme Ollama)</li>
+    <li><strong>Support multi-client</strong> &mdash; via <code>--parallel</code></li>
+    <li><strong>Restart automatique via API</strong> &mdash; endpoint pour redémarrer avec config BDD</li>
+    <li><strong>Lecture config BDD au démarrage</strong> &mdash; option <code>--from-db</code> dans llamacpp.sh</li>
+    <li><strong>Vérification sync config</strong> &mdash; comparer config BDD vs serveur running</li>
+    <li><strong>Non-régression</strong> &mdash; ne pas casser l'existant Ollama</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-amber"></span> Contraintes</h3>
+  <div class="callout callout-warning">
+    <span class="callout-icon">⚠️</span>
+    <span><strong>Pas de Docker pour llama.cpp</strong> &mdash; llama-server doit tourner en natif sur l'hôte pour accéder au GPU Metal. La communication se fait via <code>host.docker.internal:8085</code> depuis les containers Docker.</span>
+  </div>
+</div>
+
+<!-- ==================== SECTION 2 ==================== -->
+<div class="section" id="s2">
+  <div class="section-header">
+    <div class="section-icon icon-teal">🏗️</div>
+    <div><h2>Architecture cible <span class="section-num">&mdash; Section 2</span></h2></div>
+  </div>
+
+  <h3><span class="h3-dot dot-blue"></span> Vue d'ensemble</h3>
+  <pre class="ascii-art">┌─────────────────────────────────────────────────────────────────────────────┐
+│                              MY-IA (Docker)                                  │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  ┌──────────┐   ┌──────────┐   ┌──────────────────────────────────────────┐ │
+│  │ UI-FRONT │   │ UI-BACK  │   │            FastAPI (app/)                │ │
+│  │  :3000   │   │  :8081   │   │              :8080                       │ │
+│  └────┬─────┘   └────┬─────┘   └───────────────┬──────────────────────────┘ │
+│       │              │                         │                             │
+│       └──────────────┴────────┬────────────────┘                             │
+│                               │                                              │
+│                               ▼                                              │
+│  ┌─────────────────────────────────────────────────────────────────────────┐│
+│  │                        LLM Factory                                       ││
+│  │  ┌─────────────────────┐        ┌─────────────────────┐                 ││
+│  │  │   OllamaProvider    │   OR   │  LlamaCppProvider   │                 ││
+│  │  │   (via BDD config)  │        │  (via BDD config)   │ ◄── À compléter ││
+│  │  └──────────┬──────────┘        └──────────┬──────────┘                 ││
+│  └─────────────┼───────────────────────────────┼───────────────────────────┘│
+│                │                               │                             │
+└────────────────┼───────────────────────────────┼─────────────────────────────┘
+                 │                               │
+                 ▼                               ▼
+        ┌────────────────┐            ┌─────────────────────────┐
+        │     Ollama     │            │   llama-server (natif)  │
+        │  (container)   │            │   GPU Metal / CUDA      │
+        │    :11434      │            │       :8085             │
+        └────────────────┘            └─────────────────────────┘</pre>
+
+  <h3><span class="h3-dot dot-teal"></span> Multi-client llama-server</h3>
+  <pre class="ascii-art">┌─────────┐
+│ Client1 │───┐
+└─────────┘   │
+┌─────────┐   │     ┌─────────────────────────────────────────┐
+│ Client2 │───┼────▶│      llama-server :8085                 │
+└─────────┘   │     │                                         │
+┌─────────┐   │     │  Options multi-client:                  │
+│ Client3 │───┤     │  --parallel 4       (4 slots)           │
+└─────────┘   │     │  --cont-batching    (batch tokens)      │
+┌─────────┐   │     │  --ctx-size 4096    (par slot)          │
+│ Client4 │───┘     │  --batch-size 2048  (taille batch)      │
+└─────────┘         │                                         │
+                    │  Endpoints:                             │
+                    │  POST /v1/chat/completions (streaming)  │
+                    │  POST /v1/embeddings                    │
+                    │  GET  /health                           │
+                    │  GET  /metrics (Prometheus)             │
+                    └─────────────────────────────────────────┘</pre>
+
+  <h3><span class="h3-dot dot-purple"></span> Mémoire requise</h3>
+  <p>Formule: <code>parallel × ctx_size × model_factor</code></p>
+  <table>
+    <thead><tr><th>Modèle</th><th>parallel=1</th><th>parallel=4</th><th>parallel=8</th></tr></thead>
+    <tbody>
+      <tr><td>Gemma 2B Q4</td><td>~2 GB</td><td>~4 GB</td><td>~6 GB</td></tr>
+      <tr><td>Gemma 9B Q4</td><td>~6 GB</td><td>~10 GB</td><td>~14 GB</td></tr>
+      <tr><td>Llama 3 8B Q4</td><td>~5 GB</td><td>~9 GB</td><td>~13 GB</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ==================== SECTION 3 ==================== -->
+<div class="section" id="s3">
+  <div class="section-header">
+    <div class="section-icon icon-green">⚙️</div>
+    <div><h2>Installation et configuration llama-server <span class="section-num">&mdash; Section 3</span></h2></div>
+  </div>
+
+  <div class="callout callout-success">
+    <span class="callout-icon">🍎</span>
+    <span><strong>Configuration cible : MacBook Pro M1 Pro 32 Go</strong> &mdash; GPU Metal avec 16 cœurs GPU, mémoire unifiée partagée CPU/GPU. Idéal pour modèles 7B-13B en quantification Q4/Q5.</span>
+  </div>
+
+  <h3><span class="h3-dot dot-blue"></span> Spécifications M1 Pro 32 Go</h3>
+  <table>
+    <thead><tr><th>Composant</th><th>Spécification</th><th>Impact llama.cpp</th></tr></thead>
+    <tbody>
+      <tr><td><strong>CPU</strong></td><td>10 cœurs (8P + 2E)</td><td>Compilation rapide, fallback CPU si besoin</td></tr>
+      <tr><td><strong>GPU</strong></td><td>16 cœurs Metal</td><td>Accélération inference via Metal</td></tr>
+      <tr><td><strong>RAM</strong></td><td>32 Go unifiée</td><td>Modèles jusqu'à ~24 Go chargés (avec marge système)</td></tr>
+      <tr><td><strong>Bande passante</strong></td><td>200 Go/s</td><td>Transferts rapides CPU↔GPU</td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-green"></span> Modèles recommandés (32 Go RAM)</h3>
+  <table>
+    <thead><tr><th>Modèle</th><th>Quantification</th><th>Taille</th><th>VRAM utilisée</th><th>parallel max</th></tr></thead>
+    <tbody>
+      <tr><td>Gemma 2 2B</td><td>Q4_K_M</td><td>~1.5 Go</td><td>~2 Go</td><td>8</td></tr>
+      <tr><td>Gemma 2 9B</td><td>Q4_K_M</td><td>~5 Go</td><td>~6-10 Go</td><td>4-6</td></tr>
+      <tr><td>Llama 3.1 8B</td><td>Q4_K_M</td><td>~4.5 Go</td><td>~5-9 Go</td><td>4-6</td></tr>
+      <tr><td>Mistral 7B</td><td>Q4_K_M</td><td>~4 Go</td><td>~5-8 Go</td><td>4-6</td></tr>
+      <tr><td>Qwen2.5 14B</td><td>Q4_K_M</td><td>~8 Go</td><td>~10-14 Go</td><td>2-4</td></tr>
+      <tr><td>Llama 3.1 70B</td><td>Q4_K_M</td><td>~40 Go</td><td class="status-missing">❌ Trop grand</td><td>-</td></tr>
+    </tbody>
+  </table>
+  <p><em>Note : parallel × ctx_size augmente la consommation mémoire. Avec 32 Go, viser ~20 Go max pour le modèle + KV cache.</em></p>
+
+  <h3><span class="h3-dot dot-red"></span> Étape 1 : Prérequis système</h3>
+
+  <h4>1.1 Vérifier macOS et Xcode</h4>
+  <pre><code># Vérifier la version macOS (minimum Monterey 12.0 pour Metal 3)
+sw_vers
+# ProductName:    macOS
+# ProductVersion: 14.x ou supérieur
+
+# Vérifier que les Xcode CLI Tools sont installés
+xcode-select -p
+# /Library/Developer/CommandLineTools ou /Applications/Xcode.app/...
+
+# Si non installés :
+xcode-select --install</code></pre>
+
+  <h4>1.2 Installer Homebrew (si pas déjà fait)</h4>
+  <pre><code># Installer Homebrew
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Ajouter au PATH (Apple Silicon)
+echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zprofile
+eval "$(/opt/homebrew/bin/brew shellenv)"
+
+# Vérifier
+brew --version</code></pre>
+
+  <h4>1.3 Installer CMake</h4>
+  <pre><code># Installer CMake
+brew install cmake
+
+# Vérifier (minimum 3.14, recommandé 3.25+)
+cmake --version
+# cmake version 3.28.1
+
+# Vérifier le compilateur
+clang --version
+# Apple clang version 15.0.0 (ou supérieur)</code></pre>
+
+  <h3><span class="h3-dot dot-teal"></span> Étape 2 : Cloner et compiler llama.cpp</h3>
+
+  <h4>2.1 Cloner le repository</h4>
+  <div class="callout callout-info">
+    <span class="callout-icon">📁</span>
+    <span><strong>Séparation des concerns</strong> &mdash; llama.cpp est un provider LLM externe, indépendant de MY-IA. Il doit être installé dans un répertoire séparé.</span>
+  </div>
+  <pre><code># Emplacement recommandé : à côté de MY-IA (pas dedans)
+cd /Users/mac/Documents/Code
+
+# Cloner llama.cpp
+git clone https://github.com/ggerganov/llama.cpp.git
+cd llama.cpp
+
+# Structure résultante :
+# /Users/mac/Documents/Code/
+# ├── my-ia/          ← Application MY-IA
+# └── llama.cpp/      ← Provider LLM (séparé)
+
+# Optionnel : checkout d'une version stable spécifique
+# git tag -l | tail -10   # Voir les tags disponibles
+# git checkout b4696      # Exemple de tag stable</code></pre>
+
+  <h4>2.2 Compilation optimisée M1 Pro (Metal + Accelerate)</h4>
+  <div class="callout callout-info">
+    <span class="callout-icon">💡</span>
+    <span><strong>Metal activé par défaut</strong> &mdash; Sur macOS Apple Silicon, Metal est automatiquement activé lors de la compilation. Aucun flag spécial n'est requis.</span>
+  </div>
+  <pre><code># Créer le dossier de build
+mkdir build && cd build
+
+# Configuration CMake (Metal activé automatiquement sur macOS)
+cmake .. -DCMAKE_BUILD_TYPE=Release
+
+# Ou avec options explicites (optionnel, pour debug)
+cmake .. \
+    -DGGML_METAL=ON \
+    -DCMAKE_BUILD_TYPE=Release
+
+# Compilation parallèle (utilise tous les cœurs)
+cmake --build . --config Release -j $(sysctl -n hw.ncpu)
+
+# Durée : ~2-3 minutes sur M1 Pro</code></pre>
+
+  <h4>2.3 Vérifier la compilation</h4>
+  <pre><code># Vérifier que les binaires sont créés (depuis /Users/mac/Documents/Code/llama.cpp/build)
+ls -la bin/
+# llama-cli
+# llama-server
+# llama-quantize
+# ...
+
+# Vérifier la version
+./bin/llama-server --version
+# llama-server version xxxx (build info)
+
+# Vérifier le support Metal
+./bin/llama-cli --help | grep -i metal
+# Si Metal est activé, pas d'erreur
+
+# Créer un lien symbolique pour accès facile (optionnel)
+sudo ln -sf /Users/mac/Documents/Code/llama.cpp/build/bin/llama-server /usr/local/bin/llama-server
+# Permet d'appeler llama-server depuis n'importe où</code></pre>
+
+  <h4>2.4 Test rapide sans modèle</h4>
+  <pre><code># Toujours dans /Users/mac/Documents/Code/llama.cpp/build
+# Tester que le serveur démarre (va échouer sans modèle, mais montre les options)
+./bin/llama-server --help
+
+# Les options importantes :
+#   -m, --model           Chemin vers le fichier GGUF
+#   -c, --ctx-size        Taille du contexte
+#   -ngl, --gpu-layers    Nombre de couches sur GPU (99 = toutes)
+#   -np, --parallel       Nombre de slots parallèles
+#   --embedding           Activer les embeddings</code></pre>
+
+  <h3><span class="h3-dot dot-purple"></span> Étape 3 : Télécharger un modèle GGUF</h3>
+
+  <h4>3.1 Créer la structure des dossiers</h4>
+  <pre><code># Les modèles sont stockés dans MY-IA (pas dans llama.cpp)
+cd /Users/mac/Documents/Code/my-ia
+
+# Créer les dossiers pour les modèles
+mkdir -p models/gguf
+mkdir -p models/gguf/embedding
+
+# Les modèles seront accessibles par llama-server via chemin absolu</code></pre>
+
+  <h4>3.2 Option A : Téléchargement automatique via llama-server (recommandé)</h4>
+  <div class="callout callout-success">
+    <span class="callout-icon">⚡</span>
+    <span><strong>Nouveau !</strong> llama-server peut télécharger directement depuis Hugging Face avec l'option <code>-hf</code>.</span>
+  </div>
+  <pre><code># Chemin llama-server
+LLAMA_SERVER="/Users/mac/Documents/Code/llama.cpp/build/bin/llama-server"
+
+# Démarrage avec téléchargement automatique depuis HuggingFace
+$LLAMA_SERVER -hf bartowski/gemma-2-9b-it-GGUF:Q4_K_M --host 0.0.0.0 --port 8085 -ngl 99
+
+# Format : -hf &lt;user&gt;/&lt;repo&gt;[:quantization]
+# Le modèle est téléchargé et mis en cache automatiquement (~/.cache/llama.cpp/)
+
+# Autres exemples :
+# $LLAMA_SERVER -hf bartowski/Meta-Llama-3.1-8B-Instruct-GGUF:Q4_K_M --port 8085 -ngl 99
+# $LLAMA_SERVER -hf TheBloke/Mistral-7B-Instruct-v0.2-GGUF:Q4_K_M --port 8085 -ngl 99</code></pre>
+
+  <h4>3.3 Option B : Téléchargement via Hugging Face CLI</h4>
+  <pre><code># Installer huggingface_hub si nécessaire
+pip install huggingface_hub
+
+# Télécharger Gemma 2 9B (recommandé pour 32 Go RAM)
+huggingface-cli download \
+    bartowski/gemma-2-9b-it-GGUF \
+    gemma-2-9b-it-Q4_K_M.gguf \
+    --local-dir models/gguf/
+
+# Ou télécharger Llama 3.1 8B
+huggingface-cli download \
+    bartowski/Meta-Llama-3.1-8B-Instruct-GGUF \
+    Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf \
+    --local-dir models/gguf/
+
+# Vérifier le téléchargement
+ls -lh models/gguf/
+# gemma-2-9b-it-Q4_K_M.gguf  5.0G</code></pre>
+
+  <h4>3.4 Option C : Téléchargement manuel</h4>
+  <pre><code># Si les méthodes ci-dessus ne fonctionnent pas :
+# 1. Aller sur https://huggingface.co/bartowski/gemma-2-9b-it-GGUF
+# 2. Cliquer sur "Files and versions"
+# 3. Télécharger gemma-2-9b-it-Q4_K_M.gguf
+# 4. Placer dans models/gguf/</code></pre>
+
+  <h3><span class="h3-dot dot-amber"></span> Étape 4 : Premier démarrage</h3>
+
+  <h4>4.1 Démarrage basique (test)</h4>
+  <pre><code># Définir les chemins
+LLAMA_SERVER="/Users/mac/Documents/Code/llama.cpp/build/bin/llama-server"
+MY_IA_MODELS="/Users/mac/Documents/Code/my-ia/models/gguf"
+
+# Option A : Avec modèle local (chemin absolu)
+$LLAMA_SERVER \
+    -m $MY_IA_MODELS/chat/gemma-2-9b-it-Q4_K_M.gguf \
+    --host 127.0.0.1 \
+    --port 8085 \
+    -ngl 99
+
+# Option B : Téléchargement automatique HuggingFace (recommandé pour test)
+$LLAMA_SERVER \
+    -hf bartowski/gemma-2-2b-it-GGUF:Q4_K_M \
+    --port 8085 \
+    -ngl 99
+
+# Attendre les messages :
+# "model loaded"
+# "llama server listening at http://127.0.0.1:8085"
+# "HTTP server is listening, port: 8085"</code></pre>
+
+  <h4>4.2 Vérifier que Metal est utilisé</h4>
+  <pre><code># Dans les logs de démarrage, chercher :
+# ggml_metal_init: allocating
+# ggml_metal_init: found device: Apple M1 Pro
+# ggml_metal_init: picking default device: Apple M1 Pro
+
+# Si vous voyez "using CPU" au lieu de Metal, vérifier :
+# 1. Compilation avec -DGGML_METAL=ON
+# 2. Option --n-gpu-layers 99</code></pre>
+
+  <h4>4.3 Test API</h4>
+  <pre><code># Dans un autre terminal, tester le health check
+curl http://localhost:8085/health
+# {"status":"ok"}
+
+# Tester une génération simple
+curl http://localhost:8085/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gemma",
+    "messages": [{"role": "user", "content": "Bonjour !"}],
+    "max_tokens": 50
+  }'</code></pre>
+
+  <h3><span class="h3-dot dot-green"></span> Étape 5 : Configuration optimale M1 Pro 32 Go</h3>
+
+  <h4>5.1 Commande de production recommandée</h4>
+  <pre><code># Chemins
+LLAMA_SERVER="/Users/mac/Documents/Code/llama.cpp/build/bin/llama-server"
+MODEL="/Users/mac/Documents/Code/my-ia/models/gguf/gemma-2-9b-it-Q4_K_M.gguf"
+
+# Configuration optimale pour M1 Pro 32 Go avec Gemma 9B
+$LLAMA_SERVER \
+    -m $MODEL \
+    --host 0.0.0.0 \
+    --port 8085 \
+    -c 4096 \
+    -b 2048 \
+    -ngl 99 \
+    -np 4 \
+    -fa on \
+    --embedding \
+    --metrics
+
+# Explication des options :
+# -m                 : Chemin vers le modèle GGUF
+# -c 4096            : 4K tokens de contexte par slot (alias: --ctx-size)
+# -b 2048            : Batch size logique (alias: --batch-size)
+# -ngl 99            : Toutes les couches sur GPU Metal (alias: --gpu-layers)
+# -np 4              : 4 slots parallèles (alias: --parallel)
+# -fa on             : Flash Attention activé (alias: --flash-attn)
+# --embedding        : Active /v1/embeddings pour le RAG
+# --metrics          : Active /metrics (Prometheus)
+
+# Note : --cont-batching est activé PAR DÉFAUT depuis 2024
+# Note : --webui est activé par défaut (UI web sur /)</code></pre>
+
+  <h4>5.2 Commande alternative avec téléchargement HuggingFace</h4>
+  <pre><code># Démarrage direct sans téléchargement préalable
+LLAMA_SERVER="/Users/mac/Documents/Code/llama.cpp/build/bin/llama-server"
+
+$LLAMA_SERVER \
+    -hf bartowski/gemma-2-9b-it-GGUF:Q4_K_M \
+    --host 0.0.0.0 \
+    --port 8085 \
+    -c 4096 \
+    -ngl 99 \
+    -np 4 \
+    -fa on \
+    --embedding \
+    --metrics</code></pre>
+
+  <h4>5.3 Estimation mémoire</h4>
+  <pre><code># Formule approximative :
+# Mémoire = Taille_modèle + (parallel × ctx_size × 2 Mo)
+#
+# Gemma 9B Q4 + 4 slots × 4096 ctx :
+# ~5 Go + (4 × 4096 × 0.002 Go) ≈ 5 + 3.2 = ~8-10 Go
+#
+# Avec 32 Go RAM, il reste ~22 Go pour le système et autres apps</code></pre>
+
+  <h4>5.4 Utiliser le script MY-IA</h4>
+  <pre><code># Le script llamacpp.sh gère tout automatiquement
+./scripts/llamacpp.sh start --from-db
+
+# Ou avec options manuelles
+./scripts/llamacpp.sh start \
+    --model models/gguf/gemma-2-9b-it-Q4_K_M.gguf \
+    --embed
+
+# Vérifier le statut
+./scripts/llamacpp.sh status
+
+# Voir les logs
+./scripts/llamacpp.sh logs</code></pre>
+
+  <h3><span class="h3-dot dot-red"></span> Troubleshooting M1 Pro</h3>
+  <table>
+    <thead><tr><th>Problème</th><th>Cause</th><th>Solution</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>Metal not found</code></td>
+        <td>CMake n'a pas trouvé Metal</td>
+        <td>Vérifier <code>-DGGML_METAL=ON</code> et recompiler</td>
+      </tr>
+      <tr>
+        <td><code>Segmentation fault</code></td>
+        <td>Mémoire insuffisante</td>
+        <td>Réduire <code>--parallel</code> ou <code>--ctx-size</code></td>
+      </tr>
+      <tr>
+        <td>Inference lente (CPU)</td>
+        <td>GPU non utilisé</td>
+        <td>Vérifier <code>--n-gpu-layers 99</code> dans les logs</td>
+      </tr>
+      <tr>
+        <td><code>error: invalid model</code></td>
+        <td>Fichier GGUF corrompu/incompatible</td>
+        <td>Re-télécharger le modèle, vérifier le format GGUF v3</td>
+      </tr>
+      <tr>
+        <td><code>mmap failed</code></td>
+        <td>Fichier trop grand</td>
+        <td>Utiliser <code>--no-mmap</code> ou modèle plus petit</td>
+      </tr>
+      <tr>
+        <td>Port 8085 déjà utilisé</td>
+        <td>Instance précédente active</td>
+        <td><code>./scripts/llamacpp.sh stop</code> puis restart</td>
+      </tr>
+      <tr>
+        <td><code>ggml_metal_init: error</code></td>
+        <td>Bug Metal / driver</td>
+        <td>Mettre à jour macOS, recompiler llama.cpp</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-blue"></span> Monitoring performances</h3>
+  <pre><code># Voir l'utilisation GPU en temps réel
+sudo powermetrics --samplers gpu_power -i 1000
+
+# Ou via Activity Monitor :
+# 1. Ouvrir Activity Monitor
+# 2. Onglet "GPU History"
+# 3. Vérifier que le GPU M1 Pro est actif
+
+# Métriques llama-server
+curl http://localhost:8085/metrics
+# Retourne format Prometheus avec :
+# - Tokens/seconde
+# - Temps de génération
+# - Slots utilisés</code></pre>
+
+  <h3><span class="h3-dot dot-purple"></span> Structure des fichiers</h3>
+  <pre class="ascii-art">/Users/mac/Documents/Code/
+│
+├── my-ia/                        ← Application MY-IA
+│   ├── app/                      ← Backend FastAPI
+│   ├── models/gguf/              ← Modèles GGUF (partagés)
+│   │   ├── chat/                 ← Modèles LLM
+│   │   │   └── gemma-2-9b-it-Q4_K_M.gguf
+│   │   └── embedding/            ← Modèles embedding
+│   ├── scripts/
+│   │   └── llamacpp.sh           ← Script de gestion llama-server
+│   └── ...
+│
+└── llama.cpp/                    ← Provider LLM (séparé)
+    ├── build/bin/
+    │   ├── llama-server          ← Serveur HTTP
+    │   ├── llama-cli             ← CLI interactif
+    │   └── llama-quantize        ← Quantification
+    └── ...</pre>
+
+  <h3><span class="h3-dot dot-amber"></span> Téléchargement des modèles GGUF</h3>
+  <table>
+    <thead><tr><th>Modèle</th><th>Taille</th><th>VRAM</th><th>Usage</th></tr></thead>
+    <tbody>
+      <tr><td>gemma-2-2b-it-Q4_K_M</td><td>~1.5 GB</td><td>~2 GB</td><td>Chat léger, tests</td></tr>
+      <tr><td>gemma-2-9b-it-Q4_K_M</td><td>~5 GB</td><td>~6 GB</td><td>Chat production</td></tr>
+      <tr><td>llama-3.1-8b-instruct-Q4_K_M</td><td>~4.5 GB</td><td>~5 GB</td><td>Chat production</td></tr>
+      <tr><td>nomic-embed-text-v1.5-Q4_K_M</td><td>~250 MB</td><td>~500 MB</td><td>Embeddings RAG</td></tr>
+    </tbody>
+  </table>
+
+  <pre><code># Télécharger un modèle
+pip install huggingface_hub
+
+huggingface-cli download \
+    google/gemma-2-9b-it-GGUF \
+    gemma-2-9b-it-Q4_K_M.gguf \
+    --local-dir models/gguf/</code></pre>
+
+  <h3><span class="h3-dot dot-red"></span> Configuration multi-client</h3>
+  <div class="callout callout-warning">
+    <span class="callout-icon">⚠️</span>
+    <span><strong>Mode multi-client</strong> &mdash; Le paramètre <code>-np/--parallel</code> définit le nombre de requêtes simultanées. Chaque slot consomme de la mémoire supplémentaire pour son KV cache.</span>
+  </div>
+
+  <table>
+    <thead><tr><th>Option</th><th>Alias</th><th>Description</th><th>Défaut</th><th>Recommandé</th></tr></thead>
+    <tbody>
+      <tr><td><code>-m</code></td><td><code>--model</code></td><td>Chemin vers le fichier GGUF</td><td>-</td><td>Obligatoire</td></tr>
+      <tr><td><code>-hf</code></td><td><code>--hf-repo</code></td><td>Télécharger depuis HuggingFace</td><td>-</td><td>Alternative à -m</td></tr>
+      <tr><td colspan="2"><code>--host</code></td><td>Adresse d'écoute</td><td>127.0.0.1</td><td>0.0.0.0</td></tr>
+      <tr><td colspan="2"><code>--port</code></td><td>Port HTTP</td><td>8080</td><td>8085 (MY-IA)</td></tr>
+      <tr><td><code>-c</code></td><td><code>--ctx-size</code></td><td>Taille contexte (tokens)</td><td>modèle</td><td>4096-8192</td></tr>
+      <tr><td><code>-np</code></td><td><code>--parallel</code></td><td><strong>Slots parallèles</strong></td><td>1</td><td>4 (M1 Pro 32Go)</td></tr>
+      <tr><td><code>-cb</code></td><td><code>--cont-batching</code></td><td>Continuous batching</td><td class="status-done">✅ ON</td><td>Défaut OK</td></tr>
+      <tr><td><code>-b</code></td><td><code>--batch-size</code></td><td>Taille batch logique</td><td>2048</td><td>2048</td></tr>
+      <tr><td><code>-ub</code></td><td><code>--ubatch-size</code></td><td>Taille batch physique</td><td>512</td><td>512</td></tr>
+      <tr><td><code>-ngl</code></td><td><code>--gpu-layers</code></td><td>Couches sur GPU</td><td>0</td><td>99 (toutes)</td></tr>
+      <tr><td><code>-fa</code></td><td><code>--flash-attn</code></td><td>Flash Attention [on|off|auto]</td><td>auto</td><td>on</td></tr>
+      <tr><td colspan="2"><code>--embedding</code></td><td>Activer /v1/embeddings</td><td>off</td><td><strong>ON pour RAG</strong></td></tr>
+      <tr><td colspan="2"><code>--metrics</code></td><td>Activer /metrics (Prometheus)</td><td>off</td><td>ON</td></tr>
+      <tr><td colspan="2"><code>--webui</code></td><td>UI web intégrée</td><td class="status-done">✅ ON</td><td>Défaut OK</td></tr>
+    </tbody>
+  </table>
+
+  <h4>Commande de démarrage complète</h4>
+  <pre><code># Chemins (adapter selon votre installation)
+LLAMA_SERVER="/Users/mac/Documents/Code/llama.cpp/build/bin/llama-server"
+MODEL="/Users/mac/Documents/Code/my-ia/models/gguf/gemma-2-9b-it-Q4_K_M.gguf"
+
+# Démarrage multi-client optimisé pour MY-IA
+$LLAMA_SERVER \
+    -m $MODEL \
+    --host 0.0.0.0 \
+    --port 8085 \
+    -c 4096 \
+    -b 2048 \
+    -ngl 99 \
+    -np 4 \
+    -fa on \
+    --embedding \
+    --metrics</code></pre>
+
+  <h3><span class="h3-dot dot-blue"></span> API HTTP exposée</h3>
+  <table>
+    <thead><tr><th>Endpoint</th><th>Méthode</th><th>Description</th><th>Format</th></tr></thead>
+    <tbody>
+      <tr><td><code>/</code></td><td>GET</td><td><strong>WebUI intégrée</strong> (chat interface)</td><td>HTML</td></tr>
+      <tr><td><code>/v1/chat/completions</code></td><td>POST</td><td>Chat conversationnel</td><td>OpenAI-compatible</td></tr>
+      <tr><td><code>/v1/completions</code></td><td>POST</td><td>Completion texte</td><td>OpenAI-compatible</td></tr>
+      <tr><td><code>/v1/embeddings</code></td><td>POST</td><td>Génération embeddings</td><td>OpenAI-compatible</td></tr>
+      <tr><td><code>/v1/models</code></td><td>GET</td><td>Liste des modèles</td><td>OpenAI-compatible</td></tr>
+      <tr><td><code>/embedding</code></td><td>POST</td><td>Embeddings (non-OAI, tous pooling)</td><td>JSON</td></tr>
+      <tr><td><code>/reranking</code></td><td>POST</td><td>Document reranking</td><td>JSON</td></tr>
+      <tr><td><code>/tokenize</code></td><td>POST</td><td>Tokenisation texte</td><td>JSON</td></tr>
+      <tr><td><code>/detokenize</code></td><td>POST</td><td>Détokenisation</td><td>JSON</td></tr>
+      <tr><td><code>/health</code></td><td>GET</td><td>Health check</td><td>JSON</td></tr>
+      <tr><td><code>/props</code></td><td>GET</td><td>Propriétés serveur</td><td>JSON</td></tr>
+      <tr><td><code>/metrics</code></td><td>GET</td><td>Métriques Prometheus</td><td>text/plain</td></tr>
+      <tr><td><code>/slots</code></td><td>GET</td><td>État des slots</td><td>JSON</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-info">
+    <span class="callout-icon">🌐</span>
+    <span><strong>WebUI intégrée</strong> &mdash; llama-server inclut une interface web de chat accessible sur <code>http://localhost:8085/</code>. Désactivable avec <code>--no-webui</code>.</span>
+  </div>
+
+  <h4>Exemples de requêtes</h4>
+  <pre><code># Chat completion (streaming)
+curl http://localhost:8085/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gemma",
+    "messages": [
+      {"role": "system", "content": "Tu es un assistant helpful."},
+      {"role": "user", "content": "Bonjour, comment vas-tu?"}
+    ],
+    "stream": true
+  }'
+
+# Embeddings (pour RAG)
+curl http://localhost:8085/v1/embeddings \
+  -H "Content-Type: application/json" \
+  -d '{"model": "gemma", "input": "Texte à vectoriser"}'
+
+# Health check
+curl http://localhost:8085/health
+
+# Propriétés serveur (pour sync-status)
+curl http://localhost:8085/props</code></pre>
+
+  <h3><span class="h3-dot dot-green"></span> Intégration MY-IA</h3>
+  <h4>Configuration BDD requise</h4>
+  <pre><code># Clés system_configs à définir:
+llm.provider = llamacpp
+llm.llamacpp.host = host.docker.internal  # Depuis Docker vers hôte macOS
+llm.llamacpp.port = 8085
+llm.llamacpp.server_path = /Users/mac/Documents/Code/llama.cpp/build/bin/llama-server
+llm.llamacpp.llm_model = gemma-2-9b-it-Q4_K_M.gguf
+llm.llamacpp.models_dir = /Users/mac/Documents/Code/my-ia/models/gguf
+llm.llamacpp.ctx_size = 4096
+llm.llamacpp.batch_size = 2048
+llm.llamacpp.gpu_layers = 99
+llm.llamacpp.parallel = 4
+llm.llamacpp.embedding_mode = true
+llm.llamacpp.metrics_enabled = true</code></pre>
+
+  <h4>Communication Docker → Hôte</h4>
+  <pre class="ascii-art">┌─────────────────────────────────────┐     ┌─────────────────────────────┐
+│          Docker Network             │     │         Hôte (natif)        │
+│                                     │     │                             │
+│  ┌─────────────┐                    │     │   ┌─────────────────────┐   │
+│  │  FastAPI    │                    │     │   │   llama-server      │   │
+│  │  (app)      │───────────────────────────▶  │   :8085              │   │
+│  │  :8080      │  host.docker.internal:8085   │   GPU Metal/CUDA    │   │
+│  └─────────────┘                    │     │   └─────────────────────┘   │
+│                                     │     │                             │
+└─────────────────────────────────────┘     └─────────────────────────────┘</pre>
+
+  <h3><span class="h3-dot dot-amber"></span> Troubleshooting</h3>
+  <table>
+    <thead><tr><th>Problème</th><th>Cause probable</th><th>Solution</th></tr></thead>
+    <tbody>
+      <tr><td>Metal not supported</td><td>Compilation sans -DGGML_METAL=ON</td><td>Recompiler avec l'option Metal</td></tr>
+      <tr><td>Out of memory</td><td>Modèle trop grand / parallel trop élevé</td><td>Réduire --parallel ou modèle plus petit</td></tr>
+      <tr><td>Connection refused</td><td>Serveur non démarré ou mauvais port</td><td>Vérifier ./scripts/llamacpp.sh status</td></tr>
+      <tr><td>host.docker.internal résolu en 127.0.0.1</td><td>Docker Desktop pas à jour</td><td>Mettre à jour Docker Desktop</td></tr>
+      <tr><td>Embeddings endpoint 404</td><td>Serveur lancé sans --embedding</td><td>Relancer avec --embedding</td></tr>
+      <tr><td>Slow inference (CPU)</td><td>GPU non détecté</td><td>Vérifier compilation et --n-gpu-layers 99</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ==================== SECTION 4 ==================== -->
+<div class="section" id="s4">
+  <div class="section-header">
+    <div class="section-icon icon-purple">⚖️</div>
+    <div><h2>Comparaison Ollama vs llama.cpp <span class="section-num">&mdash; Section 4</span></h2></div>
+  </div>
+
+  <h3><span class="h3-dot dot-blue"></span> État actuel des composants</h3>
+  <table>
+    <thead><tr><th>Composant</th><th>Ollama</th><th>llama.cpp</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>Provider Python</td><td class="status-done">✅ OllamaProvider</td><td class="status-done">✅ LlamaCppProvider</td><td class="status-done">✅</td></tr>
+      <tr><td>Config dataclass</td><td class="status-done">✅ OllamaConfig</td><td class="status-done">✅ LlamaCppConfig</td><td class="status-done">✅ Implémenté</td></tr>
+      <tr><td>Chargement BDD</td><td class="status-done">✅ get_ollama_config()</td><td class="status-done">✅ get_llamacpp_config()</td><td class="status-done">✅ Implémenté</td></tr>
+      <tr><td>Cache config TTL</td><td class="status-done">✅ 30 secondes</td><td class="status-done">✅ 30 secondes</td><td class="status-done">✅ Implémenté</td></tr>
+      <tr><td>Invalidation cache</td><td class="status-done">✅ invalidate_ollama_config_cache()</td><td class="status-done">✅ invalidate_llamacpp_config_cache()</td><td class="status-done">✅ Implémenté</td></tr>
+      <tr><td>Clés BDD</td><td class="status-done">✅ llm.ollama.*</td><td class="status-done">✅ llm.llamacpp.* (16 clés)</td><td class="status-done">✅ 2 migrations</td></tr>
+      <tr><td>Admin UI - Config</td><td class="status-done">✅ Formulaire complet</td><td class="status-done">✅ Formulaire existe</td><td class="status-done">✅</td></tr>
+      <tr><td>Endpoint health</td><td class="status-done">✅ /health/ollama</td><td class="status-done">✅ /health/llamacpp</td><td class="status-done">✅</td></tr>
+      <tr><td>Endpoint params GET</td><td class="status-done">✅ /ollama/config</td><td class="status-done">✅ /llamacpp/params</td><td class="status-done">✅</td></tr>
+      <tr><td>Endpoint params PATCH</td><td class="status-done">✅ Ollama config</td><td class="status-done">✅ llamacpp params</td><td class="status-done">✅</td></tr>
+      <tr><td>Script gestion</td><td class="status-done">✅ Service Docker</td><td class="status-done">✅ scripts/llamacpp.sh</td><td class="status-done">✅</td></tr>
+      <tr><td>Restart après config</td><td class="status-done">✅ Appliqué à chaque requête</td><td class="status-done">✅ API restart + --from-db</td><td class="status-done">✅ Implémenté</td></tr>
+      <tr><td>Endpoint restart</td><td class="status-partial">⚠️ Non nécessaire</td><td class="status-done">✅ POST /llamacpp/restart</td><td class="status-done">✅ Implémenté</td></tr>
+      <tr><td>Script --from-db</td><td class="status-partial">⚠️ Non nécessaire</td><td class="status-done">✅ llamacpp.sh --from-db</td><td class="status-done">✅ Implémenté</td></tr>
+      <tr><td>Vérification sync config</td><td class="status-partial">⚠️ Non nécessaire</td><td class="status-done">✅ GET /llamacpp/sync-status</td><td class="status-done">✅ Implémenté</td></tr>
+      <tr><td>UI Bouton Restart</td><td class="status-partial">⚠️ Non nécessaire</td><td class="status-done">✅ Bouton implémenté</td><td class="status-done">✅ Implémenté</td></tr>
+      <tr><td>UI Badge Sync Status</td><td class="status-partial">⚠️ Non nécessaire</td><td class="status-done">✅ Badge implémenté</td><td class="status-done">✅ Implémenté</td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-amber"></span> Différence fondamentale</h3>
+  <div class="two-cols">
+    <div class="card" style="border-top: 3px solid var(--accent);">
+      <div class="card-title">Ollama</div>
+      <div class="card-text">
+        <ul>
+          <li>Options passées <strong>à chaque requête</strong></li>
+          <li>Changement de modèle à chaud possible</li>
+          <li>Config modifiable sans restart</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card" style="border-top: 3px solid var(--warning);">
+      <div class="card-title">llama-server</div>
+      <div class="card-text">
+        <ul>
+          <li>Options définies <strong>au lancement</strong></li>
+          <li>Un seul modèle chargé par instance</li>
+          <li>Changement de config = <strong>restart du serveur</strong></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SECTION 5 ==================== -->
+<div class="section" id="s5">
+  <div class="section-header">
+    <div class="section-icon icon-red">🔧</div>
+    <div><h2>Composants manquants <span class="section-num">&mdash; Section 5</span></h2></div>
+  </div>
+
+  <h3><span class="h3-dot dot-blue"></span> Backend Python</h3>
+
+  <div class="card card-todo">
+    <div class="card-title">📦 LlamaCppConfig dataclass</div>
+    <div class="card-text">À créer dans <code>app/common/llm/llamacpp.py</code></div>
+    <pre><code>@dataclass
+class LlamaCppConfig:
+    """Configuration llama.cpp chargée depuis system_configs."""
+    host: str = "host.docker.internal"
+    port: int = 8085
+    ctx_size: int = 4096
+    batch_size: int = 2048
+    gpu_layers: int = 99
+    parallel: int = -1          # -1 = auto
+    threads: int = -1           # -1 = auto
+    mmap: bool = True
+    mlock: bool = False
+    flash_attn: str = "auto"    # auto, on, off
+    embedding_mode: bool = True
+    metrics_enabled: bool = True
+    # Chemins de configuration (Section 14)
+    server_path: str = "/Users/mac/Documents/Code/llama.cpp/build/bin/llama-server"
+    models_dir: str = "/Users/mac/Documents/Code/my-ia/models/gguf"</code></pre>
+  </div>
+
+  <div class="card card-todo">
+    <div class="card-title">📦 get_llamacpp_config() avec cache</div>
+    <div class="card-text">À créer dans <code>app/common/llm/llamacpp.py</code></div>
+    <pre><code># Cache module-level
+_llamacpp_config_cache: Tuple[Optional[LlamaCppConfig], float, float] = (None, 0, 30.0)
+
+async def get_llamacpp_config(db=None) -> LlamaCppConfig:
+    """Récupère la config llama.cpp depuis BDD avec cache TTL."""
+    global _llamacpp_config_cache
+
+    now = time.time()
+    cached_config, cached_time, ttl = _llamacpp_config_cache
+
+    if cached_config and ttl > 0 and (now - cached_time) < ttl:
+        return cached_config
+
+    if db is None:
+        return LlamaCppConfig()
+
+    try:
+        from app.features.system.service import SystemConfigService
+        config_service = SystemConfigService(db)
+
+        config = LlamaCppConfig(
+            host=str(await config_service.get("llm.llamacpp.host", "host.docker.internal")),
+            port=int(await config_service.get("llm.llamacpp.port", 8085)),
+            ctx_size=int(await config_service.get("llm.llamacpp.ctx_size", 4096)),
+            # ... autres champs ...
+        )
+
+        _llamacpp_config_cache = (config, now, 30.0)
+        return config
+    except Exception as e:
+        logger.warning(f"[llama.cpp] Failed to load config from DB: {e}")
+        return LlamaCppConfig()
+
+def invalidate_llamacpp_config_cache():
+    """Invalide le cache config llama.cpp."""
+    global _llamacpp_config_cache
+    _llamacpp_config_cache = (None, 0, 30.0)
+    logger.debug("[llama.cpp] Config cache invalidated")</code></pre>
+  </div>
+
+  <h3><span class="h3-dot dot-teal"></span> Export des fonctions</h3>
+  <div class="card card-todo">
+    <div class="card-title">📦 Modifier app/common/llm/__init__.py</div>
+    <pre><code># Ajouter les exports
+from .llamacpp import (
+    LlamaCppProvider,
+    LlamaCppConfig,
+    get_llamacpp_config,
+    invalidate_llamacpp_config_cache
+)</code></pre>
+  </div>
+</div>
+
+<!-- ==================== SECTION 6 ==================== -->
+<div class="section" id="s6">
+  <div class="section-header">
+    <div class="section-icon icon-blue">1️⃣</div>
+    <div><h2>Phase 1: Backend - LlamaCppConfig <span class="section-num">&mdash; Section 6</span></h2></div>
+  </div>
+
+  <h3><span class="h3-dot dot-blue"></span> Fichier: app/common/llm/llamacpp.py</h3>
+  <p>Ajouter la dataclass et les fonctions de cache après les imports.</p>
+
+  <div class="vflow">
+    <div class="vflow-step active">
+      <div class="step-title">📝 Étape 1 - Ajouter les imports manquants</div>
+      <div class="step-desc"><code>import time</code>, <code>from dataclasses import dataclass</code>, <code>from typing import Tuple</code></div>
+    </div>
+    <div class="vflow-step active">
+      <div class="step-title">📝 Étape 2 - Créer la dataclass LlamaCppConfig</div>
+      <div class="step-desc">Après <code>logger = logging.getLogger(__name__)</code></div>
+    </div>
+    <div class="vflow-step active">
+      <div class="step-title">📝 Étape 3 - Créer le cache et les fonctions</div>
+      <div class="step-desc"><code>get_llamacpp_config()</code> et <code>invalidate_llamacpp_config_cache()</code></div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SECTION 7 ==================== -->
+<div class="section" id="s7">
+  <div class="section-header">
+    <div class="section-icon icon-teal">2️⃣</div>
+    <div><h2>Phase 2: Backend - Chargement BDD <span class="section-num">&mdash; Section 7</span></h2></div>
+  </div>
+
+  <h3><span class="h3-dot dot-blue"></span> Modifier LlamaCppProvider</h3>
+  <p>Utiliser <code>get_llamacpp_config()</code> dans les méthodes.</p>
+
+  <table>
+    <thead><tr><th>Méthode</th><th>Modification</th></tr></thead>
+    <tbody>
+      <tr><td><code>generate()</code></td><td>Charger config pour l'URL de base</td></tr>
+      <tr><td><code>generate_stream()</code></td><td>Charger config pour l'URL de base</td></tr>
+      <tr><td><code>get_embeddings()</code></td><td>Charger config pour l'URL de base</td></tr>
+      <tr><td><code>health_check()</code></td><td>Charger config pour l'URL de base</td></tr>
+      <tr><td><code>list_models()</code></td><td>Charger config pour l'URL de base</td></tr>
+    </tbody>
+  </table>
+
+  <h4>Pattern à appliquer</h4>
+  <pre><code>async def generate(self, prompt: str, ...):
+    """Génère une réponse via llama.cpp."""
+    # Charger config depuis cache (BDD)
+    llamacpp_config = await get_llamacpp_config()
+    base_url = f"http://{llamacpp_config.host}:{llamacpp_config.port}"
+
+    client = self._get_client()
+    # ... reste de la méthode avec base_url dynamique</code></pre>
+
+  <h3><span class="h3-dot dot-teal"></span> Refactoring suggéré</h3>
+  <pre><code>async def _get_base_url(self) -> str:
+    """Retourne l'URL de base depuis la config BDD."""
+    config = await get_llamacpp_config()
+    return f"http://{config.host}:{config.port}"</code></pre>
+</div>
+
+<!-- ==================== SECTION 8 ==================== -->
+<div class="section" id="s8">
+  <div class="section-header">
+    <div class="section-icon icon-amber">3️⃣</div>
+    <div><h2>Phase 3: Backend - Endpoints admin <span class="section-num">&mdash; Section 8</span></h2></div>
+  </div>
+
+  <h3><span class="h3-dot dot-blue"></span> État actuel des endpoints</h3>
+  <ul class="feature-list">
+    <li><strong>GET /admin/config/llm/llamacpp/params</strong> &mdash; ✅ Existe</li>
+    <li><strong>PATCH /admin/config/llm/llamacpp/params</strong> &mdash; ✅ Existe</li>
+    <li><strong>GET /admin/config/llm/llamacpp/metrics</strong> &mdash; ✅ Existe</li>
+    <li><strong>GET /admin/config/llm/health/llamacpp</strong> &mdash; ✅ Existe</li>
+    <li><strong>POST /admin/config/llm/llamacpp/restart</strong> &mdash; ❌ <span class="status-missing">À créer</span></li>
+    <li><strong>GET /admin/config/llm/llamacpp/sync-status</strong> &mdash; ❌ <span class="status-missing">À créer</span></li>
+  </ul>
+
+  <h3><span class="h3-dot dot-red"></span> Endpoint de restart automatique (OBLIGATOIRE)</h3>
+  <div class="callout callout-warning">
+    <span class="callout-icon">⚠️</span>
+    <span><strong>Fonctionnalité requise</strong> &mdash; Contrairement à Ollama, llama-server doit être redémarré après modification des params. Un endpoint API permet le restart automatique depuis l'admin UI.</span>
+  </div>
+
+  <div class="card card-todo">
+    <div class="card-title">📦 POST /admin/config/llm/llamacpp/restart</div>
+    <div class="card-text">Fichier: <code>app/features/admin/config/router.py</code></div>
+    <pre><code>@router.post("/llm/llamacpp/restart")
+async def restart_llamacpp_server(
+    admin_user: User = Depends(get_current_admin_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Redémarre llama-server avec la configuration actuelle de la BDD."""
+    try:
+        result = await ConfigService.restart_llamacpp_server(db)
+
+        await AuditService.log(
+            db=db,
+            user_id=admin_user.id,
+            action="llamacpp_restart",
+            details={"result": result}
+        )
+
+        return {
+            "success": result.get("success", False),
+            "message": result.get("message", ""),
+            "server_status": result.get("status", "unknown")
+        }
+    except Exception as e:
+        logger.error(f"Error restarting llama-server: {e}")
+        raise HTTPException(status_code=500, detail=str(e))</code></pre>
+  </div>
+
+  <div class="card card-todo">
+    <div class="card-title">📦 Service restart_llamacpp_server()</div>
+    <div class="card-text">Fichier: <code>app/features/admin/config/service.py</code></div>
+    <pre><code>@staticmethod
+async def restart_llamacpp_server(db: AsyncSession) -> dict:
+    """Redémarre llama-server avec les paramètres depuis la BDD."""
+    import asyncio
+    from pathlib import Path
+
+    script_path = Path(__file__).parents[4] / "scripts" / "llamacpp.sh"
+
+    try:
+        process = await asyncio.create_subprocess_exec(
+            str(script_path), "restart", "--from-db",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        stdout, stderr = await asyncio.wait_for(
+            process.communicate(),
+            timeout=60.0
+        )
+
+        if process.returncode == 0:
+            from app.common.llm import invalidate_llamacpp_config_cache
+            invalidate_llamacpp_config_cache()
+
+            return {
+                "success": True,
+                "message": "llama-server restarted successfully",
+                "status": "running"
+            }
+        else:
+            return {
+                "success": False,
+                "message": f"Restart failed: {stderr.decode()}",
+                "status": "error"
+            }
+    except asyncio.TimeoutError:
+        return {"success": False, "message": "Restart timeout (60s)", "status": "timeout"}</code></pre>
+  </div>
+
+  <h3><span class="h3-dot dot-amber"></span> Vérification config BDD vs serveur (OBLIGATOIRE)</h3>
+  <div class="callout callout-warning">
+    <span class="callout-icon">⚠️</span>
+    <span><strong>Fonctionnalité requise</strong> &mdash; Comparer la configuration en BDD avec celle du serveur llama-server en cours d'exécution. Afficher un badge "Restart required" si les configurations diffèrent.</span>
+  </div>
+
+  <pre class="ascii-art">┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│   Admin UI      │     │   FastAPI       │     │  llama-server   │
+│                 │     │                 │     │                 │
+│  ┌───────────┐  │     │  ┌───────────┐  │     │  ┌───────────┐  │
+│  │ Badge     │◄─┼─────┼──│ Compare   │◄─┼─────┼──│ /props    │  │
+│  │ "Restart  │  │     │  │ configs   │  │     │  └───────────┘  │
+│  │ required" │  │     │  └───────────┘  │     │                 │
+│  └───────────┘  │     │        ▲        │     └─────────────────┘
+│                 │     │  ┌─────┴─────┐  │
+│                 │     │  │ BDD       │  │
+│                 │     │  │ system_   │  │
+│                 │     │  │ configs   │  │
+│                 │     │  └───────────┘  │
+└─────────────────┘     └─────────────────┘</pre>
+
+  <div class="card card-todo">
+    <div class="card-title">📦 GET /admin/config/llm/llamacpp/sync-status</div>
+    <pre><code>@router.get("/llm/llamacpp/sync-status")
+async def get_llamacpp_sync_status(
+    admin_user: User = Depends(get_current_admin_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Vérifie si la config BDD est synchronisée avec le serveur."""
+    result = await ConfigService.compare_llamacpp_configs(db)
+    return result</code></pre>
+  </div>
+
+  <div class="card card-todo">
+    <div class="card-title">📦 Service compare_llamacpp_configs()</div>
+    <pre><code>@staticmethod
+async def compare_llamacpp_configs(db: AsyncSession) -> dict:
+    """Compare la configuration BDD avec celle du serveur en cours."""
+    from app.common.llm import get_llamacpp_config
+
+    db_config = await get_llamacpp_config(db)
+    running_config = await ConfigService.get_llamacpp_running_config()
+
+    if not running_config:
+        return {"in_sync": None, "server_running": False, "restart_required": False}
+
+    differences = []
+    critical_keys = ["ctx_size", "gpu_layers", "parallel", "batch_size", "embedding_mode"]
+
+    for key in critical_keys:
+        db_val = getattr(db_config, key, None)
+        run_val = running_config.get(key)
+        if db_val == -1:
+            continue  # Auto = pas de vérification
+        if run_val is not None and db_val != run_val:
+            differences.append({"key": key, "db_value": db_val, "running_value": run_val})
+
+    return {
+        "in_sync": len(differences) == 0,
+        "differences": differences,
+        "restart_required": len(differences) > 0,
+        "server_running": True
+    }</code></pre>
+  </div>
+
+  <h3><span class="h3-dot dot-teal"></span> Intégration Admin UI</h3>
+  <div class="card card-todo">
+    <div class="card-title">📦 Bouton Restart + Badge sync-status</div>
+    <div class="card-text">Fichier: <code>UI-BACK/js/modules/system/llm.js</code></div>
+    <pre><code>// Handler restart
+async restartLlamacppServer() {
+    const confirmed = await showConfirm({
+        title: t('admin_system_llm_llamacpp_restart_confirm_title'),
+        message: t('admin_system_llm_llamacpp_restart_confirm_message'),
+        confirmText: t('restart'),
+        confirmVariant: 'warning'
+    });
+
+    if (!confirmed) return;
+
+    try {
+        showToast(t('admin_system_llm_llamacpp_restarting'), 'info');
+        const result = await adminApi.config.restartLlamacpp();
+
+        if (result.success) {
+            showToast(t('admin_system_llm_llamacpp_restart_success'), 'success');
+            setTimeout(() => this.checkProviderHealth('llamacpp'), 2000);
+        } else {
+            showToast(result.message || t('error_generic'), 'error', true);
+        }
+    } catch (error) {
+        showToast(error.message || t('error_generic'), 'error', true);
+    }
+}</code></pre>
+  </div>
+
+  <div class="card card-todo">
+    <div class="card-title">📦 Traductions</div>
+    <pre><code>// fr.json
+"admin_system_llm_llamacpp_restart": "Redémarrer le serveur",
+"admin_system_llm_llamacpp_restart_confirm_title": "Redémarrer llama-server ?",
+"admin_system_llm_llamacpp_restart_confirm_message": "Le serveur sera redémarré avec la configuration actuelle.",
+"admin_system_llm_llamacpp_restarting": "Redémarrage en cours...",
+"admin_system_llm_llamacpp_restart_success": "Serveur redémarré avec succès",
+"admin_system_llm_llamacpp_restart_required": "Restart requis",
+
+// en.json
+"admin_system_llm_llamacpp_restart": "Restart server",
+"admin_system_llm_llamacpp_restart_confirm_title": "Restart llama-server?",
+"admin_system_llm_llamacpp_restart_confirm_message": "The server will restart with current configuration.",
+"admin_system_llm_llamacpp_restarting": "Restarting...",
+"admin_system_llm_llamacpp_restart_success": "Server restarted successfully",
+"admin_system_llm_llamacpp_restart_required": "Restart required",</code></pre>
+  </div>
+</div>
+
+<!-- ==================== SECTION 9 ==================== -->
+<div class="section" id="s9">
+  <div class="section-header">
+    <div class="section-icon icon-green">4️⃣</div>
+    <div><h2>Phase 4: Gestion du serveur natif <span class="section-num">&mdash; Section 9</span></h2></div>
+  </div>
+
+  <h3><span class="h3-dot dot-blue"></span> Script existant</h3>
+  <p>Le script <code>scripts/llamacpp.sh</code> gère déjà le cycle de vie:</p>
+  <ul class="feature-list">
+    <li><strong>start --model &lt;path&gt; --embed</strong> &mdash; Démarrage manuel</li>
+    <li><strong>stop</strong> &mdash; Arrêt du serveur</li>
+    <li><strong>restart [--embed|--no-embed]</strong> &mdash; Redémarrage</li>
+    <li><strong>status</strong> &mdash; État du serveur</li>
+    <li><strong>logs</strong> &mdash; Affichage des logs</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-red"></span> Lecture config BDD au démarrage (OBLIGATOIRE)</h3>
+  <div class="callout callout-warning">
+    <span class="callout-icon">⚠️</span>
+    <span><strong>Fonctionnalité requise</strong> &mdash; Le script doit pouvoir lire la configuration depuis la BDD pour démarrer llama-server avec les bons paramètres sans les spécifier manuellement.</span>
+  </div>
+
+  <div class="card card-todo">
+    <div class="card-title">📦 Créer scripts/lib/db-config.sh</div>
+    <pre><code>#!/bin/bash
+# Helper pour lecture configuration depuis BDD
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
+
+# Charge les variables depuis .env
+if [[ -f "$PROJECT_ROOT/.env" ]]; then
+    set -a
+    source "$PROJECT_ROOT/.env"
+    set +a
+fi
+
+DB_CONTAINER="${SANITIZED_PREFIX:-my_ia}_postgres"
+DB_USER="${APP_DB_USER:-my_ia_db_user}"
+DB_NAME="${APP_DB_NAME:-my_ia_db}"
+
+get_db_config() {
+    local key="$1"
+    local default="$2"
+
+    if ! docker ps --format '{{.Names}}' | grep -q "^${DB_CONTAINER}$"; then
+        echo "$default"
+        return
+    fi
+
+    local result
+    result=$(docker exec "$DB_CONTAINER" psql \
+        -U "$DB_USER" -d "$DB_NAME" -t -A \
+        -c "SELECT value FROM system_configs WHERE key='$key'" \
+        2>/dev/null | tr -d '[:space:]')
+
+    if [[ -n "$result" ]]; then
+        echo "$result"
+    else
+        echo "$default"
+    fi
+}
+
+get_db_config_bool() {
+    local key="$1"
+    local default="$2"
+    local value=$(get_db_config "$key" "$default")
+
+    case "${value,,}" in
+        true|1|yes|on) echo "true" ;;
+        *) echo "false" ;;
+    esac
+}</code></pre>
+  </div>
+
+  <div class="card card-todo">
+    <div class="card-title">📦 Modifier llamacpp.sh - Option --from-db</div>
+    <pre><code>start_server() {
+    local from_db=false
+    # ... autres variables ...
+
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --from-db)
+                from_db=true
+                shift
+                ;;
+            # ... autres options ...
+        esac
+    done
+
+    if $from_db; then
+        source "$SCRIPT_DIR/lib/db-config.sh"
+
+        log_info "Chargement de la configuration depuis la BDD..."
+
+        local db_model=$(get_db_config "llm.llamacpp.llm_model" "")
+        [[ -n "$db_model" && -z "$model" ]] && model=$(find "$MODELS_DIR" -name "$db_model" -type f | head -1)
+
+        [[ -z "$port" ]] && port=$(get_db_config "llm.llamacpp.port" "$DEFAULT_PORT")
+        [[ -z "$ctx_size" ]] && ctx_size=$(get_db_config "llm.llamacpp.ctx_size" "$DEFAULT_CTX_SIZE")
+        [[ -z "$gpu_layers" ]] && gpu_layers=$(get_db_config "llm.llamacpp.gpu_layers" "$DEFAULT_GPU_LAYERS")
+        [[ -z "$batch_size" ]] && batch_size=$(get_db_config "llm.llamacpp.batch_size" "2048")
+        [[ -z "$parallel" ]] && parallel=$(get_db_config "llm.llamacpp.parallel" "-1")
+
+        local embedding_mode=$(get_db_config_bool "llm.llamacpp.embedding_mode" "true")
+        [[ "$embedding_mode" == "true" ]] && embed_flag="--embedding"
+
+        log_info "Configuration chargée: port=$port, ctx=$ctx_size, parallel=$parallel"
+    fi
+
+    # ... reste de la fonction ...
+}</code></pre>
+  </div>
+
+  <h3><span class="h3-dot dot-teal"></span> Commande de démarrage type</h3>
+  <pre><code># Démarrage avec configuration depuis BDD (RECOMMANDÉ)
+./scripts/llamacpp.sh start --from-db
+
+# Démarrage manuel (chemins absolus)
+/Users/mac/Documents/Code/llama.cpp/build/bin/llama-server \
+    -m /Users/mac/Documents/Code/my-ia/models/gguf/gemma-2-9b-it-Q4_K_M.gguf \
+    --host 0.0.0.0 --port 8085 \
+    -c 4096 -b 2048 \
+    -ngl 99 -np 4 \
+    -fa on --embedding --metrics</code></pre>
+
+  <h3><span class="h3-dot dot-green"></span> Intégration avec start.sh</h3>
+  <div class="card card-todo">
+    <div class="card-title">📦 Modifier scripts/start.sh</div>
+    <pre><code># Ajouter après docker-compose up:
+check_and_start_llamacpp() {
+    source "$SCRIPT_DIR/lib/db-config.sh"
+    local provider=$(get_db_config "llm.provider" "ollama")
+
+    if [[ "$provider" == "llamacpp" ]]; then
+        log_step "Provider LLM: llama.cpp"
+        if "$SCRIPT_DIR/llamacpp.sh" status &>/dev/null; then
+            log_info "llama-server déjà en cours d'exécution"
+        else
+            log_info "Démarrage de llama-server..."
+            "$SCRIPT_DIR/llamacpp.sh" start --from-db
+        fi
+    fi
+}
+
+check_and_start_llamacpp</code></pre>
+  </div>
+</div>
+
+<!-- ==================== SECTION 10 ==================== -->
+<div class="section" id="s10">
+  <div class="section-header">
+    <div class="section-icon icon-purple">5️⃣</div>
+    <div><h2>Phase 5: Tests <span class="section-num">&mdash; Section 10</span></h2></div>
+  </div>
+
+  <h3><span class="h3-dot dot-blue"></span> Tests unitaires à créer</h3>
+  <p>Fichier: <code>tests/llm/test_llamacpp_provider.py</code></p>
+  <table>
+    <thead><tr><th>Test</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>test_llamacpp_config_default</code></td><td>Vérifier les valeurs par défaut de LlamaCppConfig</td></tr>
+      <tr><td><code>test_llamacpp_config_from_db</code></td><td>Vérifier le chargement depuis BDD</td></tr>
+      <tr><td><code>test_llamacpp_config_cache</code></td><td>Vérifier le cache TTL</td></tr>
+      <tr><td><code>test_llamacpp_config_cache_invalidation</code></td><td>Vérifier l'invalidation du cache</td></tr>
+      <tr><td><code>test_provider_uses_db_config</code></td><td>Vérifier que le provider charge la config BDD</td></tr>
+      <tr><td><code>test_compare_configs_in_sync</code></td><td>Vérifier comparaison quand configs identiques</td></tr>
+      <tr><td><code>test_compare_configs_different</code></td><td>Vérifier détection des différences</td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-teal"></span> Tests d'intégration</h3>
+  <pre><code># Test démarrage avec config BDD
+./scripts/llamacpp.sh start --from-db
+./scripts/llamacpp.sh status
+curl http://localhost:8085/health
+
+# Tester la génération
+curl http://localhost:8085/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{"model":"gemma","messages":[{"role":"user","content":"Hello"}]}'
+
+# Tester les embeddings
+curl http://localhost:8085/v1/embeddings \
+  -H "Content-Type: application/json" \
+  -d '{"model":"gemma","input":"Test embedding"}'</code></pre>
+
+  <h3><span class="h3-dot dot-green"></span> Tests API restart et sync-status</h3>
+  <pre><code># Authentification
+TOKEN=$(curl -s -X POST http://localhost:8080/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin@test.example","password":"..."}' | jq -r '.access_token')
+
+# Test restart
+curl -X POST http://localhost:8080/api/admin/config/llm/llamacpp/restart \
+  -H "Authorization: Bearer $TOKEN"
+
+# Test sync-status
+curl http://localhost:8080/api/admin/config/llm/llamacpp/sync-status \
+  -H "Authorization: Bearer $TOKEN" | jq
+
+# Modifier config puis vérifier sync-status
+docker-compose exec -T postgres psql -U my_ia_db_user -d my_ia_db \
+  -c "UPDATE system_configs SET value='8192' WHERE key='llm.llamacpp.ctx_size'"
+
+curl http://localhost:8080/api/admin/config/llm/llamacpp/sync-status \
+  -H "Authorization: Bearer $TOKEN" | jq '.restart_required'
+# → true</code></pre>
+</div>
+
+<!-- ==================== SECTION 11 ==================== -->
+<div class="section" id="s11">
+  <div class="section-header">
+    <div class="section-icon icon-blue">📁</div>
+    <div><h2>Fichiers impactés <span class="section-num">&mdash; Section 11</span></h2></div>
+  </div>
+
+  <h3><span class="h3-dot dot-green"></span> Fichiers modifiés ✅</h3>
+  <table>
+    <thead><tr><th>Fichier</th><th>Modification</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td><code>app/common/llm/llamacpp.py</code></td><td>LlamaCppConfig, get_llamacpp_config(), invalidate cache</td><td class="status-done">✅ Fait</td></tr>
+      <tr><td><code>app/common/llm/__init__.py</code></td><td>Exporter les nouvelles fonctions</td><td class="status-done">✅ Fait</td></tr>
+      <tr><td><code>app/features/admin/config/router.py</code></td><td>POST /llamacpp/restart + GET /llamacpp/sync-status</td><td class="status-done">✅ Fait</td></tr>
+      <tr><td><code>app/features/admin/config/service.py</code></td><td>restart_llamacpp_server() + compare_llamacpp_configs()</td><td class="status-done">✅ Fait</td></tr>
+      <tr><td><code>scripts/llamacpp.sh</code></td><td>Options --from-db, --batch-size, --parallel</td><td class="status-done">✅ Fait</td></tr>
+      <tr><td><code>scripts/start.sh</code></td><td>Démarrer llama-server avec --from-db si provider=llamacpp</td><td class="status-done">✅ Fait</td></tr>
+      <tr><td><code>scripts/stop.sh</code></td><td>Arrêter llama-server (déjà intégré)</td><td class="status-done">✅ OK</td></tr>
+      <tr><td><code>UI-BACK/js/services/adminApi.js</code></td><td>restartLlamacpp() + llamacppSyncStatus()</td><td class="status-done">✅ Fait</td></tr>
+      <tr><td><code>UI-SHARED/locales/fr.json</code></td><td>13 clés traduction restart llama.cpp</td><td class="status-done">✅ Fait</td></tr>
+      <tr><td><code>UI-SHARED/locales/en.json</code></td><td>13 clés traduction restart llama.cpp</td><td class="status-done">✅ Fait</td></tr>
+      <tr><td><code>tests/llm/test_llamacpp_provider.py</code></td><td>7 tests LlamaCppConfig + cache</td><td class="status-done">✅ Fait</td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-teal"></span> Fichiers créés ✅</h3>
+  <table>
+    <thead><tr><th>Fichier</th><th>Description</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td><code>scripts/lib/db-config.sh</code></td><td>Helper pour lire config depuis BDD (existait déjà)</td><td class="status-done">✅ OK</td></tr>
+      <tr><td><code>app/alembic/versions/e5f6g7h8i9j0_add_llamacpp_config_keys.py</code></td><td>Migration BDD : 14 clés llm.llamacpp.* (params serveur)</td><td class="status-done">✅ Créé</td></tr>
+      <tr><td><code>app/alembic/versions/f6g7h8i9j0k1_add_llamacpp_paths_config.py</code></td><td>Migration BDD : 2 clés (server_path, models_dir)</td><td class="status-done">✅ Créé</td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-green"></span> Fichiers Frontend ✅</h3>
+  <table>
+    <thead><tr><th>Fichier</th><th>Modification</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td><code>UI-BACK/js/modules/system/llm.js</code></td><td>Bouton Restart + badge sync-status + méthodes JS</td><td class="status-done">✅ Fait</td></tr>
+      <tr><td><code>UI-SHARED/templates/admin/system.html</code></td><td>Template avec bouton et badge</td><td class="status-done">✅ Fait</td></tr>
+      <tr><td><code>UI-SHARED/css/components/admin-cards.css</code></td><td>Styles badges sync + spinner</td><td class="status-done">✅ Fait</td></tr>
+      <tr><td><code>UI-SHARED/locales/fr.json</code></td><td>Traductions sync status</td><td class="status-done">✅ Fait</td></tr>
+      <tr><td><code>UI-SHARED/locales/en.json</code></td><td>Traductions sync status</td><td class="status-done">✅ Fait</td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-amber"></span> Fichiers à modifier (Section 14 - Chemins)</h3>
+  <table>
+    <thead><tr><th>Fichier</th><th>Modification</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td><code>app/common/llm/llamacpp.py</code></td><td>Ajouter server_path et models_dir dans LlamaCppConfig</td><td class="status-partial">⚠️ À faire</td></tr>
+      <tr><td><code>app/features/admin/config/service.py</code></td><td>GET/PATCH des chemins</td><td class="status-partial">⚠️ À faire</td></tr>
+      <tr><td><code>UI-BACK/js/modules/system/llm.js</code></td><td>Champs de saisie pour chemins</td><td class="status-partial">⚠️ À faire</td></tr>
+      <tr><td><code>UI-SHARED/locales/fr.json</code></td><td>5 nouvelles clés traduction</td><td class="status-partial">⚠️ À faire</td></tr>
+      <tr><td><code>UI-SHARED/locales/en.json</code></td><td>5 nouvelles clés traduction</td><td class="status-partial">⚠️ À faire</td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-blue"></span> Fichiers inchangés (déjà OK)</h3>
+  <ul>
+    <li><code>app/common/llm/factory.py</code> - Factory pattern OK</li>
+    <li><code>app/common/llm/ollama.py</code> - Non modifié (non-régression vérifiée : 22 tests passent)</li>
+  </ul>
+</div>
+
+<!-- ==================== SECTION 12 ==================== -->
+<div class="section" id="s12">
+  <div class="section-header">
+    <div class="section-icon icon-red">⚠️</div>
+    <div><h2>Risques et mitigations <span class="section-num">&mdash; Section 12</span></h2></div>
+  </div>
+
+  <table>
+    <thead><tr><th>Risque</th><th>Impact</th><th>Mitigation</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Changement de config sans restart serveur</td>
+        <td><span class="badge badge-warning">Moyen</span></td>
+        <td>Badge "Restart required" si différence détectée</td>
+      </tr>
+      <tr>
+        <td>llama-server non démarré</td>
+        <td><span class="badge badge-danger">Haut</span></td>
+        <td>Health check retourne "unhealthy", message d'erreur clair</td>
+      </tr>
+      <tr>
+        <td>Mémoire insuffisante pour parallel > 1</td>
+        <td><span class="badge badge-warning">Moyen</span></td>
+        <td>Documenter les requirements mémoire, valeur par défaut conservative</td>
+      </tr>
+      <tr>
+        <td>Régression Ollama</td>
+        <td><span class="badge badge-danger">Haut</span></td>
+        <td>Ne pas modifier OllamaProvider, tests existants doivent passer</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ==================== SECTION 13 ==================== -->
+<div class="section" id="s13">
+  <div class="section-header">
+    <div class="section-icon icon-green">✅</div>
+    <div><h2>Checklist de validation <span class="section-num">&mdash; Section 13</span></h2></div>
+  </div>
+
+  <h3><span class="h3-dot dot-blue"></span> Backend - Config BDD</h3>
+  <ul class="checklist-plan">
+    <li><input type="checkbox" checked> LlamaCppConfig dataclass créée</li>
+    <li><input type="checkbox" checked> get_llamacpp_config() avec cache TTL 30s</li>
+    <li><input type="checkbox" checked> invalidate_llamacpp_config_cache() fonctionne</li>
+    <li><input type="checkbox" checked> LlamaCppProvider utilise la config BDD</li>
+    <li><input type="checkbox" checked> Exports ajoutés dans __init__.py</li>
+    <li><input type="checkbox" checked> Migration BDD : 14 clés params (e5f6g7h8i9j0)</li>
+    <li><input type="checkbox" checked> Migration BDD : 2 clés paths (f6g7h8i9j0k1)</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-teal"></span> Backend - Restart API</h3>
+  <ul class="checklist-plan">
+    <li><input type="checkbox" checked> Endpoint POST /admin/config/llm/llamacpp/restart créé</li>
+    <li><input type="checkbox" checked> Service restart_llamacpp_server() implémenté</li>
+    <li><input type="checkbox" checked> Appel async du script llamacpp.sh restart --from-db</li>
+    <li><input type="checkbox" checked> Log audit de l'action restart</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-green"></span> Backend - Vérification config sync</h3>
+  <ul class="checklist-plan">
+    <li><input type="checkbox" checked> Endpoint GET /admin/config/llm/llamacpp/sync-status créé</li>
+    <li><input type="checkbox" checked> Service compare_llamacpp_configs() implémenté</li>
+    <li><input type="checkbox" checked> Service get_llamacpp_running_config() implémenté</li>
+    <li><input type="checkbox" checked> Comparaison des paramètres critiques</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-amber"></span> Scripts - Lecture BDD</h3>
+  <ul class="checklist-plan">
+    <li><input type="checkbox" checked> scripts/lib/db-config.sh créé</li>
+    <li><input type="checkbox" checked> llamacpp.sh start --from-db fonctionne</li>
+    <li><input type="checkbox" checked> llamacpp.sh restart --from-db fonctionne</li>
+    <li><input type="checkbox" checked> start.sh démarre llama-server si provider=llamacpp</li>
+    <li><input type="checkbox" checked> stop.sh arrête llama-server</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-purple"></span> Frontend - Admin UI</h3>
+  <ul class="checklist-plan">
+    <li><input type="checkbox" checked> Bouton "Redémarrer le serveur" ajouté</li>
+    <li><input type="checkbox" checked> Modal de confirmation avant restart</li>
+    <li><input type="checkbox" checked> Badge "Restart required" si config désynchronisée</li>
+    <li><input type="checkbox" checked> Traductions fr.json et en.json ajoutées</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-purple"></span> Chemins de configuration (Section 14)</h3>
+  <ul class="checklist-plan">
+    <li><input type="checkbox" checked> Migration Alembic f6g7h8i9j0k1 créée</li>
+    <li><input type="checkbox" checked> scripts/llamacpp.sh charge les chemins depuis BDD</li>
+    <li><input type="checkbox"> LlamaCppConfig inclut server_path et models_dir</li>
+    <li><input type="checkbox"> GET /llamacpp/params retourne les chemins</li>
+    <li><input type="checkbox"> PATCH /llamacpp/params accepte les chemins</li>
+    <li><input type="checkbox"> Admin UI : champs de saisie pour les chemins</li>
+    <li><input type="checkbox"> Traductions fr/en ajoutées (5 clés)</li>
+    <li><input type="checkbox"> Validation chemin absolu (Frontend)</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-red"></span> Tests</h3>
+  <ul class="checklist-plan">
+    <li><input type="checkbox" checked> Tests unitaires LlamaCppConfig passent (7 tests)</li>
+    <li><input type="checkbox" checked> Tests LlamaCppProvider passent (27 tests total)</li>
+    <li><input type="checkbox" checked> Tests existants Ollama passent (22 tests - non-régression)</li>
+    <li><input type="checkbox" checked> Total : 88 tests LLM passent</li>
+    <li><input type="checkbox"> Test intégration restart API (manuel)</li>
+    <li><input type="checkbox"> Test intégration sync-status API (manuel)</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-blue"></span> Fonctionnel end-to-end</h3>
+  <ul class="checklist-plan">
+    <li><input type="checkbox"> Switch Ollama ↔ llama.cpp fonctionne</li>
+    <li><input type="checkbox"> Health check llama.cpp retourne le bon statut</li>
+    <li><input type="checkbox"> Badge "Restart required" apparaît si config différente</li>
+    <li><input type="checkbox"> Bouton Restart redémarre avec nouvelle config</li>
+    <li><input type="checkbox"> Chat streaming fonctionne</li>
+    <li><input type="checkbox"> Embeddings fonctionnent pour le RAG</li>
+    <li><input type="checkbox"> Multi-client (parallel > 1) fonctionne</li>
+  </ul>
+</div>
+
+<!-- ==================== SECTION 14 ==================== -->
+<div class="section" id="s14">
+  <div class="section-header">
+    <div class="section-icon icon-purple">📂</div>
+    <div><h2>Chemins de configuration <span class="section-num">&mdash; Section 14</span></h2></div>
+  </div>
+
+  <div class="callout callout-info">
+    <span class="callout-icon">ℹ️</span>
+    <span><strong>Séparation des responsabilités</strong> &mdash; Les chemins vers llama-server et le répertoire des modèles sont configurables en BDD pour permettre une installation de llama.cpp indépendante de l'application MY-IA.</span>
+  </div>
+
+  <h3><span class="h3-dot dot-blue"></span> Nouvelles clés de configuration</h3>
+  <table>
+    <thead><tr><th>Clé BDD</th><th>Type</th><th>Valeur par défaut</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>llm.llamacpp.server_path</code></td>
+        <td>string</td>
+        <td><code>/Users/mac/Documents/Code/llama.cpp/build/bin/llama-server</code></td>
+        <td>Chemin absolu vers le binaire llama-server</td>
+      </tr>
+      <tr>
+        <td><code>llm.llamacpp.models_dir</code></td>
+        <td>string</td>
+        <td><code>/Users/mac/Documents/Code/my-ia/models/gguf</code></td>
+        <td>Répertoire des modèles GGUF</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-green"></span> Backend - Modifications</h3>
+
+  <h4>1. Migration Alembic</h4>
+  <p>Fichier : <code>app/alembic/versions/f6g7h8i9j0k1_add_llamacpp_paths_config.py</code></p>
+  <pre><code>LLAMACPP_PATHS_CONFIG_KEYS = [
+    ("llm.llamacpp.server_path",
+     "/Users/mac/Documents/Code/llama.cpp/build/bin/llama-server",
+     "string",
+     "Chemin absolu vers le binaire llama-server"),
+    ("llm.llamacpp.models_dir",
+     "/Users/mac/Documents/Code/my-ia/models/gguf",
+     "string",
+     "Repertoire des modeles GGUF pour llama.cpp"),
+]</code></pre>
+
+  <h4>2. Dataclass LlamaCppConfig</h4>
+  <p>Fichier : <code>app/common/llm/llamacpp.py</code></p>
+  <pre><code>@dataclass
+class LlamaCppConfig:
+    """Configuration llama.cpp chargée depuis system_configs."""
+    host: str = "host.docker.internal"
+    port: int = 8085
+    # ... autres champs existants ...
+
+    # NOUVEAU: Chemins de configuration
+    server_path: str = "/Users/mac/Documents/Code/llama.cpp/build/bin/llama-server"
+    models_dir: str = "/Users/mac/Documents/Code/my-ia/models/gguf"</code></pre>
+
+  <h4>3. Fonction get_llamacpp_config()</h4>
+  <p>Ajouter le chargement des nouveaux champs :</p>
+  <pre><code>async def get_llamacpp_config(db=None) -> LlamaCppConfig:
+    """Récupère la config llama.cpp depuis BDD avec cache TTL."""
+    # ...
+
+    config = LlamaCppConfig(
+        # ... champs existants ...
+        server_path=str(await config_service.get(
+            "llm.llamacpp.server_path",
+            "/Users/mac/Documents/Code/llama.cpp/build/bin/llama-server"
+        )),
+        models_dir=str(await config_service.get(
+            "llm.llamacpp.models_dir",
+            "/Users/mac/Documents/Code/my-ia/models/gguf"
+        )),
+    )
+
+    return config</code></pre>
+
+  <h4>4. Service ConfigService</h4>
+  <p>Fichier : <code>app/features/admin/config/service.py</code></p>
+  <p>Inclure les chemins dans la réponse GET /llamacpp/params et supporter PATCH :</p>
+  <pre><code># Dans get_llamacpp_params()
+return {
+    "host": llamacpp_config.host,
+    "port": llamacpp_config.port,
+    # ... autres params ...
+    "server_path": llamacpp_config.server_path,
+    "models_dir": llamacpp_config.models_dir,
+}
+
+# Dans update_llamacpp_params()
+if "server_path" in data:
+    await config_service.set("llm.llamacpp.server_path", data["server_path"])
+if "models_dir" in data:
+    await config_service.set("llm.llamacpp.models_dir", data["models_dir"])</code></pre>
+
+  <h3><span class="h3-dot dot-teal"></span> Scripts - Modifications</h3>
+
+  <h4>Fichier : scripts/llamacpp.sh</h4>
+  <p>Le script charge les chemins depuis la BDD si disponibles :</p>
+  <pre><code># Valeurs par défaut
+DEFAULT_LLAMACPP_BIN="/Users/mac/Documents/Code/llama.cpp/build/bin/llama-server"
+MODELS_DIR="${PROJECT_ROOT}/models/gguf"
+LLAMACPP_BIN="$DEFAULT_LLAMACPP_BIN"
+
+# Fonction pour charger les chemins depuis la BDD
+load_paths_from_db() {
+    source "$SCRIPT_DIR/lib/db-config.sh"
+
+    local db_server_path=$(db_config_get "llm.llamacpp.server_path" "")
+    local db_models_dir=$(db_config_get "llm.llamacpp.models_dir" "")
+
+    if [[ -n "$db_server_path" ]]; then
+        LLAMACPP_BIN="$db_server_path"
+        log_info "Chemin llama-server depuis BDD: $LLAMACPP_BIN"
+    fi
+    if [[ -n "$db_models_dir" ]]; then
+        MODELS_DIR="$db_models_dir"
+        log_info "Répertoire modèles depuis BDD: $MODELS_DIR"
+    fi
+}
+
+# Charger la config dès le début (avant check_binary)
+load_paths_from_db</code></pre>
+
+  <h3><span class="h3-dot dot-amber"></span> Frontend - Admin UI</h3>
+
+  <h4>1. Template formulaire</h4>
+  <p>Fichier : <code>UI-SHARED/templates/admin/system.html</code> ou <code>UI-BACK/js/modules/system/llm.js</code></p>
+  <p>Ajouter deux champs de saisie dans le formulaire llama.cpp :</p>
+  <pre><code>&lt;!-- Chemins de configuration --&gt;
+&lt;div class="form-group"&gt;
+  &lt;label for="llamacpp-server-path"&gt;${t('admin_system_llm_llamacpp_server_path')}&lt;/label&gt;
+  &lt;input type="text" id="llamacpp-server-path"
+         class="form-control"
+         placeholder="/path/to/llama-server"
+         value="${config.server_path || ''}"&gt;
+  &lt;small class="form-text text-muted"&gt;${t('admin_system_llm_llamacpp_server_path_help')}&lt;/small&gt;
+&lt;/div&gt;
+
+&lt;div class="form-group"&gt;
+  &lt;label for="llamacpp-models-dir"&gt;${t('admin_system_llm_llamacpp_models_dir')}&lt;/label&gt;
+  &lt;input type="text" id="llamacpp-models-dir"
+         class="form-control"
+         placeholder="/path/to/models/gguf"
+         value="${config.models_dir || ''}"&gt;
+  &lt;small class="form-text text-muted"&gt;${t('admin_system_llm_llamacpp_models_dir_help')}&lt;/small&gt;
+&lt;/div&gt;</code></pre>
+
+  <h4>2. Méthode de sauvegarde</h4>
+  <p>Dans la méthode saveLlamacppConfig() :</p>
+  <pre><code>async saveLlamacppConfig() {
+    const data = {
+        // ... params existants ...
+        server_path: document.getElementById('llamacpp-server-path')?.value,
+        models_dir: document.getElementById('llamacpp-models-dir')?.value,
+    };
+
+    // Validation des chemins
+    if (data.server_path && !data.server_path.startsWith('/')) {
+        showToast(t('error_path_must_be_absolute'), 'error', true);
+        return;
+    }
+    if (data.models_dir && !data.models_dir.startsWith('/')) {
+        showToast(t('error_path_must_be_absolute'), 'error', true);
+        return;
+    }
+
+    await adminApi.config.updateLlamacppParams(data);
+}</code></pre>
+
+  <h4>3. Traductions</h4>
+  <p>Fichier : <code>UI-SHARED/locales/fr.json</code></p>
+  <pre><code>"admin_system_llm_llamacpp_server_path": "Chemin llama-server",
+"admin_system_llm_llamacpp_server_path_help": "Chemin absolu vers le binaire llama-server",
+"admin_system_llm_llamacpp_models_dir": "Répertoire des modèles",
+"admin_system_llm_llamacpp_models_dir_help": "Répertoire contenant les fichiers GGUF",
+"error_path_must_be_absolute": "Le chemin doit être absolu (commencer par /)"</code></pre>
+
+  <p>Fichier : <code>UI-SHARED/locales/en.json</code></p>
+  <pre><code>"admin_system_llm_llamacpp_server_path": "llama-server path",
+"admin_system_llm_llamacpp_server_path_help": "Absolute path to llama-server binary",
+"admin_system_llm_llamacpp_models_dir": "Models directory",
+"admin_system_llm_llamacpp_models_dir_help": "Directory containing GGUF files",
+"error_path_must_be_absolute": "Path must be absolute (start with /)"</code></pre>
+
+  <h3><span class="h3-dot dot-purple"></span> Workflow complet</h3>
+  <pre class="ascii-art">┌──────────────────────────────────────────────────────────────────────────┐
+│                         Admin UI - Configuration llama.cpp               │
+├──────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│   ┌────────────────────────────────────────────────────────────────────┐ │
+│   │  Chemins de configuration                                          │ │
+│   │                                                                    │ │
+│   │  Chemin llama-server:                                              │ │
+│   │  ┌────────────────────────────────────────────────────────────┐   │ │
+│   │  │ /Users/mac/Documents/Code/llama.cpp/build/bin/llama-server │   │ │
+│   │  └────────────────────────────────────────────────────────────┘   │ │
+│   │  Chemin absolu vers le binaire llama-server                       │ │
+│   │                                                                    │ │
+│   │  Répertoire des modèles:                                          │ │
+│   │  ┌────────────────────────────────────────────────────────────┐   │ │
+│   │  │ /Users/mac/Documents/Code/my-ia/models/gguf           │   │ │
+│   │  └────────────────────────────────────────────────────────────┘   │ │
+│   │  Répertoire contenant les fichiers GGUF                           │ │
+│   └────────────────────────────────────────────────────────────────────┘ │
+│                                                                          │
+│   ┌─────────────────┐                                                    │
+│   │  💾 Sauvegarder  │  ───▶  PATCH /admin/config/llm/llamacpp/params   │
+│   └─────────────────┘                                                    │
+│                                 │                                        │
+│                                 ▼                                        │
+│                          ┌─────────────────┐                             │
+│                          │ system_configs  │                             │
+│                          │      (BDD)      │                             │
+│                          └─────────────────┘                             │
+│                                 │                                        │
+│                                 ▼                                        │
+│   ┌─────────────────────┐   Badge: "Restart required"                    │
+│   │  🔄 Redémarrer       │  ───▶  POST /admin/config/llm/llamacpp/restart│
+│   └─────────────────────┘                                                │
+│                                 │                                        │
+│                                 ▼                                        │
+│                          ┌─────────────────┐                             │
+│                          │ llamacpp.sh     │                             │
+│                          │ restart --from-db│                            │
+│                          └─────────────────┘                             │
+│                                 │                                        │
+│                                 ▼                                        │
+│                          ┌─────────────────┐                             │
+│                          │  llama-server   │  Démarré avec nouveaux      │
+│                          │     :8085       │  chemins depuis BDD         │
+│                          └─────────────────┘                             │
+└──────────────────────────────────────────────────────────────────────────┘</pre>
+
+  <h3><span class="h3-dot dot-red"></span> Validation</h3>
+  <table>
+    <thead><tr><th>Test</th><th>Attendu</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Migration Alembic appliquée</td>
+        <td>2 nouvelles clés dans system_configs</td>
+        <td class="status-done">✅</td>
+      </tr>
+      <tr>
+        <td>llamacpp.sh utilise les chemins BDD</td>
+        <td>Log "Chemin llama-server depuis BDD"</td>
+        <td class="status-done">✅</td>
+      </tr>
+      <tr>
+        <td>GET /llamacpp/params retourne les chemins</td>
+        <td>JSON avec server_path et models_dir</td>
+        <td class="status-partial">⚠️ À implémenter</td>
+      </tr>
+      <tr>
+        <td>PATCH /llamacpp/params accepte les chemins</td>
+        <td>Sauvegarde en BDD</td>
+        <td class="status-partial">⚠️ À implémenter</td>
+      </tr>
+      <tr>
+        <td>Admin UI affiche les champs</td>
+        <td>2 inputs texte avec valeurs</td>
+        <td class="status-partial">⚠️ À implémenter</td>
+      </tr>
+      <tr>
+        <td>Traductions fr/en ajoutées</td>
+        <td>5 nouvelles clés</td>
+        <td class="status-partial">⚠️ À implémenter</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ==================== SOURCES ==================== -->
+<div class="section" id="sources">
+  <div class="section-header">
+    <div class="section-icon icon-gray">📚</div>
+    <div><h2>Sources et références</h2></div>
+  </div>
+
+  <ul style="font-size: 0.9rem;">
+    <li><a href="https://github.com/ggml-org/llama.cpp" target="_blank">llama.cpp - GitHub Repository (ggml-org)</a></li>
+    <li><a href="https://github.com/ggml-org/llama.cpp/blob/master/tools/server/README.md" target="_blank">llama-server Documentation</a></li>
+    <li><a href="https://github.com/ggml-org/llama.cpp/blob/master/docs/build.md" target="_blank">Build Instructions (Metal, CUDA)</a></li>
+    <li><a href="https://github.com/ggml-org/llama.cpp/discussions/4130" target="_blank">Parallelization / Batching Explanation</a></li>
+    <li><a href="https://huggingface.co/models?library=gguf" target="_blank">HuggingFace - Modèles GGUF</a></li>
+  </ul>
+
+  <p style="font-size: 0.85rem; color: var(--gray-600); margin-top: 1rem;"><em>Documentation vérifiée le 2026-02-21 par rapport au dépôt GitHub officiel.</em></p>
+</div>
+
+<!-- ==================== FOOTER ==================== -->
+<div class="footer">
+  MY-IA &mdash; Plan llama.cpp Multi-Client HTTP &mdash; Version 1.4 &mdash; 2026-02-21 &mdash; ✅ Implémentation en cours
+</div>
+
+</div>
+</body>
+</html>

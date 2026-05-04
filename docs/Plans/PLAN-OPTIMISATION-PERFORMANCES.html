@@ -1,0 +1,1924 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plan d'Optimisation des Performances — MY-IA</title>
+    <link rel="stylesheet" href="../assets/doc-style.css">
+</head>
+<body>
+    <div class="header">
+        <h1>Plan d'Optimisation des Performances</h1>
+        <p class="subtitle">Indexation, Chat RAG et Pipeline de Traitement</p>
+        <span class="badge badge-success">Implémenté</span>
+    </div>
+
+    <div class="page">
+        <nav class="toc">
+            <h2>Table des matières</h2>
+            <ul>
+                <li><a href="#glossaire">0. Glossaire</a></li>
+                <li><a href="#bottlenecks">1. Goulots d'Étranglement</a></li>
+                <li><a href="#phase0">2. Phase 0 : Config Ollama (5 min)</a></li>
+                <li><a href="#phase1">3. Phase 1 : Quick Wins</a></li>
+                <li><a href="#phase2">4. Phase 2 : Parallélisation</a></li>
+                <li><a href="#phase3">5. Phase 3 : Cache Avancé</a></li>
+                <li><a href="#phase4">6. Phase 4 : Observabilité</a></li>
+                <li><a href="#phase5">7. Phase 5 : Qualité RAG</a></li>
+                <li><a href="#phase6">8. Phase 6 : Futures Optimisations</a></li>
+                <li><a href="#implementation">9. Ordre d'Implémentation</a></li>
+                <li><a href="#verification">10. Vérification</a></li>
+                <li><a href="#impact">11. Impact Estimé</a></li>
+                <li><a href="#db-keys">12. Clés BDD à Créer</a></li>
+            </ul>
+        </nav>
+
+        <!-- État d'implémentation -->
+        <div class="callout success" style="background: #d4edda; border-color: #28a745;">
+            <strong>✅ Implémenté le 18 février 2026</strong>
+            <table style="margin-top: 0.5rem; width: 100%;">
+                <thead>
+                    <tr>
+                        <th>Phase</th>
+                        <th>Status</th>
+                        <th>Fichiers modifiés</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Phase 1 : Quick Wins</td>
+                        <td><span class="badge badge-success">✓</span></td>
+                        <td><code>rag_config.py</code> (cache TTL), <code>ollama.py</code> (cache embeddings 1000)</td>
+                    </tr>
+                    <tr>
+                        <td>Phase 2 : Parallélisation</td>
+                        <td><span class="badge badge-success">✓</span></td>
+                        <td><code>ingest_v2.py</code> (Semaphore, asyncio.gather, to_thread)</td>
+                    </tr>
+                    <tr>
+                        <td>Phase 3 : Cache Avancé</td>
+                        <td><span class="badge badge-success">✓</span></td>
+                        <td><code>query_cache.py</code> (nouveau), <code>system/service.py</code> (get_by_prefix)</td>
+                    </tr>
+                    <tr>
+                        <td>Phase 4 : Observabilité</td>
+                        <td><span class="badge badge-success">✓</span></td>
+                        <td><code>timing_stats.py</code> (P50 ajouté au P95 existant)</td>
+                    </tr>
+                    <tr>
+                        <td>Phase 5 : Qualité RAG</td>
+                        <td><span class="badge badge-success">✓</span></td>
+                        <td><code>rerank.py</code> (nouveau), <code>rag_config.py</code> (RAGMode), HNSW params (4 fichiers)</td>
+                    </tr>
+                    <tr>
+                        <td>Phase 6 : Futures</td>
+                        <td><span class="badge badge-secondary">—</span></td>
+                        <td>Non implémenté (Redis, scaling)</td>
+                    </tr>
+                    <tr>
+                        <td>Clés BDD</td>
+                        <td><span class="badge badge-success">✓</span></td>
+                        <td><code>seed.py</code> (20 nouvelles clés perf.* et rag.mode.*)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="callout info">
+            <strong>Objectifs de latence (P95) :</strong>
+            <ul>
+                <li><strong>TTFT</strong> : 300-800 ms</li>
+                <li><strong>Réponse complète</strong> : 1-3 s pour 2-4 paragraphes</li>
+                <li><strong>Retrieval</strong> : &lt; 120-150 ms</li>
+            </ul>
+        </div>
+
+        <div class="callout warning">
+            <strong>Contraintes d'architecture — TOUJOURS respecter :</strong>
+            <ul>
+                <li><strong>Corpus</strong> = Documents + Sources. Toute optimisation doit s'appliquer aux DEUX types de contenu.</li>
+                <li><strong>Provider</strong> = Les collections ChromaDB sont suffixées par provider (<code>*_ollama</code>, <code>*_llamacpp</code>). Les embeddings sont INCOMPATIBLES entre providers.</li>
+                <li><strong>Multi-collections</strong> = Un corpus peut avoir plusieurs collections. La recherche RAG utilise <code>_search_with_corpus_fallback()</code>.</li>
+                <li><strong>Métadonnées</strong> = Chaque chunk a <code>corpus_id</code>, <code>document_id</code>, <code>source_id</code>, <code>provider</code>.</li>
+            </ul>
+            <p style="margin-top: 0.5rem;"><strong>Voir :</strong> <a href="technique/collections.html">Documentation Collections</a> | <a href="PLAN-TOKEN-COMPACTION.html">Section 8 : Corpus & Multi-Providers</a></p>
+        </div>
+
+        <div class="callout danger">
+            <strong>⚠️ Pas de valeurs en dur — Configuration 100% en BDD :</strong>
+            <ul>
+                <li><strong>Toute valeur configurable</strong> doit provenir de la table <code>system_configs</code> PostgreSQL.</li>
+                <li><strong>Jamais de constantes hardcodées</strong> : TTL, tailles de cache, seuils, timeouts, etc. → BDD.</li>
+                <li><strong>Utiliser <code>SystemConfigService.get()</code></strong> avec une clé préfixée (ex: <code>perf.cache_ttl</code>, <code>perf.embedding_cache_size</code>).</li>
+                <li><strong>Valeurs par défaut</strong> : définies dans <code>app/core/config.py</code> via <code>settings.*</code>, puis surchargées par la BDD.</li>
+                <li><strong>Admin UI</strong> : toute nouvelle config doit être modifiable via l'interface admin.</li>
+            </ul>
+            <p style="margin-top: 0.5rem;"><strong>Pattern :</strong> <code>value = await config_service.get("perf.cache_ttl", settings.default_cache_ttl)</code></p>
+        </div>
+
+        <!-- Section 0 : Glossaire -->
+        <section id="glossaire" class="section">
+            <h2><span class="section-number">0</span> Glossaire des Acronymes</h2>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Acronyme</th>
+                        <th>Signification</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>TTFT</strong></td>
+                        <td>Time To First Token</td>
+                        <td>Temps entre l'envoi de la requête et la réception du premier token de réponse. Indicateur clé de la réactivité perçue.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>P50 / P95</strong></td>
+                        <td>Percentile 50 / 95</td>
+                        <td>P50 = médiane (50% des requêtes sont plus rapides). P95 = 95% des requêtes sont plus rapides. Le P95 capture les cas lents.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>RAG</strong></td>
+                        <td>Retrieval-Augmented Generation</td>
+                        <td>Technique combinant recherche de documents (retrieval) et génération LLM pour des réponses contextualisées.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>HNSW</strong></td>
+                        <td>Hierarchical Navigable Small World</td>
+                        <td>Algorithme d'index vectoriel utilisé par ChromaDB pour la recherche de similarité rapide (ANN).</td>
+                    </tr>
+                    <tr>
+                        <td><strong>ANN</strong></td>
+                        <td>Approximate Nearest Neighbors</td>
+                        <td>Recherche approximative des voisins les plus proches. Plus rapide que la recherche exacte, avec une légère perte de précision.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>LRU</strong></td>
+                        <td>Least Recently Used</td>
+                        <td>Stratégie de cache qui supprime en premier les éléments les moins récemment utilisés.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>TTL</strong></td>
+                        <td>Time To Live</td>
+                        <td>Durée de validité d'un élément en cache avant expiration automatique.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>SSE</strong></td>
+                        <td>Server-Sent Events</td>
+                        <td>Protocole HTTP permettant au serveur d'envoyer des données en continu vers le client (streaming unidirectionnel).</td>
+                    </tr>
+                    <tr>
+                        <td><strong>BM25</strong></td>
+                        <td>Best Matching 25</td>
+                        <td>Algorithme de scoring textuel classique basé sur la fréquence des termes. Complémentaire à la recherche vectorielle.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>RRF</strong></td>
+                        <td>Reciprocal Rank Fusion</td>
+                        <td>Méthode pour fusionner les résultats de plusieurs systèmes de recherche (ex: dense + BM25).</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Cross-encoder</strong></td>
+                        <td>-</td>
+                        <td>Modèle qui prend en entrée (query, document) ensemble pour scorer la pertinence. Plus précis qu'un bi-encoder mais plus lent.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Section 1 -->
+        <section id="bottlenecks" class="section">
+            <h2><span class="section-number">1</span> Goulots d'Étranglement Identifiés</h2>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Catégorie</th>
+                        <th>Problème</th>
+                        <th>Impact</th>
+                        <th>Fichier</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="badge badge-danger">Critique</span></td>
+                        <td>Embedding séquentiel (10 batches → 10 appels Ollama sériels)</td>
+                        <td>Indexation lente</td>
+                        <td><code>app/ingest_v2.py:583-624</code></td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-danger">Critique</span></td>
+                        <td>RAG config = 12 requêtes DB/chat, pas de cache</td>
+                        <td>+50-100ms/chat</td>
+                        <td><code>app/common/utils/rag_config.py:70-104</code></td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-danger">Critique</span></td>
+                        <td>Parsing document bloquant (Unstructured.io)</td>
+                        <td>Bloque event loop</td>
+                        <td><code>app/ingest_v2.py:192-266</code></td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-warning">Modéré</span></td>
+                        <td>Cache embedding trop petit (100 entrées)</td>
+                        <td>Cache miss fréquents</td>
+                        <td><code>app/common/llm/ollama.py:61</code></td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-warning">Modéré</span></td>
+                        <td>Pas de logs structurés par étape</td>
+                        <td>Debugging difficile</td>
+                        <td><code>app/features/chat/service.py</code></td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-warning">Modéré</span></td>
+                        <td>Pas de rerank (cross-encoder)</td>
+                        <td>Qualité retrieval</td>
+                        <td>Non implémenté</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-warning">Modéré</span></td>
+                        <td>Pas de limite tokens contexte</td>
+                        <td>Prompts trop longs</td>
+                        <td><code>app/features/chat/service.py</code></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Pipeline Actuel</h3>
+            <div class="pipeline">
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         PIPELINE D'INDEXATION                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  Upload → [Parse Doc] → [Chunk] → [Embed Batch 1] → ... → [ChromaDB]       │
+│              ↓              ↓            ↓                    ↓             │
+│          BLOQUANT      CPU-bound    SÉQUENTIEL           SÉQUENTIEL         │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                         PIPELINE CHAT/RAG                                   │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  Query → [Embed] → [ChromaDB] → [Rerank?] → [Prompt] → [LLM] → [Stream]   │
+│             ↓           ↓           ↓           ↓          ↓               │
+│          100ms      100-200ms    MANQUANT   PAS DE     OK (SSE)            │
+│                                             LIMITE                          │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+            </div>
+        </section>
+
+        <!-- Section 2 : Phase 0 - Config Ollama -->
+        <section id="phase0" class="section">
+            <h2><span class="section-number">2</span> Phase 0 : Configuration Ollama <span class="badge badge-success">IMPLÉMENTÉ</span></h2>
+
+            <div class="callout success">
+                <strong>✅ Implémenté le 2026-02-17</strong><br>
+                <strong>Temps estimé :</strong> 5-10 minutes | <strong>Impact :</strong> +50-100% throughput
+            </div>
+
+            <div class="callout info">
+                <strong>Fichiers modifiés :</strong>
+                <ul>
+                    <li><code>app/common/llm/ollama.py</code> — OllamaConfig, get_ollama_config(), cache avec TTL</li>
+                    <li><code>app/features/admin/config/schemas.py</code> — OllamaConfigRead, OllamaConfigUpdate, OllamaPreloadResponse</li>
+                    <li><code>app/features/admin/config/service.py</code> — get_ollama_config(), update_ollama_config(), preload_ollama_models()</li>
+                    <li><code>app/features/admin/config/router.py</code> — GET/PATCH /llm/ollama/config, POST /llm/ollama/preload</li>
+                    <li><code>UI-BACK/js/modules/system/llm.js</code> — showOllamaConfigModal(), saveOllamaConfig(), preloadOllamaModels()</li>
+                    <li><code>UI-BACK/js/services/adminApi.js</code> — ollamaConfig(), updateOllamaConfig(), preloadOllamaModels()</li>
+                    <li><code>UI-SHARED/templates/admin/system.html</code> — Section paramètres avancés Ollama</li>
+                    <li><code>UI-SHARED/locales/{fr,en}.json</code> — 16 nouvelles clés i18n</li>
+                </ul>
+            </div>
+
+            <div class="callout info">
+                <strong>Pourquoi Phase 0 ?</strong> Ces optimisations sont des variables d'environnement Ollama.
+                Aucun code à modifier, effet immédiat au redémarrage.
+            </div>
+
+            <h3>Benchmarks de référence</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Configuration</th>
+                        <th>Throughput</th>
+                        <th>VRAM</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Ollama défaut (NUM_PARALLEL=1)</td>
+                        <td>13 t/s</td>
+                        <td>~1 GB</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Ollama optimisé (NUM_PARALLEL=4)</strong></td>
+                        <td><strong>25 t/s</strong> (4 chats simultanés)</td>
+                        <td>~1.5 GB</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>0.1 Configuration 100% en BDD (system_configs)</h3>
+            <p><strong>Principe :</strong> Toute la configuration Ollama est stockée en BDD et passée via l'API Ollama à chaque requête.</p>
+
+            <div class="callout warning">
+                <strong>Exception :</strong> <code>OLLAMA_NUM_PARALLEL</code> est une config serveur Ollama.
+                Elle doit être définie au démarrage d'Ollama (variable d'environnement ou flag).
+                L'application ne peut pas la modifier dynamiquement.
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Clé BDD</th>
+                        <th>Type</th>
+                        <th>Défaut</th>
+                        <th>Passé via API</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>llm.ollama.keep_alive</code></td>
+                        <td>string</td>
+                        <td>"24h"</td>
+                        <td>✅ Oui</td>
+                        <td>Durée avant déchargement du modèle</td>
+                    </tr>
+                    <tr>
+                        <td><code>llm.ollama.num_ctx</code></td>
+                        <td>int</td>
+                        <td>4096</td>
+                        <td>✅ Oui (options)</td>
+                        <td>Taille du contexte en tokens</td>
+                    </tr>
+                    <tr>
+                        <td><code>llm.ollama.num_gpu</code></td>
+                        <td>int</td>
+                        <td>999</td>
+                        <td>✅ Oui (options)</td>
+                        <td>Couches GPU (999 = toutes)</td>
+                    </tr>
+                    <tr>
+                        <td><code>llm.ollama.num_parallel</code></td>
+                        <td>int</td>
+                        <td>4</td>
+                        <td>❌ Non (serveur)</td>
+                        <td>Requêtes parallèles (info seulement)</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>0.2 Modification du Provider Ollama</h3>
+            <p><strong>Fichier :</strong> <code>app/common/llm/ollama.py</code></p>
+
+            <div class="code-block">
+<pre><code>async def generate(
+    self,
+    prompt: str,
+    system_prompt: str,
+    context: Optional[List[Dict[str, Any]]] = None,
+    temperature: Optional[float] = None,
+    model: Optional[str] = None,
+    history: Optional[List[Dict[str, str]]] = None,
+    db: Optional[AsyncSession] = None  # Session pour accès config BDD
+) -> LLMResponse:
+    """Génère une réponse via Ollama avec config depuis BDD."""
+
+    # Charger config Ollama depuis BDD
+    ollama_config = await self._get_ollama_config(db)
+
+    # Options Ollama (passées dans chaque requête)
+    ollama_options = {
+        "num_ctx": ollama_config.num_ctx,
+        "num_gpu": ollama_config.num_gpu,
+    }
+    if temperature is not None:
+        ollama_options["temperature"] = temperature
+
+    request_body = {
+        "model": model or self._llm_model,
+        "messages": messages,
+        "stream": False,
+        "options": ollama_options,
+        "keep_alive": ollama_config.keep_alive,  # Passé directement
+    }
+
+    # ... reste du code
+
+
+async def _get_ollama_config(self, db: Optional[AsyncSession]) -> OllamaConfig:
+    """Charge la configuration Ollama depuis la BDD avec cache."""
+    if db is None:
+        return OllamaConfig()  # Valeurs par défaut
+
+    from app.features.system.service import SystemConfigService
+    config_service = SystemConfigService(db)
+
+    return OllamaConfig(
+        keep_alive=await config_service.get("llm.ollama.keep_alive", "24h"),
+        num_ctx=int(await config_service.get("llm.ollama.num_ctx", 4096)),
+        num_gpu=int(await config_service.get("llm.ollama.num_gpu", 999)),
+        num_parallel=int(await config_service.get("llm.ollama.num_parallel", 4)),
+    )
+
+
+@dataclass
+class OllamaConfig:
+    """Configuration Ollama depuis BDD."""
+    keep_alive: str = "24h"
+    num_ctx: int = 4096
+    num_gpu: int = 999
+    num_parallel: int = 4  # Info seulement (config serveur)</code></pre>
+            </div>
+
+            <h3>0.3 Préchargement des modèles au démarrage</h3>
+            <p><strong>Concept :</strong> Charger chat + embedding au démarrage pour éliminer la latence du premier appel.</p>
+            <p><strong>Implémentation :</strong> Endpoint API qui lit les modèles depuis la BDD et les précharge.</p>
+
+            <div class="code-block">
+<pre><code># Endpoint backend (app/features/admin/config/router.py)
+@router.post("/ollama/preload")
+async def preload_ollama_models(
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(get_current_admin_user)
+):
+    """Précharge les modèles Ollama configurés en BDD."""
+    from app.features.system.service import SystemConfigService
+    config_service = SystemConfigService(db)
+
+    # Lire modèles depuis BDD
+    chat_model = await config_service.get("llm.model", "mistral:latest")
+    embed_model = await config_service.get("llm.embedding_model", "nomic-embed-text:latest")
+    keep_alive = await config_service.get("llm.ollama.keep_alive", "24h")
+
+    ollama_url = f"http://{settings.ollama_host}:{settings.ollama_port}"
+
+    async with httpx.AsyncClient(timeout=120.0) as client:
+        # Précharger chat
+        await client.post(
+            f"{ollama_url}/api/generate",
+            json={"model": chat_model, "prompt": "hi", "keep_alive": keep_alive}
+        )
+        # Précharger embedding
+        await client.post(
+            f"{ollama_url}/api/embeddings",
+            json={"model": embed_model, "prompt": "test", "keep_alive": keep_alive}
+        )
+
+    return {"status": "ok", "models_loaded": [chat_model, embed_model]}</code></pre>
+            </div>
+
+            <p><strong>Appel au démarrage de l'app (app/main.py) :</strong></p>
+            <div class="code-block">
+<pre><code>@app.on_event("startup")
+async def startup_preload_models():
+    """Précharge les modèles Ollama au démarrage si configuré."""
+    from app.features.system.service import SystemConfigService
+
+    async for db in get_db():
+        config_service = SystemConfigService(db)
+        provider = await config_service.get("llm.provider", "ollama")
+        auto_preload = await config_service.get("llm.ollama.auto_preload", True)
+
+        if provider == "ollama" and auto_preload:
+            logger.info("Préchargement des modèles Ollama...")
+            # Appel interne au service de préchargement
+            await OllamaService.preload_models(db)
+        break</code></pre>
+            </div>
+
+            <h3>0.4 Endpoint Admin - Configuration Ollama</h3>
+            <p><strong>Fichier :</strong> <code>app/features/admin/config/router.py</code></p>
+
+            <div class="code-block">
+<pre><code>@router.get("/ollama/config")
+async def get_ollama_config(
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(get_current_admin_user)
+):
+    """Retourne la configuration Ollama depuis BDD + état serveur."""
+    from app.features.system.service import SystemConfigService
+    config_service = SystemConfigService(db)
+
+    # Config depuis BDD
+    config = {
+        "keep_alive": await config_service.get("llm.ollama.keep_alive", "24h"),
+        "num_ctx": int(await config_service.get("llm.ollama.num_ctx", 4096)),
+        "num_gpu": int(await config_service.get("llm.ollama.num_gpu", 999)),
+        "num_parallel": int(await config_service.get("llm.ollama.num_parallel", 4)),
+        "auto_preload": await config_service.get("llm.ollama.auto_preload", True),
+    }
+
+    # État serveur Ollama
+    ollama_url = f"http://{settings.ollama_host}:{settings.ollama_port}"
+    server_status = {"status": "unknown", "loaded_models": []}
+
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            ps_response = await client.get(f"{ollama_url}/api/ps")
+            loaded_models = ps_response.json().get("models", [])
+
+            version_response = await client.get(f"{ollama_url}/api/version")
+            version = version_response.json().get("version", "unknown")
+
+            server_status = {
+                "status": "running",
+                "version": version,
+                "url": ollama_url,
+                "loaded_models": [
+                    {
+                        "name": m["name"],
+                        "size_gb": round(m["size"] / 1e9, 2),
+                        "vram_gb": round(m.get("size_vram", 0) / 1e9, 2),
+                        "using_gpu": m.get("size_vram", 0) > 0
+                    }
+                    for m in loaded_models
+                ]
+            }
+    except Exception as e:
+        server_status = {"status": "error", "error": str(e)}
+
+    return {
+        "config": config,
+        "server": server_status
+    }</code></pre>
+            </div>
+
+            <h3>0.5 UI Admin - Section Configuration Ollama</h3>
+            <p><strong>Fichier :</strong> <code>UI-BACK/js/modules/system/llm.js</code></p>
+            <p>Ajouter dans la section Ollama du provider :</p>
+            <ul>
+                <li>Champs éditables : keep_alive, num_ctx, num_gpu, auto_preload</li>
+                <li>Affichage info : num_parallel (non modifiable, config serveur)</li>
+                <li>Bouton "Précharger les modèles"</li>
+                <li>Statut des modèles chargés en temps réel</li>
+            </ul>
+
+            <h3>Résumé Phase 0</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Action</th>
+                        <th>Fichier</th>
+                        <th>Impact</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Modifier provider Ollama (lire config BDD)</td>
+                        <td><code>app/common/llm/ollama.py</code></td>
+                        <td>keep_alive, num_ctx, num_gpu passés via API</td>
+                    </tr>
+                    <tr>
+                        <td>Endpoints /ollama/config et /ollama/preload</td>
+                        <td><code>app/features/admin/config/router.py</code></td>
+                        <td>Config + préchargement administrables</td>
+                    </tr>
+                    <tr>
+                        <td>Préchargement au startup</td>
+                        <td><code>app/main.py</code></td>
+                        <td>Élimine latence premier appel</td>
+                    </tr>
+                    <tr>
+                        <td>UI Admin section Ollama</td>
+                        <td><code>UI-BACK/js/modules/system/llm.js</code></td>
+                        <td>Configuration éditable + statut</td>
+                    </tr>
+                    <tr>
+                        <td>Clés BDD</td>
+                        <td><code>system_configs</code></td>
+                        <td>llm.ollama.* (5 clés)</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="callout info">
+                <strong>Note sur NUM_PARALLEL :</strong> Ce paramètre est une configuration serveur Ollama.
+                Il doit être défini au démarrage d'Ollama via <code>OLLAMA_NUM_PARALLEL=4 ollama serve</code>
+                ou dans la config systemd/launchd. L'application stocke cette valeur en BDD pour information
+                mais ne peut pas la modifier dynamiquement.
+            </div>
+        </section>
+
+        <!-- Section 3 -->
+        <section id="phase1" class="section">
+            <h2><span class="section-number">3</span> Phase 1 : Quick Wins (Code) <span class="badge badge-success">✓ Implémenté</span></h2>
+
+            <div class="callout success">
+                <strong>Temps estimé :</strong> 1-2 heures | <strong>Impact :</strong> -30-40% TTFT
+            </div>
+
+            <div class="callout info" style="background: #e7f3ff;">
+                <strong>📝 Implémentation :</strong>
+                <ul style="margin: 0.5rem 0 0 0;">
+                    <li><code>app/common/utils/rag_config.py</code> : Cache TTL 30s avec <code>get_by_prefix()</code> pour bulk loading (1 requête SQL au lieu de 12+)</li>
+                    <li><code>app/common/llm/ollama.py</code> : Cache embeddings augmenté de 100 à 1000 entrées</li>
+                    <li><code>app/features/system/service.py</code> : Nouvelle méthode <code>get_by_prefix()</code></li>
+                </ul>
+            </div>
+
+            <h3>1.1 Cache RAG Config avec TTL</h3>
+            <p><strong>Fichier :</strong> <code>app/common/utils/rag_config.py</code></p>
+
+            <div class="code-block">
+<pre><code># Ajouter au début du fichier
+import time
+from typing import Tuple
+
+from app.core.config import settings
+
+# Cache module-level
+_rag_config_cache: Tuple[Optional[RAGConfig], float, float] = (None, 0, 0)  # (config, time, ttl)
+
+async def get_rag_config(db: Optional[AsyncSession] = None) -> RAGConfig:
+    """
+    Récupère la config RAG avec cache TTL.
+    ⚠️ Le TTL est lui-même configurable en BDD (perf.rag_config_cache_ttl).
+    """
+    global _rag_config_cache
+
+    now = time.time()
+    cached_config, cached_time, cached_ttl = _rag_config_cache
+
+    # Retourner le cache si valide (TTL non expiré)
+    if cached_config and cached_ttl > 0 and (now - cached_time) < cached_ttl:
+        logger.debug("RAG config from cache")
+        return cached_config
+
+    if db is None:
+        return RAGConfig()  # Valeurs par défaut de settings
+
+    # Charger depuis DB avec le TTL configurable
+    from app.features.system.service import SystemConfigService
+    config_service = SystemConfigService(db)
+
+    # Le TTL du cache est lui-même en BDD !
+    cache_ttl = float(await config_service.get(
+        "perf.rag_config_cache_ttl",
+        settings.default_rag_config_cache_ttl  # 30.0 par défaut
+    ))
+
+    config = RAGConfig(...)  # Charger les autres valeurs depuis DB
+    _rag_config_cache = (config, now, cache_ttl)
+    return config
+
+
+def invalidate_rag_config_cache():
+    """Invalide le cache - appelé après modification admin."""
+    global _rag_config_cache
+    _rag_config_cache = (None, 0, 0)</code></pre>
+            </div>
+
+            <p><strong>Impact :</strong> -50-100ms par requête chat (12 requêtes DB → 0)</p>
+
+            <h3>1.2 Augmenter Cache Embedding (LRU)</h3>
+            <p><strong>Fichier :</strong> <code>app/common/llm/ollama.py</code></p>
+
+            <div class="code-block">
+<pre><code># __init__ du provider Ollama
+async def _init_cache_size(self, db: AsyncSession):
+    """Charge la taille du cache depuis la BDD."""
+    from app.features.system.service import SystemConfigService
+    config_service = SystemConfigService(db)
+
+    # Taille configurable en BDD : perf.embedding_cache_size
+    self._cache_max_size = int(await config_service.get(
+        "perf.embedding_cache_size",
+        settings.default_embedding_cache_size  # 1000 par défaut
+    ))
+
+    # Ajouter métriques pour monitoring
+    self._cache_hits = 0
+    self._cache_misses = 0
+
+# ⚠️ Clé BDD à créer : perf.embedding_cache_size (int, default: 1000)</code></pre>
+            </div>
+
+            <p><strong>Impact :</strong> -15-20% latence pour requêtes répétées</p>
+
+            <h3>1.3 Bulk Loading System Config</h3>
+            <p><strong>Fichier :</strong> <code>app/features/system/service.py</code></p>
+
+            <div class="code-block">
+<pre><code>async def get_by_prefix(self, prefix: str) -> Dict[str, Any]:
+    """Charge toutes les configs d'un préfixe en UNE requête SQL."""
+    from app.models import SystemConfig
+
+    result = await self.session.execute(
+        select(SystemConfig).where(SystemConfig.key.like(f"{prefix}%"))
+    )
+    return {
+        row.key: self._convert_value(row.value, row.value_type)
+        for row in result.scalars()
+    }</code></pre>
+            </div>
+
+            <p><strong>Impact :</strong> 12 requêtes → 1 requête</p>
+
+            <h3>1.4 Température Basse pour RAG</h3>
+            <p><strong>Fichier :</strong> <code>app/common/utils/rag_config.py</code></p>
+
+            <div class="code-block">
+<pre><code># Valeur par défaut recommandée pour RAG : 0.0-0.3
+# Limite la variabilité et la longueur des réponses
+temperature: float = 0.2  # Au lieu de 0.7</code></pre>
+            </div>
+
+            <p><strong>Raison :</strong> En RAG, on veut des réponses factuelles basées sur le contexte, pas de créativité.</p>
+        </section>
+
+        <!-- Section 4 -->
+        <section id="phase2" class="section">
+            <h2><span class="section-number">4</span> Phase 2 : Parallélisation <span class="badge badge-success">✓ Implémenté</span></h2>
+
+            <div class="callout success">
+                <strong>Impact estimé :</strong> -40-60% temps d'indexation
+            </div>
+
+            <div class="callout info" style="background: #e7f3ff;">
+                <strong>📝 Implémentation :</strong>
+                <ul style="margin: 0.5rem 0 0 0;">
+                    <li><code>app/ingest_v2.py</code> : <code>generate_embeddings()</code> avec <code>asyncio.Semaphore</code> pour limiter la concurrence (max 3 batches)</li>
+                    <li><code>app/ingest_v2.py</code> : <code>parse_document_async()</code> avec <code>asyncio.to_thread()</code> pour parsing non-bloquant</li>
+                    <li><code>app/ingest_v2.py</code> : Insertion ChromaDB en batches parallèles via <code>asyncio.gather()</code></li>
+                </ul>
+            </div>
+
+            <h3>2.1 Embedding Parallèle avec Semaphore</h3>
+            <p><strong>Fichier :</strong> <code>app/ingest_v2.py</code></p>
+
+            <div class="code-block">
+<pre><code>async def generate_embeddings(
+    self,
+    texts: List[str],
+    db: AsyncSession,  # Session pour accès config BDD
+    progress_callback: Optional[Callable] = None,
+    model: Optional[str] = None
+) -> List[List[float]]:
+    """
+    Génère les embeddings en parallèle avec semaphore.
+    ⚠️ Tous les paramètres proviennent de la BDD.
+    """
+    from app.features.system.service import SystemConfigService
+    config_service = SystemConfigService(db)
+
+    # Paramètres depuis la BDD
+    batch_size = int(await config_service.get(
+        "perf.embedding_batch_size", settings.default_embedding_batch_size  # 100
+    ))
+    max_concurrent = int(await config_service.get(
+        "perf.embedding_max_concurrent", settings.default_embedding_max_concurrent  # 3
+    ))
+
+    semaphore = asyncio.Semaphore(max_concurrent)
+
+    async def process_batch(batch_idx: int, batch: List[str]):
+        async with semaphore:
+            embeddings = await self._embed_batch(batch, model)
+            return batch_idx, embeddings
+
+    batches = [texts[i:i + batch_size] for i in range(0, len(texts), batch_size)]
+    tasks = [process_batch(idx, batch) for idx, batch in enumerate(batches)]
+
+    results = await asyncio.gather(*tasks)
+    results.sort(key=lambda x: x[0])
+
+    return [emb for _, embeddings in results for emb in embeddings]
+
+# ⚠️ Clés BDD à créer :
+#   - perf.embedding_batch_size (int, default: 100)
+#   - perf.embedding_max_concurrent (int, default: 3)</code></pre>
+            </div>
+
+            <p><strong>Impact :</strong> 2-3x plus rapide pour gros documents (1000+ chunks)</p>
+
+            <h3>2.2 Parsing Document Non-Bloquant</h3>
+            <p><strong>Fichier :</strong> <code>app/ingest_v2.py</code></p>
+
+            <div class="code-block">
+<pre><code>@staticmethod
+async def parse_document_async(file_path: str, strategy: str = "auto"):
+    """Parsing via thread pool pour ne pas bloquer l'event loop."""
+    return await asyncio.to_thread(
+        DocumentParser.parse_document,
+        file_path,
+        strategy
+    )</code></pre>
+            </div>
+
+            <h3>2.3 ChromaDB Insertion Parallèle</h3>
+            <p><strong>Fichier :</strong> <code>app/ingest_v2.py</code></p>
+
+            <div class="code-block">
+<pre><code>async def _add_to_chroma_batch(collection, ids, embeddings, documents, metadatas):
+    """Insertion ChromaDB non-bloquante via thread pool."""
+    return await asyncio.to_thread(
+        collection.add,
+        ids=ids, embeddings=embeddings,
+        documents=documents, metadatas=metadatas
+    )
+
+# Remplacer la boucle séquentielle par:
+BATCH_SIZE = 256  # Augmenté de 100 à 256 (recommandé PDF)
+tasks = [
+    _add_to_chroma_batch(collection, ids[i:i+BATCH_SIZE], ...)
+    for i in range(0, len(ids), BATCH_SIZE)
+]
+await asyncio.gather(*tasks)</code></pre>
+            </div>
+        </section>
+
+        <!-- Section 5 -->
+        <section id="phase3" class="section">
+            <h2><span class="section-number">5</span> Phase 3 : Cache Avancé <span class="badge badge-success">✓ Implémenté</span></h2>
+
+            <div class="callout success">
+                <strong>Impact estimé :</strong> -50-200ms par requête
+            </div>
+
+            <div class="callout info" style="background: #e7f3ff;">
+                <strong>📝 Implémentation :</strong>
+                <ul style="margin: 0.5rem 0 0 0;">
+                    <li><code>app/common/utils/query_cache.py</code> (nouveau) : Cache LRU+TTL pour résultats ChromaDB</li>
+                    <li>Clé de cache inclut : query, corpus_id, provider, top_k</li>
+                    <li>Méthode <code>reload_config()</code> pour recharger depuis BDD</li>
+                    <li>Stats : hits, misses, hit_rate</li>
+                </ul>
+            </div>
+
+            <h3>3.1 Cache Résultats Retrieval (LRU + TTL)</h3>
+            <p><strong>Nouveau fichier :</strong> <code>app/common/utils/query_cache.py</code></p>
+
+            <div class="code-block">
+<pre><code>"""Cache LRU avec TTL pour résultats de recherche ChromaDB."""
+import hashlib
+import time
+from dataclasses import dataclass
+from typing import Any, Dict, Optional
+
+from app.core.config import settings
+
+@dataclass
+class CacheEntry:
+    value: Any
+    timestamp: float
+
+class QueryResultCache:
+    """
+    Cache query → chunk_ids pour les requêtes fréquentes.
+    LRU = supprime les moins récemment utilisés quand plein.
+    TTL = expire après N secondes (données peuvent changer).
+
+    ⚠️ Les paramètres sont chargés depuis la BDD au démarrage
+    et peuvent être rechargés dynamiquement.
+    """
+    def __init__(self):
+        self._cache: Dict[str, CacheEntry] = {}
+        # Valeurs par défaut depuis settings, surchargées par BDD
+        self._maxsize = settings.default_query_cache_size  # 500
+        self._ttl = settings.default_query_cache_ttl  # 300.0
+
+    async def reload_config(self, db):
+        """Recharge les paramètres depuis la BDD."""
+        from app.features.system.service import SystemConfigService
+        config_service = SystemConfigService(db)
+
+        self._maxsize = int(await config_service.get(
+            "perf.query_cache_size", settings.default_query_cache_size
+        ))
+        self._ttl = float(await config_service.get(
+            "perf.query_cache_ttl", settings.default_query_cache_ttl
+        ))
+
+    def _make_key(self, query: str, corpus_id: str, provider: str) -> str:
+        """
+        Clé de cache inclut corpus_id et provider car :
+        - Même query sur corpus différent → résultats différents
+        - Même corpus mais provider différent → embeddings incompatibles
+        """
+        content = f"{query}:{corpus_id}:{provider}"
+        return hashlib.md5(content.encode()).hexdigest()
+
+    def get(self, query: str, corpus_id: str, provider: str) -> Optional[Any]:
+        key = self._make_key(query, corpus_id, provider)
+        entry = self._cache.get(key)
+        if entry and (time.time() - entry.timestamp) < self._ttl:
+            return entry.value
+        return None
+
+    def set(self, query: str, corpus_id: str, provider: str, value: Any):
+        key = self._make_key(query, corpus_id, provider)
+        if len(self._cache) >= self._maxsize:
+            oldest = min(self._cache.items(), key=lambda x: x[1].timestamp)
+            del self._cache[oldest[0]]
+        self._cache[key] = CacheEntry(value=value, timestamp=time.time())
+
+# Singleton global
+query_cache = QueryResultCache()
+
+# ⚠️ Clés BDD à créer :
+#   - perf.query_cache_size (int, default: 500)
+#   - perf.query_cache_ttl (float, default: 300.0)</code></pre>
+            </div>
+
+            <h3>3.2 Cache Docs "Pinned" (Top N chunks)</h3>
+            <p><strong>Concept :</strong> Garder en mémoire les chunks les plus fréquemment utilisés.</p>
+
+            <div class="code-block">
+<pre><code>class PinnedDocsCache:
+    """
+    Cache des chunks les plus utilisés (FAQ, docs importants).
+    IMPORTANT : Un cache par provider (embeddings incompatibles).
+
+    ⚠️ Paramètres configurables en BDD.
+    """
+
+    def __init__(self):
+        # Cache séparé par provider : {provider: {chunk_id: (text, embedding)}}
+        self._pinned: Dict[str, Dict[str, Tuple[str, List[float]]]] = {
+            "ollama": {},
+            "llamacpp": {}
+        }
+        self._access_count: Dict[str, int] = {}
+        # Valeurs par défaut, surchargées par BDD
+        self._max_pinned = settings.default_pinned_cache_size  # 100
+        self._pin_threshold = settings.default_pin_access_threshold  # 5
+
+    async def reload_config(self, db):
+        """Recharge les paramètres depuis la BDD."""
+        from app.features.system.service import SystemConfigService
+        config_service = SystemConfigService(db)
+
+        self._max_pinned = int(await config_service.get(
+            "perf.pinned_cache_size", settings.default_pinned_cache_size
+        ))
+        self._pin_threshold = int(await config_service.get(
+            "perf.pin_access_threshold", settings.default_pin_access_threshold
+        ))
+
+    def record_access(self, chunk_id: str, text: str, embedding: List[float], provider: str):
+        """Enregistre un accès et pin si fréquent."""
+        self._access_count[chunk_id] = self._access_count.get(chunk_id, 0) + 1
+
+        provider_cache = self._pinned.get(provider, {})
+        if self._access_count[chunk_id] > self._pin_threshold and chunk_id not in provider_cache:
+            if len(provider_cache) >= self._max_pinned:
+                least = min(provider_cache.keys(), key=lambda k: self._access_count.get(k, 0))
+                del provider_cache[least]
+            provider_cache[chunk_id] = (text, embedding)
+
+    def get_pinned(self, chunk_id: str, provider: str) -> Optional[Tuple[str, List[float]]]:
+        return self._pinned.get(provider, {}).get(chunk_id)
+
+# ⚠️ Clés BDD à créer :
+#   - perf.pinned_cache_size (int, default: 100)
+#   - perf.pin_access_threshold (int, default: 5)</code></pre>
+            </div>
+
+            <h3>3.3 Chargement Parallèle Contexte + Historique</h3>
+            <p><strong>Fichier :</strong> <code>app/features/chat/service.py</code></p>
+
+            <div class="code-block">
+<pre><code># Paralléliser les opérations indépendantes
+context_task = asyncio.create_task(
+    _search_with_corpus_fallback(query, collection_name, ...)
+)
+history_task = asyncio.create_task(
+    _get_conversation_history(conversation_id, ...)
+)
+
+# Attendre les deux en parallèle
+context_result, history_result = await asyncio.gather(
+    context_task, history_task
+)</code></pre>
+            </div>
+
+            <p><strong>Impact :</strong> -30-50ms (parallèle au lieu de séquentiel)</p>
+        </section>
+
+        <!-- Section 6 -->
+        <section id="phase4" class="section">
+            <h2><span class="section-number">6</span> Phase 4 : Observabilité <span class="badge badge-success">✓ Implémenté</span></h2>
+
+            <div class="callout info">
+                <strong>Objectif :</strong> Mesurer pour optimiser. "You can't improve what you don't measure."
+            </div>
+
+            <div class="callout info" style="background: #e7f3ff;">
+                <strong>📝 Implémentation :</strong>
+                <ul style="margin: 0.5rem 0 0 0;">
+                    <li><code>app/common/utils/timing_stats.py</code> : Ajout de <code>p50_ms</code> (médiane) au <code>MetricStats</code> existant</li>
+                    <li>Dashboard admin utilise déjà <code>timing_stats.get_summary()</code></li>
+                    <li>P50 et P95 calculés sur fenêtre glissante de 1000 échantillons</li>
+                </ul>
+            </div>
+
+            <h3>4.1 Logs Structurés par Étape</h3>
+            <p><strong>Fichier :</strong> <code>app/features/chat/service.py</code></p>
+
+            <div class="code-block">
+<pre><code>import uuid
+import time
+
+async def chat_stream(...):
+    request_id = str(uuid.uuid4())[:8]
+    timings = {}
+
+    # Retrieval
+    t0 = time.perf_counter()
+    context = await search_context(...)
+    timings["t_retrieval_ms"] = int((time.perf_counter() - t0) * 1000)
+
+    # Rerank (si activé)
+    t0 = time.perf_counter()
+    context = await rerank(context, query)
+    timings["t_rerank_ms"] = int((time.perf_counter() - t0) * 1000)
+
+    # LLM - premier token
+    t0 = time.perf_counter()
+    first_token_received = False
+    async for chunk in llm.generate_stream(...):
+        if not first_token_received:
+            timings["t_llm_first_token_ms"] = int((time.perf_counter() - t0) * 1000)
+            first_token_received = True
+        yield chunk
+
+    timings["t_llm_total_ms"] = int((time.perf_counter() - t0) * 1000)
+
+    # Log final structuré
+    logger.info(
+        f"[{request_id}] "
+        f"retrieval={timings['t_retrieval_ms']}ms "
+        f"rerank={timings.get('t_rerank_ms', 0)}ms "
+        f"llm_first={timings['t_llm_first_token_ms']}ms "
+        f"llm_total={timings['t_llm_total_ms']}ms "
+        f"prompt_tokens={prompt_tokens} completion_tokens={completion_tokens}"
+    )</code></pre>
+            </div>
+
+            <h3>4.2 Métriques P50/P95</h3>
+            <p><strong>Nouveau fichier :</strong> <code>app/common/utils/metrics.py</code></p>
+
+            <div class="code-block">
+<pre><code>"""Calcul de percentiles pour monitoring performances."""
+import statistics
+from collections import deque
+from typing import Dict, List
+
+class LatencyMetrics:
+    """
+    Collecte les latences et calcule P50/P95.
+    P50 = médiane (50% des requêtes plus rapides)
+    P95 = 95% des requêtes plus rapides (capture les outliers)
+    """
+    def __init__(self, window_size: int = 1000):
+        self._windows: Dict[str, deque] = {}
+        self._window_size = window_size
+
+    def record(self, metric_name: str, value_ms: float):
+        if metric_name not in self._windows:
+            self._windows[metric_name] = deque(maxlen=self._window_size)
+        self._windows[metric_name].append(value_ms)
+
+    def get_percentiles(self, metric_name: str) -> Dict[str, float]:
+        values = list(self._windows.get(metric_name, []))
+        if len(values) < 10:
+            return {"p50": 0, "p95": 0, "count": len(values)}
+
+        sorted_values = sorted(values)
+        p50_idx = int(len(sorted_values) * 0.50)
+        p95_idx = int(len(sorted_values) * 0.95)
+
+        return {
+            "p50": sorted_values[p50_idx],
+            "p95": sorted_values[p95_idx],
+            "count": len(values),
+            "mean": statistics.mean(values)
+        }
+
+    def get_summary(self) -> Dict[str, Dict]:
+        return {name: self.get_percentiles(name) for name in self._windows}
+
+# Singleton global
+latency_metrics = LatencyMetrics()</code></pre>
+            </div>
+
+            <h3>4.3 Endpoint Métriques Admin</h3>
+            <p><strong>Fichier :</strong> <code>app/features/admin/router.py</code></p>
+
+            <div class="code-block">
+<pre><code>@router.get("/metrics/latency")
+async def get_latency_metrics(admin: User = Depends(get_current_admin_user)):
+    """Retourne les métriques P50/P95 par étape."""
+    from app.common.utils.timing_stats import timing_stats
+    return timing_stats.get_summary()</code></pre>
+            </div>
+
+            <p><em>Note : L'endpoint <code>/admin/dashboard/timing</code> utilise déjà <code>timing_stats</code>.</em></p>
+        </section>
+
+        <!-- Section 7 -->
+        <section id="phase5" class="section">
+            <h2><span class="section-number">7</span> Phase 5 : Qualité RAG <span class="badge badge-success">✓ Implémenté</span></h2>
+
+            <div class="callout info" style="background: #e7f3ff;">
+                <strong>📝 Implémentation :</strong>
+                <ul style="margin: 0.5rem 0 0 0;">
+                    <li><code>app/common/utils/rerank.py</code> (nouveau) : Reranker léger combinant embedding (70%) + overlap mots-clés (30%)</li>
+                    <li><code>app/common/utils/rag_config.py</code> : <code>RAGMode</code> et <code>get_rag_mode()</code> pour modes "fast" / "full"</li>
+                    <li>Paramètres HNSW ajoutés à la création de collections (M=16, construction_ef=100, search_ef=50)</li>
+                    <li>Fichiers modifiés : <code>chroma.py</code>, <code>ingest_v2.py</code>, <code>indexer.py</code>, <code>collections/service.py</code></li>
+                </ul>
+            </div>
+
+            <div class="callout warning">
+                <strong>Trade-off :</strong> Qualité vs Latence. Ces optimisations améliorent la pertinence au prix d'un peu de latence.
+            </div>
+
+            <h3>5.1 Rerank avec Cross-Encoder</h3>
+            <p><strong>Concept :</strong> Après retrieval (top 20), re-scorer avec un modèle plus précis pour garder les 5-8 meilleurs.</p>
+
+            <p><strong>Nouveau fichier :</strong> <code>app/common/utils/rerank.py</code></p>
+
+            <div class="code-block">
+<pre><code>"""
+Reranking avec cross-encoder léger.
+Cross-encoder : prend (query, document) ensemble → score de pertinence.
+Plus précis qu'un bi-encoder (embedding séparé) mais plus lent.
+"""
+from typing import List, Tuple
+import httpx
+
+class LightweightReranker:
+    """
+    Rerank léger via Ollama ou modèle dédié.
+    Appliqué sur top 20 → garde top 5-8.
+    Latence cible : < 100ms (sinon désactiver).
+
+    IMPORTANT - Respect du corpus :
+    - Les chunks de corpus DIFFÉRENTS doivent être conservés même si similaires
+      (contextes potentiellement différents)
+    - La déduplication ne s'applique qu'au sein du MÊME corpus
+    """
+
+    def __init__(self, model: str = "nomic-embed-text:latest"):
+        self._model = model
+        self._enabled = True
+        self._timeout = 100  # ms max
+
+    async def rerank(
+        self,
+        query: str,
+        documents: List[Tuple[str, float, dict]],  # (text, score, metadata)
+        top_k: int = 5
+    ) -> List[Tuple[str, float, dict]]:
+        """
+        Re-score les documents et retourne les top_k meilleurs.
+        Metadata doit contenir : corpus_id, document_id, source_id
+        """
+        if not self._enabled or len(documents) <= top_k:
+            return documents[:top_k]
+
+        query_words = set(query.lower().split())
+        scored = []
+
+        for text, original_score, metadata in documents:
+            doc_words = set(text.lower().split()[:100])
+            overlap = len(query_words & doc_words) / max(len(query_words), 1)
+            combined_score = original_score * 0.7 + overlap * 0.3
+            scored.append((text, combined_score, metadata))
+
+        scored.sort(key=lambda x: x[1], reverse=True)
+        return scored[:top_k]
+
+reranker = LightweightReranker()</code></pre>
+            </div>
+
+            <h3>5.2 Compactage de Tokens (Plan Dédié)</h3>
+
+            <div class="callout info">
+                <strong>Voir :</strong> <a href="PLAN-TOKEN-COMPACTION.html">PLAN-TOKEN-COMPACTION.html</a> pour le plan complet.
+            </div>
+
+            <p><strong>Objectif :</strong> Réduire la redondance entre chunks pour envoyer plus d'info au LLM sans saturer le contexte.</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Approche</th>
+                        <th>Description</th>
+                        <th>Résultat</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Déduplication sémantique</strong></td>
+                        <td>Éliminer chunks avec similarité &gt; 85%</td>
+                        <td>15 chunks → 10 uniques</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Extraction phrases clés</strong></td>
+                        <td>Garder 3-5 phrases les plus pertinentes par chunk</td>
+                        <td>-50% tokens par chunk</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <p><strong>Limites recommandées (PDF) :</strong></p>
+            <ul>
+                <li>Contexte RAG : <strong>2000-2500 tokens</strong> max</li>
+                <li>Prompt complet : <strong>3000-3500 tokens</strong> max</li>
+                <li>1 token ≈ 4 caractères (français)</li>
+            </ul>
+
+            <p><strong>Fichier à créer :</strong> <code>app/common/rag/compactor.py</code> (voir plan dédié)</p>
+
+            <h3>5.3 Paramètres HNSW ChromaDB</h3>
+            <p><strong>Fichier :</strong> <code>app/core/deps.py</code> ou à la création de collection</p>
+
+            <div class="code-block">
+<pre><code>"""
+HNSW = Hierarchical Navigable Small World
+Algorithme ANN (Approximate Nearest Neighbors) utilisé par ChromaDB.
+
+Paramètres à tuner :
+- M : nombre de connexions par noeud (16-32)
+- ef_construction : qualité de l'index à la construction (100-200)
+- ef_search : qualité de la recherche (32-64)
+
+Plus élevé = plus précis mais plus lent.
+"""
+
+# Lors de la création de collection
+collection = chroma_client.get_or_create_collection(
+    name=collection_name,
+    metadata={
+        "hnsw:M": 16,                # Connexions par noeud
+        "hnsw:construction_ef": 100,  # Qualité construction
+        "hnsw:search_ef": 50          # Qualité recherche (équilibre)
+    }
+)</code></pre>
+            </div>
+
+            <h3>5.4 Mode "Fast" vs "Full"</h3>
+            <p><strong>Concept :</strong> Offrir deux modes selon le besoin utilisateur.</p>
+
+            <div class="code-block">
+<pre><code>"""
+Mode FAST (latence prioritaire) vs Mode FULL (qualité prioritaire)
+
+⚠️ Tous les paramètres des modes sont configurables en BDD.
+Les modes sont stockés sous forme de préfixes : rag.mode.fast.*, rag.mode.full.*
+"""
+
+@dataclass
+class RAGMode:
+    name: str
+    top_k: int
+    rerank_enabled: bool
+    max_context_tokens: int
+    temperature: float
+
+async def get_rag_mode(mode_name: str, db: AsyncSession) -> RAGMode:
+    """
+    Charge un mode RAG depuis la BDD.
+    ⚠️ Aucune valeur hardcodée - tout vient de system_configs.
+    """
+    from app.features.system.service import SystemConfigService
+    config_service = SystemConfigService(db)
+
+    prefix = f"rag.mode.{mode_name}"
+
+    return RAGMode(
+        name=mode_name,
+        top_k=int(await config_service.get(f"{prefix}.top_k", 5)),
+        rerank_enabled=(await config_service.get(f"{prefix}.rerank_enabled", False)) in (True, "true", 1),
+        max_context_tokens=int(await config_service.get(f"{prefix}.max_context_tokens", 1500)),
+        temperature=float(await config_service.get(f"{prefix}.temperature", 0.2)),
+    )
+
+# Usage dans l'endpoint
+@router.post("/chat/stream")
+async def chat_stream(
+    request: ChatRequest,
+    mode: str = "full",
+    db: AsyncSession = Depends(get_db)
+):
+    rag_mode = await get_rag_mode(mode, db)
+    ...
+
+# ⚠️ Clés BDD à créer pour chaque mode :
+#   - rag.mode.fast.top_k (int, default: 5)
+#   - rag.mode.fast.rerank_enabled (bool, default: false)
+#   - rag.mode.fast.max_context_tokens (int, default: 1000)
+#   - rag.mode.fast.temperature (float, default: 0.1)
+#   - rag.mode.full.top_k (int, default: 10)
+#   - rag.mode.full.rerank_enabled (bool, default: true)
+#   - rag.mode.full.max_context_tokens (int, default: 2500)
+#   - rag.mode.full.temperature (float, default: 0.3)</code></pre>
+            </div>
+        </section>
+
+        <!-- Section 8 -->
+        <section id="phase6" class="section">
+            <h2><span class="section-number">8</span> Phase 6 : Futures Optimisations <span class="badge badge-secondary">Non implémenté</span></h2>
+
+            <div class="callout secondary">
+                <strong>À implémenter si nécessaire :</strong> Scaling et infrastructure avancée.
+                <br><em>Ces optimisations ne sont pas prioritaires pour le moment.</em>
+            </div>
+
+            <h3>6.1 Redis Cache (multi-workers)</h3>
+            <ul>
+                <li>Cache embeddings partagé entre workers</li>
+                <li>Cache retrieval distribué</li>
+                <li><strong>Prérequis :</strong> Ajouter Redis au docker-compose</li>
+            </ul>
+
+            <h3>6.2 Hybrid Search Dense + BM25</h3>
+            <p><strong>Concept :</strong> Combiner recherche vectorielle (dense) et recherche textuelle (BM25) avec fusion RRF.</p>
+
+            <div class="code-block">
+<pre><code>"""
+BM25 = algorithme de scoring textuel classique (TF-IDF amélioré).
+Dense = recherche par embeddings vectoriels.
+RRF = Reciprocal Rank Fusion (fusion des rankings).
+
+Formule RRF : score = Σ 1/(k + rank_i) pour chaque système.
+"""
+
+def rrf_fusion(dense_results, bm25_results, k=60):
+    """Fusionne les résultats de deux systèmes avec RRF."""
+    scores = {}
+
+    for rank, (doc_id, _) in enumerate(dense_results):
+        scores[doc_id] = scores.get(doc_id, 0) + 1 / (k + rank + 1)
+
+    for rank, (doc_id, _) in enumerate(bm25_results):
+        scores[doc_id] = scores.get(doc_id, 0) + 1 / (k + rank + 1)
+
+    # Trier par score RRF décroissant
+    return sorted(scores.items(), key=lambda x: x[1], reverse=True)</code></pre>
+            </div>
+
+            <h3>6.3 Connection Pool Ollama</h3>
+            <div class="code-block">
+<pre><code># app/common/llm/ollama.py
+limits=httpx.Limits(
+    max_connections=20,           # 10 → 20
+    max_keepalive_connections=10, # 5 → 10
+    keepalive_expiry=30.0         # Keep-alive explicite
+)</code></pre>
+            </div>
+
+            <h3>6.4 Queue Interne GPU</h3>
+            <p><strong>Concept :</strong> Limiter les requêtes simultanées à Ollama pour éviter la saturation.</p>
+
+            <div class="code-block">
+<pre><code>class OllamaQueue:
+    """Queue pour limiter la concurrence sur le GPU."""
+    def __init__(self, max_concurrent: int = 2):
+        self._semaphore = asyncio.Semaphore(max_concurrent)
+
+    async def generate(self, prompt: str, ...):
+        async with self._semaphore:
+            return await self._provider.generate(prompt, ...)</code></pre>
+            </div>
+        </section>
+
+        <!-- Section 9 -->
+        <section id="implementation" class="section">
+            <h2><span class="section-number">9</span> Ordre d'Implémentation</h2>
+
+            <div class="pipeline">
+Phase 0 (Config Ollama)      ← 5 min, AUCUN CODE, effet immédiat
+    │
+    ├── 0.1 OLLAMA_NUM_PARALLEL=4
+    ├── 0.2 OLLAMA_KEEP_ALIVE="24h"
+    ├── 0.3 Script préchargement modèles
+    └── 0.4 Endpoint Admin config Ollama
+    │
+Phase 1 (Quick Wins Code)    ← 1-2h, impact immédiat, risque faible
+    │
+    ├── 1.1 Cache RAG Config TTL
+    ├── 1.2 Cache embedding 1000
+    ├── 1.3 Bulk config loading
+    └── 1.4 Température basse RAG
+    │
+Phase 2 (Parallélisation)    ← Impact indexation
+    │
+    ├── 2.1 Embedding parallèle
+    ├── 2.2 Parsing async
+    └── 2.3 ChromaDB parallèle
+    │
+Phase 3 (Cache Avancé)       ← Impact requêtes répétées
+    │
+    ├── 3.1 Query cache LRU+TTL
+    ├── 3.2 Docs pinned
+    └── 3.3 Context//History parallèle
+    │
+Phase 4 (Observabilité)      ← Mesurer pour améliorer
+    │
+    ├── 4.1 Logs structurés
+    ├── 4.2 Métriques P50/P95
+    └── 4.3 Endpoint admin
+    │
+Phase 5 (Qualité RAG)        ← Trade-off latence/qualité
+    │
+    ├── 5.1 Rerank cross-encoder
+    ├── 5.2 Limite tokens contexte
+    ├── 5.3 Params HNSW
+    └── 5.4 Mode fast/full
+            </div>
+
+            <h3>Fichiers à Modifier</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Phase</th>
+                        <th>Fichier</th>
+                        <th>Modification</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>0.1-0.2</td>
+                        <td><code>app/common/llm/ollama.py</code></td>
+                        <td>Lire config BDD, passer options dans requêtes</td>
+                    </tr>
+                    <tr>
+                        <td>0.3</td>
+                        <td><code>app/features/admin/config/router.py</code></td>
+                        <td>Endpoints /ollama/config et /ollama/preload</td>
+                    </tr>
+                    <tr>
+                        <td>0.3</td>
+                        <td><code>app/main.py</code></td>
+                        <td>Préchargement au startup si auto_preload=true</td>
+                    </tr>
+                    <tr>
+                        <td>0.5</td>
+                        <td><code>UI-BACK/js/modules/system/llm.js</code></td>
+                        <td>Section config Ollama éditable</td>
+                    </tr>
+                    <tr>
+                        <td>1.1</td>
+                        <td><code>app/common/utils/rag_config.py</code></td>
+                        <td>Cache TTL 30s</td>
+                    </tr>
+                    <tr>
+                        <td>1.2</td>
+                        <td><code>app/common/llm/ollama.py</code></td>
+                        <td><code>_cache_max_size = 1000</code></td>
+                    </tr>
+                    <tr>
+                        <td>1.3</td>
+                        <td><code>app/features/system/service.py</code></td>
+                        <td><code>get_by_prefix()</code></td>
+                    </tr>
+                    <tr>
+                        <td>2.1-2.3</td>
+                        <td><code>app/ingest_v2.py</code></td>
+                        <td>Parallélisation avec semaphore</td>
+                    </tr>
+                    <tr>
+                        <td>3.1</td>
+                        <td><code>app/common/utils/query_cache.py</code></td>
+                        <td>Nouveau fichier</td>
+                    </tr>
+                    <tr>
+                        <td>4.1-4.2</td>
+                        <td><code>app/common/utils/metrics.py</code></td>
+                        <td>Nouveau fichier</td>
+                    </tr>
+                    <tr>
+                        <td>4.1</td>
+                        <td><code>app/features/chat/service.py</code></td>
+                        <td>Logs structurés avec request_id</td>
+                    </tr>
+                    <tr>
+                        <td>5.1</td>
+                        <td><code>app/common/utils/rerank.py</code></td>
+                        <td>Nouveau fichier</td>
+                    </tr>
+                    <tr>
+                        <td>5.2</td>
+                        <td><code>app/common/rag/compactor.py</code></td>
+                        <td>Voir <a href="PLAN-TOKEN-COMPACTION.html">plan dédié</a></td>
+                    </tr>
+                    <tr>
+                        <td>5.3</td>
+                        <td><code>app/core/deps.py</code></td>
+                        <td>Params HNSW à la création collection</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Section 10 -->
+        <section id="verification" class="section">
+            <h2><span class="section-number">10</span> Vérification</h2>
+
+            <h3>Test Cache RAG Config</h3>
+            <div class="code-block">
+<pre><code>docker-compose exec app python -c "
+import asyncio, time
+from app.common.utils.rag_config import get_rag_config
+
+async def test():
+    from app.core.deps import get_db
+    async for db in get_db():
+        t0 = time.time()
+        c1 = await get_rag_config(db)
+        t1 = time.time()
+        c2 = await get_rag_config(db)  # Cache hit
+        t2 = time.time()
+        print(f'1er appel: {(t1-t0)*1000:.1f}ms')
+        print(f'2e appel (cache): {(t2-t1)*1000:.1f}ms')
+        break
+asyncio.run(test())
+"</code></pre>
+            </div>
+
+            <h3>Vérifier Métriques P50/P95</h3>
+            <div class="code-block">
+<pre><code># Après quelques requêtes
+curl -s http://localhost:8080/admin/metrics/latency \
+  -H "Authorization: Bearer $TOKEN" | jq</code></pre>
+            </div>
+
+            <h3>Vérifier Logs Structurés</h3>
+            <div class="code-block">
+<pre><code>docker-compose logs app | grep -E "\[.{8}\].*retrieval=.*llm_first="</code></pre>
+            </div>
+
+            <h3>Benchmark Indexation</h3>
+            <div class="code-block">
+<pre><code># Avant/après parallélisation
+time docker-compose exec app python -c "
+from app.ingest_v2 import AdvancedIngestionPipeline
+# Test avec document de 1000+ chunks
+"</code></pre>
+            </div>
+        </section>
+
+        <!-- Section 11 -->
+        <section id="impact" class="section">
+            <h2><span class="section-number">11</span> Impact Estimé</h2>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Métrique</th>
+                        <th>Actuel</th>
+                        <th>Phase 0</th>
+                        <th>Phase 0-2</th>
+                        <th>Phase 0-5</th>
+                        <th>Cible</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Throughput multi-users</strong></td>
+                        <td>13 t/s</td>
+                        <td><strong>25 t/s</strong></td>
+                        <td>25 t/s</td>
+                        <td>25 t/s</td>
+                        <td>+90% ✓</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Latence switch modèle</strong></td>
+                        <td>2-5s</td>
+                        <td><strong>0ms</strong></td>
+                        <td>0ms</td>
+                        <td>0ms</td>
+                        <td>Éliminée ✓</td>
+                    </tr>
+                    <tr>
+                        <td><strong>TTFT (P95)</strong></td>
+                        <td>400-600ms</td>
+                        <td>350-500ms</td>
+                        <td>200-350ms</td>
+                        <td>150-300ms</td>
+                        <td>300-800ms ✓</td>
+                    </tr>
+                    <tr>
+                        <td><strong>t_retrieval (P95)</strong></td>
+                        <td>150-250ms</td>
+                        <td>150-250ms</td>
+                        <td>100-180ms</td>
+                        <td>80-150ms</td>
+                        <td>&lt;120-150ms ✓</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Indexation 1000 chunks</strong></td>
+                        <td>60-90s</td>
+                        <td>60-90s</td>
+                        <td>25-40s</td>
+                        <td>20-35s</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Requêtes DB/chat</strong></td>
+                        <td>15-20</td>
+                        <td>15-20</td>
+                        <td>2-3</td>
+                        <td>1-2</td>
+                        <td>Minimal</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Cache hit rate</strong></td>
+                        <td>~10%</td>
+                        <td>~10%</td>
+                        <td>~40%</td>
+                        <td>~60%</td>
+                        <td>Monitorer</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="callout success">
+                <strong>Gains totaux estimés :</strong>
+                <ul>
+                    <li><strong>Phase 0 seule</strong> : +90% throughput, 0 latence switch modèle (5 min de travail)</li>
+                    <li><strong>TTFT</strong> : -50 à -70%</li>
+                    <li><strong>Indexation</strong> : -50 à -65%</li>
+                    <li><strong>DB overhead</strong> : -90%</li>
+                    <li><strong>Qualité RAG</strong> : +20-30% (avec rerank)</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Notes -->
+        <section class="section">
+            <h2>Notes et Risques</h2>
+
+            <div class="cards">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Phase 1-2</h3>
+                        <span class="badge badge-success">Faible risque</span>
+                    </div>
+                    <div class="card-body">
+                        <p>Modifications isolées, rétrocompatibles. Peuvent être déployées progressivement.</p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Phase 3</h3>
+                        <span class="badge badge-warning">Risque modéré</span>
+                    </div>
+                    <div class="card-body">
+                        <p>Le cache peut servir des données périmées. TTL court (5 min) limite le risque.</p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Phase 5 (Rerank)</h3>
+                        <span class="badge badge-warning">Trade-off</span>
+                    </div>
+                    <div class="card-body">
+                        <p>Ajoute ~50-100ms de latence mais améliore la pertinence. Désactivable via mode "fast".</p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Phase 6</h3>
+                        <span class="badge badge-secondary">Futur</span>
+                    </div>
+                    <div class="card-body">
+                        <p>Redis et BM25 nécessitent des changements d'infrastructure. À évaluer selon les besoins de scaling.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section : Clés BDD -->
+        <section id="db-keys" class="section">
+            <h2><span class="section-number">12</span> Clés <code>system_configs</code> à Créer <span class="badge badge-success">✓ Implémenté</span></h2>
+
+            <div class="callout success" style="background: #d4edda; border-color: #28a745;">
+                <strong>✅ 20 clés ajoutées</strong> via <code>scripts/docker/seed.py</code>
+                <br>Exécuter <code>python scripts/docker/seed.py</code> pour les insérer.
+            </div>
+
+            <div class="callout info">
+                <strong>Rappel :</strong> Toutes ces valeurs doivent être modifiables via l'Admin UI.
+                Aucune valeur hardcodée dans le code.
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Clé</th>
+                        <th>Type</th>
+                        <th>Défaut</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="4"><strong>Configuration Ollama (Phase 0) - Passé via API</strong></td>
+                    </tr>
+                    <tr>
+                        <td><code>llm.ollama.keep_alive</code></td>
+                        <td>string</td>
+                        <td>"24h"</td>
+                        <td>Durée avant déchargement modèle (passé dans chaque requête)</td>
+                    </tr>
+                    <tr>
+                        <td><code>llm.ollama.num_ctx</code></td>
+                        <td>int</td>
+                        <td>4096</td>
+                        <td>Taille contexte en tokens (passé dans options)</td>
+                    </tr>
+                    <tr>
+                        <td><code>llm.ollama.num_gpu</code></td>
+                        <td>int</td>
+                        <td>999</td>
+                        <td>Couches GPU, 999 = toutes (passé dans options)</td>
+                    </tr>
+                    <tr>
+                        <td><code>llm.ollama.auto_preload</code></td>
+                        <td>bool</td>
+                        <td>true</td>
+                        <td>Précharger modèles au démarrage de l'app</td>
+                    </tr>
+                    <tr>
+                        <td><code>llm.ollama.num_parallel</code></td>
+                        <td>int</td>
+                        <td>4</td>
+                        <td>Info seulement (config serveur Ollama, non modifiable via API)</td>
+                    </tr>
+
+                    <tr>
+                        <td colspan="4"><strong>Cache RAG Config</strong></td>
+                    </tr>
+                    <tr>
+                        <td><code>perf.rag_config_cache_ttl</code></td>
+                        <td>float</td>
+                        <td>30.0</td>
+                        <td>TTL du cache de configuration RAG (secondes)</td>
+                    </tr>
+
+                    <tr>
+                        <td colspan="4"><strong>Cache Embeddings</strong></td>
+                    </tr>
+                    <tr>
+                        <td><code>perf.embedding_cache_size</code></td>
+                        <td>int</td>
+                        <td>1000</td>
+                        <td>Taille max du cache LRU pour embeddings</td>
+                    </tr>
+
+                    <tr>
+                        <td colspan="4"><strong>Parallélisation Embedding</strong></td>
+                    </tr>
+                    <tr>
+                        <td><code>perf.embedding_batch_size</code></td>
+                        <td>int</td>
+                        <td>100</td>
+                        <td>Taille des batches pour génération embeddings</td>
+                    </tr>
+                    <tr>
+                        <td><code>perf.embedding_max_concurrent</code></td>
+                        <td>int</td>
+                        <td>3</td>
+                        <td>Nombre max de batches en parallèle</td>
+                    </tr>
+
+                    <tr>
+                        <td colspan="4"><strong>Cache Query Results</strong></td>
+                    </tr>
+                    <tr>
+                        <td><code>perf.query_cache_size</code></td>
+                        <td>int</td>
+                        <td>500</td>
+                        <td>Taille max du cache de résultats de recherche</td>
+                    </tr>
+                    <tr>
+                        <td><code>perf.query_cache_ttl</code></td>
+                        <td>float</td>
+                        <td>300.0</td>
+                        <td>TTL du cache de résultats (secondes)</td>
+                    </tr>
+
+                    <tr>
+                        <td colspan="4"><strong>Cache Pinned Docs</strong></td>
+                    </tr>
+                    <tr>
+                        <td><code>perf.pinned_cache_size</code></td>
+                        <td>int</td>
+                        <td>100</td>
+                        <td>Nombre max de chunks "pinned" en mémoire</td>
+                    </tr>
+                    <tr>
+                        <td><code>perf.pin_access_threshold</code></td>
+                        <td>int</td>
+                        <td>5</td>
+                        <td>Seuil d'accès pour "pin" un chunk</td>
+                    </tr>
+
+                    <tr>
+                        <td colspan="4"><strong>Métriques</strong></td>
+                    </tr>
+                    <tr>
+                        <td><code>perf.metrics_window_size</code></td>
+                        <td>int</td>
+                        <td>1000</td>
+                        <td>Taille de la fenêtre pour calcul P50/P95</td>
+                    </tr>
+
+                    <tr>
+                        <td colspan="4"><strong>Mode RAG : Fast</strong></td>
+                    </tr>
+                    <tr>
+                        <td><code>rag.mode.fast.top_k</code></td>
+                        <td>int</td>
+                        <td>5</td>
+                        <td>Nombre de chunks à récupérer</td>
+                    </tr>
+                    <tr>
+                        <td><code>rag.mode.fast.rerank_enabled</code></td>
+                        <td>bool</td>
+                        <td>false</td>
+                        <td>Activer le reranking</td>
+                    </tr>
+                    <tr>
+                        <td><code>rag.mode.fast.max_context_tokens</code></td>
+                        <td>int</td>
+                        <td>1000</td>
+                        <td>Limite de tokens pour le contexte</td>
+                    </tr>
+                    <tr>
+                        <td><code>rag.mode.fast.temperature</code></td>
+                        <td>float</td>
+                        <td>0.1</td>
+                        <td>Température LLM</td>
+                    </tr>
+
+                    <tr>
+                        <td colspan="4"><strong>Mode RAG : Full</strong></td>
+                    </tr>
+                    <tr>
+                        <td><code>rag.mode.full.top_k</code></td>
+                        <td>int</td>
+                        <td>10</td>
+                        <td>Nombre de chunks à récupérer</td>
+                    </tr>
+                    <tr>
+                        <td><code>rag.mode.full.rerank_enabled</code></td>
+                        <td>bool</td>
+                        <td>true</td>
+                        <td>Activer le reranking</td>
+                    </tr>
+                    <tr>
+                        <td><code>rag.mode.full.max_context_tokens</code></td>
+                        <td>int</td>
+                        <td>2500</td>
+                        <td>Limite de tokens pour le contexte</td>
+                    </tr>
+                    <tr>
+                        <td><code>rag.mode.full.temperature</code></td>
+                        <td>float</td>
+                        <td>0.3</td>
+                        <td>Température LLM</td>
+                    </tr>
+
+                    <tr>
+                        <td colspan="4"><strong>Reranker</strong></td>
+                    </tr>
+                    <tr>
+                        <td><code>perf.rerank_timeout_ms</code></td>
+                        <td>int</td>
+                        <td>100</td>
+                        <td>Timeout max pour le reranking (ms)</td>
+                    </tr>
+                    <tr>
+                        <td><code>perf.rerank_top_k</code></td>
+                        <td>int</td>
+                        <td>5</td>
+                        <td>Nombre de résultats après reranking</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="callout warning">
+                <strong>Script d'initialisation :</strong> Créer un script de migration pour ajouter ces clés avec leurs valeurs par défaut dans <code>system_configs</code>.
+            </div>
+        </section>
+
+        <footer>
+            <p><em>Plan créé le 17 février 2026 — Implémenté le 18 février 2026</em></p>
+            <p><em>Basé sur checklist "prod RAG" Perplexity</em></p>
+        </footer>
+    </div>
+</body>
+</html>

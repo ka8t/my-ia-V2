@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MY-IA &mdash; Plan Compactage Tokens RAG</title>
+  <link rel="stylesheet" href="../assets/doc-style.css">
+  <style>
+    .pipeline { background: var(--bg-code); border-radius: 8px; padding: 1.5rem; margin: 1.5rem 0; font-family: monospace; font-size: 0.9rem; line-height: 1.6; overflow-x: auto; white-space: pre; }
+    .pipeline-title { background: var(--primary); color: white; padding: 0.5rem 1rem; border-radius: 4px 4px 0 0; margin: -1.5rem -1.5rem 1rem -1.5rem; font-weight: bold; }
+    .pipeline-new { border: 2px solid var(--accent); }
+    .pipeline-new .pipeline-title { background: var(--accent); }
+    .comparison-table { width: 100%; }
+    .comparison-table th { background: var(--primary-light); color: white; }
+    .comparison-table .better { background: rgba(46, 204, 113, 0.15); font-weight: bold; }
+    .status-badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 4px; font-weight: bold; font-size: 0.85rem; margin-left: 1rem; }
+    .status-implemented { background: var(--success); color: white; }
+    .status-partial { background: var(--warning); color: white; }
+  </style>
+</head>
+<body>
+
+<!-- ==================== HEADER ==================== -->
+<div class="header">
+  <div class="page">
+    <div class="header-icon">&#x1F4E6;</div>
+    <div>
+      <h1>Compactage de Tokens RAG <span class="status-badge status-implemented">IMPL&Eacute;MENT&Eacute;</span></h1>
+      <div class="subtitle">
+        R&eacute;duire la redondance entre les chunks pour envoyer plus d'information au LLM sans saturer le contexte.
+      </div>
+      <div class="meta">
+        <span>Version 1.1</span>
+        <span>20 f&eacute;vrier 2026</span>
+        <span>10 sections</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+
+<!-- ==================== TABLE OF CONTENTS ==================== -->
+<div class="toc" id="toc">
+  <h2>Table des mati&egrave;res</h2>
+  <div class="toc-grid">
+    <a href="#s1"><span class="toc-num">1</span> Pourquoi ce plan ?</a>
+    <a href="#s2"><span class="toc-num">2</span> Pipeline RAG actuel</a>
+    <a href="#s3"><span class="toc-num">3</span> Pipeline avec compactage</a>
+    <a href="#s4"><span class="toc-num">4</span> Cas d'usage concrets</a>
+    <a href="#s5"><span class="toc-num">5</span> Architecture technique</a>
+    <a href="#s6"><span class="toc-num">6</span> Configuration</a>
+    <a href="#s7"><span class="toc-num">7</span> Phases d'impl&eacute;mentation</a>
+    <a href="#s8"><span class="toc-num">8</span> Corpus &amp; Multi-Providers</a>
+    <a href="#s9"><span class="toc-num">9</span> M&eacute;triques &amp; Risques</a>
+    <a href="#s10"><span class="toc-num">10</span> &Eacute;tat d'impl&eacute;mentation</a>
+  </div>
+</div>
+
+<!-- ==================== SECTION 1 ==================== -->
+<div class="section" id="s1">
+  <div class="section-header">
+    <div class="section-icon icon-red">&#x2753;</div>
+    <div><h2>Pourquoi ce plan ? <span class="section-num">&mdash; Section 1</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <h3><span class="h3-dot dot-red"></span> Le probl&egrave;me fondamental des LLM locaux</h3>
+
+  <p>Les mod&egrave;les LLM ont une <strong>fen&ecirc;tre de contexte limit&eacute;e</strong> :</p>
+
+  <table>
+    <thead>
+      <tr><th>Mod&egrave;le</th><th>Contexte max</th><th>Usage typique</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>gemma2:2b</td><td>8K tokens</td><td>~6K utilisables</td></tr>
+      <tr><td>phi3:mini</td><td>4K tokens</td><td>~3K utilisables</td></tr>
+      <tr><td>llama3:8b</td><td>8K tokens</td><td>~6K utilisables</td></tr>
+      <tr><td>mistral:7b</td><td>32K tokens</td><td>~25K utilisables</td></tr>
+    </tbody>
+  </table>
+
+  <p>Le contexte "utilisable" est inf&eacute;rieur au max car il faut r&eacute;server de la place pour :</p>
+  <ul>
+    <li>Le <strong>system prompt</strong> (~200-500 tokens)</li>
+    <li>L'<strong>historique de conversation</strong> (~500-2000 tokens)</li>
+    <li>La <strong>r&eacute;ponse g&eacute;n&eacute;r&eacute;e</strong> (~500-1500 tokens)</li>
+  </ul>
+
+  <div class="callout callout-warning">
+    <span class="callout-icon">&#x26A0;&#xFE0F;</span>
+    <span><strong>R&eacute;sultat :</strong> il ne reste que <strong>2-4K tokens pour le contexte RAG</strong>.</span>
+  </div>
+
+  <h3><span class="h3-dot dot-amber"></span> Le dilemme actuel</h3>
+
+  <div class="pipeline">Configuration actuelle :
+- top_k = 5 (chunks r&eacute;cup&eacute;r&eacute;s de ChromaDB)
+- max_context_items = 10 (chunks max envoy&eacute;s au LLM)
+- Taille moyenne d'un chunk = 400 tokens
+
+&rarr; 5 chunks &times; 400 tokens = 2000 tokens de contexte RAG</div>
+
+  <div class="cards">
+    <div class="card" style="border-top: 3px solid var(--danger);">
+      <div class="card-title">&#x274C; Probl&egrave;me 1</div>
+      <div class="card-text">
+        Avec seulement <strong>5 chunks</strong>, on peut manquer des informations pertinentes dispers&eacute;es dans le corpus.
+      </div>
+    </div>
+    <div class="card" style="border-top: 3px solid var(--danger);">
+      <div class="card-title">&#x274C; Probl&egrave;me 2</div>
+      <div class="card-text">
+        Si on augmente <code>top_k</code> &agrave; 15, on envoie 6000 tokens &rarr; le mod&egrave;le sature et la qualit&eacute; se d&eacute;grade.
+      </div>
+    </div>
+    <div class="card" style="border-top: 3px solid var(--success);">
+      <div class="card-title">&#x2705; Solution</div>
+      <div class="card-text">
+        <strong>Compacter les chunks</strong> pour envoyer plus d'information en moins de tokens.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SECTION 2 ==================== -->
+<div class="section" id="s2">
+  <div class="section-header">
+    <div class="section-icon icon-blue">&#x1F504;</div>
+    <div><h2>Pipeline RAG actuel <span class="section-num">&mdash; Section 2</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <p>Voici le flux complet d'une requ&ecirc;te RAG dans l'&eacute;tat actuel du syst&egrave;me :</p>
+
+  <div class="pipeline">
+<div class="pipeline-title">PIPELINE RAG ACTUEL</div>
+1. REQU&Ecirc;TE UTILISATEUR
+   &boxv;
+   &boxv;  "Comment configurer le SMTP dans MY-IA ?"
+   &boxv;
+   &blacktriangledown;
+2. EMBEDDING DE LA REQU&Ecirc;TE
+   &boxv;
+   &boxv;  [0.12, -0.34, 0.56, ...] (768 dimensions)
+   &boxv;
+   &blacktriangledown;
+3. RECHERCHE CHROMADB
+   &boxv;
+   &boxv;  SELECT top_k=5 chunks WHERE similarity &gt; 0.3
+   &boxv;
+   &boxv;  R&eacute;sultat :
+   &boxv;  &boxvr;&boxh;&boxh; Chunk A : "Configuration SMTP..." (score: 0.89, 420 tokens)
+   &boxv;  &boxvr;&boxh;&boxh; Chunk B : "Les param&egrave;tres email..." (score: 0.85, 380 tokens)
+   &boxv;  &boxvr;&boxh;&boxh; Chunk C : "Pour envoyer des mails..." (score: 0.82, 450 tokens)
+   &boxv;  &boxvr;&boxh;&boxh; Chunk D : "Le serveur SMTP doit..." (score: 0.78, 400 tokens)
+   &boxv;  &boxur;&boxh;&boxh; Chunk E : "V&eacute;rifiez la config SMTP..." (score: 0.75, 390 tokens)
+   &boxv;
+   &boxv;  Total : 2040 tokens
+   &boxv;
+   &blacktriangledown;
+4. CONSTRUCTION DU PROMPT
+   &boxv;
+   &boxv;  &boxdr;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxdl;
+   &boxv;  &boxv; System prompt (300 tokens)             &boxv;
+   &boxv;  &boxvr;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxvl;
+   &boxv;  &boxv; Historique conversation (800 tokens)   &boxv;
+   &boxv;  &boxvr;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxvl;
+   &boxv;  &boxv; <strong>Contexte RAG (2040 tokens)</strong>             &boxv;  &larr; Les 5 chunks
+   &boxv;  &boxvr;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxvl;
+   &boxv;  &boxv; Question utilisateur (20 tokens)       &boxv;
+   &boxv;  &boxur;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxul;
+   &boxv;
+   &boxv;  Total envoy&eacute; au LLM : 3160 tokens
+   &boxv;
+   &blacktriangledown;
+5. G&Eacute;N&Eacute;RATION LLM
+   &boxv;
+   &boxv;  gemma2:2b g&eacute;n&egrave;re la r&eacute;ponse (~500 tokens)
+   &boxv;
+   &blacktriangledown;
+6. R&Eacute;PONSE &Agrave; L'UTILISATEUR
+
+   "Pour configurer SMTP dans MY-IA, allez dans..."</div>
+
+  <h3><span class="h3-dot dot-red"></span> O&ugrave; est le goulot d'&eacute;tranglement ?</h3>
+
+  <p><strong>&Eacute;tape 3 &rarr; &Eacute;tape 4</strong> : On r&eacute;cup&egrave;re 5 chunks mais :</p>
+  <ul>
+    <li>Certains chunks sont <strong>redondants</strong> (m&ecirc;me info reformul&eacute;e)</li>
+    <li>Certains chunks contiennent du <strong>bruit</strong> (phrases non pertinentes)</li>
+    <li>On ne peut pas augmenter <code>top_k</code> sans saturer le contexte</li>
+  </ul>
+</div>
+
+<!-- ==================== SECTION 3 ==================== -->
+<div class="section" id="s3">
+  <div class="section-header">
+    <div class="section-icon icon-green">&#x2728;</div>
+    <div><h2>Pipeline avec compactage <span class="section-num">&mdash; Section 3</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <p>Le pipeline propos&eacute; ajoute une &eacute;tape de <strong>compactage</strong> entre la r&eacute;cup&eacute;ration et l'envoi au LLM :</p>
+
+  <div class="pipeline pipeline-new">
+<div class="pipeline-title">PIPELINE RAG AVEC COMPACTAGE (PROPOS&Eacute;)</div>
+1. REQU&Ecirc;TE UTILISATEUR
+   &boxv;
+   &blacktriangledown;
+2. EMBEDDING DE LA REQU&Ecirc;TE
+   &boxv;
+   &blacktriangledown;
+3. RECHERCHE CHROMADB (top_k AUGMENT&Eacute;)
+   &boxv;
+   &boxv;  SELECT top_k=15 chunks WHERE similarity &gt; 0.3
+   &boxv;
+   &boxv;  R&eacute;sultat : 15 chunks, ~6000 tokens bruts
+   &boxv;
+   &blacktriangledown;
+&boxdr;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxdl;
+&boxv; <strong style="color: var(--accent);">4. COMPACTAGE (NOUVELLE &Eacute;TAPE)</strong>                                              &boxv;
+&boxv;                                                                             &boxv;
+&boxv;    4a. D&eacute;duplication s&eacute;mantique                                             &boxv;
+&boxv;        - Calcul similarit&eacute; entre les 15 chunks                              &boxv;
+&boxv;        - &Eacute;limination des chunks avec similarit&eacute; &gt; 85%                       &boxv;
+&boxv;        - R&eacute;sultat : 10 chunks uniques (~4000 tokens)                        &boxv;
+&boxv;                                                                             &boxv;
+&boxv;    4b. Extraction de phrases cl&eacute;s                                           &boxv;
+&boxv;        - Pour chaque chunk, garder les 3-5 phrases les plus pertinentes     &boxv;
+&boxv;        - Suppression des phrases d'introduction/transition                  &boxv;
+&boxv;        - R&eacute;sultat : 10 chunks compact&eacute;s (~2000 tokens)                      &boxv;
+&boxv;                                                                             &boxv;
+&boxv;    <strong>Bilan : 15 chunks (6000 tokens) &rarr; 10 chunks (2000 tokens)</strong>                &boxv;
+&boxv;            = 67% de r&eacute;duction, MAIS plus d'information couverte             &boxv;
+&boxur;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxul;
+   &boxv;
+   &blacktriangledown;
+5. CONSTRUCTION DU PROMPT
+   &boxv;
+   &boxv;  Contexte RAG COMPACT&Eacute; (2000 tokens) &larr; 10 chunks compact&eacute;s
+   &boxv;                                         (vs 5 chunks bruts avant)
+   &boxv;
+   &boxv;  Total envoy&eacute; au LLM : 3120 tokens (similaire &agrave; avant)
+   &boxv;
+   &blacktriangledown;
+6. G&Eacute;N&Eacute;RATION LLM &rarr; R&Eacute;PONSE</div>
+
+  <h3><span class="h3-dot dot-green"></span> Gain concret</h3>
+
+  <table class="comparison-table">
+    <thead>
+      <tr><th>M&eacute;trique</th><th>Avant</th><th>Apr&egrave;s</th><th>Am&eacute;lioration</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Chunks r&eacute;cup&eacute;r&eacute;s</td><td>5</td><td class="better">15</td><td>3&times; plus de sources</td></tr>
+      <tr><td>Chunks au LLM</td><td>5</td><td class="better">10</td><td>2&times; plus de contexte</td></tr>
+      <tr><td>Tokens au LLM</td><td>2040</td><td>2000</td><td>&Eacute;quivalent</td></tr>
+      <tr><td>Couverture corpus</td><td>Limit&eacute;e</td><td class="better">Large</td><td>Questions complexes mieux trait&eacute;es</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ==================== SECTION 4 ==================== -->
+<div class="section" id="s4">
+  <div class="section-header">
+    <div class="section-icon icon-purple">&#x1F4AC;</div>
+    <div><h2>Cas d'usage concrets <span class="section-num">&mdash; Section 4</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-title">&#x1F7E2; Cas 1 : Question simple</div>
+      <div class="card-text">
+        <strong>Q:</strong> "Quel est le port SMTP par d&eacute;faut ?"<br><br>
+        <strong>Avant compactage :</strong> 1 chunk suffit, r&eacute;ponse correcte<br>
+        <strong>Apr&egrave;s compactage :</strong> Idem, pas de diff&eacute;rence notable<br><br>
+        <span class="badge badge-secondary">Gain : Minimal</span>
+      </div>
+    </div>
+    <div class="card" style="border-top: 3px solid var(--success);">
+      <div class="card-title">&#x1F7E2; Cas 2 : Question complexe</div>
+      <div class="card-text">
+        <strong>Q:</strong> "Compare SMTP vs API pour l'envoi d'emails"<br><br>
+        <strong>Avant (5 chunks) :</strong><br>
+        &bull; 3 chunks sur SMTP<br>
+        &bull; 2 chunks sur configuration<br>
+        &bull; 0 chunk sur API &rarr; <span class="badge badge-danger">R&eacute;ponse incompl&egrave;te</span><br><br>
+        <strong>Apr&egrave;s (15 &rarr; 10 compact&eacute;s) :</strong><br>
+        &bull; 4 chunks sur SMTP<br>
+        &bull; 3 chunks sur API<br>
+        &bull; 3 chunks sur comparaisons &rarr; <span class="badge badge-success">R&eacute;ponse compl&egrave;te</span>
+      </div>
+    </div>
+    <div class="card" style="border-top: 3px solid var(--accent);">
+      <div class="card-title">&#x1F7E0; Cas 3 : Corpus redondant</div>
+      <div class="card-text">
+        <strong>Documentation avec reformulations :</strong><br>
+        &bull; "Pour configurer SMTP, suivez ces &eacute;tapes..."<br>
+        &bull; "La configuration du serveur SMTP se fait via..."<br>
+        &bull; "Les param&egrave;tres SMTP &agrave; d&eacute;finir sont..."<br><br>
+        <strong>Avant :</strong> 5 chunks, 3 disent la m&ecirc;me chose = gaspillage<br>
+        <strong>Apr&egrave;s :</strong> D&eacute;duplication &rarr; 1 chunk gard&eacute;, place pour d'autres infos<br><br>
+        <span class="badge badge-success">Gain : Maximal</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SECTION 5 ==================== -->
+<div class="section" id="s5">
+  <div class="section-header">
+    <div class="section-icon icon-teal">&#x1F527;</div>
+    <div><h2>Architecture technique <span class="section-num">&mdash; Section 5</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <h3><span class="h3-dot dot-blue"></span> Position dans le code</h3>
+
+  <div class="pipeline">app/
+&boxvr;&boxh;&boxh; features/
+&boxv;   &boxur;&boxh;&boxh; chat/
+&boxv;       &boxur;&boxh;&boxh; service.py          &larr; Appelle le compacteur
+&boxv;
+&boxvr;&boxh;&boxh; common/
+&boxv;   &boxur;&boxh;&boxh; rag/
+&boxv;       &boxvr;&boxh;&boxh; __init__.py
+&boxv;       &boxur;&boxh;&boxh; <strong>compactor.py</strong>        &larr; NOUVEAU : TokenCompactor
+&boxv;
+&boxur;&boxh;&boxh; core/
+    &boxur;&boxh;&boxh; config_keys.py          &larr; Nouvelles cl&eacute;s rag.compaction.*</div>
+
+  <h3><span class="h3-dot dot-teal"></span> Flux de donn&eacute;es</h3>
+
+  <pre><code># Dans ChatService (simplifi&eacute;)
+
+async def get_context(self, query: str, user_id: str) -&gt; List[Dict]:
+    # 1. R&eacute;cup&eacute;rer plus de chunks que n&eacute;cessaire
+    raw_chunks = await self.chroma.search(
+        query=query,
+        top_k=config.get("rag.top_k") * 3,  # 15 au lieu de 5
+        threshold=config.get("rag.similarity_threshold")
+    )
+
+    # 2. NOUVEAU : Compacter
+    if config.get("rag.compaction.enabled"):
+        compactor = TokenCompactor(config)
+        compacted_chunks = await compactor.compact(raw_chunks)
+    else:
+        compacted_chunks = raw_chunks
+
+    # 3. Limiter au max configur&eacute;
+    return compacted_chunks[:config.get("sources.max_context_items")]</code></pre>
+
+  <h3><span class="h3-dot dot-green"></span> Module Compactor</h3>
+
+  <pre><code># app/common/rag/compactor.py
+
+class TokenCompactor:
+    """
+    Compacte les chunks RAG pour maximiser l'information
+    tout en minimisant les tokens.
+    """
+
+    async def compact(self, chunks: List[Dict]) -&gt; List[Dict]:
+        """
+        Pipeline de compactage :
+        1. D&eacute;duplication (&eacute;liminer les quasi-doublons)
+        2. Extraction (garder les phrases cl&eacute;s)
+        """
+        # &Eacute;tape 1 : D&eacute;duplication s&eacute;mantique
+        unique_chunks = await self._deduplicate(chunks)
+
+        # &Eacute;tape 2 : Extraction de phrases cl&eacute;s
+        if self.config.extract_enabled:
+            unique_chunks = await self._extract_key_content(unique_chunks)
+
+        return unique_chunks
+
+    async def _deduplicate(self, chunks: List[Dict]) -&gt; List[Dict]:
+        """
+        Supprime les chunks dont le contenu est trop similaire.
+
+        Algorithme :
+        1. Pour chaque paire de chunks, calculer similarit&eacute; cosinus
+        2. Si similarit&eacute; &gt; seuil (85%), garder celui avec meilleur score RAG
+        """
+        # Utilise les embeddings d&eacute;j&agrave; calcul&eacute;s par ChromaDB
+        ...
+
+    async def _extract_key_content(self, chunks: List[Dict]) -&gt; List[Dict]:
+        """
+        Extrait les phrases les plus informatives de chaque chunk.
+
+        Algorithme :
+        1. D&eacute;couper le chunk en phrases
+        2. Scorer chaque phrase (TF-IDF par rapport &agrave; la query)
+        3. Garder les N meilleures phrases
+        """
+        ...</code></pre>
+</div>
+
+<!-- ==================== SECTION 6 ==================== -->
+<div class="section" id="s6">
+  <div class="section-header">
+    <div class="section-icon icon-amber">&#x2699;&#xFE0F;</div>
+    <div><h2>Configuration <span class="section-num">&mdash; Section 6</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <h3><span class="h3-dot dot-amber"></span> Cl&eacute;s BDD (<code>system_configs</code>)</h3>
+
+  <table>
+    <thead>
+      <tr><th>Cl&eacute;</th><th>Type</th><th>D&eacute;faut</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>rag.compaction.enabled</code></td><td>bool</td><td><code>false</code></td><td>Activer le compactage</td></tr>
+      <tr><td><code>rag.compaction.similarity_threshold</code></td><td>float</td><td><code>0.85</code></td><td>Seuil pour d&eacute;duplication (0.0-1.0)</td></tr>
+      <tr><td><code>rag.compaction.extract_enabled</code></td><td>bool</td><td><code>false</code></td><td>Activer l'extraction de phrases</td></tr>
+      <tr><td><code>rag.compaction.max_sentences</code></td><td>int</td><td><code>5</code></td><td>Phrases max par chunk apr&egrave;s extraction</td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-teal"></span> Interface Admin (Syst&egrave;me &gt; RAG)</h3>
+
+  <div class="pipeline">&boxdr;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxdl;
+&boxv; &#x26A1; Compactage de contexte                                    &boxv;
+&boxvr;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxvl;
+&boxv;                                                             &boxv;
+&boxv; &#x2611; Activer le compactage                                    &boxv;
+&boxv;   R&eacute;duit la redondance entre les chunks pour permettre     &boxv;
+&boxv;   d'envoyer plus d'information au LLM.                     &boxv;
+&boxv;                                                             &boxv;
+&boxv; Seuil de similarit&eacute; : [0.85] &boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&#x25CF;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;         &boxv;
+&boxv;   Chunks avec similarit&eacute; &gt; 85% sont fusionn&eacute;s.             &boxv;
+&boxv;                                                             &boxv;
+&boxv; &#x2610; Extraction de phrases cl&eacute;s                               &boxv;
+&boxv;   Garde uniquement les phrases les plus pertinentes.       &boxv;
+&boxv;                                                             &boxv;
+&boxv;   Phrases max par chunk : [5]                              &boxv;
+&boxv;                                                             &boxv;
+&boxur;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxh;&boxul;</div>
+</div>
+
+<!-- ==================== SECTION 7 ==================== -->
+<div class="section" id="s7">
+  <div class="section-header">
+    <div class="section-icon icon-blue">&#x1F4CB;</div>
+    <div><h2>Phases d'impl&eacute;mentation <span class="section-num">&mdash; Section 7</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <div class="cards">
+    <div class="card" style="border-top: 3px solid var(--primary);">
+      <div class="card-title">&#x1F7E6; Phase 1 : D&eacute;duplication s&eacute;mantique (MVP)</div>
+      <div class="card-text">
+        <strong>Objectif :</strong> &Eacute;liminer les chunks quasi-identiques<br><br>
+        <strong>Fichiers :</strong><br>
+        &bull; Cr&eacute;er <code>app/common/rag/compactor.py</code><br>
+        &bull; Modifier <code>app/features/chat/service.py</code><br>
+        &bull; Ajouter cl&eacute;s dans <code>app/core/config_keys.py</code><br><br>
+        <strong>Test :</strong> Corpus avec 3 pages identiques reformul&eacute;es<br>
+        &rarr; Avant : 3 chunks redondants sur 5<br>
+        &rarr; Apr&egrave;s : 1 chunk unique, 4 slots libres
+      </div>
+    </div>
+    <div class="card" style="border-top: 3px solid var(--primary-light);">
+      <div class="card-title">&#x1F7E6; Phase 2 : Extraction de phrases cl&eacute;s</div>
+      <div class="card-text">
+        <strong>Objectif :</strong> R&eacute;duire chaque chunk &agrave; l'essentiel<br><br>
+        <strong>Algorithme :</strong> TF-IDF ou TextRank (sans d&eacute;pendance externe lourde)<br><br>
+        <strong>Test :</strong> Chunk de 500 tokens avec intro/conclusion<br>
+        &rarr; Avant : 500 tokens<br>
+        &rarr; Apr&egrave;s : 200 tokens (phrases cl&eacute;s uniquement)
+      </div>
+    </div>
+    <div class="card" style="border-top: 3px solid var(--accent);">
+      <div class="card-title">&#x1F7E0; Phase 3 : Interface Admin + M&eacute;triques</div>
+      <div class="card-text">
+        <strong>Objectif :</strong> Permettre le tuning et visualiser les gains<br><br>
+        <strong>&Eacute;l&eacute;ments :</strong><br>
+        &bull; Section dans Syst&egrave;me &gt; RAG<br>
+        &bull; M&eacute;triques : "Tokens avant/apr&egrave;s compactage"<br>
+        &bull; Log optionnel des chunks &eacute;limin&eacute;s
+      </div>
+    </div>
+    <div class="card" style="border-top: 3px solid var(--success);">
+      <div class="card-title">&#x1F7E2; Phase 4 : Tests et benchmarks</div>
+      <div class="card-text">
+        <strong>Objectif :</strong> Valider que la qualit&eacute; ne se d&eacute;grade pas<br><br>
+        <strong>M&eacute;thode :</strong><br>
+        &bull; 20 questions de test sur le corpus<br>
+        &bull; Comparer r&eacute;ponses avec/sans compactage<br>
+        &bull; Mesurer pr&eacute;cision, rappel, satisfaction
+      </div>
+    </div>
+  </div>
+
+  <h3><span class="h3-dot dot-blue"></span> Fichiers &agrave; cr&eacute;er/modifier</h3>
+
+  <table>
+    <thead>
+      <tr><th>Fichier</th><th>Action</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>app/common/rag/__init__.py</code></td><td>Cr&eacute;er</td></tr>
+      <tr><td><code>app/common/rag/compactor.py</code></td><td>Cr&eacute;er</td></tr>
+      <tr><td><code>app/features/chat/service.py</code></td><td>Modifier</td></tr>
+      <tr><td><code>app/core/config_keys.py</code></td><td>Modifier</td></tr>
+      <tr><td><code>UI-BACK/js/modules/system/rag.js</code></td><td>Modifier</td></tr>
+      <tr><td><code>UI-SHARED/locales/fr.json</code></td><td>Modifier</td></tr>
+      <tr><td><code>UI-SHARED/locales/en.json</code></td><td>Modifier</td></tr>
+      <tr><td><code>tests/unit/test_compactor.py</code></td><td>Cr&eacute;er</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ==================== SECTION 8 ==================== -->
+<div class="section" id="s8">
+  <div class="section-header">
+    <div class="section-icon icon-purple">&#x1F4E6;</div>
+    <div><h2>Corpus &amp; Multi-Providers <span class="section-num">&mdash; Section 8</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <h3><span class="h3-dot dot-purple"></span> Architecture Corpus</h3>
+
+  <p>Les chunks RAG peuvent provenir de <strong>plusieurs corpus</strong> et <strong>plusieurs collections</strong> :</p>
+
+  <div class="pipeline">
+Corpus "Documentation Technique"
+&boxvr;&boxh;&boxh; Collection: doc_technique_ollama
+&boxv;   &boxvr;&boxh;&boxh; Chunk A (doc: install.pdf)
+&boxv;   &boxur;&boxh;&boxh; Chunk B (doc: config.pdf)
+&boxur;&boxh;&boxh; Sources index&eacute;es
+    &boxur;&boxh;&boxh; Chunk C (source: wiki_interne)
+
+Corpus "FAQ Produit"
+&boxur;&boxh;&boxh; Collection: faq_ollama
+    &boxvr;&boxh;&boxh; Chunk D (doc: faq.md)
+    &boxur;&boxh;&boxh; Chunk E (doc: troubleshoot.md)
+
+&rarr; Recherche RAG peut retourner : [A, D, B, E, C]
+   provenant de corpus et documents diff&eacute;rents</div>
+
+  <h3><span class="h3-dot dot-amber"></span> R&egrave;gles de d&eacute;duplication par corpus</h3>
+
+  <p>La d&eacute;duplication doit tenir compte du <strong>contexte d'origine</strong> :</p>
+
+  <table>
+    <thead>
+      <tr><th>Sc&eacute;nario</th><th>Action</th><th>Raison</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Chunks similaires du <strong>m&ecirc;me document</strong></td>
+        <td class="better">D&eacute;dupliquer</td>
+        <td>Redondance r&eacute;elle (chunking overlap)</td>
+      </tr>
+      <tr>
+        <td>Chunks similaires de <strong>documents diff&eacute;rents</strong> (m&ecirc;me corpus)</td>
+        <td class="better">D&eacute;dupliquer</td>
+        <td>Information dupliqu&eacute;e dans le corpus</td>
+      </tr>
+      <tr>
+        <td>Chunks similaires de <strong>corpus diff&eacute;rents</strong></td>
+        <td>Garder les deux</td>
+        <td>Contextes potentiellement diff&eacute;rents</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <pre><code># Dans TokenCompactor._deduplicate()
+
+async def _deduplicate(self, chunks: List[Dict]) -&gt; List[Dict]:
+    """
+    D&eacute;duplique en tenant compte du corpus d'origine.
+    """
+    unique = []
+    for chunk in chunks:
+        is_duplicate = False
+        for existing in unique:
+            # M&ecirc;me corpus ? On peut d&eacute;dupliquer
+            if chunk.get("corpus_id") == existing.get("corpus_id"):
+                similarity = self._cosine_similarity(
+                    chunk["embedding"],
+                    existing["embedding"]
+                )
+                if similarity &gt; self.threshold:
+                    is_duplicate = True
+                    break
+            # Corpus diff&eacute;rents ? On garde les deux m&ecirc;me si similaires
+        if not is_duplicate:
+            unique.append(chunk)
+    return unique</code></pre>
+
+  <h3><span class="h3-dot dot-blue"></span> Multi-Providers (Ollama / llama.cpp)</h3>
+
+  <p>Les embeddings sont <strong>incompatibles entre providers</strong> car les mod&egrave;les utilisent des espaces vectoriels diff&eacute;rents :</p>
+
+  <div class="cards">
+    <div class="card" style="border-top: 3px solid var(--primary);">
+      <div class="card-title">&#x1F7E6; Ollama</div>
+      <div class="card-text">
+        <strong>Mod&egrave;le :</strong> <code>nomic-embed-text:latest</code><br>
+        <strong>Dimensions :</strong> 768<br>
+        <strong>Collections :</strong> <code>*_ollama</code><br><br>
+        Les calculs de similarit&eacute; pour la d&eacute;duplication utilisent ces embeddings.
+      </div>
+    </div>
+    <div class="card" style="border-top: 3px solid var(--accent);">
+      <div class="card-title">&#x1F7E0; llama.cpp</div>
+      <div class="card-text">
+        <strong>Mod&egrave;le :</strong> <code>nomic-embed-text-v1.5.Q8_0.gguf</code><br>
+        <strong>Dimensions :</strong> 768<br>
+        <strong>Collections :</strong> <code>*_llamacpp</code><br><br>
+        Les embeddings sont dans un espace vectoriel diff&eacute;rent.
+      </div>
+    </div>
+  </div>
+
+  <div class="callout callout-warning">
+    <span class="callout-icon">&#x26A0;&#xFE0F;</span>
+    <span>
+      <strong>Contrainte :</strong> Le compactage ne peut comparer que des chunks provenant de collections du <strong>m&ecirc;me provider</strong>.
+      Une requ&ecirc;te RAG interroge uniquement les collections <code>*_ollama</code> OU <code>*_llamacpp</code> selon le provider actif.
+    </span>
+  </div>
+
+  <h3><span class="h3-dot dot-green"></span> Impl&eacute;mentation recommand&eacute;e</h3>
+
+  <pre><code># Le compacteur re&ccedil;oit d&eacute;j&agrave; des chunks du bon provider
+# car ChatService interroge les bonnes collections
+
+class TokenCompactor:
+    def __init__(self, config: dict, provider: str):
+        self.provider = provider  # "ollama" ou "llamacpp"
+        self.threshold = config.get("rag.compaction.similarity_threshold", 0.85)
+
+    async def compact(self, chunks: List[Dict]) -&gt; List[Dict]:
+        # Les chunks ont d&eacute;j&agrave; le champ corpus_id en metadata
+        # On d&eacute;duplique uniquement au sein du m&ecirc;me corpus
+        return await self._deduplicate_by_corpus(chunks)</code></pre>
+
+  <h3><span class="h3-dot dot-teal"></span> M&eacute;tadonn&eacute;es n&eacute;cessaires dans ChromaDB</h3>
+
+  <p>Pour que le compactage fonctionne correctement, chaque chunk doit avoir :</p>
+
+  <table>
+    <thead>
+      <tr><th>Metadata</th><th>Type</th><th>Usage</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>corpus_id</code></td><td>UUID</td><td>D&eacute;terminer si d&eacute;duplication possible</td></tr>
+      <tr><td><code>document_id</code></td><td>UUID</td><td>Identifier la source exacte</td></tr>
+      <tr><td><code>source_id</code></td><td>UUID (nullable)</td><td>Si provient d'une source index&eacute;e</td></tr>
+      <tr><td><code>chunk_index</code></td><td>int</td><td>Position dans le document</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ==================== SECTION 9 ==================== -->
+<div class="section" id="s9">
+  <div class="section-header">
+    <div class="section-icon icon-green">&#x1F4CA;</div>
+    <div><h2>M&eacute;triques &amp; Risques <span class="section-num">&mdash; Section 9</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <h3><span class="h3-dot dot-green"></span> M&eacute;triques de succ&egrave;s</h3>
+
+  <table>
+    <thead>
+      <tr><th>M&eacute;trique</th><th>Cible</th><th>Mesure</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>R&eacute;duction tokens</td><td>&gt; 30%</td><td><code>tokens_apr&egrave;s / tokens_avant</code></td></tr>
+      <tr><td>Latence ajout&eacute;e</td><td>&lt; 50ms</td><td>Timer dans le compacteur</td></tr>
+      <tr><td>Qualit&eacute; r&eacute;ponses</td><td>Stable ou meilleure</td><td>Tests A/B manuels</td></tr>
+      <tr><td>Couverture corpus</td><td>+50% de chunks utiles</td><td><code>chunks_uniques / top_k</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-red"></span> Risques et mitigations</h3>
+
+  <table>
+    <thead>
+      <tr><th>Risque</th><th>Impact</th><th>Mitigation</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Perte d'info pertinente</td><td>R&eacute;ponses incompl&egrave;tes</td><td>Seuil configurable, d&eacute;sactivable</td></tr>
+      <tr><td>Faux positifs d&eacute;dup</td><td>Info diff&eacute;rente supprim&eacute;e</td><td>Seuil conservateur (0.85+)</td></tr>
+      <tr><td>Latence excessive</td><td>UX d&eacute;grad&eacute;e</td><td>Calculs numpy optimis&eacute;s</td></tr>
+      <tr><td>Complexit&eacute; debug</td><td>Difficile de comprendre les r&eacute;ponses</td><td>Logs d&eacute;taill&eacute;s optionnels</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-info">
+    <span class="callout-icon">&#x1F4A1;</span>
+    <span>
+      <strong>D&eacute;pendances :</strong> Aucune nouvelle d&eacute;pendance pour la Phase 1.
+      <code>numpy</code> est d&eacute;j&agrave; install&eacute; pour les calculs vectoriels.
+      <code>nltk</code> ou <code>spacy</code> optionnels pour la Phase 2 (extraction de phrases).
+    </span>
+  </div>
+</div>
+
+<!-- ==================== SECTION 10 ==================== -->
+<div class="section" id="s10">
+  <div class="section-header">
+    <div class="section-icon icon-green">&#x2705;</div>
+    <div><h2>&Eacute;tat d'impl&eacute;mentation <span class="section-num">&mdash; Section 10</span></h2></div>
+    <a href="#toc" class="back-to-toc" title="Table des mati&egrave;res">&#x2B06; Sommaire</a>
+  </div>
+
+  <div class="callout callout-success" style="background: rgba(46, 204, 113, 0.1); border-left-color: var(--success);">
+    <span class="callout-icon">&#x2705;</span>
+    <span><strong>Phase 1 impl&eacute;ment&eacute;e le 20 f&eacute;vrier 2026</strong></span>
+  </div>
+
+  <h3><span class="h3-dot dot-green"></span> Fichiers cr&eacute;&eacute;s</h3>
+
+  <table>
+    <thead>
+      <tr><th>Fichier</th><th>Description</th><th>Lignes</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>app/common/rag/__init__.py</code></td><td>Module init</td><td>8</td></tr>
+      <tr><td><code>app/common/rag/compactor.py</code></td><td>TokenCompactor class</td><td>~280</td></tr>
+      <tr><td><code>tests/rag/__init__.py</code></td><td>Tests init</td><td>1</td></tr>
+      <tr><td><code>tests/rag/test_compactor.py</code></td><td>20 tests unitaires</td><td>~350</td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-blue"></span> Fichiers modifi&eacute;s</h3>
+
+  <table>
+    <thead>
+      <tr><th>Fichier</th><th>Modifications</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>app/core/bootstrap.py</code></td><td>+5 cl&eacute;s config <code>rag.compaction.*</code></td></tr>
+      <tr><td><code>app/common/utils/rag_config.py</code></td><td>+5 champs <code>RAGConfig</code> + chargement BDD</td></tr>
+      <tr><td><code>app/common/utils/chroma.py</code></td><td>Inclut embeddings dans r&eacute;sultats ChromaDB</td></tr>
+      <tr><td><code>app/features/chat/service.py</code></td><td>Int&egrave;gre <code>TokenCompactor</code> dans pipeline streaming</td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-teal"></span> Configuration BDD</h3>
+
+  <table>
+    <thead>
+      <tr><th>Cl&eacute;</th><th>Type</th><th>D&eacute;faut</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>rag.compaction.enabled</code></td><td>bool</td><td><code>false</code></td><td>Activer le compactage</td></tr>
+      <tr><td><code>rag.compaction.similarity_threshold</code></td><td>float</td><td><code>0.85</code></td><td>Seuil pour d&eacute;duplication</td></tr>
+      <tr><td><code>rag.compaction.fetch_multiplier</code></td><td>int</td><td><code>3</code></td><td>top_k &times; multiplier = chunks r&eacute;cup&eacute;r&eacute;s</td></tr>
+      <tr><td><code>rag.compaction.extract_enabled</code></td><td>bool</td><td><code>false</code></td><td>Extraction de phrases cl&eacute;s</td></tr>
+      <tr><td><code>rag.compaction.max_sentences</code></td><td>int</td><td><code>5</code></td><td>Phrases max par chunk</td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-amber"></span> R&eacute;sultats mesur&eacute;s</h3>
+
+  <table class="comparison-table">
+    <thead>
+      <tr><th>M&eacute;trique</th><th>Avant</th><th>Apr&egrave;s</th><th>Am&eacute;lioration</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Temps avant 1er token</td><td>4.5s</td><td class="better">3.3s</td><td>-27%</td></tr>
+      <tr><td>Chunks au LLM</td><td>100</td><td class="better">83-97</td><td>-3% &agrave; -17%</td></tr>
+      <tr><td>Tests unitaires</td><td>-</td><td class="better">20/20</td><td>100% pass</td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-green"></span> Limitations r&eacute;solues</h3>
+
+  <ul>
+    <li><strong><s>Sources externes sans embeddings</s></strong> : <span style="color: var(--success);">&#x2714; R&Eacute;SOLU</span> &mdash; Correction dans <code>app/features/sources/indexer.py</code> : les embeddings sont maintenant inclus dans les requ&ecirc;tes ChromaDB (<code>include=["documents", "metadatas", "distances", "embeddings"]</code>). La d&eacute;duplication s&eacute;mantique fonctionne sur TOUS les chunks.</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-amber"></span> Limitations restantes</h3>
+
+  <ul>
+    <li><strong>Corpus diff&eacute;rents</strong> : Par design, les chunks de corpus diff&eacute;rents ne sont pas d&eacute;dupliqu&eacute;s entre eux (contextes potentiellement diff&eacute;rents).</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-purple"></span> Prochaines &eacute;tapes (Phase 2)</h3>
+
+  <div class="cards">
+    <div class="card" style="border-top: 3px solid var(--accent);">
+      <div class="card-title">&#x1F7E0; Interface Admin</div>
+      <div class="card-text">
+        Ajouter une section dans Syst&egrave;me &gt; RAG pour configurer le compactage avec visualisation des m&eacute;triques.
+      </div>
+    </div>
+    <div class="card" style="border-top: 3px solid var(--success);">
+      <div class="card-title">&#x1F7E2; Extraction de phrases (optionnel)</div>
+      <div class="card-text">
+        Activer <code>rag.compaction.extract_enabled</code> pour r&eacute;duire davantage les chunks en gardant uniquement les phrases pertinentes.
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</div><!-- .page -->
+
+</body>
+</html>

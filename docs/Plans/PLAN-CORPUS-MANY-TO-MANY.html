@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plan - Relation N à N Documents/Corpus</title>
+    <link rel="stylesheet" href="../assets/doc-style.css">
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="page">
+            <div class="header-icon">📚</div>
+            <div>
+                <h1>Relation N à N Documents/Corpus</h1>
+                <p class="subtitle">Permettre aux documents et sources d'appartenir à plusieurs corpus thématiques</p>
+                <div class="meta">
+                    <span>📅 2026-02-21</span>
+                    <span>📌 v1.0</span>
+                    <span>✅ Implémenté</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="page">
+        <!-- Table of Contents -->
+        <nav class="toc" id="toc">
+            <h2>Table des matières</h2>
+            <div class="toc-grid">
+                <a href="#section-1"><span class="toc-num">1</span> Contexte et objectif</a>
+                <a href="#section-2"><span class="toc-num">2</span> État actuel</a>
+                <a href="#section-3"><span class="toc-num">3</span> Architecture cible</a>
+                <a href="#section-4"><span class="toc-num">4</span> Migration de données</a>
+                <a href="#section-5"><span class="toc-num">5</span> Modifications backend</a>
+                <a href="#section-6"><span class="toc-num">6</span> Modifications frontend</a>
+                <a href="#section-7"><span class="toc-num">7</span> Tests</a>
+                <a href="#section-8"><span class="toc-num">8</span> Plan d'exécution</a>
+            </div>
+        </nav>
+
+        <!-- Section 1 -->
+        <section class="section" id="section-1">
+            <div class="section-header">
+                <div class="section-icon icon-blue">🎯</div>
+                <div>
+                    <span class="section-num">Section 1</span>
+                    <h2>Contexte et objectif</h2>
+                </div>
+                <a href="#toc" class="back-to-toc">↑ Sommaire</a>
+            </div>
+
+            <h3><span class="h3-dot dot-blue"></span> Problème actuel</h3>
+            <p>Un document ne peut appartenir qu'à <strong>un seul corpus</strong> (relation 1 à 1 via <code>Document.corpus_id</code>).</p>
+            <p>Les sources externes peuvent déjà appartenir à plusieurs corpus (relation N à N via <code>CorpusSource</code>).</p>
+
+            <h3><span class="h3-dot dot-teal"></span> Objectif</h3>
+            <ul class="feature-list">
+                <li>Permettre à un document d'appartenir à <strong>plusieurs corpus</strong></li>
+                <li>Uniformiser le modèle entre documents et sources</li>
+                <li>Faciliter la réutilisation du contenu entre corpus thématiques</li>
+            </ul>
+
+            <h3><span class="h3-dot dot-red"></span> Règle d'unicité</h3>
+            <div class="callout callout-warning">
+                <span class="callout-icon">⚠️</span>
+                <div>
+                    <strong>Règle obligatoire</strong><br>
+                    Un même élément (document, source ou collection) ne peut être ajouté qu'<strong>une seule fois</strong> à un corpus donné.
+                    Toute tentative d'ajout en double retourne une erreur <code>HTTP 409 Conflict</code>.
+                </div>
+            </div>
+            <table>
+                <thead>
+                    <tr><th>Table pivot</th><th>Contrainte unique</th><th>Message d'erreur</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>corpus_documents</code></td>
+                        <td><code>uq_corpus_document(corpus_id, document_id)</code></td>
+                        <td>"Document deja dans ce corpus"</td>
+                    </tr>
+                    <tr>
+                        <td><code>corpus_sources</code></td>
+                        <td><code>uq_corpus_source(corpus_id, source_id)</code></td>
+                        <td>"Source deja dans ce corpus"</td>
+                    </tr>
+                    <tr>
+                        <td><code>corpus_collections</code></td>
+                        <td><code>uq_corpus_collection(corpus_id, collection_id)</code></td>
+                        <td>"Collection deja dans ce corpus"</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3><span class="h3-dot dot-purple"></span> Cas d'usage</h3>
+            <div class="callout callout-info">
+                <span class="callout-icon">💡</span>
+                <div>
+                    <strong>Exemple :</strong> Un document "Guide API Remotion" peut être pertinent pour :
+                    <ul>
+                        <li>Corpus "Documentation Technique"</li>
+                        <li>Corpus "Tutoriels Vidéo"</li>
+                        <li>Corpus "Références API"</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 2 -->
+        <section class="section" id="section-2">
+            <div class="section-header">
+                <div class="section-icon icon-amber">📊</div>
+                <div>
+                    <span class="section-num">Section 2</span>
+                    <h2>État actuel</h2>
+                </div>
+                <a href="#toc" class="back-to-toc">↑ Sommaire</a>
+            </div>
+
+            <h3><span class="h3-dot dot-amber"></span> Modèle de données</h3>
+            <pre>
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           ÉTAT ACTUEL                                    │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│   Document ────────────────┐                                             │
+│   ├── corpus_id (FK) ──────┼───► Corpus (relation 1 à 1) ❌ À MIGRER    │
+│   └── collection_id (FK)   │     (un document = un seul corpus)          │
+│                            │                                             │
+│   ContextSource ───────────┤                                             │
+│        │                   │                                             │
+│        └────► CorpusSource ┼───► Corpus (relation N à N) ✓ OK           │
+│              (table pivot) │     (une source = plusieurs corpus)         │
+│                            │                                             │
+└─────────────────────────────────────────────────────────────────────────┘</pre>
+
+            <div class="callout callout-warning">
+                <span class="callout-icon">⚠️</span>
+                <div>
+                    <strong>Asymétrie actuelle</strong><br>
+                    Les Sources ont déjà la relation N-to-N via <code>corpus_sources</code>,
+                    mais les Documents sont limités à 1 corpus via <code>corpus_id</code> FK directe.
+                </div>
+            </div>
+
+            <h3><span class="h3-dot dot-red"></span> Tables concernées</h3>
+            <table>
+                <thead>
+                    <tr><th>Table</th><th>Relation actuelle</th><th>Problème</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>documents</code></td>
+                        <td><code>corpus_id</code> FK directe</td>
+                        <td><span class="badge badge-danger">1 document = 1 corpus max</span></td>
+                    </tr>
+                    <tr>
+                        <td><code>corpus_sources</code></td>
+                        <td>Table pivot (N à N)</td>
+                        <td><span class="badge badge-success">Modèle correct</span></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3><span class="h3-dot dot-orange"></span> Contrainte existante</h3>
+            <pre>CheckConstraint(
+    '(corpus_id IS NOT NULL AND collection_id IS NULL) OR '
+    '(corpus_id IS NULL AND collection_id IS NOT NULL)',
+    name='ck_document_corpus_or_collection'
+)</pre>
+            <div class="callout callout-warning">
+                <span class="callout-icon">⚠️</span>
+                <div>Cette contrainte empêche un document d'être à la fois dans un corpus ET une collection privée.</div>
+            </div>
+        </section>
+
+        <!-- Section 3 -->
+        <section class="section" id="section-3">
+            <div class="section-header">
+                <div class="section-icon icon-teal">🏗️</div>
+                <div>
+                    <span class="section-num">Section 3</span>
+                    <h2>Architecture cible</h2>
+                </div>
+                <a href="#toc" class="back-to-toc">↑ Sommaire</a>
+            </div>
+
+            <h3><span class="h3-dot dot-teal"></span> Nouveau modèle harmonisé</h3>
+            <pre>
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    ARCHITECTURE CIBLE (HARMONISÉE)                       │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│   Document ────────────────┐                                             │
+│   ├── collection_id (FK)   │  (collections privées utilisateur)          │
+│   │                        │                                             │
+│   └────► CorpusDocument ───┼───► Corpus (relation N à N) ✓ NOUVEAU      │
+│          (nouvelle table)  │                                             │
+│                            │                                             │
+│   ContextSource ───────────┤                                             │
+│        │                   │                                             │
+│        └────► CorpusSource ┼───► Corpus (relation N à N) ✓ EXISTANT     │
+│              (inchangée)   │                                             │
+│                            │                                             │
+├─────────────────────────────────────────────────────────────────────────┤
+│   ✓ Documents et Sources ont le même modèle de relation N à N           │
+│   ✓ Les deux tableaux affichent une colonne "Corpus" avec compteur      │
+│   ✓ Popup "Gérer corpus" partagée pour les deux types                   │
+└─────────────────────────────────────────────────────────────────────────┘</pre>
+
+            <h3><span class="h3-dot dot-blue"></span> Nouvelle table : corpus_documents</h3>
+            <pre>CREATE TABLE corpus_documents (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    corpus_id UUID NOT NULL REFERENCES corpus(id) ON DELETE CASCADE,
+    document_id UUID NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+    priority INTEGER DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+
+    UNIQUE(corpus_id, document_id)
+);
+
+CREATE INDEX idx_corpus_documents_corpus ON corpus_documents(corpus_id);
+CREATE INDEX idx_corpus_documents_document ON corpus_documents(document_id);</pre>
+
+            <h3><span class="h3-dot dot-purple"></span> Modèle SQLAlchemy</h3>
+            <pre>class CorpusDocument(Base):
+    """Table de liaison entre Corpus et Documents."""
+    __tablename__ = "corpus_documents"
+    __table_args__ = (
+        UniqueConstraint('corpus_id', 'document_id', name='uq_corpus_document'),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    corpus_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("corpus.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    document_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("documents.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    priority: Mapped[int] = mapped_column(default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    # Relations
+    corpus: Mapped["Corpus"] = relationship(back_populates="corpus_documents")
+    document: Mapped["Document"] = relationship(back_populates="corpus_memberships")</pre>
+
+            <h3><span class="h3-dot dot-green"></span> Modifications sur Document</h3>
+            <pre>class Document(Base):
+    # SUPPRIMER : corpus_id (FK directe)
+    # corpus_id: Mapped[Optional[uuid.UUID]] = ...  # À SUPPRIMER
+
+    # GARDER : collection_id pour les documents privés
+    collection_id: Mapped[Optional[uuid.UUID]] = mapped_column(...)
+
+    # AJOUTER : relation N à N via table pivot
+    corpus_memberships: Mapped[List["CorpusDocument"]] = relationship(
+        back_populates="document",
+        cascade="all, delete-orphan"
+    )
+
+    # Helper property pour accès direct aux corpus
+    @property
+    def corpus_list(self) -> List["Corpus"]:
+        return [cm.corpus for cm in self.corpus_memberships]</pre>
+        </section>
+
+        <!-- Section 4 -->
+        <section class="section" id="section-4">
+            <div class="section-header">
+                <div class="section-icon icon-purple">🔄</div>
+                <div>
+                    <span class="section-num">Section 4</span>
+                    <h2>Migration de données</h2>
+                </div>
+                <a href="#toc" class="back-to-toc">↑ Sommaire</a>
+            </div>
+
+            <h3><span class="h3-dot dot-purple"></span> Script de migration Alembic</h3>
+            <pre># app/alembic/versions/xxx_corpus_documents_many_to_many.py
+
+def upgrade():
+    # 1. Créer la nouvelle table corpus_documents
+    op.create_table(
+        'corpus_documents',
+        sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
+        sa.Column('corpus_id', postgresql.UUID(as_uuid=True), nullable=False),
+        sa.Column('document_id', postgresql.UUID(as_uuid=True), nullable=False),
+        sa.Column('priority', sa.Integer(), default=0),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.func.now()),
+        sa.ForeignKeyConstraint(['corpus_id'], ['corpus.id'], ondelete='CASCADE'),
+        sa.ForeignKeyConstraint(['document_id'], ['documents.id'], ondelete='CASCADE'),
+        sa.UniqueConstraint('corpus_id', 'document_id', name='uq_corpus_document')
+    )
+
+    # 2. Migrer les données existantes
+    op.execute("""
+        INSERT INTO corpus_documents (id, corpus_id, document_id, priority, created_at)
+        SELECT gen_random_uuid(), corpus_id, id, 0, NOW()
+        FROM documents WHERE corpus_id IS NOT NULL
+    """)
+
+    # 3. Supprimer la contrainte existante
+    op.drop_constraint('ck_document_corpus_or_collection', 'documents')
+
+    # 4. Supprimer la colonne corpus_id
+    op.drop_column('documents', 'corpus_id')</pre>
+        </section>
+
+        <!-- Section 5 -->
+        <section class="section" id="section-5">
+            <div class="section-header">
+                <div class="section-icon icon-blue">⚙️</div>
+                <div>
+                    <span class="section-num">Section 5</span>
+                    <h2>Modifications backend</h2>
+                </div>
+                <a href="#toc" class="back-to-toc">↑ Sommaire</a>
+            </div>
+
+            <h3><span class="h3-dot dot-blue"></span> Fichiers à modifier</h3>
+            <table>
+                <thead>
+                    <tr><th>Fichier</th><th>Modifications</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>app/models.py</code></td>
+                        <td>Ajouter <code>CorpusDocument</code>, modifier <code>Document</code> et <code>Corpus</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>app/features/admin/corpus/service.py</code></td>
+                        <td><code>add_document_to_corpus()</code>, <code>remove_document_from_corpus()</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>app/features/admin/documents/service.py</code></td>
+                        <td>Adapter les requêtes pour utiliser <code>corpus_documents</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>app/features/admin/documents/schemas.py</code></td>
+                        <td><code>corpus_id</code> → <code>corpus_ids: List[UUID]</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>app/features/ingestion/router.py</code></td>
+                        <td>Créer entrée dans <code>corpus_documents</code> lors de l'upload</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3><span class="h3-dot dot-teal"></span> Nouveaux endpoints</h3>
+            <div class="cards">
+                <div class="card">
+                    <div class="card-title"><span class="badge badge-success">POST</span></div>
+                    <div class="card-text"><code>/api/admin/corpus/{corpus_id}/documents/{document_id}</code><br>Ajouter un document à un corpus</div>
+                </div>
+                <div class="card">
+                    <div class="card-title"><span class="badge badge-danger">DELETE</span></div>
+                    <div class="card-text"><code>/api/admin/corpus/{corpus_id}/documents/{document_id}</code><br>Retirer un document d'un corpus</div>
+                </div>
+                <div class="card">
+                    <div class="card-title"><span class="badge badge-primary">GET</span></div>
+                    <div class="card-text"><code>/api/admin/documents/{document_id}/corpus</code><br>Lister les corpus d'un document</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 6 -->
+        <section class="section" id="section-6">
+            <div class="section-header">
+                <div class="section-icon icon-green">🖥️</div>
+                <div>
+                    <span class="section-num">Section 6</span>
+                    <h2>Modifications frontend</h2>
+                </div>
+                <a href="#toc" class="back-to-toc">↑ Sommaire</a>
+            </div>
+
+            <h3><span class="h3-dot dot-green"></span> Principe d'harmonisation</h3>
+            <div class="callout callout-info">
+                <span class="callout-icon">💡</span>
+                <div>
+                    <strong>Colonne "Corpus" unifiée</strong><br>
+                    Les deux tableaux (Documents et Sources) affichent une colonne <code>Corpus</code> avec un compteur et tooltip.
+                    La gestion des associations se fait depuis le module <strong>Corpus</strong> (existant).
+                </div>
+            </div>
+
+            <h4>Affichage du compteur corpus</h4>
+            <pre>
+┌────────────────────────────────────────────────────────────────┐
+│  AFFICHAGE COLONNE "CORPUS" (Documents ET Sources)             │
+├────────────────────────────────────────────────────────────────┤
+│                                                                │
+│  0 corpus  →  [📚 -]        (badge gris, tooltip: "Aucun")     │
+│                                                                │
+│  1 corpus  →  [📚 1]        (badge bleu, tooltip: "Doc Tech")  │
+│                                                                │
+│  3 corpus  →  [📚 3]        (badge bleu, tooltip liste noms)   │
+│                                                                │
+└────────────────────────────────────────────────────────────────┘
+
+Note: Pour gérer les associations → aller dans Corpus > Gérer le contenu</pre>
+
+            <h3><span class="h3-dot dot-blue"></span> Tableau Documents - État cible</h3>
+            <pre>
+┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│  TABLEAU DOCUMENTS (colonnes harmonisées)                                                         │
+├──────────────────────────────────────────────────────────────────────────────────────────────────┤
+│  ☑️ │ Nom              │ Owner    │ Corpus │ Type │ Visibility │ Size  │ Chunks │ Provider │ ⚙️  │
+├──────────────────────────────────────────────────────────────────────────────────────────────────┤
+│  ☐ │ Guide_API.pdf    │ admin    │ [📚 2] │ PDF  │ 🌐 public  │ 1.2MB │   42   │ ollama   │ ... │
+│  ☐ │ Tutorial.md      │ user1    │ [📚 1] │ MD   │ 🔒 private │ 45KB  │   15   │ ollama   │ ... │
+│  ☐ │ notes.txt        │ user2    │ [📚 -] │ TXT  │ 🌐 public  │ 2KB   │    8   │ -        │ ... │
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+Légende:
+  [📚 2]  = Document appartient à 2 corpus (tooltip: liste les noms)
+  [📚 -]  = Document non assigné à un corpus (badge gris)
+</pre>
+
+            <h3><span class="h3-dot dot-teal"></span> Tableau Sources - État cible</h3>
+            <pre>
+┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│  TABLEAU SOURCES (colonnes harmonisées)                                                           │
+├──────────────────────────────────────────────────────────────────────────────────────────────────┤
+│  ☑️ │ Nom              │ Type │ Status │ Health │ Corpus │ Chunks │ Provider │ Freshness │ ⚙️   │
+├──────────────────────────────────────────────────────────────────────────────────────────────────┤
+│  ☐ │ Wikipedia FR     │ Web  │ ✓ ON   │ ✓ OK   │ [📚 3] │   156  │ ollama   │ 95% fresh │ ...  │
+│  ☐ │ API Interne      │ API  │ ✓ ON   │ ✓ OK   │ [📚 1] │    42  │ llamacpp │ 80% fresh │ ...  │
+│  ☐ │ MCP Claude       │ MCP  │ ✗ OFF  │ ? N/A  │ [📚 -] │     0  │ -        │ disabled  │ ...  │
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+Légende:
+  [📚 3]  = Source appartient à 3 corpus (tooltip: liste les noms)
+  [📚 -]  = Source non assignée à un corpus (badge gris)
+  Chunks  = Nombre de chunks indexés (anciennement "Index")
+</pre>
+
+            <h3><span class="h3-dot dot-purple"></span> Nouvelle icône Corpus</h3>
+            <div class="callout callout-warning">
+                <span class="callout-icon">⚠️</span>
+                <div>
+                    <strong>Icône manquante</strong><br>
+                    Actuellement <code>folder</code> est utilisé pour Corpus, mais il n'existe pas d'icône spécifique.
+                    Il faut créer <code>corpus.svg</code> pour différencier visuellement des dossiers système.
+                </div>
+            </div>
+            <table>
+                <thead>
+                    <tr><th>Fichier</th><th>Action</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>UI-SHARED/icons/status/corpus.svg</code></td>
+                        <td><span class="badge badge-danger">À créer</span> — Design : groupe de documents empilés ou classeur</td>
+                    </tr>
+                    <tr>
+                        <td><code>UI-SHARED/js/config/icons.js</code></td>
+                        <td>Ajouter <code>'corpus'</code> dans <code>simpleIcons</code></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3><span class="h3-dot dot-amber"></span> Fichiers frontend à modifier</h3>
+            <table>
+                <thead>
+                    <tr><th>Fichier</th><th>Modifications</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>UI-BACK/js/modules/content-documents.js</code></td>
+                        <td>Remplacer <code>locationHtml</code> par <code>corpusCountHtml</code>, utiliser <code>Icons.corpus()</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>UI-BACK/js/modules/sources.js</code></td>
+                        <td>Ajouter colonne "Corpus" après "Health", renommer "Index" → "Chunks"</td>
+                    </tr>
+                    <tr>
+                        <td><code>UI-SHARED/templates/</code></td>
+                        <td>Nouveau template <code>corpus-count-badge.html</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>UI-SHARED/locales/*.json</code></td>
+                        <td>Clés: <code>corpus_count</code>, <code>no_corpus_assigned</code></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3><span class="h3-dot dot-red"></span> Bug corrigé : sources_count incohérent</h3>
+            <div class="callout callout-warning">
+                <span class="callout-icon">🐛</span>
+                <div>
+                    <strong>Bug identifié (2026-02-21)</strong><br>
+                    Le tableau des corpus affichait un compteur <code>sources_count</code> différent de la modale "Gérer le contenu".
+                    <ul>
+                        <li><strong>Tableau</strong> : comptait TOUTES les sources sans filtre</li>
+                        <li><strong>Modale</strong> : filtrait par provider courant (ollama/llamacpp)</li>
+                    </ul>
+                    <strong>Correction</strong> : Le backend applique maintenant le même filtre provider dans <code>list_corpus()</code>
+                    via le paramètre <code>provider_filter</code> transmis à <code>_to_response()</code>.
+                </div>
+            </div>
+            <table>
+                <thead>
+                    <tr><th>Fichier modifié</th><th>Changement</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>app/features/admin/corpus/router.py</code></td>
+                        <td>Récupère <code>current_provider</code> et le passe à <code>list_corpus(provider_filter=...)</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>app/features/admin/corpus/service.py</code></td>
+                        <td><code>list_corpus()</code> accepte <code>provider_filter</code>, <code>_to_response()</code> filtre les sources</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3><span class="h3-dot dot-red"></span> Bug corrigé : checkbox non cochée lors de la sélection</h3>
+            <div class="callout callout-warning">
+                <span class="callout-icon">🐛</span>
+                <div>
+                    <strong>Bug identifié (2026-02-21)</strong><br>
+                    Cliquer sur une ligne du tableau Corpus ne cochait pas la case à cocher correspondante.
+                    <ul>
+                        <li><strong>Cause</strong> : Le template utilisait <code>data-corpus-id</code> mais le mixin <code>BulkSelectionMixin</code>
+                            ne reconnaissait pas cet attribut dans sa fonction <code>updateBulkActionsUI()</code></li>
+                        <li><strong>Impact</strong> : Les checkboxes restaient décochées visuellement malgré la sélection interne</li>
+                    </ul>
+                    <strong>Correction</strong> : Ajout de <code>cb.dataset.corpusId</code> à la liste des attributs reconnus dans le mixin.
+                </div>
+            </div>
+            <table>
+                <thead>
+                    <tr><th>Fichier modifié</th><th>Changement</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>UI-SHARED/js/mixins/bulk-selection.js</code></td>
+                        <td>Ligne 106-108 : ajout de <code>cb.dataset.corpusId</code> à la détection d'ID</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3><span class="h3-dot dot-red"></span> Modale d'upload</h3>
+            <ul class="feature-list">
+                <li><strong>Pas de choix de corpus</strong> : le document est uploadé sans corpus initial</li>
+                <li><strong>Association aux corpus</strong> : via le module Corpus → "Gérer le contenu"</li>
+            </ul>
+
+            <h3><span class="h3-dot dot-red"></span> Bug corrigé : recherche RAG ignorait le filtrage corpus</h3>
+            <div class="callout callout-warning">
+                <span class="callout-icon">🐛</span>
+                <div>
+                    <strong>Bug critique (2026-02-21)</strong><br>
+                    La recherche RAG retournait des documents d'autres corpus non liés.
+                    <ul>
+                        <li><strong>Symptôme</strong> : Chat avec collection "Remotion Ollama" affichait "windows-ami-reference.pdf" (document EC2)</li>
+                        <li><strong>Cause</strong> : <code>get_corpus_collection_names()</code> utilisait la FK directe <code>Collection.corpus_id</code>
+                            au lieu de la table pivot <code>corpus_collections</code></li>
+                        <li><strong>Impact</strong> : Les collections partageant le même <code>corpus_id</code> direct étaient fusionnées,
+                            ignorant la relation N-to-N correcte</li>
+                    </ul>
+                    <strong>Correction</strong> : Mise à jour des deux fonctions pour utiliser <code>CorpusCollection</code> (table pivot).
+                </div>
+            </div>
+            <table>
+                <thead>
+                    <tr><th>Fichier modifié</th><th>Changement</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>app/common/utils/chroma.py</code></td>
+                        <td><code>get_corpus_collection_names()</code> : JOIN sur <code>CorpusCollection</code> au lieu de WHERE <code>Collection.corpus_id</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>app/features/chat/service.py</code></td>
+                        <td><code>_get_collection_corpus_id()</code> : recherche via <code>CorpusCollection</code> au lieu de <code>Collection.corpus_id</code></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3><span class="h3-dot dot-red"></span> Bug corrigé : conflit de routage FastAPI sur les routes bulk</h3>
+            <div class="callout callout-warning">
+                <span class="callout-icon">🐛</span>
+                <div>
+                    <strong>Bug critique (2026-02-22)</strong><br>
+                    Les opérations bulk de suppression de sources et documents échouaient avec une erreur 422.
+                    <ul>
+                        <li><strong>Symptôme</strong> : "Retirer la sélection" sur les sources dans la modale corpus retournait
+                            <code>uuid_parsing error: invalid character</code></li>
+                        <li><strong>Cause</strong> : Dans FastAPI, les routes avec paramètres dynamiques (<code>/{source_id}</code>) capturaient
+                            les routes statiques (<code>/bulk</code>) si elles étaient définies AVANT dans le fichier</li>
+                        <li><strong>Impact</strong> : <code>DELETE /corpus/{id}/sources/bulk</code> → interprété comme
+                            <code>DELETE /corpus/{id}/sources/{source_id="bulk"}</code></li>
+                    </ul>
+                    <strong>Correction</strong> : Réorganisation des routes pour placer <code>/bulk</code> AVANT <code>/{source_id}</code> et <code>/{document_id}</code>.
+                </div>
+            </div>
+            <table>
+                <thead>
+                    <tr><th>Fichier modifié</th><th>Changement</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>app/features/admin/corpus/router.py</code></td>
+                        <td>Routes <code>/sources/bulk</code> déplacées AVANT <code>/sources/{source_id}</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>app/features/admin/corpus/router.py</code></td>
+                        <td>Routes <code>/documents/bulk</code> déplacées AVANT <code>/documents/{document_id}</code></td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="callout callout-info">
+                <span class="callout-icon">💡</span>
+                <div>
+                    <strong>Règle FastAPI</strong><br>
+                    Les routes statiques (<code>/bulk</code>, <code>/available</code>) doivent toujours être définies
+                    <strong>AVANT</strong> les routes avec paramètres dynamiques (<code>/{id}</code>) pour éviter les conflits de routage.
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 7 -->
+        <section class="section" id="section-7">
+            <div class="section-header">
+                <div class="section-icon icon-amber">🧪</div>
+                <div>
+                    <span class="section-num">Section 7</span>
+                    <h2>Tests</h2>
+                </div>
+                <a href="#toc" class="back-to-toc">↑ Sommaire</a>
+            </div>
+
+            <div class="three-cols">
+                <div class="card">
+                    <div class="card-title">🔬 Tests unitaires</div>
+                    <div class="card-text">
+                        <code>test_corpus.py</code><br>
+                        CRUD relation N à N
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-title">🔗 Tests d'intégration</div>
+                    <div class="card-text">
+                        Upload → ajout corpus<br>
+                        Suppression corpus/document
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-title">🔁 Tests de régression</div>
+                    <div class="card-text">
+                        RAG multi-corpus<br>
+                        Réindexation
+                    </div>
+                </div>
+            </div>
+
+            <h3><span class="h3-dot dot-red"></span> Tests de la règle d'unicité</h3>
+            <p>Fichier : <code>tests/admin/test_corpus.py</code></p>
+            <table>
+                <thead>
+                    <tr><th>Test</th><th>Vérifie</th><th>Attendu</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>test_add_collection_duplicate</code></td>
+                        <td>Ajout d'une collection déjà présente</td>
+                        <td>HTTP 409 + "Collection deja dans ce corpus"</td>
+                    </tr>
+                    <tr>
+                        <td><code>test_add_source_duplicate</code></td>
+                        <td>Ajout d'une source déjà présente</td>
+                        <td>HTTP 409 + "Source deja dans ce corpus"</td>
+                    </tr>
+                    <tr>
+                        <td><code>test_add_document_already_in_corpus</code></td>
+                        <td>Ajout d'un document déjà présent</td>
+                        <td>HTTP 409 + "Document deja dans ce corpus"</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Section 8 -->
+        <section class="section" id="section-8">
+            <div class="section-header">
+                <div class="section-icon icon-red">📋</div>
+                <div>
+                    <span class="section-num">Section 8</span>
+                    <h2>Plan d'exécution</h2>
+                </div>
+                <a href="#toc" class="back-to-toc">↑ Sommaire</a>
+            </div>
+
+            <div class="vflow">
+                <div class="vflow-step active">
+                    <div class="step-title">Phase 1 : Préparation (1h)</div>
+                    <div class="step-desc">Migration Alembic + Modèle CorpusDocument + Modifier Document</div>
+                </div>
+                <div class="vflow-step">
+                    <div class="step-title">Phase 2 : Backend (2h)</div>
+                    <div class="step-desc">Services admin + Schemas Pydantic + Ingestion</div>
+                </div>
+                <div class="vflow-step">
+                    <div class="step-title">Phase 3 : Frontend (1h)</div>
+                    <div class="step-desc">Affichage multi-corpus + Action "Gérer corpus"</div>
+                </div>
+                <div class="vflow-step">
+                    <div class="step-title">Phase 4 : Tests (1h)</div>
+                    <div class="step-desc">Tests unitaires + E2E + Validation manuelle</div>
+                </div>
+            </div>
+
+            <div class="callout callout-info">
+                <span class="callout-icon">⏱️</span>
+                <div>
+                    <strong>Estimation totale : 5 heures</strong><br>
+                    Risque : <span class="badge badge-warning">Moyen</span> (migration de données existantes)
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Document généré le 2026-02-21 | MY-IA Project</p>
+        </footer>
+    </div>
+</body>
+</html>

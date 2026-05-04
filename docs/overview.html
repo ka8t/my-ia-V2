@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MY-IA &mdash; Vue d'ensemble du projet</title>
+  <link rel="stylesheet" href="assets/doc-style.css">
+</head>
+<body>
+
+<!-- ==================== HEADER ==================== -->
+<div class="header">
+  <div class="page">
+    <div class="header-icon">&#x1F4DD;</div>
+    <div>
+      <h1>MY-IA &mdash; Vue d'ensemble</h1>
+      <div class="subtitle">
+        Synthese rapide du projet, de son architecture et de sa stack technique.
+      </div>
+      <div class="meta">
+        <span>Version 1.0.0</span>
+        <span>22 fevrier 2026</span>
+        <span>5 sections</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+
+<!-- ==================== TABLE OF CONTENTS ==================== -->
+<div class="toc">
+  <h2>Table des matieres</h2>
+  <div class="toc-grid">
+    <a href="#s1"><span class="toc-num">1</span> Resume</a>
+    <a href="#s2"><span class="toc-num">2</span> Stack technique</a>
+    <a href="#s3"><span class="toc-num">3</span> Architecture</a>
+    <a href="#s4"><span class="toc-num">4</span> Structure du code</a>
+    <a href="#s5"><span class="toc-num">5</span> Fonctionnalites</a>
+  </div>
+</div>
+
+<!-- ==================== SECTION 1 ==================== -->
+<div class="section" id="s1">
+  <div class="section-header">
+    <div class="section-icon icon-blue">&#x1F4CC;</div>
+    <div><h2>Resume <span class="section-num">&mdash; Section 1</span></h2></div>
+  </div>
+
+  <p>
+    MY-IA est une application de chatbot RAG 100% locale. Elle ingere des documents,
+    les indexe dans une base vectorielle, puis enrichit les reponses du chat via retrieval.
+    Aucune donnee n'est envoyee a des services externes.
+  </p>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-title">&#x1F512; Privee</div>
+      <div class="card-text">Traitement et stockage sur l'infrastructure locale.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F9E0; RAG</div>
+      <div class="card-text">Reponses contextualisees a partir des documents.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x26A1; Temps reel</div>
+      <div class="card-text">Streaming des reponses dans l'interface.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SECTION 2 ==================== -->
+<div class="section" id="s2">
+  <div class="section-header">
+    <div class="section-icon icon-teal">&#x1F9F0;</div>
+    <div><h2>Stack technique <span class="section-num">&mdash; Section 2</span></h2></div>
+  </div>
+
+  <table>
+    <thead><tr><th>Composant</th><th>Technologie</th><th>Role</th></tr></thead>
+    <tbody>
+      <tr><td>Backend</td><td>FastAPI (Python 3.10)</td><td>API REST + logique metier</td></tr>
+      <tr><td>Database</td><td>PostgreSQL 16</td><td>Donnees applicatives</td></tr>
+      <tr><td>Vector DB</td><td>ChromaDB</td><td>Indexation et retrieval</td></tr>
+      <tr><td>LLM</td><td>Ollama (Gemma2, Mistral, Llama)</td><td>Generation de reponses</td></tr>
+      <tr><td>Embeddings</td><td>nomic-embed-text</td><td>Vectorisation des documents</td></tr>
+      <tr><td>Frontend</td><td>JavaScript ES6 + Nginx</td><td>UI utilisateur + admin</td></tr>
+      <tr><td>Parsing</td><td>Unstructured + LangChain</td><td>Extraction multi-formats</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ==================== SECTION 3 ==================== -->
+<div class="section" id="s3">
+  <div class="section-header">
+    <div class="section-icon icon-amber">&#x1F3D7;</div>
+    <div><h2>Architecture <span class="section-num">&mdash; Section 3</span></h2></div>
+  </div>
+
+  <div class="flow">
+    <div class="flow-step flow-blue">&#x1F4BB;<br>UI-FRONT<span class="flow-label">port 3000</span></div>
+    <div class="flow-arrow">&#x25B6;</div>
+    <div class="flow-step flow-teal">&#x1F6E0;<br>FastAPI<span class="flow-label">port 8080</span></div>
+    <div class="flow-arrow">&#x25B6;</div>
+    <div class="flow-step flow-green">&#x1F4E6;<br>Services<span class="flow-label">PostgreSQL / Chroma / Ollama</span></div>
+  </div>
+
+  <div class="callout callout-info">
+    <span class="callout-icon">&#x1F4A1;</span>
+    <span>Une seconde interface d'administration est disponible via UI-BACK (port 8081).</span>
+  </div>
+</div>
+
+<!-- ==================== SECTION 4 ==================== -->
+<div class="section" id="s4">
+  <div class="section-header">
+    <div class="section-icon icon-green">&#x1F4C2;</div>
+    <div><h2>Structure du code <span class="section-num">&mdash; Section 4</span></h2></div>
+  </div>
+
+  <ul class="feature-list">
+    <li><strong>app/</strong> &mdash; Backend FastAPI (entree, models, core, common).</li>
+    <li><strong>app/features/</strong> &mdash; Modules: auth, chat, documents, ingestion, admin.</li>
+    <li><strong>UI-FRONT/</strong> &mdash; Interface utilisateur.</li>
+    <li><strong>UI-BACK/</strong> &mdash; Interface d'administration.</li>
+    <li><strong>scripts/</strong> &mdash; Demarrage, arret, generation .env.</li>
+    <li><strong>docs/</strong> &mdash; Documentation technique et guides.</li>
+  </ul>
+</div>
+
+<!-- ==================== SECTION 5 ==================== -->
+<div class="section" id="s5">
+  <div class="section-header">
+    <div class="section-icon icon-purple">&#x2728;</div>
+    <div><h2>Fonctionnalites <span class="section-num">&mdash; Section 5</span></h2></div>
+  </div>
+
+  <ul class="feature-list">
+    <li><strong>Chat RAG</strong> &mdash; Reponses contextualisees avec sources.</li>
+    <li><strong>Multi-formats</strong> &mdash; PDF, Office, images (OCR), Markdown.</li>
+    <li><strong>Streaming</strong> &mdash; Reponses en temps reel.</li>
+    <li><strong>Multi-utilisateurs</strong> &mdash; Espaces prives par compte.</li>
+    <li><strong>Administration</strong> &mdash; Dashboard, validation, quotas.</li>
+    <li><strong>Securite</strong> &mdash; JWT, chiffrement PII, rate limiting.</li>
+  </ul>
+
+  <div class="callout callout-success">
+    <span class="callout-icon">&#x2705;</span>
+    <span>Ce document sert de point d'entree avant la documentation technique detaillee.</span>
+  </div>
+</div>
+
+<!-- ==================== FOOTER ==================== -->
+<div class="footer">
+  MY-IA &mdash; Vue d'ensemble &mdash; Version 1.0.0 &mdash; 22 fevrier 2026
+</div>
+
+</div>
+
+</body>
+</html>

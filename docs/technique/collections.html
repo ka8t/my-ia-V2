@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Collections — Architecture et Fonctionnement</title>
+    <link rel="stylesheet" href="../assets/doc-style.css">
+</head>
+<body>
+    <div class="header">
+        <h1>Collections</h1>
+        <p class="subtitle">Architecture et Fonctionnement</p>
+    </div>
+
+    <div class="page">
+        <nav class="toc">
+            <h2>Table des matières</h2>
+            <ul>
+                <li><a href="#overview">1. Vue d'ensemble</a></li>
+                <li><a href="#concepts">2. Concepts clés</a></li>
+                <li><a href="#types">3. Types de collections</a></li>
+                <li><a href="#hierarchie">4. Hiérarchie des données</a></li>
+                <li><a href="#vues">5. Vue Admin vs Vue User</a></li>
+                <li><a href="#flux-rag">6. Flux de données RAG</a></li>
+                <li><a href="#multi-provider">7. Gestion multi-provider</a></li>
+                <li><a href="#api">8. API Endpoints</a></li>
+                <li><a href="#config">9. Configuration</a></li>
+                <li><a href="#clear-index">10. Opérations de vidage</a></li>
+                <li><a href="#schema">11. Schéma BDD</a></li>
+                <li><a href="#troubleshooting">12. Troubleshooting</a></li>
+            </ul>
+        </nav>
+
+        <!-- Section 1 -->
+        <section id="overview" class="section">
+            <h2><span class="section-number">1</span> Vue d'ensemble</h2>
+
+            <p>Les <strong>collections</strong> sont le mécanisme central d'organisation des contenus dans MY-IA. Elles font le lien entre les données métier (PostgreSQL) et le stockage vectoriel (ChromaDB).</p>
+
+            <div class="pipeline">
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           BASE DE DONNÉES (PostgreSQL)                       │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  Collection (table `collections`)                                            │
+│  ├── id, name, display_name, type (public/private)                          │
+│  ├── owner_id (null si public, user_id si privée)                           │
+│  └── corpus_id (relation 1-1 avec un corpus)                                │
+│                                                                              │
+│  Corpus (table `corpus`)                                                     │
+│  └── Regroupe Documents + Sources                                           │
+│                                                                              │
+│  Documents / Sources                                                         │
+│  └── Contenu textuel découpé en chunks                                      │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           CHROMADB (Vectoriel)                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  Collection ChromaDB = nom_collection + "_" + provider                       │
+│                                                                              │
+│  Exemple pour "public_docs" :                                                │
+│  ├── public_docs_ollama      (embeddings générés par Ollama)                │
+│  └── public_docs_llamacpp    (embeddings générés par llama.cpp)             │
+│                                                                              │
+│  Contient : chunks (texte) + embeddings (vecteurs) + métadonnées            │
+└─────────────────────────────────────────────────────────────────────────────┘
+            </div>
+        </section>
+
+        <!-- Section 2 -->
+        <section id="concepts" class="section">
+            <h2><span class="section-number">2</span> Concepts clés</h2>
+
+            <h3>Collection PostgreSQL vs Collection ChromaDB</h3>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Aspect</th>
+                        <th>Collection PostgreSQL</th>
+                        <th>Collection ChromaDB</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Rôle</strong></td>
+                        <td>Entité métier (organisation)</td>
+                        <td>Stockage vectoriel (recherche)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Contenu</strong></td>
+                        <td>Métadonnées, relations</td>
+                        <td>Chunks + embeddings</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Nommage</strong></td>
+                        <td><code>public_docs</code></td>
+                        <td><code>public_docs_ollama</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Multiplicité</strong></td>
+                        <td>1 collection</td>
+                        <td>N collections (1 par provider)</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Pourquoi un suffixe par provider ?</h3>
+
+            <p>Les embeddings sont <strong>incompatibles</strong> entre providers :</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Provider</th>
+                        <th>Modèle embedding</th>
+                        <th>Dimensions</th>
+                        <th>Espace vectoriel</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Ollama</td>
+                        <td><code>nomic-embed-text</code></td>
+                        <td>768</td>
+                        <td>Propre à Ollama</td>
+                    </tr>
+                    <tr>
+                        <td>llama.cpp</td>
+                        <td><code>nomic-embed-text-v1.5.Q8_0.gguf</code></td>
+                        <td>768</td>
+                        <td>Différent</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="callout warning">
+                <strong>Conséquence :</strong> Un chunk indexé avec Ollama ne peut pas être recherché avec llama.cpp. Chaque provider nécessite sa propre collection ChromaDB.
+            </div>
+        </section>
+
+        <!-- Section 3 -->
+        <section id="types" class="section">
+            <h2><span class="section-number">3</span> Types de collections</h2>
+
+            <div class="cards">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Collection Publique</h3>
+                        <span class="badge badge-primary">Admin</span>
+                    </div>
+                    <div class="card-body">
+                        <table>
+                            <tr><td><strong>Créée par</strong></td><td>Admin (UI Admin > Content > Collections)</td></tr>
+                            <tr><td><strong>Propriétaire</strong></td><td><code>null</code> (pas de owner)</td></tr>
+                            <tr><td><strong>Type</strong></td><td><code>"public"</code></td></tr>
+                            <tr><td><strong>Visible par</strong></td><td>Tous les utilisateurs autorisés</td></tr>
+                            <tr><td><strong>Contenu</strong></td><td>Corpus assigné par l'admin</td></tr>
+                            <tr><td><strong>Nom ChromaDB</strong></td><td><code>public_{name}_{provider}</code></td></tr>
+                        </table>
+                        <p><strong>Cas d'usage :</strong> Base de connaissances partagée, documentation produit, FAQ entreprise, corpus réglementaire</p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Collection Privée</h3>
+                        <span class="badge badge-secondary">Automatique</span>
+                    </div>
+                    <div class="card-body">
+                        <table>
+                            <tr><td><strong>Créée par</strong></td><td>Système (automatique à l'inscription)</td></tr>
+                            <tr><td><strong>Propriétaire</strong></td><td><code>user_id</code></td></tr>
+                            <tr><td><strong>Type</strong></td><td><code>"private"</code></td></tr>
+                            <tr><td><strong>Visible par</strong></td><td>Uniquement le propriétaire</td></tr>
+                            <tr><td><strong>Contenu</strong></td><td>Documents uploadés par l'utilisateur</td></tr>
+                            <tr><td><strong>Nom ChromaDB</strong></td><td><code>user_{user_id}_{provider}</code></td></tr>
+                        </table>
+                        <p><strong>Cas d'usage :</strong> Documents personnels, notes et recherches, données confidentielles</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 4 -->
+        <section id="hierarchie" class="section">
+            <h2><span class="section-number">4</span> Hiérarchie des données</h2>
+
+            <div class="pipeline">
+                    ┌─────────────────────┐
+                    │     COLLECTION      │
+                    │  (public/private)   │
+                    └──────────┬──────────┘
+                               │
+                               │ relation 1-1
+                               ▼
+                    ┌─────────────────────┐
+                    │       CORPUS        │
+                    │  (regroupement)     │
+                    └──────────┬──────────┘
+                               │
+              ┌────────────────┼────────────────┐
+              │                                 │
+              ▼                                 ▼
+    ┌─────────────────┐               ┌─────────────────┐
+    │    DOCUMENTS    │               │     SOURCES     │
+    │  (fichiers)     │               │  (web/API)      │
+    └────────┬────────┘               └────────┬────────┘
+             │                                  │
+             ▼                                  ▼
+    ┌─────────────────┐               ┌─────────────────┐
+    │     CHUNKS      │               │     CHUNKS      │
+    │  (fragments)    │               │  (fragments)    │
+    └─────────────────┘               └─────────────────┘
+             │                                  │
+             └──────────────┬───────────────────┘
+                            │
+                            ▼
+                 ┌─────────────────────┐
+                 │      CHROMADB       │
+                 │  (embeddings)       │
+                 └─────────────────────┘
+            </div>
+
+            <h3>Relations</h3>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Table Parent</th>
+                        <th>Table Enfant</th>
+                        <th>Relation</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>collections</code></td>
+                        <td><code>corpus</code></td>
+                        <td>1-1</td>
+                        <td>Une collection a un corpus</td>
+                    </tr>
+                    <tr>
+                        <td><code>corpus</code></td>
+                        <td><code>documents</code></td>
+                        <td>1-N</td>
+                        <td>Un corpus contient N documents</td>
+                    </tr>
+                    <tr>
+                        <td><code>corpus</code></td>
+                        <td><code>sources</code></td>
+                        <td>1-N</td>
+                        <td>Un corpus contient N sources</td>
+                    </tr>
+                    <tr>
+                        <td><code>documents</code></td>
+                        <td><code>chunks</code></td>
+                        <td>1-N</td>
+                        <td>Un document = N chunks</td>
+                    </tr>
+                    <tr>
+                        <td><code>sources</code></td>
+                        <td><code>chunks</code></td>
+                        <td>1-N</td>
+                        <td>Une source = N chunks</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Section 5 -->
+        <section id="vues" class="section">
+            <h2><span class="section-number">5</span> Vue Admin vs Vue User</h2>
+
+            <div class="cards">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Interface Administration (UI-BACK)</h3>
+                    </div>
+                    <div class="card-body">
+                        <h4>Accès complet :</h4>
+                        <ul>
+                            <li>Toutes les collections (publiques + privées de chaque user)</li>
+                            <li>Statistiques détaillées (chunks, documents, sources)</li>
+                            <li>État d'indexation par provider (Ollama, llama.cpp)</li>
+                            <li>Modèle d'embedding utilisé</li>
+                            <li>Alertes de mismatch (modèle différent du modèle actif)</li>
+                        </ul>
+
+                        <h4>Actions disponibles :</h4>
+                        <ul>
+                            <li>Créer collection publique</li>
+                            <li>Assigner/modifier le corpus</li>
+                            <li>Voir l'état d'indexation par provider</li>
+                            <li>Réindexer pour un provider spécifique</li>
+                            <li>Vider / Supprimer une collection</li>
+                            <li>Synchroniser les compteurs</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Interface Utilisateur (UI-FRONT)</h3>
+                    </div>
+                    <div class="card-body">
+                        <h4>Accès limité :</h4>
+                        <ul>
+                            <li>Collections publiques autorisées</li>
+                            <li>Sa propre collection privée</li>
+                        </ul>
+
+                        <h4>Ne voit pas :</h4>
+                        <ul>
+                            <li>Collections privées des autres utilisateurs</li>
+                            <li>Détails techniques (provider, ChromaDB, embeddings)</li>
+                            <li>Statistiques admin</li>
+                        </ul>
+
+                        <h4>Actions disponibles :</h4>
+                        <ul>
+                            <li>Uploader des documents (→ collection privée)</li>
+                            <li>Gérer ses documents (supprimer, télécharger)</li>
+                            <li>Sélectionner les collections pour le RAG</li>
+                            <li>Poser des questions</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 6 -->
+        <section id="flux-rag" class="section">
+            <h2><span class="section-number">6</span> Flux de données RAG</h2>
+
+            <h3>6.1 Indexation (Admin/User → ChromaDB)</h3>
+
+            <div class="pipeline">
+Document/Source uploadé
+        │
+        ▼
+┌───────────────────────────────────────┐
+│  PARSING (Unstructured.io)            │
+│  PDF, DOCX, Images → Texte brut       │
+└───────────────────┬───────────────────┘
+                    │
+                    ▼
+┌───────────────────────────────────────┐
+│  CHUNKING (LangChain)                 │
+│  Texte → Fragments de 512 tokens      │
+└───────────────────┬───────────────────┘
+                    │
+                    ▼
+┌───────────────────────────────────────┐
+│  EMBEDDING (Provider actif)           │
+│  Chunk → Vecteur 768 dimensions       │
+└───────────────────┬───────────────────┘
+                    │
+                    ▼
+┌───────────────────────────────────────┐
+│  STOCKAGE                             │
+│  PostgreSQL: métadonnées              │
+│  ChromaDB: {collection}_{provider}    │
+└───────────────────────────────────────┘
+            </div>
+
+            <h3>6.2 Recherche (User → Réponse)</h3>
+
+            <div class="pipeline">
+Question utilisateur
+        │
+        ▼
+┌───────────────────────────────────────┐
+│  COLLECTIONS SÉLECTIONNÉES            │
+│  - Ma collection privée               │
+│  - Documentation Technique (public)   │
+└───────────────────┬───────────────────┘
+                    │
+                    ▼
+┌───────────────────────────────────────┐
+│  EMBEDDING QUERY                      │
+│  Question → Vecteur (provider actif)  │
+└───────────────────┬───────────────────┘
+                    │
+                    ▼
+┌───────────────────────────────────────┐
+│  RECHERCHE CHROMADB                   │
+│  Pour chaque collection:              │
+│  - {name}_{provider_actif}            │
+│  - Fallback: {name} (legacy)          │
+│  → Top-K chunks par similarité        │
+└───────────────────┬───────────────────┘
+                    │
+                    ▼
+┌───────────────────────────────────────┐
+│  ASSEMBLAGE CONTEXTE                  │
+│  Fusion + tri par score               │
+│  Limite: max_context_items            │
+└───────────────────┬───────────────────┘
+                    │
+                    ▼
+┌───────────────────────────────────────┐
+│  GÉNÉRATION LLM                       │
+│  System prompt + Context + Question   │
+│  → Réponse streamée + sources         │
+└───────────────────────────────────────┘
+            </div>
+        </section>
+
+        <!-- Section 7 -->
+        <section id="multi-provider" class="section">
+            <h2><span class="section-number">7</span> Gestion multi-provider</h2>
+
+            <h3>Problématique</h3>
+
+            <p>Changer de provider LLM (Ollama ↔ llama.cpp) implique :</p>
+            <ol>
+                <li>Les embeddings existants sont incompatibles</li>
+                <li>La recherche RAG ne fonctionne plus</li>
+                <li>Il faut réindexer avec le nouveau provider</li>
+            </ol>
+
+            <h3>Solution : Collections suffixées</h3>
+
+            <div class="pipeline">
+Collection PostgreSQL: "documentation"
+        │
+        ├── ChromaDB: "documentation_ollama"     (embeddings Ollama)
+        │
+        └── ChromaDB: "documentation_llamacpp"   (embeddings llama.cpp)
+            </div>
+
+            <h3>État d'indexation (Admin UI)</h3>
+
+            <div class="pipeline">
+┌─────────────────────────────────────────────────────────────┐
+│  État d'indexation - Documentation Technique                │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │  OLLAMA                              [Actif]        │    │
+│  │  ✓ 1,234 chunks                                     │    │
+│  │  Modèle: nomic-embed-text                           │    │
+│  │                                    [Réindexer]      │    │
+│  └─────────────────────────────────────────────────────┘    │
+│                                                              │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │  LLAMA.CPP                                          │    │
+│  │  ✗ Non indexé                                       │    │
+│  │                                                     │    │
+│  │                                    [Indexer]        │    │
+│  └─────────────────────────────────────────────────────┘    │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+            </div>
+
+            <h3>Workflow typique</h3>
+
+            <ol>
+                <li><strong>Configuration initiale</strong> : Provider = Ollama</li>
+                <li><strong>Indexation</strong> : Documents indexés dans <code>{collection}_ollama</code></li>
+                <li><strong>Changement provider</strong> : Admin passe à llama.cpp</li>
+                <li><strong>Alerte</strong> : UI affiche "Réindexation nécessaire"</li>
+                <li><strong>Réindexation</strong> : Admin lance réindex pour llama.cpp</li>
+                <li><strong>Résultat</strong> : <code>{collection}_llamacpp</code> créée et peuplée</li>
+            </ol>
+        </section>
+
+        <!-- Section 8 -->
+        <section id="api" class="section">
+            <h2><span class="section-number">8</span> API Endpoints</h2>
+
+            <h3>Collections (Admin)</h3>
+
+            <div class="code-block">
+<pre># Liste des collections
+GET /api/admin/collections
+GET /api/admin/collections?type=public
+GET /api/admin/collections?type=private
+
+# Détail collection
+GET /api/admin/collections/{id}
+
+# Créer collection publique
+POST /api/admin/collections/public
+{
+  "name": "documentation",
+  "display_name": "Documentation",
+  "description": "...",
+  "space": "cosine"
+}
+
+# État d'indexation par provider
+GET /api/admin/collections/{id}/index-status
+→ {
+    "collection_id": "...",
+    "collection_name": "public_documentation",
+    "display_name": "Documentation",
+    "providers": [
+      {"provider": "ollama", "collection_exists": true, "chunk_count": 1234},
+      {"provider": "llamacpp", "collection_exists": false, "chunk_count": 0}
+    ],
+    "active_provider": "ollama"
+  }
+
+# Réindexer pour un provider
+POST /api/admin/collections/{id}/reindex
+{
+  "provider": "llamacpp",
+  "force": true
+}
+
+# Assigner un corpus
+PUT /api/admin/collections/{id}
+{
+  "corpus_id": "..."
+}
+
+# Synchroniser les compteurs
+POST /api/admin/collections/{id}/sync
+
+# Vider la collection
+DELETE /api/admin/collections/{id}/clear
+
+# Supprimer la collection
+DELETE /api/admin/collections/{id}</pre>
+            </div>
+
+            <h3>Collections (User)</h3>
+
+            <div class="code-block">
+<pre># Mes collections disponibles
+GET /api/collections
+→ Liste collections publiques + ma collection privée
+
+# Sélection pour le RAG
+PUT /api/user/settings/collections
+{
+  "selected_collection_ids": ["...", "..."]
+}</pre>
+            </div>
+        </section>
+
+        <!-- Section 9 -->
+        <section id="config" class="section">
+            <h2><span class="section-number">9</span> Configuration</h2>
+
+            <h3>Paramètres BDD (<code>system_configs</code>)</h3>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Clé</th>
+                        <th>Type</th>
+                        <th>Default</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>rag.top_k</code></td>
+                        <td>int</td>
+                        <td>10</td>
+                        <td>Chunks par recherche</td>
+                    </tr>
+                    <tr>
+                        <td><code>sources.max_context_items</code></td>
+                        <td>int</td>
+                        <td>50</td>
+                        <td>Total chunks envoyés au LLM</td>
+                    </tr>
+                    <tr>
+                        <td><code>rag.similarity_threshold</code></td>
+                        <td>float</td>
+                        <td>0.7</td>
+                        <td>Seuil de pertinence</td>
+                    </tr>
+                    <tr>
+                        <td><code>llm.provider</code></td>
+                        <td>string</td>
+                        <td>"ollama"</td>
+                        <td>Provider actif</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Espaces vectoriels</h3>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Espace</th>
+                        <th>Description</th>
+                        <th>Cas d'usage</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>cosine</code></td>
+                        <td>Similarité cosinus (recommandé)</td>
+                        <td>Texte sémantique</td>
+                    </tr>
+                    <tr>
+                        <td><code>l2</code></td>
+                        <td>Distance euclidienne</td>
+                        <td>Données numériques</td>
+                    </tr>
+                    <tr>
+                        <td><code>ip</code></td>
+                        <td>Produit scalaire</td>
+                        <td>Embeddings normalisés</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Section 10 -->
+        <section id="clear-index" class="section">
+            <h2><span class="section-number">10</span> Opérations de vidage (Clear Index)</h2>
+
+            <h3>Concept</h3>
+
+            <p>L'opération <strong>"Vider"</strong> (Clear Index) supprime uniquement les chunks de ChromaDB :</p>
+            <ul>
+                <li><span class="icon-check"></span> <strong>Conserve</strong> les fichiers sur le disque</li>
+                <li><span class="icon-check"></span> <strong>Conserve</strong> les enregistrements en base de données</li>
+                <li><span class="icon-check"></span> <strong>Met à jour</strong> les compteurs (chunk_count = 0)</li>
+                <li><span class="icon-x"></span> <strong>Supprime</strong> les embeddings de tous les providers</li>
+            </ul>
+
+            <h3>Endpoints API</h3>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Entité</th>
+                        <th>Endpoint</th>
+                        <th>Cascade</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Collection</td>
+                        <td><code>DELETE /api/admin/collections/{id}/index</code></td>
+                        <td>Documents de la collection</td>
+                    </tr>
+                    <tr>
+                        <td>Document</td>
+                        <td><code>DELETE /api/admin/documents/{id}/index</code></td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td>Source</td>
+                        <td><code>DELETE /api/admin/sources/{id}/index</code></td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td>Corpus</td>
+                        <td><code>DELETE /api/admin/corpus/{id}/index</code></td>
+                        <td>Documents + Sources</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Code commun (DRY)</h3>
+
+            <p>Les fonctions de vidage sont centralisées dans <code>app/common/utils/chroma_helpers.py</code> :</p>
+
+            <div class="code-block">
+<pre># Vider par filtre (générique)
+clear_chunks_by_filter(chroma, collection_name, where_filter, provider=None)
+
+# Vider un document (tous providers)
+clear_document_chunks(chroma, collection_name, document_hash)
+
+# Vider une source (tous providers)
+clear_source_chunks(chroma, source_name)
+
+# Vider une collection (tous providers)
+clear_collection_all_providers(chroma, collection_name)</pre>
+            </div>
+
+            <h3>Différence avec "Supprimer"</h3>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Action</th>
+                        <th>ChromaDB</th>
+                        <th>Fichiers</th>
+                        <th>Base de données</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Vider</strong></td>
+                        <td><span class="badge badge-danger">Supprimé</span></td>
+                        <td><span class="badge badge-success">Conservé</span></td>
+                        <td><span class="badge badge-success">Conservé (compteurs = 0)</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Supprimer</strong></td>
+                        <td><span class="badge badge-danger">Supprimé</span></td>
+                        <td><span class="badge badge-danger">Supprimé</span></td>
+                        <td><span class="badge badge-danger">Supprimé</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Section 11 -->
+        <section id="schema" class="section">
+            <h2><span class="section-number">11</span> Schéma BDD</h2>
+
+            <div class="code-block">
+<pre>-- Table principale
+CREATE TABLE collections (
+    id UUID PRIMARY KEY,
+    name VARCHAR(255) UNIQUE NOT NULL,      -- Nom technique
+    display_name VARCHAR(255) NOT NULL,     -- Nom affiché
+    description TEXT,
+    type VARCHAR(20) NOT NULL,              -- 'public' ou 'private'
+    owner_id UUID REFERENCES users(id),     -- NULL si public
+    corpus_id UUID REFERENCES corpus(id),   -- Relation 1-1
+    space VARCHAR(20) DEFAULT 'cosine',     -- Espace vectoriel
+    embedding_model VARCHAR(255),           -- Dernier modèle utilisé
+    document_count INT DEFAULT 0,
+    chunk_count INT DEFAULT 0,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
+);
+
+-- Index
+CREATE INDEX idx_collections_type ON collections(type);
+CREATE INDEX idx_collections_owner ON collections(owner_id);</pre>
+            </div>
+        </section>
+
+        <!-- Section 12 -->
+        <section id="troubleshooting" class="section">
+            <h2><span class="section-number">12</span> Troubleshooting</h2>
+
+            <div class="cards">
+                <div class="card">
+                    <div class="card-header"><h4>"Aucun résultat RAG"</h4></div>
+                    <div class="card-body">
+                        <ol>
+                            <li>Vérifier que la collection a des chunks (<code>chunk_count > 0</code>)</li>
+                            <li>Vérifier l'état d'indexation pour le provider actif</li>
+                            <li>Réindexer si changement récent de provider</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header"><h4>"Embedding mismatch warning"</h4></div>
+                    <div class="card-body">
+                        <p>Le modèle d'embedding actuel diffère de celui utilisé pour indexer :</p>
+                        <ol>
+                            <li>Les résultats RAG peuvent être dégradés</li>
+                            <li>Solution : réindexer la collection</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header"><h4>"Collection ChromaDB introuvable"</h4></div>
+                    <div class="card-body">
+                        <p>Fallback automatique vers nom legacy (sans suffixe) :</p>
+                        <ol>
+                            <li>Recherche: <code>{name}_{provider}</code> → 404</li>
+                            <li>Fallback: <code>{name}</code> → trouvé</li>
+                            <li>Log: "Using legacy collection"</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer>
+            <p><em>Documentation mise à jour : Février 2026</em></p>
+        </footer>
+    </div>
+</body>
+</html>

@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MY-IA — Configuration</title>
+    <link rel="stylesheet" href="../assets/doc-style.css">
+</head>
+<body>
+    <div class="header">
+        <h1>Configuration de MY-IA</h1>
+        <p class="subtitle">Hiérarchie de configuration et paramétrage de l'application</p>
+    </div>
+
+    <div class="page">
+        <!-- Navigation -->
+        <div class="callout info">
+            <a href="../index.html">&larr; Retour à l'accueil</a> |
+            <a href="architecture.html">Architecture</a> |
+            <a href="api.html">API</a> |
+            <a href="deploiement.html">Déploiement</a>
+        </div>
+
+        <nav class="toc">
+            <h2>Table des matières</h2>
+            <ul>
+                <li><a href="#hierarchie">1. Hiérarchie de Configuration</a></li>
+                <li><a href="#env">2. Variables .env (Obligatoires)</a></li>
+                <li><a href="#bdd">3. Configuration BDD (system_configs)</a></li>
+                <li><a href="#defauts">4. Valeurs par Défaut</a></li>
+                <li><a href="#resolution">5. Ordre de Résolution</a></li>
+                <li><a href="#modifier">6. Modifier la Configuration</a></li>
+                <li><a href="#redemarrage">7. Redémarrage Requis</a></li>
+                <li><a href="#troubleshooting">8. Troubleshooting</a></li>
+            </ul>
+        </nav>
+
+        <!-- Section 1 -->
+        <section id="hierarchie" class="section">
+            <h2><span class="section-number">1</span> Hiérarchie de Configuration</h2>
+
+            <p>MY-IA utilise une hiérarchie de configuration à 3 niveaux :</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Niveau</th>
+                        <th>Source</th>
+                        <th>Priorité</th>
+                        <th>Usage</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="badge badge-danger">1</span></td>
+                        <td><code>.env</code></td>
+                        <td>Haute</td>
+                        <td>Connexion PostgreSQL, identité Docker</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-warning">2</span></td>
+                        <td><code>system_configs</code> (BDD)</td>
+                        <td>Moyenne</td>
+                        <td>Toute la configuration applicative</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-success">3</span></td>
+                        <td><code>app/core/config.py</code></td>
+                        <td>Basse</td>
+                        <td>Valeurs par défaut si BDD non disponible</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="callout info">
+                <strong>Mode recommandé :</strong> Avec <code>BOOTSTRAP_FROM_DB=true</code>, seules les variables PostgreSQL sont nécessaires dans <code>.env</code>. Toute autre configuration se fait via l'interface Admin ou directement dans la table <code>system_configs</code>.
+            </div>
+        </section>
+
+        <!-- Section 2 -->
+        <section id="env" class="section">
+            <h2><span class="section-number">2</span> Variables .env (Obligatoires)</h2>
+
+            <p>Fichier <code>.env</code> à la racine du projet. Copier depuis <code>.env.example</code>.</p>
+
+            <h3>2.1 Identité Docker</h3>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Variable</th>
+                        <th>Description</th>
+                        <th>Exemple</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>SANITIZED_PREFIX</code></td>
+                        <td>Préfixe pour containers et volumes</td>
+                        <td><code>my_ia</code></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>2.2 PostgreSQL</h3>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Variable</th>
+                        <th>Description</th>
+                        <th>Exemple</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>POSTGRES_USER</code></td>
+                        <td>Super-utilisateur PostgreSQL</td>
+                        <td><code>my_ia_postgres_admin</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>POSTGRES_PASSWORD</code></td>
+                        <td>Mot de passe super-utilisateur</td>
+                        <td><code>MotDePasseSecurise123!</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>APP_DB_USER</code></td>
+                        <td>Utilisateur applicatif</td>
+                        <td><code>my_ia_db_user</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>APP_DB_PASSWORD</code></td>
+                        <td>Mot de passe applicatif</td>
+                        <td><code>AutreMotDePasse456!</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>APP_DB_NAME</code></td>
+                        <td>Nom de la base</td>
+                        <td><code>my_ia_db</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>DATABASE_URL</code></td>
+                        <td>URL de connexion complète</td>
+                        <td><code>postgresql+asyncpg://...</code></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>2.3 Bootstrap</h3>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Variable</th>
+                        <th>Description</th>
+                        <th>Valeur</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>BOOTSTRAP_FROM_DB</code></td>
+                        <td>Charger la config depuis la BDD au démarrage</td>
+                        <td><code>true</code> (recommandé)</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>2.4 Variables Optionnelles</h3>
+
+            <p>Ces variables ont des valeurs par défaut. Décommenter dans <code>.env</code> uniquement si nécessaire.</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Variable</th>
+                        <th>Défaut</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>DEPLOY_ENV</code></td>
+                        <td><code>dev</code></td>
+                        <td>Environnement (dev/staging/prod)</td>
+                    </tr>
+                    <tr>
+                        <td><code>APP_PORT</code></td>
+                        <td><code>8080</code></td>
+                        <td>Port API backend</td>
+                    </tr>
+                    <tr>
+                        <td><code>FRONTEND_PORT</code></td>
+                        <td><code>3000</code></td>
+                        <td>Port frontend utilisateur</td>
+                    </tr>
+                    <tr>
+                        <td><code>ADMIN_PORT</code></td>
+                        <td><code>8081</code></td>
+                        <td>Port interface admin</td>
+                    </tr>
+                    <tr>
+                        <td><code>OLLAMA_HOST</code></td>
+                        <td><code>host.docker.internal</code></td>
+                        <td>Hostname Ollama</td>
+                    </tr>
+                    <tr>
+                        <td><code>CHROMA_HOST</code></td>
+                        <td><code>chroma</code></td>
+                        <td>Hostname ChromaDB</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Section 3 -->
+        <section id="bdd" class="section">
+            <h2><span class="section-number">3</span> Configuration BDD (system_configs)</h2>
+
+            <p>La table <code>system_configs</code> stocke toute la configuration applicative. Elle est accessible via :</p>
+
+            <ul>
+                <li><strong>Interface Admin</strong> : Menu Système > Configuration</li>
+                <li><strong>API</strong> : <code>GET/PATCH /api/admin/config</code></li>
+                <li><strong>SQL direct</strong> : <code>SELECT * FROM system_configs;</code></li>
+            </ul>
+
+            <h3>3.1 Catégories de Configuration</h3>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Catégorie</th>
+                        <th>Description</th>
+                        <th>Exemples de clés</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>app</code></td>
+                        <td>Paramètres application</td>
+                        <td><code>app.name</code>, <code>app.version</code>, <code>app.debug</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>chat</code></td>
+                        <td>Comportement du chat</td>
+                        <td><code>chat.history_enabled</code>, <code>chat.history_max_turns</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>rag</code></td>
+                        <td>Recherche documentaire</td>
+                        <td><code>rag.top_k</code>, <code>rag.similarity_threshold</code>, <code>rag.chunk_size</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>llm</code></td>
+                        <td>Provider LLM</td>
+                        <td><code>llm.provider</code>, <code>llm.ollama.llm_model</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>ollama</code></td>
+                        <td>Connexion Ollama</td>
+                        <td><code>ollama.host</code>, <code>ollama.port</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>chroma</code></td>
+                        <td>Connexion ChromaDB</td>
+                        <td><code>chroma.host</code>, <code>chroma.port</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>storage</code></td>
+                        <td>Stockage fichiers</td>
+                        <td><code>storage.backend</code>, <code>storage.max_file_size_mb</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>security</code></td>
+                        <td>Sécurité</td>
+                        <td><code>security.jwt_secret_key</code>, <code>security.jwt_expire_minutes</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>rate_limit</code></td>
+                        <td>Limitation requêtes</td>
+                        <td><code>rate_limit.chat</code>, <code>rate_limit.upload</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>email</code></td>
+                        <td>Envoi emails</td>
+                        <td><code>email.backend</code>, <code>email.smtp_host</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>registration</code></td>
+                        <td>Inscription</td>
+                        <td><code>registration.require_approval</code>, <code>registration.allowed_domains</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>speech</code></td>
+                        <td>Reconnaissance vocale</td>
+                        <td><code>speech.enabled</code>, <code>speech.auto_send</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>sources</code></td>
+                        <td>Sources RAG</td>
+                        <td><code>sources.max_context_items</code>, <code>sources.cache_ttl</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>debug</code></td>
+                        <td>Mode debug</td>
+                        <td><code>debug.endpoints_enabled</code>, <code>debug.verbose_logging</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>deploy</code></td>
+                        <td>Déploiement</td>
+                        <td><code>deploy.remote_host</code>, <code>deploy.git_branch</code></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>3.2 Types de Valeurs</h3>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>Format</th>
+                        <th>Exemple</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>string</code></td>
+                        <td>Texte</td>
+                        <td><code>"mistral"</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>int</code></td>
+                        <td>Entier</td>
+                        <td><code>"100"</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>float</code></td>
+                        <td>Décimal</td>
+                        <td><code>"0.75"</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>bool</code></td>
+                        <td>true/false</td>
+                        <td><code>"true"</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>json</code></td>
+                        <td>JSON</td>
+                        <td><code>'["*"]'</code></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>3.3 Configuration RAG Détaillée</h3>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Clé</th>
+                        <th>Type</th>
+                        <th>Défaut</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>rag.top_k</code></td>
+                        <td>int</td>
+                        <td>10</td>
+                        <td>Nombre de chunks retournés par recherche (max 100)</td>
+                    </tr>
+                    <tr>
+                        <td><code>rag.similarity_threshold</code></td>
+                        <td>float</td>
+                        <td>0.3</td>
+                        <td>Seuil de similarité minimum (0.0-1.0)</td>
+                    </tr>
+                    <tr>
+                        <td><code>rag.chunk_size</code></td>
+                        <td>int</td>
+                        <td>1000</td>
+                        <td>Taille des chunks en caractères</td>
+                    </tr>
+                    <tr>
+                        <td><code>rag.chunk_overlap</code></td>
+                        <td>int</td>
+                        <td>200</td>
+                        <td>Chevauchement entre chunks</td>
+                    </tr>
+                    <tr>
+                        <td><code>sources.max_context_items</code></td>
+                        <td>int</td>
+                        <td>50</td>
+                        <td>Nombre total de chunks envoyés au LLM (max 500)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Section 4 -->
+        <section id="defauts" class="section">
+            <h2><span class="section-number">4</span> Valeurs par Défaut (config.py)</h2>
+
+            <p>Le fichier <code>app/core/config.py</code> définit les valeurs par défaut utilisées si :</p>
+
+            <ul>
+                <li>La BDD n'est pas accessible au démarrage</li>
+                <li>Une clé n'existe pas dans <code>system_configs</code></li>
+            </ul>
+
+            <div class="callout warning">
+                <strong>Important :</strong> Ces valeurs sont des fallbacks. En production, toute la configuration doit être dans la BDD.
+            </div>
+        </section>
+
+        <!-- Section 5 -->
+        <section id="resolution" class="section">
+            <h2><span class="section-number">5</span> Ordre de Résolution</h2>
+
+            <p>Quand l'application demande une configuration :</p>
+
+            <ol>
+                <li><strong>Variables d'environnement</strong> (priorité maximale pour DATABASE_URL, BOOTSTRAP_FROM_DB)</li>
+                <li><strong>Table system_configs</strong> (si BOOTSTRAP_FROM_DB=true)</li>
+                <li><strong>Valeurs par défaut config.py</strong> (fallback)</li>
+            </ol>
+
+            <div class="code-block">
+<pre># Exemple de résolution pour "rag.top_k"
+
+1. os.getenv("RAG_TOP_K") ?
+   -> Non défini dans .env
+
+2. system_configs WHERE key = "rag.top_k" ?
+   -> Trouvé: value = "15"
+   -> Utilisé: 15
+
+3. settings.top_k (config.py) ?
+   -> Non atteint car trouvé en BDD</pre>
+            </div>
+        </section>
+
+        <!-- Section 6 -->
+        <section id="modifier" class="section">
+            <h2><span class="section-number">6</span> Modifier la Configuration</h2>
+
+            <h3>6.1 Via Interface Admin (Recommandé)</h3>
+
+            <ol>
+                <li>Connexion : <code>https://localhost:8081</code></li>
+                <li>Menu : Système > Configuration</li>
+                <li>Modifier les valeurs</li>
+                <li>Sauvegarder</li>
+            </ol>
+
+            <h3>6.2 Via API</h3>
+
+            <div class="code-block">
+<pre># Lire une config
+curl -X GET "http://localhost:8080/api/admin/config/rag.top_k" \
+  -H "Authorization: Bearer $TOKEN"
+
+# Modifier une config
+curl -X PATCH "http://localhost:8080/api/admin/config/rag.top_k" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"value": "20"}'</pre>
+            </div>
+
+            <h3>6.3 Via SQL Direct</h3>
+
+            <div class="code-block">
+<pre>-- Lire
+SELECT * FROM system_configs WHERE key = 'rag.top_k';
+
+-- Modifier
+UPDATE system_configs SET value = '20' WHERE key = 'rag.top_k';
+
+-- Ajouter
+INSERT INTO system_configs (key, value, value_type, category, description)
+VALUES ('custom.my_key', 'my_value', 'string', 'custom', 'Ma config personnalisée');</pre>
+            </div>
+        </section>
+
+        <!-- Section 7 -->
+        <section id="redemarrage" class="section">
+            <h2><span class="section-number">7</span> Redémarrage Requis</h2>
+
+            <p>Certaines configurations nécessitent un redémarrage :</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Configuration</th>
+                        <th>Redémarrage</th>
+                        <th>Raison</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Connexions (ollama, chroma, whisper)</td>
+                        <td><span class="badge badge-danger">Oui</span></td>
+                        <td>Clients initialisés au démarrage</td>
+                    </tr>
+                    <tr>
+                        <td>Security (JWT, secrets)</td>
+                        <td><span class="badge badge-danger">Oui</span></td>
+                        <td>Clés chargées au démarrage</td>
+                    </tr>
+                    <tr>
+                        <td>RAG (top_k, threshold)</td>
+                        <td><span class="badge badge-success">Non</span></td>
+                        <td>Lus dynamiquement</td>
+                    </tr>
+                    <tr>
+                        <td>Chat (history, summary)</td>
+                        <td><span class="badge badge-success">Non</span></td>
+                        <td>Lus dynamiquement</td>
+                    </tr>
+                    <tr>
+                        <td>Storage (quotas, types)</td>
+                        <td><span class="badge badge-success">Non</span></td>
+                        <td>Lus dynamiquement</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Section 8 -->
+        <section id="troubleshooting" class="section">
+            <h2><span class="section-number">8</span> Troubleshooting</h2>
+
+            <div class="cards">
+                <div class="card">
+                    <div class="card-header">
+                        <h4>La configuration ne se charge pas depuis la BDD</h4>
+                    </div>
+                    <div class="card-body">
+                        <ul>
+                            <li>Vérifier <code>BOOTSTRAP_FROM_DB=true</code> dans <code>.env</code></li>
+                            <li>Vérifier que PostgreSQL est accessible</li>
+                            <li>Consulter les logs : <code>docker logs my_ia_app | grep -i bootstrap</code></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h4>Une valeur ne prend pas effet</h4>
+                    </div>
+                    <div class="card-body">
+                        <ul>
+                            <li>Vérifier le type de la valeur (string vs int)</li>
+                            <li>Redémarrer si nécessaire : <code>docker restart my_ia_app</code></li>
+                            <li>Vérifier qu'il n'y a pas de variable d'environnement qui override</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer>
+            <p><em>Documentation mise à jour : Février 2026</em></p>
+        </footer>
+    </div>
+</body>
+</html>

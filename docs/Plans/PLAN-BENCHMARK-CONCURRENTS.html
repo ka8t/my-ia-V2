@@ -1,0 +1,1406 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MY-IA &mdash; Benchmark Concurrentiel</title>
+  <link rel="stylesheet" href="../assets/doc-style.css">
+  <style>
+    .comparison-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .comparison-table th, .comparison-table td { padding: 0.5rem; border: 1px solid var(--gray-300); text-align: left; vertical-align: top; }
+    .comparison-table thead th { background: var(--gray-800); color: #fff; font-weight: 600; }
+    .comparison-table tbody tr:nth-child(even) { background: var(--gray-50); }
+    .cell-yes { color: #16a34a; font-weight: 600; }
+    .cell-no { color: #dc2626; }
+    .cell-partial { color: #d97706; }
+    .cell-na { color: #6b7280; font-style: italic; }
+    .product-card { background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+    .product-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; }
+    .product-logo { font-size: 1.5rem; }
+    .product-name { font-weight: 700; font-size: 1.1rem; }
+    .product-type { font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 4px; background: var(--accent); color: white; }
+    .product-type.cloud { background: #3b82f6; }
+    .product-type.desktop { background: #8b5cf6; }
+    .product-type.self-hosted { background: #059669; }
+    .product-type.my-ia { background: #dc2626; }
+    .stars { color: #f59e0b; }
+    .metric-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; margin-top: 0.5rem; }
+    .metric-item { text-align: center; padding: 0.5rem; background: white; border-radius: 4px; }
+    .metric-value { font-weight: 700; font-size: 1.1rem; color: var(--accent); }
+    .metric-label { font-size: 0.7rem; color: var(--gray-600); }
+    .radar-section { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+    .score-bar { height: 8px; background: var(--gray-200); border-radius: 4px; overflow: hidden; margin-top: 0.25rem; }
+    .score-fill { height: 100%; border-radius: 4px; }
+    .score-fill.high { background: #16a34a; }
+    .score-fill.medium { background: #d97706; }
+    .score-fill.low { background: #dc2626; }
+    .sovereignty-matrix { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+    .sovereignty-card { padding: 1rem; border-radius: 8px; text-align: center; }
+    .sovereignty-card.green { background: #dcfce7; border: 2px solid #16a34a; }
+    .sovereignty-card.yellow { background: #fef3c7; border: 2px solid #d97706; }
+    .sovereignty-card.red { background: #fee2e2; border: 2px solid #dc2626; }
+    .versus-table { width: 100%; }
+    .versus-table th { background: var(--accent); color: white; }
+    .category-badge { display: inline-block; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; margin-right: 0.25rem; }
+    .badge-oss { background: #dbeafe; color: #1e40af; }
+    .badge-cloud { background: #fce7f3; color: #9d174d; }
+    .badge-hybrid { background: #d1fae5; color: #065f46; }
+  </style>
+</head>
+<body>
+
+<!-- ==================== HEADER ==================== -->
+<div class="header">
+  <div class="page">
+    <div class="header-icon">📊</div>
+    <div>
+      <h1>Benchmark Concurrentiel MY-IA</h1>
+      <div class="subtitle">
+        Analyse comparative des solutions RAG/Chatbot : open-source, cloud, et self-hosted.
+        Évaluation fonctionnelle, architecturale, et souveraineté des données.
+      </div>
+      <div class="meta">
+        <span>2026-02-21</span>
+        <span>Analyse de marché</span>
+        <span>12 sections</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+
+<!-- ==================== TABLE OF CONTENTS ==================== -->
+<div class="toc">
+  <h2>Table des matières</h2>
+  <div class="toc-grid">
+    <a href="#s1"><span class="toc-num">1</span> Contexte et objectifs</a>
+    <a href="#s2"><span class="toc-num">2</span> Catégorisation des solutions</a>
+    <a href="#s3"><span class="toc-num">3</span> Solutions Desktop (local)</a>
+    <a href="#s4"><span class="toc-num">4</span> Solutions Self-Hosted</a>
+    <a href="#s5"><span class="toc-num">5</span> Solutions Cloud (payantes)</a>
+    <a href="#s6"><span class="toc-num">6</span> Comparatif fonctionnel</a>
+    <a href="#s7"><span class="toc-num">7</span> Comparatif architectural</a>
+    <a href="#s8"><span class="toc-num">8</span> Souveraineté des données</a>
+    <a href="#s9"><span class="toc-num">9</span> Analyse coûts</a>
+    <a href="#s10"><span class="toc-num">10</span> Forces et faiblesses MY-IA</a>
+    <a href="#s11"><span class="toc-num">11</span> Matrice de décision</a>
+    <a href="#s12"><span class="toc-num">12</span> Positionnement MY-IA</a>
+  </div>
+</div>
+
+<!-- ==================== SECTION 1 ==================== -->
+<div class="section" id="s1">
+  <div class="section-header">
+    <div class="section-icon icon-blue">🎯</div>
+    <div><h2>Contexte et objectifs <span class="section-num">&mdash; Section 1</span></h2></div>
+  </div>
+
+  <h3><span class="h3-dot dot-blue"></span> Objectif de ce document</h3>
+  <p>Ce benchmark compare MY-IA aux principales solutions du marché pour identifier :</p>
+  <ul class="feature-list">
+    <li><strong>Positionnement concurrentiel</strong> &mdash; Où se situe MY-IA dans l'écosystème ?</li>
+    <li><strong>Avantages différenciants</strong> &mdash; Quels sont les points forts uniques ?</li>
+    <li><strong>Axes d'amélioration</strong> &mdash; Quelles fonctionnalités manquent ?</li>
+    <li><strong>Cible utilisateur</strong> &mdash; Pour qui MY-IA est-il le meilleur choix ?</li>
+  </ul>
+
+  <h3><span class="h3-dot dot-green"></span> Critères d'évaluation</h3>
+  <div class="two-cols">
+    <div class="card">
+      <div class="card-title">Critères fonctionnels</div>
+      <ul>
+        <li>Chat avec LLM (streaming)</li>
+        <li>RAG (documents, embeddings)</li>
+        <li>Multi-utilisateurs</li>
+        <li>Interface d'administration</li>
+        <li>Gestion de corpus/collections</li>
+        <li>Support multi-providers LLM</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title">Critères non-fonctionnels</div>
+      <ul>
+        <li>Souveraineté des données</li>
+        <li>Facilité de déploiement</li>
+        <li>Coût (licence, infrastructure)</li>
+        <li>Scalabilité</li>
+        <li>Maintenance requise</li>
+        <li>Communauté / Support</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SECTION 2 ==================== -->
+<div class="section" id="s2">
+  <div class="section-header">
+    <div class="section-icon icon-purple">🗂️</div>
+    <div><h2>Catégorisation des solutions <span class="section-num">&mdash; Section 2</span></h2></div>
+  </div>
+
+  <h3><span class="h3-dot dot-purple"></span> Trois grandes catégories</h3>
+
+  <div class="three-cols">
+    <div class="card" style="border-top: 4px solid #8b5cf6;">
+      <div class="card-title">🖥️ Desktop (Local)</div>
+      <div class="card-text">
+        <p>Applications installées localement sur la machine de l'utilisateur.</p>
+        <ul>
+          <li>LM Studio</li>
+          <li>GPT4All</li>
+          <li>Jan.ai</li>
+          <li>Chatbox</li>
+        </ul>
+        <p><strong>Cible :</strong> Utilisateur individuel, développeur</p>
+      </div>
+    </div>
+    <div class="card" style="border-top: 4px solid #059669;">
+      <div class="card-title">🏠 Self-Hosted</div>
+      <div class="card-text">
+        <p>Solutions déployées sur infrastructure propre (serveur, VPS, Docker).</p>
+        <ul>
+          <li>Open WebUI</li>
+          <li>LibreChat</li>
+          <li>AnythingLLM</li>
+          <li>PrivateGPT</li>
+          <li>RAGFlow</li>
+          <li><strong>MY-IA</strong></li>
+        </ul>
+        <p><strong>Cible :</strong> Équipes, PME, entreprises</p>
+      </div>
+    </div>
+    <div class="card" style="border-top: 4px solid #3b82f6;">
+      <div class="card-title">☁️ Cloud (SaaS)</div>
+      <div class="card-text">
+        <p>Services hébergés par le fournisseur, accès via API ou interface web.</p>
+        <ul>
+          <li>ChatGPT / OpenAI API</li>
+          <li>Claude / Anthropic API</li>
+          <li>Google Vertex AI</li>
+          <li>Azure OpenAI</li>
+          <li>AWS Bedrock</li>
+        </ul>
+        <p><strong>Cible :</strong> Tout public, entreprises (API)</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout callout-info">
+    <span class="callout-icon">💡</span>
+    <span><strong>MY-IA se positionne dans la catégorie Self-Hosted</strong> avec une architecture Docker complète, support multi-utilisateurs, et RAG intégré. C'est une solution comparable à LibreChat et AnythingLLM.</span>
+  </div>
+</div>
+
+<!-- ==================== SECTION 3 ==================== -->
+<div class="section" id="s3">
+  <div class="section-header">
+    <div class="section-icon icon-purple">🖥️</div>
+    <div><h2>Solutions Desktop (local) <span class="section-num">&mdash; Section 3</span></h2></div>
+  </div>
+
+  <div class="product-card">
+    <div class="product-header">
+      <span class="product-logo">🦙</span>
+      <span class="product-name">LM Studio</span>
+      <span class="product-type desktop">Desktop</span>
+      <span style="margin-left: auto;">Gratuit</span>
+    </div>
+    <p>Interface élégante pour télécharger et exécuter des LLMs localement (GGUF). Support RAG basique via import de documents PDF/TXT.</p>
+    <div class="metric-grid">
+      <div class="metric-item"><div class="metric-value">Mac/Win/Linux</div><div class="metric-label">Plateformes</div></div>
+      <div class="metric-item"><div class="metric-value">GGUF</div><div class="metric-label">Format modèles</div></div>
+      <div class="metric-item"><div class="metric-value">Basique</div><div class="metric-label">RAG</div></div>
+      <div class="metric-item"><div class="metric-value">1</div><div class="metric-label">Utilisateurs</div></div>
+    </div>
+    <p style="margin-top: 0.5rem; font-size: 0.85rem;"><strong>+</strong> Installation simple, UI moderne, GPU auto-détecté &nbsp;|&nbsp; <strong>-</strong> Mono-utilisateur, RAG limité, pas d'API serveur</p>
+  </div>
+
+  <div class="product-card">
+    <div class="product-header">
+      <span class="product-logo">🤖</span>
+      <span class="product-name">GPT4All</span>
+      <span class="product-type desktop">Desktop</span>
+      <span style="margin-left: auto;">Gratuit / Open-source</span>
+    </div>
+    <p>Application open-source optimisée pour les modèles 3-13B paramètres. Fonctionne sur CPU sans GPU requis.</p>
+    <div class="metric-grid">
+      <div class="metric-item"><div class="metric-value">Mac/Win/Linux</div><div class="metric-label">Plateformes</div></div>
+      <div class="metric-item"><div class="metric-value">GGUF/GGML</div><div class="metric-label">Format modèles</div></div>
+      <div class="metric-item"><div class="metric-value">LocalDocs</div><div class="metric-label">RAG</div></div>
+      <div class="metric-item"><div class="metric-value">1</div><div class="metric-label">Utilisateurs</div></div>
+    </div>
+    <p style="margin-top: 0.5rem; font-size: 0.85rem;"><strong>+</strong> Léger, CPU-friendly, chat local &nbsp;|&nbsp; <strong>-</strong> Interface basique, pas de multi-users</p>
+  </div>
+
+  <div class="product-card">
+    <div class="product-header">
+      <span class="product-logo">🌟</span>
+      <span class="product-name">Jan.ai</span>
+      <span class="product-type desktop">Desktop</span>
+      <span style="margin-left: auto;">Gratuit / Open-source</span>
+    </div>
+    <p>Application offline-first avec focus sur la vie privée. Stockage local de toutes les conversations.</p>
+    <div class="metric-grid">
+      <div class="metric-item"><div class="metric-value">Mac/Win/Linux</div><div class="metric-label">Plateformes</div></div>
+      <div class="metric-item"><div class="metric-value">GGUF</div><div class="metric-label">Format modèles</div></div>
+      <div class="metric-item"><div class="metric-value">Non</div><div class="metric-label">RAG</div></div>
+      <div class="metric-item"><div class="metric-value">1</div><div class="metric-label">Utilisateurs</div></div>
+    </div>
+    <p style="margin-top: 0.5rem; font-size: 0.85rem;"><strong>+</strong> 100% offline, UI moderne, extensions &nbsp;|&nbsp; <strong>-</strong> Pas de RAG, mono-utilisateur</p>
+  </div>
+
+  <div class="product-card">
+    <div class="product-header">
+      <span class="product-logo">📦</span>
+      <span class="product-name">Chatbox</span>
+      <span class="product-type desktop">Desktop</span>
+      <span style="margin-left: auto;">Gratuit / Premium</span>
+    </div>
+    <p>Client desktop multi-provider : OpenAI, Claude, Ollama, Azure. Interface style ChatGPT.</p>
+    <div class="metric-grid">
+      <div class="metric-item"><div class="metric-value">Mac/Win/Linux</div><div class="metric-label">Plateformes</div></div>
+      <div class="metric-item"><div class="metric-value">API</div><div class="metric-label">Connexion</div></div>
+      <div class="metric-item"><div class="metric-value">Non</div><div class="metric-label">RAG</div></div>
+      <div class="metric-item"><div class="metric-value">1</div><div class="metric-label">Utilisateurs</div></div>
+    </div>
+    <p style="margin-top: 0.5rem; font-size: 0.85rem;"><strong>+</strong> Multi-provider, sync cloud (premium) &nbsp;|&nbsp; <strong>-</strong> Pas de RAG, nécessite API keys cloud</p>
+  </div>
+</div>
+
+<!-- ==================== SECTION 4 ==================== -->
+<div class="section" id="s4">
+  <div class="section-header">
+    <div class="section-icon icon-green">🏠</div>
+    <div><h2>Solutions Self-Hosted <span class="section-num">&mdash; Section 4</span></h2></div>
+  </div>
+
+  <div class="product-card">
+    <div class="product-header">
+      <span class="product-logo">🌐</span>
+      <span class="product-name">Open WebUI</span>
+      <span class="product-type self-hosted">Self-Hosted</span>
+      <span class="stars" style="margin-left: auto;">★ 120k GitHub</span>
+    </div>
+    <p>Interface web moderne pour Ollama avec support multi-utilisateurs. Le projet open-source le plus populaire de sa catégorie.</p>
+    <div class="metric-grid">
+      <div class="metric-item"><div class="metric-value">Docker</div><div class="metric-label">Déploiement</div></div>
+      <div class="metric-item"><div class="metric-value">Ollama/OpenAI</div><div class="metric-label">Providers</div></div>
+      <div class="metric-item"><div class="metric-value">Oui</div><div class="metric-label">RAG</div></div>
+      <div class="metric-item"><div class="metric-value">Multi</div><div class="metric-label">Utilisateurs</div></div>
+    </div>
+    <p style="margin-top: 0.5rem; font-size: 0.85rem;"><strong>+</strong> Très populaire, PWA, plugins, communauté active &nbsp;|&nbsp; <strong>-</strong> Config complexe, dépendance Ollama</p>
+  </div>
+
+  <div class="product-card">
+    <div class="product-header">
+      <span class="product-logo">💬</span>
+      <span class="product-name">LibreChat</span>
+      <span class="product-type self-hosted">Self-Hosted</span>
+      <span class="stars" style="margin-left: auto;">★ 33k GitHub</span>
+    </div>
+    <p>Clone ChatGPT complet avec multi-provider, plugins, RAG, et gestion utilisateurs. Interface identique à ChatGPT.</p>
+    <div class="metric-grid">
+      <div class="metric-item"><div class="metric-value">Docker</div><div class="metric-label">Déploiement</div></div>
+      <div class="metric-item"><div class="metric-value">10+</div><div class="metric-label">Providers</div></div>
+      <div class="metric-item"><div class="metric-value">Oui</div><div class="metric-label">RAG</div></div>
+      <div class="metric-item"><div class="metric-value">Multi</div><div class="metric-label">Utilisateurs</div></div>
+    </div>
+    <p style="margin-top: 0.5rem; font-size: 0.85rem;"><strong>+</strong> Multi-provider complet, plugins, enterprise features &nbsp;|&nbsp; <strong>-</strong> Setup complexe, MongoDB requis</p>
+  </div>
+
+  <div class="product-card">
+    <div class="product-header">
+      <span class="product-logo">🦜</span>
+      <span class="product-name">AnythingLLM</span>
+      <span class="product-type self-hosted">Self-Hosted</span>
+      <span class="stars" style="margin-left: auto;">★ 35k GitHub</span>
+    </div>
+    <p>Solution RAG all-in-one avec workspaces, agents no-code, et support entreprise. Desktop + Docker.</p>
+    <div class="metric-grid">
+      <div class="metric-item"><div class="metric-value">Docker/Desktop</div><div class="metric-label">Déploiement</div></div>
+      <div class="metric-item"><div class="metric-value">15+</div><div class="metric-label">Providers</div></div>
+      <div class="metric-item"><div class="metric-value">Avancé</div><div class="metric-label">RAG</div></div>
+      <div class="metric-item"><div class="metric-value">Multi</div><div class="metric-label">Utilisateurs</div></div>
+    </div>
+    <p style="margin-top: 0.5rem; font-size: 0.85rem;"><strong>+</strong> RAG puissant, agents, workspaces &nbsp;|&nbsp; <strong>-</strong> Version cloud payante, UI moins intuitive</p>
+  </div>
+
+  <div class="product-card">
+    <div class="product-header">
+      <span class="product-logo">🔒</span>
+      <span class="product-name">PrivateGPT</span>
+      <span class="product-type self-hosted">Self-Hosted</span>
+      <span class="stars" style="margin-left: auto;">★ 54k GitHub</span>
+    </div>
+    <p>RAG 100% privé, aucune donnée ne quitte l'environnement. Pipeline complète : parsing, chunking, embeddings, recherche.</p>
+    <div class="metric-grid">
+      <div class="metric-item"><div class="metric-value">Python/Docker</div><div class="metric-label">Déploiement</div></div>
+      <div class="metric-item"><div class="metric-value">Ollama/HF</div><div class="metric-label">Providers</div></div>
+      <div class="metric-item"><div class="metric-value">Oui</div><div class="metric-label">RAG</div></div>
+      <div class="metric-item"><div class="metric-value">API</div><div class="metric-label">Interface</div></div>
+    </div>
+    <p style="margin-top: 0.5rem; font-size: 0.85rem;"><strong>+</strong> Privacy-first, API-first, embeddings locaux &nbsp;|&nbsp; <strong>-</strong> Pas d'UI riche, orienté développeur</p>
+  </div>
+
+  <div class="product-card">
+    <div class="product-header">
+      <span class="product-logo">🌊</span>
+      <span class="product-name">RAGFlow</span>
+      <span class="product-type self-hosted">Self-Hosted</span>
+      <span class="stars" style="margin-left: auto;">★ 40k GitHub</span>
+    </div>
+    <p>Moteur RAG enterprise avec agents, parsing intelligent de documents, et interface workflow visuelle.</p>
+    <div class="metric-grid">
+      <div class="metric-item"><div class="metric-value">Docker</div><div class="metric-label">Déploiement</div></div>
+      <div class="metric-item"><div class="metric-value">Multi</div><div class="metric-label">Providers</div></div>
+      <div class="metric-item"><div class="metric-value">Enterprise</div><div class="metric-label">RAG</div></div>
+      <div class="metric-item"><div class="metric-value">Multi</div><div class="metric-label">Utilisateurs</div></div>
+    </div>
+    <p style="margin-top: 0.5rem; font-size: 0.85rem;"><strong>+</strong> RAG avancé, parsing multi-formats, agents &nbsp;|&nbsp; <strong>-</strong> Complexe, ressources importantes</p>
+  </div>
+
+  <div class="product-card" style="border: 2px solid var(--accent); background: #fef2f2;">
+    <div class="product-header">
+      <span class="product-logo">🤖</span>
+      <span class="product-name">MY-IA</span>
+      <span class="product-type my-ia">MY-IA</span>
+      <span style="margin-left: auto; font-weight: 600;">Notre solution</span>
+    </div>
+    <p>Plateforme RAG complète avec sources Web multi-niveaux (recherche + crawling). OCR images, Voice (beta), 150+ endpoints API.</p>
+    <div class="metric-grid">
+      <div class="metric-item"><div class="metric-value">Hybride</div><div class="metric-label">Docker + LLM natif</div></div>
+      <div class="metric-item"><div class="metric-value">Ollama/llama.cpp</div><div class="metric-label">LLM (GPU natif)</div></div>
+      <div class="metric-item"><div class="metric-value">Avancé</div><div class="metric-label">RAG</div></div>
+      <div class="metric-item"><div class="metric-value">Multi + RBAC</div><div class="metric-label">Utilisateurs</div></div>
+    </div>
+    <p style="margin-top: 0.5rem; font-size: 0.85rem;"><strong>+</strong> 100% souverain (pas d'API cloud by design), sources web crawling, OCR, voice, versioning, audit &nbsp;|&nbsp; <strong>-</strong> Communauté naissante</p>
+  </div>
+</div>
+
+<!-- ==================== SECTION 5 ==================== -->
+<div class="section" id="s5">
+  <div class="section-header">
+    <div class="section-icon icon-blue">☁️</div>
+    <div><h2>Solutions Cloud (payantes) <span class="section-num">&mdash; Section 5</span></h2></div>
+  </div>
+
+  <div class="product-card">
+    <div class="product-header">
+      <span class="product-logo">🟢</span>
+      <span class="product-name">ChatGPT / OpenAI</span>
+      <span class="product-type cloud">Cloud</span>
+      <span style="margin-left: auto;">$20/mois (Plus) | API payante</span>
+    </div>
+    <p>Leader du marché. GPT-4o, GPT-4 Turbo, GPT-o3. API puissante avec function calling, vision, et RAG via Assistants API.</p>
+    <div class="metric-grid">
+      <div class="metric-item"><div class="metric-value">Web/API</div><div class="metric-label">Accès</div></div>
+      <div class="metric-item"><div class="metric-value">GPT-4/4o/o3</div><div class="metric-label">Modèles</div></div>
+      <div class="metric-item"><div class="metric-value">Assistants</div><div class="metric-label">RAG</div></div>
+      <div class="metric-item"><div class="metric-value">Cloud</div><div class="metric-label">Données</div></div>
+    </div>
+    <p style="margin-top: 0.5rem; font-size: 0.85rem;"><strong>+</strong> Meilleurs modèles, écosystème riche &nbsp;|&nbsp; <strong>-</strong> Données US, coût élevé, dépendance vendor</p>
+  </div>
+
+  <div class="product-card">
+    <div class="product-header">
+      <span class="product-logo">🟤</span>
+      <span class="product-name">Claude / Anthropic</span>
+      <span class="product-type cloud">Cloud</span>
+      <span style="margin-left: auto;">$20/mois (Pro) | API payante</span>
+    </div>
+    <p>Claude Opus 4.5, Sonnet, Haiku. Focus sur la sécurité et l'alignement. Context window 200k tokens.</p>
+    <div class="metric-grid">
+      <div class="metric-item"><div class="metric-value">Web/API</div><div class="metric-label">Accès</div></div>
+      <div class="metric-item"><div class="metric-value">Opus/Sonnet</div><div class="metric-label">Modèles</div></div>
+      <div class="metric-item"><div class="metric-value">Projects</div><div class="metric-label">RAG</div></div>
+      <div class="metric-item"><div class="metric-value">Cloud</div><div class="metric-label">Données</div></div>
+    </div>
+    <p style="margin-top: 0.5rem; font-size: 0.85rem;"><strong>+</strong> Context énorme, safe AI, code excellent &nbsp;|&nbsp; <strong>-</strong> Données US, moins de fonctionnalités que GPT</p>
+  </div>
+
+  <div class="product-card">
+    <div class="product-header">
+      <span class="product-logo">🔵</span>
+      <span class="product-name">Google Vertex AI / Gemini</span>
+      <span class="product-type cloud">Cloud</span>
+      <span style="margin-left: auto;">Pay-as-you-go</span>
+    </div>
+    <p>Gemini Pro, Ultra. Intégration GCP, search grounding, multimodal. Enterprise features.</p>
+    <div class="metric-grid">
+      <div class="metric-item"><div class="metric-value">API/GCP</div><div class="metric-label">Accès</div></div>
+      <div class="metric-item"><div class="metric-value">Gemini</div><div class="metric-label">Modèles</div></div>
+      <div class="metric-item"><div class="metric-value">Vertex RAG</div><div class="metric-label">RAG</div></div>
+      <div class="metric-item"><div class="metric-value">Cloud</div><div class="metric-label">Données</div></div>
+    </div>
+    <p style="margin-top: 0.5rem; font-size: 0.85rem;"><strong>+</strong> Intégration GCP, multimodal &nbsp;|&nbsp; <strong>-</strong> Complexe, vendor lock-in Google</p>
+  </div>
+
+  <div class="product-card">
+    <div class="product-header">
+      <span class="product-logo">🟠</span>
+      <span class="product-name">AWS Bedrock</span>
+      <span class="product-type cloud">Cloud</span>
+      <span style="margin-left: auto;">Pay-as-you-go</span>
+    </div>
+    <p>Gateway multi-modèles : Claude, Llama, Mistral, Cohere, Titan. Knowledge Bases pour RAG managé.</p>
+    <div class="metric-grid">
+      <div class="metric-item"><div class="metric-value">API/AWS</div><div class="metric-label">Accès</div></div>
+      <div class="metric-item"><div class="metric-value">Multi</div><div class="metric-label">Modèles</div></div>
+      <div class="metric-item"><div class="metric-value">Knowledge Bases</div><div class="metric-label">RAG</div></div>
+      <div class="metric-item"><div class="metric-value">Cloud</div><div class="metric-label">Données</div></div>
+    </div>
+    <p style="margin-top: 0.5rem; font-size: 0.85rem;"><strong>+</strong> Multi-provider, intégration AWS &nbsp;|&nbsp; <strong>-</strong> Coût AWS, complexité</p>
+  </div>
+
+  <div class="product-card">
+    <div class="product-header">
+      <span class="product-logo">🔷</span>
+      <span class="product-name">Azure OpenAI Service</span>
+      <span class="product-type cloud">Cloud</span>
+      <span style="margin-left: auto;">Pay-as-you-go</span>
+    </div>
+    <p>GPT-4, GPT-4o via Azure. Compliance entreprise (HIPAA, SOC2). Data residency Europe possible.</p>
+    <div class="metric-grid">
+      <div class="metric-item"><div class="metric-value">API/Azure</div><div class="metric-label">Accès</div></div>
+      <div class="metric-item"><div class="metric-value">GPT-4/4o</div><div class="metric-label">Modèles</div></div>
+      <div class="metric-item"><div class="metric-value">Azure AI Search</div><div class="metric-label">RAG</div></div>
+      <div class="metric-item"><div class="metric-value">EU possible</div><div class="metric-label">Données</div></div>
+    </div>
+    <p style="margin-top: 0.5rem; font-size: 0.85rem;"><strong>+</strong> Compliance, data residency EU &nbsp;|&nbsp; <strong>-</strong> Toujours cloud Microsoft, coût</p>
+  </div>
+</div>
+
+<!-- ==================== SECTION 6 ==================== -->
+<div class="section" id="s6">
+  <div class="section-header">
+    <div class="section-icon icon-teal">📋</div>
+    <div><h2>Comparatif fonctionnel <span class="section-num">&mdash; Section 6</span></h2></div>
+  </div>
+
+  <h3><span class="h3-dot dot-teal"></span> Matrice des fonctionnalités</h3>
+
+  <table class="comparison-table">
+    <thead>
+      <tr>
+        <th>Fonctionnalité</th>
+        <th>MY-IA</th>
+        <th>Open WebUI</th>
+        <th>LibreChat</th>
+        <th>AnythingLLM</th>
+        <th>ChatGPT</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Chat streaming</strong></td>
+        <td class="cell-yes">✅ SSE</td>
+        <td class="cell-yes">✅</td>
+        <td class="cell-yes">✅</td>
+        <td class="cell-yes">✅</td>
+        <td class="cell-yes">✅</td>
+      </tr>
+      <tr>
+        <td><strong>RAG Documents</strong></td>
+        <td class="cell-yes">✅ Avancé</td>
+        <td class="cell-yes">✅</td>
+        <td class="cell-yes">✅</td>
+        <td class="cell-yes">✅ Avancé</td>
+        <td class="cell-yes">✅ Assistants</td>
+      </tr>
+      <tr>
+        <td><strong>Multi-utilisateurs</strong></td>
+        <td class="cell-yes">✅ JWT</td>
+        <td class="cell-yes">✅</td>
+        <td class="cell-yes">✅</td>
+        <td class="cell-yes">✅</td>
+        <td class="cell-yes">✅ Teams</td>
+      </tr>
+      <tr>
+        <td><strong>Gestion Corpus</strong></td>
+        <td class="cell-yes">✅ Collections</td>
+        <td class="cell-partial">⚠️ Basique</td>
+        <td class="cell-partial">⚠️ Basique</td>
+        <td class="cell-yes">✅ Workspaces</td>
+        <td class="cell-partial">⚠️ Projects</td>
+      </tr>
+      <tr>
+        <td><strong>Admin UI</strong></td>
+        <td class="cell-yes">✅ Complète</td>
+        <td class="cell-yes">✅</td>
+        <td class="cell-yes">✅</td>
+        <td class="cell-yes">✅</td>
+        <td class="cell-no">❌</td>
+      </tr>
+      <tr>
+        <td><strong>Config en BDD</strong></td>
+        <td class="cell-yes">✅ 100%</td>
+        <td class="cell-partial">⚠️ Partielle</td>
+        <td class="cell-partial">⚠️ Env vars</td>
+        <td class="cell-partial">⚠️ Partielle</td>
+        <td class="cell-na">N/A</td>
+      </tr>
+      <tr>
+        <td><strong>Ollama</strong></td>
+        <td class="cell-yes">✅</td>
+        <td class="cell-yes">✅ Natif</td>
+        <td class="cell-yes">✅</td>
+        <td class="cell-yes">✅</td>
+        <td class="cell-no">❌</td>
+      </tr>
+      <tr>
+        <td><strong>llama.cpp natif</strong></td>
+        <td class="cell-yes">✅</td>
+        <td class="cell-partial">⚠️ Via Ollama</td>
+        <td class="cell-partial">⚠️ Via Ollama</td>
+        <td class="cell-yes">✅</td>
+        <td class="cell-no">❌</td>
+      </tr>
+      <tr>
+        <td><strong>OpenAI API</strong></td>
+        <td class="cell-na">N/A (souveraineté)</td>
+        <td class="cell-yes">✅</td>
+        <td class="cell-yes">✅</td>
+        <td class="cell-yes">✅</td>
+        <td class="cell-yes">✅ Natif</td>
+      </tr>
+      <tr>
+        <td><strong>Claude API</strong></td>
+        <td class="cell-na">N/A (souveraineté)</td>
+        <td class="cell-yes">✅</td>
+        <td class="cell-yes">✅</td>
+        <td class="cell-yes">✅</td>
+        <td class="cell-no">❌</td>
+      </tr>
+      <tr>
+        <td><strong>Modèles libres (Ollama)</strong></td>
+        <td class="cell-yes">✅ Tous modèles</td>
+        <td class="cell-yes">✅</td>
+        <td class="cell-yes">✅</td>
+        <td class="cell-yes">✅</td>
+        <td class="cell-no">❌</td>
+      </tr>
+      <tr>
+        <td><strong>Plugins/Extensions</strong></td>
+        <td class="cell-no">❌</td>
+        <td class="cell-yes">✅</td>
+        <td class="cell-yes">✅</td>
+        <td class="cell-yes">✅ Agents</td>
+        <td class="cell-yes">✅ GPTs</td>
+      </tr>
+      <tr>
+        <td><strong>Vision (images)</strong></td>
+        <td class="cell-yes">✅ OCR</td>
+        <td class="cell-yes">✅</td>
+        <td class="cell-yes">✅</td>
+        <td class="cell-partial">⚠️</td>
+        <td class="cell-yes">✅</td>
+      </tr>
+      <tr>
+        <td><strong>Voice (STT/TTS)</strong></td>
+        <td class="cell-partial">⚠️ Beta</td>
+        <td class="cell-partial">⚠️</td>
+        <td class="cell-partial">⚠️</td>
+        <td class="cell-no">❌</td>
+        <td class="cell-yes">✅</td>
+      </tr>
+      <tr>
+        <td><strong>Crawling Web</strong></td>
+        <td class="cell-yes">✅ Multi-niveaux</td>
+        <td class="cell-partial">⚠️</td>
+        <td class="cell-partial">⚠️</td>
+        <td class="cell-yes">✅</td>
+        <td class="cell-no">❌</td>
+      </tr>
+      <tr>
+        <td><strong>OAuth (Google/GitHub)</strong></td>
+        <td class="cell-partial">⚠️ Préparé</td>
+        <td class="cell-yes">✅</td>
+        <td class="cell-yes">✅</td>
+        <td class="cell-partial">⚠️ SSO</td>
+        <td class="cell-yes">✅</td>
+      </tr>
+      <tr>
+        <td><strong>Audit Logs</strong></td>
+        <td class="cell-yes">✅ Complet</td>
+        <td class="cell-partial">⚠️</td>
+        <td class="cell-partial">⚠️</td>
+        <td class="cell-yes">✅</td>
+        <td class="cell-partial">⚠️ Enterprise</td>
+      </tr>
+      <tr>
+        <td><strong>Document Versioning</strong></td>
+        <td class="cell-yes">✅</td>
+        <td class="cell-no">❌</td>
+        <td class="cell-no">❌</td>
+        <td class="cell-no">❌</td>
+        <td class="cell-no">❌</td>
+      </tr>
+      <tr>
+        <td><strong>Web Search</strong></td>
+        <td class="cell-yes">✅ Multi-provider</td>
+        <td class="cell-yes">✅</td>
+        <td class="cell-yes">✅</td>
+        <td class="cell-yes">✅</td>
+        <td class="cell-yes">✅</td>
+      </tr>
+      <tr>
+        <td><strong>API REST</strong></td>
+        <td class="cell-yes">✅ FastAPI</td>
+        <td class="cell-yes">✅</td>
+        <td class="cell-yes">✅</td>
+        <td class="cell-yes">✅</td>
+        <td class="cell-yes">✅</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ==================== SECTION 7 ==================== -->
+<div class="section" id="s7">
+  <div class="section-header">
+    <div class="section-icon icon-amber">🏗️</div>
+    <div><h2>Comparatif architectural <span class="section-num">&mdash; Section 7</span></h2></div>
+  </div>
+
+  <h3><span class="h3-dot dot-amber"></span> Stack technique</h3>
+
+  <table class="comparison-table">
+    <thead>
+      <tr>
+        <th>Composant</th>
+        <th>MY-IA</th>
+        <th>Open WebUI</th>
+        <th>LibreChat</th>
+        <th>AnythingLLM</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Backend</strong></td>
+        <td>FastAPI (Python)</td>
+        <td>FastAPI (Python)</td>
+        <td>Node.js (Express)</td>
+        <td>Node.js</td>
+      </tr>
+      <tr>
+        <td><strong>Frontend</strong></td>
+        <td>Vanilla JS + Templates</td>
+        <td>SvelteKit</td>
+        <td>React</td>
+        <td>React</td>
+      </tr>
+      <tr>
+        <td><strong>Base de données</strong></td>
+        <td>PostgreSQL</td>
+        <td>SQLite/PostgreSQL</td>
+        <td>MongoDB</td>
+        <td>SQLite</td>
+      </tr>
+      <tr>
+        <td><strong>Vector DB</strong></td>
+        <td>ChromaDB</td>
+        <td>ChromaDB</td>
+        <td>Weaviate/Pinecone</td>
+        <td>LanceDB</td>
+      </tr>
+      <tr>
+        <td><strong>Auth</strong></td>
+        <td>JWT (fastapi-users)</td>
+        <td>OAuth/LDAP</td>
+        <td>OAuth/Local</td>
+        <td>Local/SSO</td>
+      </tr>
+      <tr>
+        <td><strong>Déploiement</strong></td>
+        <td>Docker + LLM natif</td>
+        <td>Docker</td>
+        <td>Docker Compose</td>
+        <td>Docker/Desktop</td>
+      </tr>
+      <tr>
+        <td><strong>Config</strong></td>
+        <td>100% BDD</td>
+        <td>Env + DB</td>
+        <td>Env + Files</td>
+        <td>Env + DB</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-blue"></span> Points d'architecture différenciants MY-IA</h3>
+  <ul class="feature-list">
+    <li><strong>Configuration 100% en BDD</strong> &mdash; Seuls les credentials PostgreSQL sont en .env. Tout le reste (LLM, RAG, storage, etc.) est modifiable via Admin UI sans redémarrage.</li>
+    <li><strong>Support llama.cpp natif</strong> &mdash; Contrairement aux autres qui passent par Ollama, MY-IA supporte llama-server en direct pour exploiter GPU Metal/CUDA.</li>
+    <li><strong>Architecture feature-based</strong> &mdash; Organisation en modules indépendants (features/chat, features/corpus, features/sources).</li>
+    <li><strong>Frontend léger</strong> &mdash; Vanilla JS sans framework lourd, templates Handlebars, chargement rapide.</li>
+  </ul>
+</div>
+
+<!-- ==================== SECTION 8 ==================== -->
+<div class="section" id="s8">
+  <div class="section-header">
+    <div class="section-icon icon-red">🔒</div>
+    <div><h2>Souveraineté des données <span class="section-num">&mdash; Section 8</span></h2></div>
+  </div>
+
+  <h3><span class="h3-dot dot-red"></span> Matrice de souveraineté</h3>
+
+  <div class="sovereignty-matrix">
+    <div class="sovereignty-card green">
+      <h4>🟢 Souveraineté totale</h4>
+      <p>Données 100% sur votre infrastructure</p>
+      <ul style="text-align: left; margin-top: 0.5rem;">
+        <li><strong>MY-IA</strong></li>
+        <li>PrivateGPT</li>
+        <li>Open WebUI (local)</li>
+        <li>AnythingLLM (self-hosted)</li>
+        <li>LM Studio</li>
+        <li>GPT4All</li>
+      </ul>
+    </div>
+    <div class="sovereignty-card yellow">
+      <h4>🟡 Souveraineté partielle</h4>
+      <p>Données locales mais appels API cloud possibles</p>
+      <ul style="text-align: left; margin-top: 0.5rem;">
+        <li>LibreChat (multi-provider)</li>
+        <li>Open WebUI (avec OpenAI)</li>
+        <li>Azure OpenAI (data EU)</li>
+      </ul>
+    </div>
+    <div class="sovereignty-card red">
+      <h4>🔴 Pas de souveraineté</h4>
+      <p>Données transitent par serveurs tiers (US)</p>
+      <ul style="text-align: left; margin-top: 0.5rem;">
+        <li>ChatGPT / OpenAI</li>
+        <li>Claude / Anthropic</li>
+        <li>Google Vertex AI</li>
+        <li>AWS Bedrock</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3><span class="h3-dot dot-green"></span> Aspects réglementaires</h3>
+
+  <table class="comparison-table">
+    <thead>
+      <tr>
+        <th>Critère</th>
+        <th>MY-IA</th>
+        <th>Solutions Cloud US</th>
+        <th>Azure EU</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>RGPD</strong></td>
+        <td class="cell-yes">✅ Conforme (données locales)</td>
+        <td class="cell-no">❌ Transfert US (Cloud Act)</td>
+        <td class="cell-partial">⚠️ Possible avec config</td>
+      </tr>
+      <tr>
+        <td><strong>Données sensibles</strong></td>
+        <td class="cell-yes">✅ OK (santé, finance)</td>
+        <td class="cell-no">❌ Risqué</td>
+        <td class="cell-partial">⚠️ Avec contrats</td>
+      </tr>
+      <tr>
+        <td><strong>Audit/Logs</strong></td>
+        <td class="cell-yes">✅ Complet (PostgreSQL)</td>
+        <td class="cell-partial">⚠️ Limité</td>
+        <td class="cell-yes">✅ Azure Monitor</td>
+      </tr>
+      <tr>
+        <td><strong>Localisation données</strong></td>
+        <td class="cell-yes">✅ 100% contrôlée</td>
+        <td class="cell-no">❌ US</td>
+        <td class="cell-partial">⚠️ EU possible</td>
+      </tr>
+      <tr>
+        <td><strong>Training sur données</strong></td>
+        <td class="cell-yes">✅ Non (local)</td>
+        <td class="cell-partial">⚠️ Opt-out requis</td>
+        <td class="cell-yes">✅ Non</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-success">
+    <span class="callout-icon">✅</span>
+    <span><strong>Avantage clé MY-IA :</strong> Avec un déploiement local (Docker sur serveur propre ou VPS), les données ne quittent jamais l'infrastructure. Idéal pour les secteurs réglementés (santé, finance, juridique, défense).</span>
+  </div>
+</div>
+
+<!-- ==================== SECTION 9 ==================== -->
+<div class="section" id="s9">
+  <div class="section-header">
+    <div class="section-icon icon-green">💰</div>
+    <div><h2>Analyse coûts <span class="section-num">&mdash; Section 9</span></h2></div>
+  </div>
+
+  <h3><span class="h3-dot dot-green"></span> Coût de licence</h3>
+
+  <table class="comparison-table">
+    <thead>
+      <tr>
+        <th>Solution</th>
+        <th>Licence</th>
+        <th>Coût</th>
+        <th>Modèle économique</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>MY-IA</strong></td>
+        <td>Propriétaire</td>
+        <td>Gratuit (projet personnel)</td>
+        <td>Self-hosted</td>
+      </tr>
+      <tr>
+        <td>Open WebUI</td>
+        <td>MIT</td>
+        <td>Gratuit</td>
+        <td>Open-source</td>
+      </tr>
+      <tr>
+        <td>LibreChat</td>
+        <td>MIT</td>
+        <td>Gratuit</td>
+        <td>Open-source</td>
+      </tr>
+      <tr>
+        <td>AnythingLLM</td>
+        <td>MIT (core)</td>
+        <td>Gratuit / $25-100/mois cloud</td>
+        <td>Freemium</td>
+      </tr>
+      <tr>
+        <td>PrivateGPT</td>
+        <td>Apache 2.0</td>
+        <td>Gratuit</td>
+        <td>Open-source</td>
+      </tr>
+      <tr>
+        <td>ChatGPT Plus</td>
+        <td>Propriétaire</td>
+        <td>$20/mois/utilisateur</td>
+        <td>SaaS</td>
+      </tr>
+      <tr>
+        <td>ChatGPT Enterprise</td>
+        <td>Propriétaire</td>
+        <td>$30+/mois/utilisateur</td>
+        <td>SaaS Enterprise</td>
+      </tr>
+      <tr>
+        <td>Claude Pro</td>
+        <td>Propriétaire</td>
+        <td>$20/mois/utilisateur</td>
+        <td>SaaS</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-amber"></span> Coût d'infrastructure (Self-Hosted)</h3>
+
+  <table class="comparison-table">
+    <thead>
+      <tr>
+        <th>Configuration</th>
+        <th>Specs</th>
+        <th>Coût mensuel</th>
+        <th>Cas d'usage</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>VPS Basique</strong></td>
+        <td>4 vCPU, 8GB RAM, 100GB SSD</td>
+        <td>~15-30€/mois</td>
+        <td>Petite équipe, modèles 7B</td>
+      </tr>
+      <tr>
+        <td><strong>VPS Performance</strong></td>
+        <td>8 vCPU, 32GB RAM, 200GB NVMe</td>
+        <td>~50-100€/mois</td>
+        <td>Équipe moyenne, modèles 13B</td>
+      </tr>
+      <tr>
+        <td><strong>GPU Cloud</strong></td>
+        <td>RTX 4090 / A100</td>
+        <td>~200-500€/mois</td>
+        <td>Modèles 70B, performance max</td>
+      </tr>
+      <tr>
+        <td><strong>Mac Studio (one-time)</strong></td>
+        <td>M2 Ultra 64GB</td>
+        <td>~4000€ (achat)</td>
+        <td>Bureau local, tous modèles</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3><span class="h3-dot dot-blue"></span> Comparaison TCO sur 1 an (10 utilisateurs)</h3>
+
+  <table class="comparison-table">
+    <thead>
+      <tr>
+        <th>Solution</th>
+        <th>Licence/an</th>
+        <th>Infra/an</th>
+        <th>API/an</th>
+        <th>Total/an</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr style="background: #fef2f2;">
+        <td><strong>MY-IA (VPS)</strong></td>
+        <td>0€</td>
+        <td>600€</td>
+        <td>0€</td>
+        <td><strong>600€</strong></td>
+      </tr>
+      <tr>
+        <td>Open WebUI (VPS)</td>
+        <td>0€</td>
+        <td>600€</td>
+        <td>0€</td>
+        <td><strong>600€</strong></td>
+      </tr>
+      <tr>
+        <td>ChatGPT Plus</td>
+        <td>2400€</td>
+        <td>0€</td>
+        <td>0€</td>
+        <td><strong>2400€</strong></td>
+      </tr>
+      <tr>
+        <td>ChatGPT Enterprise</td>
+        <td>3600€+</td>
+        <td>0€</td>
+        <td>0€</td>
+        <td><strong>3600€+</strong></td>
+      </tr>
+      <tr>
+        <td>AnythingLLM Cloud</td>
+        <td>1200-3000€</td>
+        <td>0€</td>
+        <td>Variable</td>
+        <td><strong>1500€+</strong></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ==================== SECTION 10 ==================== -->
+<div class="section" id="s10">
+  <div class="section-header">
+    <div class="section-icon icon-purple">⚖️</div>
+    <div><h2>Forces et faiblesses MY-IA <span class="section-num">&mdash; Section 10</span></h2></div>
+  </div>
+
+  <div class="two-cols">
+    <div class="card" style="border-top: 4px solid #16a34a;">
+      <div class="card-title">✅ Forces</div>
+      <div class="card-text">
+        <ul>
+          <li><strong>Souveraineté totale</strong> &mdash; Données 100% locales, RGPD-ready</li>
+          <li><strong>Config 100% BDD</strong> &mdash; Modification à chaud via Admin UI</li>
+          <li><strong>Support llama.cpp natif</strong> &mdash; GPU Metal direct, pas d'overhead Ollama</li>
+          <li><strong>Sources Web avancées</strong> &mdash; DuckDuckGo, Google, Wikipedia, crawling multi-niveaux</li>
+          <li><strong>Connecteurs préparés</strong> &mdash; MCP, BDD externes, API custom (à activer)</li>
+          <li><strong>OCR intégré</strong> &mdash; Extraction texte images (pytesseract)</li>
+          <li><strong>Voice features</strong> &mdash; Whisper transcription + TTS (beta)</li>
+          <li><strong>Admin UI complète</strong> &mdash; 30+ modules, gestion complète</li>
+          <li><strong>Gestion Corpus/Collections</strong> &mdash; Organisation hiérarchique avancée</li>
+          <li><strong>Document Versioning</strong> &mdash; Historique complet des modifications</li>
+          <li><strong>Auth complète</strong> &mdash; JWT + RBAC (OAuth préparé)</li>
+          <li><strong>Audit Logs</strong> &mdash; Traçabilité complète des actions</li>
+          <li><strong>150+ endpoints API</strong> &mdash; API REST complète et documentée</li>
+          <li><strong>Indexation intelligente</strong> &mdash; TTL, auto-refresh, détection changements</li>
+          <li><strong>Stack moderne</strong> &mdash; FastAPI async, PostgreSQL, ChromaDB</li>
+          <li><strong>Tests complets</strong> &mdash; 27 tests E2E, tests unitaires</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card" style="border-top: 4px solid #d97706;">
+      <div class="card-title">⚠️ Limites (par design ou contexte)</div>
+      <div class="card-text">
+        <ul>
+          <li><strong>Pas d'API cloud</strong> &mdash; Choix délibéré pour la souveraineté (pas une limitation)</li>
+          <li><strong>Pas de plugins</strong> &mdash; Pas d'écosystème d'extensions (pour l'instant)</li>
+          <li><strong>Communauté naissante</strong> &mdash; Projet personnel, moins de ressources externes</li>
+          <li><strong>Pas d'agents/workflows</strong> &mdash; Automatisation avancée non implémentée</li>
+          <li><strong>Self-hosted uniquement</strong> &mdash; Maintenance requise (mais c'est le principe)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <h3><span class="h3-dot dot-purple"></span> Scores par catégorie</h3>
+
+  <div class="radar-section">
+    <div>
+      <h4>MY-IA</h4>
+      <div style="margin-bottom: 0.5rem;">
+        <div style="display: flex; justify-content: space-between;"><span>Souveraineté</span><span>10/10</span></div>
+        <div class="score-bar"><div class="score-fill high" style="width: 100%;"></div></div>
+      </div>
+      <div style="margin-bottom: 0.5rem;">
+        <div style="display: flex; justify-content: space-between;"><span>Coût</span><span>9/10</span></div>
+        <div class="score-bar"><div class="score-fill high" style="width: 90%;"></div></div>
+      </div>
+      <div style="margin-bottom: 0.5rem;">
+        <div style="display: flex; justify-content: space-between;"><span>RAG</span><span>8/10</span></div>
+        <div class="score-bar"><div class="score-fill high" style="width: 80%;"></div></div>
+      </div>
+      <div style="margin-bottom: 0.5rem;">
+        <div style="display: flex; justify-content: space-between;"><span>Admin UI</span><span>9/10</span></div>
+        <div class="score-bar"><div class="score-fill high" style="width: 90%;"></div></div>
+      </div>
+      <div style="margin-bottom: 0.5rem;">
+        <div style="display: flex; justify-content: space-between;"><span>Sources Web</span><span>9/10</span></div>
+        <div class="score-bar"><div class="score-fill high" style="width: 90%;"></div></div>
+      </div>
+      <div style="margin-bottom: 0.5rem;">
+        <div style="display: flex; justify-content: space-between;"><span>Providers LLM</span><span>5/10</span></div>
+        <div class="score-bar"><div class="score-fill medium" style="width: 50%;"></div></div>
+      </div>
+      <div style="margin-bottom: 0.5rem;">
+        <div style="display: flex; justify-content: space-between;"><span>Écosystème</span><span>3/10</span></div>
+        <div class="score-bar"><div class="score-fill low" style="width: 30%;"></div></div>
+      </div>
+      <div style="margin-bottom: 0.5rem;">
+        <div style="display: flex; justify-content: space-between;"><span>OCR / Voice (beta)</span><span>6/10</span></div>
+        <div class="score-bar"><div class="score-fill medium" style="width: 60%;"></div></div>
+      </div>
+    </div>
+    <div>
+      <h4>ChatGPT</h4>
+      <div style="margin-bottom: 0.5rem;">
+        <div style="display: flex; justify-content: space-between;"><span>Souveraineté</span><span>2/10</span></div>
+        <div class="score-bar"><div class="score-fill low" style="width: 20%;"></div></div>
+      </div>
+      <div style="margin-bottom: 0.5rem;">
+        <div style="display: flex; justify-content: space-between;"><span>Coût</span><span>4/10</span></div>
+        <div class="score-bar"><div class="score-fill medium" style="width: 40%;"></div></div>
+      </div>
+      <div style="margin-bottom: 0.5rem;">
+        <div style="display: flex; justify-content: space-between;"><span>RAG</span><span>7/10</span></div>
+        <div class="score-bar"><div class="score-fill high" style="width: 70%;"></div></div>
+      </div>
+      <div style="margin-bottom: 0.5rem;">
+        <div style="display: flex; justify-content: space-between;"><span>Admin UI</span><span>5/10</span></div>
+        <div class="score-bar"><div class="score-fill medium" style="width: 50%;"></div></div>
+      </div>
+      <div style="margin-bottom: 0.5rem;">
+        <div style="display: flex; justify-content: space-between;"><span>Providers LLM</span><span>10/10</span></div>
+        <div class="score-bar"><div class="score-fill high" style="width: 100%;"></div></div>
+      </div>
+      <div style="margin-bottom: 0.5rem;">
+        <div style="display: flex; justify-content: space-between;"><span>Écosystème</span><span>10/10</span></div>
+        <div class="score-bar"><div class="score-fill high" style="width: 100%;"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SECTION 11 ==================== -->
+<div class="section" id="s11">
+  <div class="section-header">
+    <div class="section-icon icon-teal">🎯</div>
+    <div><h2>Matrice de décision <span class="section-num">&mdash; Section 11</span></h2></div>
+  </div>
+
+  <h3><span class="h3-dot dot-teal"></span> Quelle solution pour quel besoin ?</h3>
+
+  <table class="comparison-table">
+    <thead>
+      <tr>
+        <th>Besoin principal</th>
+        <th>Solution recommandée</th>
+        <th>Alternative</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>🔒 <strong>Souveraineté maximale + RAG</strong></td>
+        <td class="cell-yes"><strong>MY-IA</strong></td>
+        <td>PrivateGPT</td>
+      </tr>
+      <tr>
+        <td>🏢 <strong>Équipe avec données sensibles</strong></td>
+        <td class="cell-yes"><strong>MY-IA</strong></td>
+        <td>AnythingLLM</td>
+      </tr>
+      <tr>
+        <td>⚙️ <strong>Config à chaud sans redémarrage</strong></td>
+        <td class="cell-yes"><strong>MY-IA</strong></td>
+        <td>-</td>
+      </tr>
+      <tr>
+        <td>🦙 <strong>Support llama.cpp natif (Metal)</strong></td>
+        <td class="cell-yes"><strong>MY-IA</strong></td>
+        <td>AnythingLLM</td>
+      </tr>
+      <tr>
+        <td>🕷️ <strong>Crawling web multi-niveaux</strong></td>
+        <td class="cell-yes"><strong>MY-IA</strong></td>
+        <td>RAGFlow</td>
+      </tr>
+      <tr>
+        <td>🎤 <strong>Voice features (STT + TTS)</strong></td>
+        <td>ChatGPT</td>
+        <td class="cell-partial">MY-IA (beta)</td>
+      </tr>
+      <tr>
+        <td>🚫 <strong>Zéro dépendance cloud (by design)</strong></td>
+        <td class="cell-yes"><strong>MY-IA</strong></td>
+        <td>PrivateGPT</td>
+      </tr>
+      <tr>
+        <td>🌐 <strong>Multi-provider cloud (OpenAI, Claude...)</strong></td>
+        <td>LibreChat</td>
+        <td>Open WebUI</td>
+      </tr>
+      <tr>
+        <td>👥 <strong>Grande communauté + plugins</strong></td>
+        <td>Open WebUI</td>
+        <td>LibreChat</td>
+      </tr>
+      <tr>
+        <td>🖥️ <strong>Usage individuel desktop</strong></td>
+        <td>LM Studio</td>
+        <td>GPT4All</td>
+      </tr>
+      <tr>
+        <td>☁️ <strong>Meilleurs modèles, pas de maintenance</strong></td>
+        <td>ChatGPT</td>
+        <td>Claude</td>
+      </tr>
+      <tr>
+        <td>🏥 <strong>Conformité réglementaire (santé, finance)</strong></td>
+        <td class="cell-yes"><strong>MY-IA</strong></td>
+        <td>Azure OpenAI (EU)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-info">
+    <span class="callout-icon">💡</span>
+    <span><strong>MY-IA est le meilleur choix si :</strong> vous avez besoin de souveraineté totale, de données sensibles à protéger, d'une interface d'administration complète, et souhaitez utiliser des modèles locaux (Ollama ou llama.cpp) sans dépendance cloud.</span>
+  </div>
+</div>
+
+<!-- ==================== SECTION 12 ==================== -->
+<div class="section" id="s12">
+  <div class="section-header">
+    <div class="section-icon icon-blue">📍</div>
+    <div><h2>Positionnement MY-IA <span class="section-num">&mdash; Section 12</span></h2></div>
+  </div>
+
+  <h3><span class="h3-dot dot-blue"></span> Proposition de valeur unique</h3>
+
+  <div class="card" style="border: 2px solid var(--accent); background: linear-gradient(135deg, #fef2f2 0%, #fff 100%);">
+    <div class="card-title" style="font-size: 1.2rem;">🤖 MY-IA : "Plateforme RAG 100% souveraine"</div>
+    <div class="card-text">
+      <p style="font-size: 1.1rem; margin-bottom: 1rem;">MY-IA est une plateforme RAG enterprise-ready avec une philosophie claire :</p>
+      <ul class="feature-list">
+        <li><strong>Souveraineté totale</strong> &mdash; Aucun appel API cloud, aucune donnée externe, choix délibéré</li>
+        <li><strong>Liberté des modèles</strong> &mdash; Tout modèle via Ollama (Mistral, Llama, Qwen...) ou GGUF (llama.cpp)</li>
+        <li><strong>Multi-plateforme</strong> &mdash; macOS (Metal) + Linux (CPU, CUDA préparable) + VPS sans GPU</li>
+        <li><strong>Sources Web avancées</strong> &mdash; DuckDuckGo, Google, Wikipedia + crawling multi-niveaux (MCP, BDD, API : préparés)</li>
+        <li><strong>Multimédia</strong> &mdash; OCR images (pytesseract), Voice (Whisper + TTS, beta)</li>
+        <li><strong>150+ endpoints API</strong> &mdash; API REST complète, 16 modules backend</li>
+        <li><strong>Configuration dynamique</strong> &mdash; 100% en BDD, modifiable via Admin UI sans redémarrage</li>
+        <li><strong>Gestion documentaire</strong> &mdash; Versioning, corpus, collections, indexation TTL</li>
+        <li><strong>Sécurité enterprise</strong> &mdash; JWT, RBAC, audit complet (OAuth préparé)</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3><span class="h3-dot dot-blue"></span> Philosophie du projet</h3>
+  <div class="callout callout-info">
+    <span class="callout-icon">🎯</span>
+    <span>
+      <strong>Souveraineté par design</strong> &mdash; MY-IA ne fait et ne fera jamais d'appels à des API cloud (OpenAI, Anthropic, Google...).
+      Ce n'est pas une fonctionnalité manquante, c'est le cœur de la proposition de valeur.
+      Les données restent 100% sur l'infrastructure de l'utilisateur.
+    </span>
+  </div>
+
+  <h3><span class="h3-dot dot-green"></span> Architecture hybride (Docker + natif)</h3>
+
+  <div class="callout callout-warning">
+    <span class="callout-icon">⚡</span>
+    <span>
+      <strong>LLM en natif pour les performances GPU</strong> &mdash; Ollama et llama.cpp tournent en dehors de Docker pour accéder directement au GPU (Metal/CUDA). Les autres services (FastAPI, PostgreSQL, ChromaDB, Nginx) restent conteneurisés.
+    </span>
+  </div>
+
+  <div class="two-cols">
+    <div class="card">
+      <div class="card-title">🐳 Dans Docker</div>
+      <div class="card-text">
+        <ul>
+          <li>FastAPI (backend)</li>
+          <li>PostgreSQL (BDD)</li>
+          <li>ChromaDB (vecteurs)</li>
+          <li>Nginx (reverse proxy)</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">🖥️ En natif (hors Docker)</div>
+      <div class="card-text">
+        <ul>
+          <li>Ollama (accès GPU direct)</li>
+          <li>llama.cpp / llama-server (GPU Metal/CUDA)</li>
+          <li>Communication via <code>host.docker.internal</code></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <h3><span class="h3-dot dot-blue"></span> Plateformes supportées</h3>
+  <div class="two-cols">
+    <div class="card">
+      <div class="card-title">🍎 macOS (Apple Silicon)</div>
+      <div class="card-text">
+        <ul>
+          <li>GPU Metal pour llama.cpp</li>
+          <li>Ollama natif avec Metal</li>
+          <li>Développement actuel sur Mac M1</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">🐧 Linux (serveurs / VPS)</div>
+      <div class="card-text">
+        <ul>
+          <li>Services Docker + LLM natif</li>
+          <li>CPU-only fonctionnel (plus lent)</li>
+          <li>CUDA activable si GPU NVIDIA</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <h3><span class="h3-dot dot-green"></span> Cibles idéales</h3>
+
+  <div class="three-cols">
+    <div class="card">
+      <div class="card-title">🏥 Secteur réglementé</div>
+      <div class="card-text">
+        <p>Santé, finance, juridique, défense.</p>
+        <p>Besoin : RGPD, données sensibles, audit.</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">🏢 PME/ETI</div>
+      <div class="card-text">
+        <p>Équipes 5-50 personnes.</p>
+        <p>Besoin : Coût maîtrisé, contrôle total.</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">🔬 R&D / Innovation</div>
+      <div class="card-text">
+        <p>Labs, startups, chercheurs.</p>
+        <p>Besoin : Modèles custom, API flexible.</p>
+      </div>
+    </div>
+  </div>
+
+  <h3><span class="h3-dot dot-amber"></span> Axes d'évolution possibles</h3>
+
+  <table class="comparison-table">
+    <thead>
+      <tr>
+        <th>Priorité</th>
+        <th>Évolution</th>
+        <th>Impact</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span style="color: #dc2626; font-weight: bold;">P1</span></td>
+        <td>Vision multimodale LLM</td>
+        <td>Analyse d'images par le LLM (LLaVA, etc.)</td>
+      </tr>
+      <tr>
+        <td><span style="color: #dc2626; font-weight: bold;">P1</span></td>
+        <td>Support CUDA explicite</td>
+        <td>GPU NVIDIA pour VPS/serveurs Linux</td>
+      </tr>
+      <tr>
+        <td><span style="color: #d97706; font-weight: bold;">P2</span></td>
+        <td>Système de plugins</td>
+        <td>Écosystème, personnalisation</td>
+      </tr>
+      <tr>
+        <td><span style="color: #d97706; font-weight: bold;">P2</span></td>
+        <td>Agents / Workflows</td>
+        <td>Automatisation avancée</td>
+      </tr>
+      <tr>
+        <td><span style="color: #16a34a; font-weight: bold;">P3</span></td>
+        <td>SSO / LDAP</td>
+        <td>Intégration entreprise avancée</td>
+      </tr>
+      <tr>
+        <td><span style="color: #16a34a; font-weight: bold;">P3</span></td>
+        <td>Connecteurs sources (MCP, BDD, API)</td>
+        <td>Préparés, à finaliser et activer</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-info">
+    <span class="callout-icon">💡</span>
+    <span><strong>Note :</strong> L'ajout d'API cloud (OpenAI, Claude) n'est PAS prévu car contraire à la philosophie de souveraineté. Le choix des modèles reste libre via Ollama (Mistral, Llama, Qwen, Gemma...) ou llama.cpp (tout modèle GGUF).</span>
+  </div>
+
+  <h3><span class="h3-dot dot-green"></span> Fonctionnalités déjà implémentées</h3>
+  <div class="callout callout-success">
+    <span class="callout-icon">✅</span>
+    <span>
+      <strong>Sources Web</strong> (DuckDuckGo, Google, Wikipedia, crawling multi-niveaux) &bull;
+      <strong>OCR images</strong> (pytesseract) &bull;
+      <strong>Voice beta</strong> (Whisper STT + TTS) &bull;
+      <strong>Audit complet</strong> &bull;
+      <strong>Document versioning</strong> &bull;
+      <strong>150+ endpoints API</strong>
+      <br><em style="color: var(--gray-600);">Préparés : OAuth, MCP, BDD externes, API custom</em>
+    </span>
+  </div>
+</div>
+
+<!-- ==================== SOURCES ==================== -->
+<div class="section" id="sources">
+  <div class="section-header">
+    <div class="section-icon icon-gray">📚</div>
+    <div><h2>Sources</h2></div>
+  </div>
+
+  <ul style="font-size: 0.9rem;">
+    <li><a href="https://intuitionlabs.ai/articles/open-source-chatbots-local-deployment" target="_blank">Guide to Top 10 Open Source Chatbots for Local Deployment</a></li>
+    <li><a href="https://blog.premai.io/15-private-chatgpt-alternatives-that-dont-train-on-your-data/" target="_blank">15 Private ChatGPT Alternatives That Don't Train on Your Data</a></li>
+    <li><a href="https://github.com/infiniflow/ragflow" target="_blank">RAGFlow - Open-source RAG Engine</a></li>
+    <li><a href="https://github.com/weaviate/Verba" target="_blank">Verba - RAG chatbot powered by Weaviate</a></li>
+    <li><a href="https://naileru.com/ia/locale/solutions-chat-open-source/" target="_blank">Solutions de Chat Open Source en 2026 : Comparatif Complet</a></li>
+    <li><a href="https://portkey.ai/blog/librechat-vs-openwebui/" target="_blank">LibreChat vs Open WebUI Comparison</a></li>
+    <li><a href="https://intuitionlabs.ai/articles/ai-api-pricing-comparison-grok-gemini-openai-claude" target="_blank">AI API Pricing Comparison 2026</a></li>
+    <li><a href="https://www.meilisearch.com/blog/rag-tools" target="_blank">10 Best RAG Tools and Platforms</a></li>
+    <li><a href="https://github.com/ethicals7s/awesome-local-ai" target="_blank">Awesome Local AI - 152 open-source tools</a></li>
+  </ul>
+</div>
+
+<!-- ==================== FOOTER ==================== -->
+<div class="footer">
+  MY-IA &mdash; Benchmark Concurrentiel &mdash; Version 1.3 &mdash; 2026-02-21
+</div>
+
+</div>
+</body>
+</html>

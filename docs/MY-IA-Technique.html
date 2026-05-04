@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MY-IA — Documentation Technique</title>
+    <link rel="stylesheet" href="assets/doc-style.css">
+</head>
+<body>
+    <div class="header">
+        <h1>MY-IA — Documentation Technique</h1>
+        <p class="subtitle">Architecture & Stack Technologique</p>
+    </div>
+
+    <div class="page">
+        <nav class="toc">
+            <h2>Table des matières</h2>
+            <ul>
+                <li><a href="#overview">1. Vue d'Ensemble</a></li>
+                <li><a href="#stack">2. Stack Technique</a></li>
+                <li><a href="#rag">3. RAG (Retrieval-Augmented Generation)</a></li>
+                <li><a href="#collections">4. Architecture des Collections</a></li>
+                <li><a href="#ingestion">5. Pipeline d'Ingestion</a></li>
+                <li><a href="#securite">6. Sécurité & Chiffrement</a></li>
+                <li><a href="#backend">7. Architecture Backend</a></li>
+                <li><a href="#frontend">8. Architecture Frontend</a></li>
+                <li><a href="#providers">9. Providers LLM</a></li>
+                <li><a href="#api">10. API Endpoints</a></li>
+                <li><a href="#deploiement">11. Déploiement</a></li>
+                <li><a href="#config">12. Configuration Dynamique</a></li>
+                <li><a href="#monitoring">13. Monitoring & Health</a></li>
+                <li><a href="#prerequis">14. Prérequis Système</a></li>
+                <li><a href="#tests">15. Tests</a></li>
+            </ul>
+        </nav>
+
+        <!-- Section 1 -->
+        <section id="overview" class="section">
+            <h2><span class="section-number">1</span> Vue d'Ensemble</h2>
+
+            <div class="pipeline">
+┌─────────────────────────────────────────────────────────────────────┐
+│                         INFRASTRUCTURE MY-IA                        │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  ┌──────────────┐  ┌──────────────┐                                │
+│  │   UI-FRONT   │  │   UI-BACK    │     Nginx (SSL/Proxy)          │
+│  │   Port 3000  │  │   Port 8081  │                                │
+│  └──────┬───────┘  └──────┬───────┘                                │
+│         │                 │                                         │
+│         └────────┬────────┘                                         │
+│                  ▼                                                  │
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │                    FASTAPI BACKEND                          │   │
+│  │                       Port 8080                             │   │
+│  │  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐           │   │
+│  │  │  Auth   │ │  Chat   │ │  Docs   │ │  Admin  │           │   │
+│  │  │ (JWT)   │ │  (RAG)  │ │(Upload) │ │(Config) │           │   │
+│  │  └─────────┘ └─────────┘ └─────────┘ └─────────┘           │   │
+│  └──────────────────────┬──────────────────────────────────────┘   │
+│                         │                                           │
+│         ┌───────────────┼───────────────┐                          │
+│         ▼               ▼               ▼                          │
+│  ┌────────────┐  ┌────────────┐  ┌────────────┐                   │
+│  │ PostgreSQL │  │  ChromaDB  │  │   Ollama   │                   │
+│  │    :5432   │  │   :8000    │  │   :11434   │                   │
+│  │            │  │            │  │     ou     │                   │
+│  │  Metadata  │  │  Vectors   │  │ llama.cpp  │                   │
+│  │  Users     │  │  Embeddings│  │   :8081    │                   │
+│  │  Audit     │  │            │  │            │                   │
+│  └────────────┘  └────────────┘  └────────────┘                   │
+│                                                                     │
+│  ┌────────────┐  ┌────────────┐  ┌────────────┐                   │
+│  │   Whisper  │  │    N8N     │  │  pgAdmin   │                   │
+│  │   :9001    │  │   :5678    │  │   :5050    │                   │
+│  │   (STT)    │  │ (Workflow) │  │  (DB GUI)  │                   │
+│  └────────────┘  └────────────┘  └────────────┘                   │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+            </div>
+        </section>
+
+        <!-- Section 2 -->
+        <section id="stack" class="section">
+            <h2><span class="section-number">2</span> Stack Technique</h2>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Composant</th>
+                        <th>Technologie</th>
+                        <th>Version</th>
+                        <th>Rôle</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Backend</strong></td>
+                        <td>FastAPI</td>
+                        <td>0.109+</td>
+                        <td>API REST async</td>
+                    </tr>
+                    <tr>
+                        <td><strong>ORM</strong></td>
+                        <td>SQLAlchemy</td>
+                        <td>2.0</td>
+                        <td>Async DB access</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Database</strong></td>
+                        <td>PostgreSQL</td>
+                        <td>16-alpine</td>
+                        <td>Données métier</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Vector DB</strong></td>
+                        <td>ChromaDB</td>
+                        <td>1.4.1</td>
+                        <td>Embeddings RAG</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Auth</strong></td>
+                        <td>fastapi-users</td>
+                        <td>13+</td>
+                        <td>JWT + OAuth</td>
+                    </tr>
+                    <tr>
+                        <td><strong>LLM</strong></td>
+                        <td>Ollama / llama.cpp</td>
+                        <td>Latest</td>
+                        <td>Inference locale</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Embeddings</strong></td>
+                        <td>nomic-embed-text</td>
+                        <td>Latest</td>
+                        <td>Vectorisation</td>
+                    </tr>
+                    <tr>
+                        <td><strong>OCR</strong></td>
+                        <td>Tesseract</td>
+                        <td>5.x</td>
+                        <td>Extraction texte images</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Doc Parsing</strong></td>
+                        <td>Unstructured.io</td>
+                        <td>0.10+</td>
+                        <td>Parsing multi-format</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Frontend</strong></td>
+                        <td>Vanilla JS ES6</td>
+                        <td>-</td>
+                        <td>Zero framework</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Containers</strong></td>
+                        <td>Docker Compose</td>
+                        <td>2.x</td>
+                        <td>Orchestration</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Migrations</strong></td>
+                        <td>Alembic</td>
+                        <td>1.13+</td>
+                        <td>Schema versioning</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Section 3 -->
+        <section id="rag" class="section">
+            <h2><span class="section-number">3</span> RAG (Retrieval-Augmented Generation)</h2>
+
+            <div class="pipeline">
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│   Question  │────▶│  Embedding  │────▶│   ChromaDB  │
+│ utilisateur │     │   Query     │     │   Search    │
+└─────────────┘     └─────────────┘     └──────┬──────┘
+                                               │
+                    ┌──────────────────────────┘
+                    ▼
+┌─────────────────────────────────────────────────────┐
+│              TOP-K Chunks (configurable)            │
+│  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐   │
+│  │ Chunk 1 │ │ Chunk 2 │ │ Chunk 3 │ │ Chunk N │   │
+│  │ Score:  │ │ Score:  │ │ Score:  │ │ Score:  │   │
+│  │ 0.92    │ │ 0.87    │ │ 0.81    │ │ 0.75    │   │
+│  └─────────┘ └─────────┘ └─────────┘ └─────────┘   │
+└─────────────────────────────────────────────────────┘
+                    │
+                    ▼
+┌─────────────────────────────────────────────────────┐
+│                    LLM PROMPT                       │
+│  System: Tu es un assistant...                      │
+│  Context: [Chunks pertinents]                       │
+│  Question: [Question utilisateur]                   │
+└─────────────────────────────────────────────────────┘
+                    │
+                    ▼
+┌─────────────────────────────────────────────────────┐
+│              RÉPONSE STREAMÉE                       │
+│  + Attribution des sources                          │
+└─────────────────────────────────────────────────────┘
+            </div>
+
+            <h3>Configuration RAG (BDD <code>system_configs</code>)</h3>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Clé</th>
+                        <th>Type</th>
+                        <th>Default</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>rag.top_k</code></td>
+                        <td>int</td>
+                        <td>10</td>
+                        <td>Chunks par recherche</td>
+                    </tr>
+                    <tr>
+                        <td><code>rag.similarity_threshold</code></td>
+                        <td>float</td>
+                        <td>0.7</td>
+                        <td>Seuil de similarité</td>
+                    </tr>
+                    <tr>
+                        <td><code>rag.chunk_size</code></td>
+                        <td>int</td>
+                        <td>512</td>
+                        <td>Taille des chunks</td>
+                    </tr>
+                    <tr>
+                        <td><code>rag.chunk_overlap</code></td>
+                        <td>int</td>
+                        <td>50</td>
+                        <td>Overlap entre chunks</td>
+                    </tr>
+                    <tr>
+                        <td><code>rag.min_chunk_length</code></td>
+                        <td>int</td>
+                        <td>50</td>
+                        <td>Longueur min chunk</td>
+                    </tr>
+                    <tr>
+                        <td><code>rag.keyword_boost</code></td>
+                        <td>float</td>
+                        <td>0.15</td>
+                        <td>Boost recherche hybride</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Section 4 -->
+        <section id="collections" class="section">
+            <h2><span class="section-number">4</span> Architecture des Collections</h2>
+
+            <p>Les <strong>collections</strong> organisent les contenus et font le lien entre PostgreSQL et ChromaDB.</p>
+
+            <div class="pipeline">
+┌──────────────────────────────────────────────────────────────┐
+│                    ARCHITECTURE COLLECTIONS                   │
+├──────────────────────────────────────────────────────────────┤
+│                                                               │
+│  PostgreSQL                          ChromaDB                 │
+│  ───────────                         ────────                 │
+│                                                               │
+│  Collection: "documentation"    ───► "documentation_ollama"   │
+│    ├── type: public                  "documentation_llamacpp" │
+│    ├── corpus_id                     (1 par provider LLM)     │
+│    └── owner_id: null                                         │
+│                                                               │
+│  Collection: "user_abc123"      ───► "user_abc123_ollama"     │
+│    ├── type: private                 "user_abc123_llamacpp"   │
+│    └── owner_id: abc123                                       │
+│                                                               │
+└──────────────────────────────────────────────────────────────┘
+            </div>
+
+            <h3>Types de collections</h3>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>Créée par</th>
+                        <th>Visible par</th>
+                        <th>Contenu</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="badge badge-primary">Public</span></td>
+                        <td>Admin</td>
+                        <td>Tous les users</td>
+                        <td>Corpus assigné (docs + sources)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-secondary">Private</span></td>
+                        <td>Système (auto)</td>
+                        <td>User seul</td>
+                        <td>Documents uploadés</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Gestion multi-provider</h3>
+
+            <p>Les embeddings sont incompatibles entre Ollama et llama.cpp (espaces vectoriels différents). Chaque provider a sa propre collection ChromaDB.</p>
+
+            <div class="callout info">
+                <strong>Documentation complète :</strong> <a href="technique/collections.html">docs/technique/collections.html</a>
+            </div>
+        </section>
+
+        <!-- Section 5 -->
+        <section id="ingestion" class="section">
+            <h2><span class="section-number">5</span> Pipeline d'Ingestion Documents</h2>
+
+            <h3>Endpoints disponibles</h3>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Endpoint</th>
+                        <th>Mode</th>
+                        <th>Usage</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>POST /upload/v2</code></td>
+                        <td>Synchrone</td>
+                        <td>Petits fichiers, attente résultat</td>
+                    </tr>
+                    <tr>
+                        <td><code>POST /upload/v2/async</code></td>
+                        <td>Asynchrone</td>
+                        <td>Gros fichiers, polling progression</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="callout warning">
+                <strong>Note :</strong> Si le storage échoue, le document est supprimé et HTTP 500 retourné (pas de documents "fantômes" avec <code>file_path=NULL</code>).
+            </div>
+
+            <div class="pipeline">
+┌─────────────┐
+│   Upload    │
+│  (API/UI)   │
+└──────┬──────┘
+       ▼
+┌─────────────────────────────────────────────────────┐
+│              VALIDATION                             │
+│  • MIME type check                                  │
+│  • Extension whitelist                              │
+│  • Size limit (quota user)                          │
+│  • Duplicate detection (hash)                       │
+└──────┬──────────────────────────────────────────────┘
+       ▼
+┌─────────────────────────────────────────────────────┐
+│              PARSING (Unstructured.io)              │
+│                                                     │
+│  PDF ──────▶ partition_pdf()                        │
+│  DOCX ─────▶ partition_docx()                       │
+│  Images ───▶ partition_image() + Tesseract OCR     │
+│  Excel ────▶ partition_xlsx()                       │
+│  HTML ─────▶ partition_html()                       │
+│  Markdown ─▶ partition_md()                         │
+└──────┬──────────────────────────────────────────────┘
+       ▼
+┌─────────────────────────────────────────────────────┐
+│              CHUNKING (LangChain)                   │
+│                                                     │
+│  SemanticChunker:                                   │
+│  • Détection des frontières sémantiques             │
+│  • Respect des paragraphes                          │
+│  • Overlap configurable                             │
+└──────┬──────────────────────────────────────────────┘
+       ▼
+┌─────────────────────────────────────────────────────┐
+│              EMBEDDING                              │
+│                                                     │
+│  nomic-embed-text (Ollama) ou                       │
+│  Modèle GGUF embedding (llama.cpp)                  │
+│  ──────▶ Vecteur 768/1024 dimensions               │
+└──────┬──────────────────────────────────────────────┘
+       ▼
+┌─────────────────────────────────────────────────────┐
+│              STOCKAGE                               │
+│                                                     │
+│  PostgreSQL:          ChromaDB:                     │
+│  • Metadata document  • Vecteurs                    │
+│  • User ownership     • Chunks texte                │
+│  • Timestamps         • Metadata filtrable          │
+│  • Collection         • Collection ID               │
+└─────────────────────────────────────────────────────┘
+            </div>
+
+            <h3>Formats supportés</h3>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Format</th>
+                        <th>Extension</th>
+                        <th>Parsing</th>
+                        <th>OCR</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>PDF</td><td>.pdf</td><td>partition_pdf</td><td><span class="icon-check"></span> Oui (images)</td></tr>
+                    <tr><td>Word</td><td>.docx, .doc</td><td>partition_docx</td><td><span class="icon-x"></span> Non</td></tr>
+                    <tr><td>Excel</td><td>.xlsx, .xls</td><td>partition_xlsx</td><td><span class="icon-x"></span> Non</td></tr>
+                    <tr><td>PowerPoint</td><td>.pptx, .ppt</td><td>partition_pptx</td><td><span class="icon-x"></span> Non</td></tr>
+                    <tr><td>Images</td><td>.png, .jpg, .jpeg</td><td>partition_image</td><td><span class="icon-check"></span> Oui</td></tr>
+                    <tr><td>Markdown</td><td>.md</td><td>partition_md</td><td><span class="icon-x"></span> Non</td></tr>
+                    <tr><td>HTML</td><td>.html, .htm</td><td>partition_html</td><td><span class="icon-x"></span> Non</td></tr>
+                    <tr><td>Text</td><td>.txt</td><td>partition_text</td><td><span class="icon-x"></span> Non</td></tr>
+                    <tr><td>CSV</td><td>.csv</td><td>partition_csv</td><td><span class="icon-x"></span> Non</td></tr>
+                    <tr><td>JSON</td><td>.json, .jsonl</td><td>custom parser</td><td><span class="icon-x"></span> Non</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Section 6 -->
+        <section id="securite" class="section">
+            <h2><span class="section-number">6</span> Sécurité & Chiffrement</h2>
+
+            <h3>Chiffrement PII (AES-256-GCM)</h3>
+
+            <div class="code-block">
+<pre># app/common/crypto/encryption.py
+
+class EncryptionService:
+    """
+    Chiffrement AES-256-GCM pour données personnelles.
+    - IV aléatoire unique par opération (12 bytes)
+    - Tag d'authentification (16 bytes)
+    - Format stocké: IV || Ciphertext || Tag (base64)
+    """
+
+    def encrypt(self, plaintext: str) -> str:
+        iv = os.urandom(12)  # Nonce unique
+        cipher = Cipher(
+            algorithms.AES(self.key),
+            modes.GCM(iv),
+            backend=default_backend()
+        )
+        encryptor = cipher.encryptor()
+        ciphertext = encryptor.update(plaintext.encode()) + encryptor.finalize()
+        return base64.b64encode(iv + ciphertext + encryptor.tag).decode()</pre>
+            </div>
+
+            <p><strong>Données chiffrées :</strong> Prénom / Nom, Téléphone, Adresse, Autres PII configurables</p>
+
+            <h3>Authentification JWT</h3>
+
+            <div class="pipeline">
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│   Login     │────▶│  Validate   │────▶│  Generate   │
+│  (email/pw) │     │  Password   │     │    JWT      │
+└─────────────┘     └─────────────┘     └──────┬──────┘
+                                               │
+                    ┌──────────────────────────┘
+                    ▼
+┌─────────────────────────────────────────────────────┐
+│                    TOKENS                           │
+│  Access Token:  30 min (configurable)               │
+│  Refresh Token: 7 jours (configurable)              │
+│  Algorithm:     HS256                               │
+└─────────────────────────────────────────────────────┘
+            </div>
+
+            <h3>Rate Limiting (SlowAPI)</h3>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Endpoint</th>
+                        <th>Limite</th>
+                        <th>Fenêtre</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>Chat</td><td>30 req</td><td>1 min</td></tr>
+                    <tr><td>Upload</td><td>10 req</td><td>1 min</td></tr>
+                    <tr><td>Admin</td><td>30 req</td><td>1 min</td></tr>
+                    <tr><td>Auth</td><td>5 req</td><td>1 min</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Section 7 -->
+        <section id="backend" class="section">
+            <h2><span class="section-number">7</span> Architecture Backend</h2>
+
+            <div class="pipeline">
+app/
+├── main.py                 # Point d'entrée FastAPI (minimal)
+├── db.py                   # Engine & session factory
+├── models.py               # SQLAlchemy models (User, Document, Corpus, etc.)
+├── ingest_v2.py            # Pipeline d'ingestion v2
+│
+├── core/
+│   ├── config.py           # Settings Pydantic (depuis system_configs)
+│   └── deps.py             # Dépendances FastAPI (get_db, get_chroma, etc.)
+│
+├── common/
+│   ├── crypto/             # Chiffrement AES-256-GCM
+│   ├── email/              # Service email + templates
+│   ├── exceptions/         # Exceptions métier
+│   ├── filetypes/          # Validation MIME types
+│   ├── i18n/               # Internationalisation + locales/
+│   ├── llm/                # Abstraction LLM providers
+│   │   ├── factory.py      # LLMFactory (sélection provider)
+│   │   ├── base.py         # Interface abstraite
+│   │   ├── ollama.py       # Provider Ollama
+│   │   └── llamacpp.py     # Provider llama.cpp
+│   ├── middleware/         # Middlewares (access log, rate limit)
+│   ├── schemas/            # Schemas partagés
+│   ├── services/           # Services partagés
+│   ├── storage/            # Abstraction stockage fichiers
+│   │   ├── service.py      # StorageService
+│   │   └── backends/       # LocalStorage, S3Storage (future)
+│   └── utils/
+│       ├── chroma.py           # ChromaDB helpers
+│       ├── chroma_helpers.py   # get_all_provider_collections()
+│       ├── reindex.py          # ReindexManager (progression)
+│       └── timing_stats.py     # Métriques de performance
+│
+├── features/
+│   ├── auth/               # Authentification JWT + OAuth
+│   ├── chat/               # Chat RAG (conversations, messages)
+│   ├── collections/        # Collections ChromaDB
+│   ├── config/             # Config utilisateur
+│   ├── conversations/      # Gestion conversations
+│   ├── documents/          # Upload/gestion documents user
+│   ├── health/             # Healthcheck endpoint
+│   ├── ingestion/          # Upload v2 async
+│   ├── preferences/        # Préférences utilisateur
+│   ├── sources/            # Sources externes + RAG
+│   │   ├── connectors/     # MCP, Web, API, Database
+│   │   ├── context.py      # get_smart_context()
+│   │   ├── indexer.py      # Indexation sources
+│   │   └── scheduler.py    # Auto-refresh
+│   ├── speech/             # Speech-to-text (Whisper)
+│   ├── user/profile/       # Profil utilisateur
+│   │
+│   ├── admin/              # === ADMINISTRATION ===
+│   │   ├── bulk/           # Opérations en masse
+│   │   ├── collections/    # Gestion collections (index status, reindex)
+│   │   ├── config/         # System configs (CRUD)
+│   │   ├── conversations/  # Conversations admin
+│   │   ├── corpus/         # Gestion corpus + documents/sources
+│   │   ├── dashboard/      # Stats dashboard
+│   │   ├── documents/      # Documents admin (reindex, delete)
+│   │   ├── export/         # Export données
+│   │   ├── geo/            # Géolocalisation
+│   │   ├── password_policy/# Politique mots de passe
+│   │   ├── permissions/    # Gestion permissions
+│   │   ├── users/          # Gestion utilisateurs
+│   │   └── validation/     # Validation onboarding
+│   │
+│   ├── analytics/          # Analytics & métriques
+│   ├── audit/              # Logs d'audit
+│   ├── geo/                # Service géo
+│   ├── logs/               # Logs système
+│   └── system/             # Endpoints système
+│
+├── alembic/                # Migrations DB
+│   └── versions/           # Fichiers de migration
+│
+└── prompts/                # System prompts par défaut
+            </div>
+
+            <p><strong>Pattern utilisé :</strong> Router → Service → Repository</p>
+        </section>
+
+        <!-- Section 8 -->
+        <section id="frontend" class="section">
+            <h2><span class="section-number">8</span> Architecture Frontend</h2>
+
+            <div class="pipeline">
+UI-SHARED/                  # Code partagé entre UI-FRONT et UI-BACK
+├── css/
+│   ├── base/               # Variables, reset, typography
+│   └── components/         # Cards, forms, modals, tables, etc.
+├── icons/                  # SVG par catégorie
+│   ├── actions/            # edit, delete, refresh, etc.
+│   ├── controls/           # play, pause, settings, etc.
+│   ├── fields/             # email, password, user, etc.
+│   └── status/             # success, error, warning, etc.
+├── js/
+│   ├── components/         # Toast, Modal, Sidebar, etc.
+│   ├── config/             # env.js, icons.js
+│   ├── mixins/             # Comportements réutilisables
+│   ├── modules/            # Modules métier partagés
+│   ├── services/           # ApiService, ReindexBanner, etc.
+│   └── utils/              # Helpers JS
+├── locales/                # fr.json, en.json (i18n)
+├── templates/              # HTML templates (Jinja-like)
+│   ├── admin/              # Tables, forms, cards admin
+│   ├── auth/               # Login, register
+│   └── front/              # Chat, documents user
+└── images/                 # Assets images
+
+UI-BACK/                    # Interface Admin
+├── js/
+│   ├── modules/            # Pages admin (users, documents, corpus, etc.)
+│   │   └── system/         # Config système (llm, rag, storage)
+│   ├── services/           # adminApi.js
+│   └── utils/              # icons.js (admin-specific)
+└── index.html
+
+UI-FRONT/                   # Interface Utilisateur
+├── js/
+│   ├── modules/            # chat.js, documents.js, profile.js
+│   └── services/           # userApi.js
+└── index.html
+            </div>
+        </section>
+
+        <!-- Section 9 -->
+        <section id="providers" class="section">
+            <h2><span class="section-number">9</span> Providers LLM</h2>
+
+            <div class="cards">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Ollama (Default)</h3>
+                        <span class="badge badge-primary">Recommandé</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="code-block">
+<pre># Configuration BDD
+llm.provider: "ollama"
+llm.ollama_host: "host.docker.internal"  # ou "ollama" si containerisé
+llm.ollama_port: 11434
+llm.ollama.llm_model: "mistral"
+llm.ollama.embedding_model: "nomic-embed-text:latest"</pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>llama.cpp</h3>
+                        <span class="badge badge-secondary">Alternative</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="code-block">
+<pre># Configuration BDD
+llm.provider: "llamacpp"
+llm.llamacpp_host: "host.docker.internal"
+llm.llamacpp_port: 8081
+llm.llamacpp.llm_model: "qwen2.5-7b-instruct-q4_k_m.gguf"
+llm.llamacpp.embedding_model: "nomic-embed-text-v1.5.Q8_0.gguf"</pre>
+                        </div>
+
+                        <p><strong>Commande llama.cpp :</strong></p>
+                        <div class="code-block">
+<pre>./llama-server \
+  --model models/qwen2.5-7b-instruct-q4_k_m.gguf \
+  --embedding \
+  --port 8081 \
+  --ctx-size 4096 \
+  --n-gpu-layers 99  # Metal (Mac) ou CUDA</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 10 -->
+        <section id="api" class="section">
+            <h2><span class="section-number">10</span> API Endpoints Principaux</h2>
+
+            <h3>Auth</h3>
+            <div class="code-block">
+<pre>POST /auth/login          # Login (form-data)
+POST /auth/logout         # Logout
+POST /auth/register       # Inscription
+POST /auth/refresh        # Refresh token
+GET  /auth/me             # User courant</pre>
+            </div>
+
+            <h3>Chat</h3>
+            <div class="code-block">
+<pre>POST /chat/conversations                    # Créer conversation
+GET  /chat/conversations                    # Liste conversations
+GET  /chat/conversations/{id}               # Détail conversation
+POST /chat/conversations/{id}/messages      # Envoyer message (SSE stream)
+DELETE /chat/conversations/{id}             # Supprimer conversation</pre>
+            </div>
+
+            <h3>Documents</h3>
+            <div class="code-block">
+<pre>POST /documents/upload                      # Upload fichier(s)
+GET  /documents                             # Liste documents
+GET  /documents/{id}                        # Détail document
+DELETE /documents/{id}                      # Supprimer document
+POST /documents/{id}/reindex                # Réindexer</pre>
+            </div>
+
+            <h3>Admin</h3>
+            <div class="code-block">
+<pre>GET  /admin/config                          # Toutes les configs
+PUT  /admin/config/{key}                    # Modifier config
+GET  /admin/users                           # Liste users
+PUT  /admin/users/{id}                      # Modifier user
+GET  /admin/audit                           # Logs audit
+GET  /admin/analytics/dashboard             # Stats dashboard</pre>
+            </div>
+
+            <h3>Collections (Admin)</h3>
+            <div class="code-block">
+<pre>GET  /admin/collections                     # Liste collections
+POST /admin/collections/public              # Créer collection publique
+GET  /admin/collections/{id}                # Détail collection
+PUT  /admin/collections/{id}                # Modifier (corpus, etc.)
+DELETE /admin/collections/{id}              # Supprimer
+GET  /admin/collections/{id}/index-status   # État indexation par provider
+POST /admin/collections/{id}/reindex        # Réindexer pour un provider
+POST /admin/collections/{id}/sync           # Synchroniser compteurs
+DELETE /admin/collections/{id}/clear        # Vider la collection</pre>
+            </div>
+        </section>
+
+        <!-- Section 11 -->
+        <section id="deploiement" class="section">
+            <h2><span class="section-number">11</span> Déploiement</h2>
+
+            <h3>Docker Compose (Production)</h3>
+
+            <div class="code-block">
+<pre># Clone
+git clone https://github.com/xxx/my-ia.git
+cd my-ia
+
+# Configuration
+cp .env.example .env
+# Éditer .env avec vos credentials PostgreSQL
+
+# Lancement
+docker compose up -d
+
+# Vérification
+curl http://localhost:8080/health</pre>
+            </div>
+
+            <h3>Ports par défaut</h3>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Service</th>
+                        <th>Port</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>Frontend</td><td>3000</td><td>UI utilisateur (HTTPS)</td></tr>
+                    <tr><td>Admin</td><td>8081</td><td>UI administration (HTTPS)</td></tr>
+                    <tr><td>API</td><td>8080</td><td>Backend FastAPI (HTTP interne)</td></tr>
+                    <tr><td>PostgreSQL</td><td>5432</td><td>Base de données</td></tr>
+                    <tr><td>ChromaDB</td><td>8000</td><td>Vector store</td></tr>
+                    <tr><td>Ollama</td><td>11434</td><td>LLM inference</td></tr>
+                    <tr><td>Whisper</td><td>9001</td><td>Speech-to-text</td></tr>
+                    <tr><td>N8N</td><td>5678</td><td>Workflow automation</td></tr>
+                    <tr><td>pgAdmin</td><td>5050</td><td>DB GUI</td></tr>
+                </tbody>
+            </table>
+
+            <h3>Configuration SSL</h3>
+
+            <p>Le projet supporte deux modes SSL :</p>
+
+            <h4>Option 1 : Certificats self-signed (sans domaine)</h4>
+            <p>Configuration par défaut pour les déploiements sans nom de domaine. Affiche un avertissement dans le navigateur mais le trafic est chiffré.</p>
+
+            <div class="code-block">
+<pre># Générer les certificats self-signed sur le VPS
+cd /home/debian/my-ia
+mkdir -p ssl
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+  -keyout ssl/selfsigned.key \
+  -out ssl/selfsigned.crt \
+  -subj "/CN=my-ia.local/O=MY-IA/C=FR"
+
+# Redémarrer les containers UI
+docker compose restart ui-front ui-back</pre>
+            </div>
+
+            <p><strong>Fichiers impliqués :</strong></p>
+            <ul>
+                <li><code>ssl/selfsigned.crt</code> et <code>ssl/selfsigned.key</code> — Certificats</li>
+                <li><code>docker/nginx/ssl-proxy.conf</code> — Config nginx pour ui-front</li>
+                <li><code>docker/nginx/ssl-back-proxy.conf</code> — Config nginx pour ui-back</li>
+                <li><code>docker-compose.ssl.yml</code> — Override Docker pour activer SSL</li>
+            </ul>
+
+            <h4>Option 2 : Let's Encrypt (avec domaine)</h4>
+            <p>Configuration recommandée pour la production avec un nom de domaine. Certificat gratuit et reconnu par les navigateurs.</p>
+
+            <div class="code-block">
+<pre># 1. Installer nginx et certbot sur le VPS
+sudo apt install nginx certbot python3-certbot-nginx
+
+# 2. Obtenir le certificat Let's Encrypt
+sudo certbot --nginx -d votre-domaine.com
+
+# 3. Copier la config reverse proxy
+# (remplacer les variables ${...} par les vraies valeurs)
+sudo cp nginx/prod.conf /etc/nginx/sites-available/myia
+sudo ln -s /etc/nginx/sites-available/myia /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
+
+# 4. Configurer les containers en HTTP simple (plus besoin de SSL interne)
+# Modifier docker-compose pour exposer les ports HTTP uniquement</pre>
+            </div>
+
+            <p><strong>Architecture avec Let's Encrypt :</strong></p>
+            <div class="pipeline">
+Internet (HTTPS:443)
+        │
+        ▼
+┌──────────────────────┐
+│   Nginx système      │  ← Let's Encrypt (auto-renouvelé)
+│   (reverse proxy)    │
+└──────────┬───────────┘
+           │ HTTP interne
+     ┌─────┴─────┬─────────────┐
+     ▼           ▼             ▼
+┌─────────┐ ┌─────────┐ ┌─────────┐
+│Frontend │ │  API    │ │  Admin  │
+│  :3000  │ │  :8080  │ │  :8081  │
+└─────────┘ └─────────┘ └─────────┘
+            </div>
+
+            <h3>Déploiement distant</h3>
+
+            <div class="code-block">
+<pre># Déployer sur le VPS (depuis la branche main)
+./scripts/deploy.sh remote
+
+# Le script effectue :
+# 1. Vérifie qu'on est sur la branche main
+# 2. Vérifie qu'il n'y a pas de modifications non commitées
+# 3. Push vers origin
+# 4. git fetch + reset --hard sur le VPS
+# 5. Nettoyage des fichiers inutiles (docs, tests, etc.)
+# 6. Rebuild + restart des containers
+# 7. Migrations Alembic
+# 8. Health check</pre>
+            </div>
+
+            <p><strong>Fichiers conservés sur le VPS</strong> (non supprimés par le déploiement) :</p>
+            <ul>
+                <li><code>ssl/</code> — Certificats SSL</li>
+                <li><code>nginx/</code> — Config nginx système</li>
+                <li><code>docker-compose.ssl.yml</code> — Override SSL</li>
+                <li><code>.env</code> — Configuration locale</li>
+            </ul>
+
+            <p><strong>Fichiers supprimés après déploiement</strong> (inutiles en prod) :</p>
+            <ul>
+                <li><code>docs/</code>, <code>tests/</code> — Documentation et tests</li>
+                <li><code>CLAUDE.md</code>, <code>pytest.ini</code> — Dev tools</li>
+                <li><code>static-datas/</code> — Données d'import initial</li>
+                <li><code>docker-compose.dev.yml</code>, <code>docker-compose.staging.yml</code> — Overrides non-prod</li>
+            </ul>
+        </section>
+
+        <!-- Section 12 -->
+        <section id="config" class="section">
+            <h2><span class="section-number">12</span> Configuration Dynamique</h2>
+
+            <p>Toute la configuration applicative est en BDD (<code>system_configs</code>), modifiable via Admin UI sans redémarrage :</p>
+
+            <div class="code-block">
+<pre>-- Exemples de configs
+SELECT key, value, category FROM system_configs;
+
+-- RAG
+rag.top_k          | 10    | rag
+rag.chunk_size     | 512   | rag
+
+-- LLM
+llm.provider       | ollama | llm
+llm.ollama.llm_model | mistral | llm
+
+-- Storage
+storage.max_file_size_mb | 50 | storage
+storage.user_quota_mb    | 100 | storage
+
+-- Security
+security.jwt_expire_minutes | 30 | security
+security.rate_limit_chat    | 30 | security</pre>
+            </div>
+        </section>
+
+        <!-- Section 13 -->
+        <section id="monitoring" class="section">
+            <h2><span class="section-number">13</span> Monitoring & Health</h2>
+
+            <div class="code-block">
+<pre># Health check
+GET /health
+{
+  "status": "healthy",
+  "database": "connected",
+  "chroma": "connected",
+  "llm_provider": "ollama",
+  "version": "1.0.0"
+}
+
+# Metrics Prometheus (si activé)
+GET /metrics</pre>
+            </div>
+        </section>
+
+        <!-- Section 14 -->
+        <section id="prerequis" class="section">
+            <h2><span class="section-number">14</span> Prérequis Système</h2>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Composant</th>
+                        <th>Minimum</th>
+                        <th>Recommandé</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td><strong>RAM</strong></td><td>8 GB</td><td>16+ GB</td></tr>
+                    <tr><td><strong>CPU</strong></td><td>4 cores</td><td>8+ cores</td></tr>
+                    <tr><td><strong>Stockage</strong></td><td>20 GB</td><td>100+ GB (SSD)</td></tr>
+                    <tr><td><strong>GPU</strong></td><td>Optionnel</td><td>NVIDIA 8GB+ ou Apple Silicon</td></tr>
+                    <tr><td><strong>OS</strong></td><td>Linux/macOS/Windows</td><td>Linux (production)</td></tr>
+                    <tr><td><strong>Docker</strong></td><td>20.10+</td><td>Latest</td></tr>
+                    <tr><td><strong>Docker Compose</strong></td><td>2.0+</td><td>Latest</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Section 15 -->
+        <section id="tests" class="section">
+            <h2><span class="section-number">15</span> Tests</h2>
+
+            <div class="code-block">
+<pre># Tous les tests unitaires
+docker-compose exec app python -m pytest tests/ -v
+
+# Tests spécifiques
+docker-compose exec app python -m pytest tests/ingestion/ -v      # Upload async
+docker-compose exec app python -m pytest tests/admin/ -v          # Admin (clearIndex)
+docker-compose exec app python -m pytest tests/llm/ -v            # Providers LLM
+
+# Tests E2E (Playwright)
+./scripts/test/run-all-tests.sh                   # Local
+./scripts/test/run-all-tests.sh --remote --e2e   # VPS</pre>
+            </div>
+
+            <h3>Modules de tests</h3>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Module</th>
+                        <th>Tests</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>tests/ingestion/</code></td><td>7</td><td>Upload async, storage failure, duplicates</td></tr>
+                    <tr><td><code>tests/admin/</code></td><td>12+</td><td>Clear index, bulk operations</td></tr>
+                    <tr><td><code>tests/llm/</code></td><td>10+</td><td>Providers Ollama/llama.cpp</td></tr>
+                    <tr><td><code>tests/e2e/</code></td><td>27</td><td>Parcours utilisateur complets</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <footer>
+            <p><em>MY-IA — Stack technique moderne pour IA privée d'entreprise.</em></p>
+            <p>Documentation mise à jour : Février 2026</p>
+        </footer>
+    </div>
+</body>
+</html>

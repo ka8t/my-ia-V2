@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MY-IA &mdash; [TITRE DU DOCUMENT]</title>
+  <!--
+    Template de documentation MY-IA
+    Version : 1.0.0
+    Date    : 29 janvier 2026
+
+    Instructions :
+    1. Copier ce fichier et le renommer selon le document
+    2. Adapter le chemin href vers doc-style.css selon la profondeur
+       - docs/architecture/xxx.html  ->  ../assets/doc-style.css
+       - docs/guides/xxx.html        ->  ../assets/doc-style.css
+       - docs/xxx.html               ->  assets/doc-style.css
+    3. Remplacer les [PLACEHOLDERS] par le contenu r&eacute;el
+    4. Supprimer les sections et composants non utilis&eacute;s
+    5. Consulter la r&eacute;f&eacute;rence des composants en bas de ce fichier
+  -->
+  <link rel="stylesheet" href="../assets/doc-style.css">
+</head>
+<body>
+
+<!-- ==================== HEADER ==================== -->
+<div class="header">
+  <div class="page">
+    <div class="header-icon">[EMOJI]</div>
+    <div>
+      <h1>MY-IA &mdash; [TITRE]</h1>
+      <div class="subtitle">
+        [Description courte du document en 1-2 phrases.]
+      </div>
+      <div class="meta">
+        <span>Version [X.Y.Z]</span>
+        <span>[Date]</span>
+        <span>[N] sections</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+
+<!-- ==================== TABLE OF CONTENTS ==================== -->
+<div class="toc">
+  <h2>Table des mati&egrave;res</h2>
+  <div class="toc-grid">
+    <a href="#s1"><span class="toc-num">1</span> [Section 1]</a>
+    <a href="#s2"><span class="toc-num">2</span> [Section 2]</a>
+    <a href="#s3"><span class="toc-num">3</span> [Section 3]</a>
+    <!-- Ajouter autant de liens que de sections -->
+  </div>
+</div>
+
+<!-- ==================== SECTION EXEMPLE ==================== -->
+<div class="section" id="s1">
+  <div class="section-header">
+    <div class="section-icon icon-blue">&#x1F3AF;</div>
+    <div><h2>[Titre section] <span class="section-num">&mdash; Section 1</span></h2></div>
+  </div>
+
+  <p>[Paragraphe d'introduction de la section.]</p>
+
+  <!-- ===== COMPOSANT : Cards ===== -->
+  <div class="cards">
+    <div class="card">
+      <div class="card-title">[Emoji] [Titre carte]</div>
+      <div class="card-text">[Description de la carte.]</div>
+    </div>
+    <div class="card">
+      <div class="card-title">[Emoji] [Titre carte]</div>
+      <div class="card-text">[Description de la carte.]</div>
+    </div>
+  </div>
+
+  <!-- ===== COMPOSANT : Table ===== -->
+  <table>
+    <thead><tr><th>[Col 1]</th><th>[Col 2]</th><th>[Col 3]</th></tr></thead>
+    <tbody>
+      <tr><td>[Valeur]</td><td>[Valeur]</td><td>[Valeur]</td></tr>
+      <tr><td>[Valeur]</td><td>[Valeur]</td><td>[Valeur]</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ===== COMPOSANT : Sous-titre h3 avec dot color ===== -->
+  <h3><span class="h3-dot dot-teal"></span> [Sous-titre]</h3>
+  <p>[Paragraphe.]</p>
+
+  <!-- ===== COMPOSANT : Feature list ===== -->
+  <ul class="feature-list">
+    <li><strong>[Fonctionnalit&eacute;]</strong> &mdash; [Description]</li>
+    <li><strong>[Fonctionnalit&eacute;]</strong> &mdash; [Description]</li>
+  </ul>
+
+  <!-- ===== COMPOSANT : Flow diagram (horizontal) ===== -->
+  <div class="flow">
+    <div class="flow-step flow-blue">[Emoji]<br>[&Eacute;tape 1]<span class="flow-label">[D&eacute;tail]</span></div>
+    <div class="flow-arrow">&#x25B6;</div>
+    <div class="flow-step flow-teal">[Emoji]<br>[&Eacute;tape 2]<span class="flow-label">[D&eacute;tail]</span></div>
+    <div class="flow-arrow">&#x25B6;</div>
+    <div class="flow-step flow-green">[Emoji]<br>[&Eacute;tape 3]<span class="flow-label">[D&eacute;tail]</span></div>
+  </div>
+
+  <!-- ===== COMPOSANT : Vertical flow (timeline) ===== -->
+  <div class="vflow">
+    <div class="vflow-step active">
+      <div class="step-title">[Emoji] [&Eacute;tape 1]</div>
+      <div class="step-desc">[Description]</div>
+    </div>
+    <div class="vflow-step active">
+      <div class="step-title">[Emoji] [&Eacute;tape 2]</div>
+      <div class="step-desc">[Description]</div>
+    </div>
+    <div class="vflow-branch">&#x274C; <strong>[Branche alternative]</strong> &mdash; [Description]</div>
+    <div class="vflow-step active">
+      <div class="step-title">[Emoji] [&Eacute;tape 3]</div>
+      <div class="step-desc">[Description]</div>
+    </div>
+  </div>
+
+  <!-- ===== COMPOSANT : Callout info ===== -->
+  <div class="callout callout-info">
+    <span class="callout-icon">&#x1F4A1;</span>
+    <span>[Message informatif important.]</span>
+  </div>
+
+  <!-- ===== COMPOSANT : Callout warning ===== -->
+  <div class="callout callout-warning">
+    <span class="callout-icon">&#x26A0;&#xFE0F;</span>
+    <span><strong>[Attention]</strong> &mdash; [Message d'avertissement.]</span>
+  </div>
+
+  <!-- ===== COMPOSANT : Callout success ===== -->
+  <div class="callout callout-success">
+    <span class="callout-icon">&#x2705;</span>
+    <span>[Message de succ&egrave;s ou bonne pratique.]</span>
+  </div>
+
+  <!-- ===== COMPOSANT : Callout danger ===== -->
+  <div class="callout callout-danger">
+    <span class="callout-icon">&#x1F6A8;</span>
+    <span><strong>[Critique]</strong> &mdash; [Message d'erreur ou danger.]</span>
+  </div>
+
+  <!-- ===== COMPOSANT : Two columns ===== -->
+  <div class="two-cols">
+    <div>
+      <h4>[Colonne gauche]</h4>
+      <p>[Contenu]</p>
+    </div>
+    <div>
+      <h4>[Colonne droite]</h4>
+      <p>[Contenu]</p>
+    </div>
+  </div>
+
+  <!-- ===== COMPOSANT : Badges ===== -->
+  <p>
+    <span class="badge badge-primary">[Primary]</span>
+    <span class="badge badge-accent">[Accent]</span>
+    <span class="badge badge-warning">[Warning]</span>
+    <span class="badge badge-danger">[Danger]</span>
+    <span class="badge badge-success">[Success]</span>
+    <span class="badge badge-purple">[Purple]</span>
+  </p>
+
+  <!-- ===== COMPOSANT : Checklist ===== -->
+  <ul class="checklist">
+    <li><span class="check-done">&#x2705;</span> [&Eacute;l&eacute;ment termin&eacute;]</li>
+    <li><span class="check-todo">&#x2B1C;</span> [&Eacute;l&eacute;ment &agrave; faire]</li>
+  </ul>
+
+  <!-- ===== COMPOSANT : Code block ===== -->
+  <pre><code>[Code ici]</code></pre>
+
+</div>
+
+<!-- ==================== FOOTER ==================== -->
+<div class="footer">
+  MY-IA &mdash; [Titre du document] &mdash; Version [X.Y.Z] &mdash; [Date]
+</div>
+
+</div>
+
+<!--
+  ============================================================
+  RÉFÉRENCE RAPIDE DES COMPOSANTS
+  ============================================================
+
+  ICÔNES DE SECTION (class sur .section-icon) :
+    icon-blue    (bleu primaire)
+    icon-teal    (turquoise accent)
+    icon-amber   (orange warning)
+    icon-red     (rouge danger)
+    icon-green   (vert success)
+    icon-purple  (violet)
+
+  DOTS H3 (class sur .h3-dot) :
+    dot-blue, dot-teal, dot-amber, dot-red, dot-green, dot-purple
+
+  FLOW STEPS (class sur .flow-step) :
+    flow-blue, flow-teal, flow-amber, flow-green
+
+  BADGES (class sur .badge) :
+    badge-primary, badge-accent, badge-warning
+    badge-danger, badge-success, badge-purple
+
+  CALLOUTS (class sur .callout) :
+    callout-info     (bleu, icône 💡)
+    callout-warning  (orange, icône ⚠️)
+    callout-success  (vert, icône ✅)
+    callout-danger   (rouge, icône 🚨)
+
+  LAYOUTS :
+    .cards       grille auto-fit (min 280px)
+    .two-cols    2 colonnes égales
+    .three-cols  3 colonnes égales
+    .flow        diagramme horizontal
+    .vflow       timeline verticale
+
+  CARD AVEC BORDURE COLORÉE :
+    style="border-top: 3px solid var(--accent);"
+    style="border-left: 4px solid var(--primary-light);"
+-->
+
+</body>
+</html>
