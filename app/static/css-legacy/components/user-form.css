@@ -1,0 +1,394 @@
+/**
+ * UserForm Component Styles
+ *
+ * Styles partages pour le formulaire utilisateur
+ * (inscription et profil)
+ */
+
+/* =============================================================================
+   CONTAINER
+   ============================================================================= */
+
+.user-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* =============================================================================
+   SECTIONS
+   ============================================================================= */
+
+.uf-section-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* =============================================================================
+   FORM GROUPS
+   ============================================================================= */
+
+.uf-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.uf-group label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.uf-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+@media (max-width: 500px) {
+    .uf-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* =============================================================================
+   INPUTS
+   ============================================================================= */
+
+.user-form input[type="text"],
+.user-form input[type="email"],
+.user-form input[type="password"],
+.user-form input[type="tel"],
+.user-form select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 14px;
+    transition: border-color var(--transition-fast);
+}
+
+.user-form input:focus,
+.user-form select:focus {
+    outline: none;
+    border-color: var(--accent-color);
+}
+
+.user-form input:disabled,
+.user-form select:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background-color: var(--bg-secondary);
+}
+
+.user-form select {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 36px;
+}
+
+/* =============================================================================
+   REQUIRED INDICATOR
+   ============================================================================= */
+
+.uf-required {
+    color: var(--danger-color);
+    font-weight: 600;
+}
+
+/* =============================================================================
+   READONLY ICON
+   ============================================================================= */
+
+.uf-readonly-icon {
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+/* =============================================================================
+   HINTS
+   ============================================================================= */
+
+.uf-hint {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+.uf-hint.error {
+    color: var(--danger-color);
+}
+
+.uf-hint.success {
+    color: var(--success-color, #10b981);
+}
+
+/* =============================================================================
+   USERNAME STATUS
+   ============================================================================= */
+
+.uf-input-with-status {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.uf-input-with-status input {
+    flex: 1;
+    padding-right: 36px;
+}
+
+.uf-username-status {
+    position: absolute;
+    right: 12px;
+    font-size: 16px;
+    line-height: 1;
+}
+
+.uf-username-status.checking::after {
+    content: '';
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--text-muted);
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: uf-spin 0.8s linear infinite;
+}
+
+.uf-username-status.available::after {
+    content: '\2713';
+    color: var(--success-color, #10b981);
+}
+
+.uf-username-status.taken::after {
+    content: '\2717';
+    color: var(--danger-color);
+}
+
+@keyframes uf-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* =============================================================================
+   PASSWORD TOGGLE
+   ============================================================================= */
+
+.uf-input-with-toggle {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.uf-input-with-toggle input {
+    flex: 1;
+    padding-right: 44px;
+}
+
+.uf-toggle-password {
+    position: absolute;
+    right: 8px;
+    background: none;
+    border: none;
+    padding: 4px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color var(--transition-fast);
+}
+
+.uf-toggle-password:hover {
+    color: var(--text-primary);
+}
+
+.uf-toggle-password svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* =============================================================================
+   CITY AUTOCOMPLETE
+   ============================================================================= */
+
+.uf-city-container {
+    position: relative;
+}
+
+.uf-city-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    max-height: 200px;
+    overflow-y: auto;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-top: none;
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+    z-index: 100;
+    box-shadow: var(--shadow-md);
+}
+
+.uf-city-result {
+    padding: 10px 12px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.uf-city-result:last-child {
+    border-bottom: none;
+}
+
+.uf-city-result:hover {
+    background-color: var(--bg-secondary);
+}
+
+.uf-city-name {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.uf-city-postal {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.uf-city-no-results {
+    padding: 12px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
+/* =============================================================================
+   PASSWORD CHANGE SECTION
+   ============================================================================= */
+
+.uf-password-info {
+    font-size: 13px;
+    color: var(--text-muted);
+    padding: 8px 12px;
+    background-color: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    margin-bottom: 8px;
+}
+
+.uf-password-match {
+    margin-top: 4px;
+}
+
+/* =============================================================================
+   ERROR MESSAGE
+   ============================================================================= */
+
+.uf-error {
+    padding: 12px;
+    background-color: #ef444420;
+    border: 1px solid var(--danger-color);
+    border-radius: var(--radius-md);
+    color: var(--danger-color);
+    font-size: 14px;
+    text-align: center;
+}
+
+/* =============================================================================
+   BUTTONS
+   ============================================================================= */
+
+.uf-buttons {
+    display: flex;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.uf-btn-submit,
+.uf-btn-cancel {
+    flex: 1;
+    padding: 12px 16px;
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.uf-btn-submit {
+    background-color: var(--accent-color);
+    color: white;
+    border: none;
+}
+
+.uf-btn-submit:hover {
+    background-color: var(--accent-hover);
+}
+
+.uf-btn-submit:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.uf-btn-cancel {
+    background-color: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+}
+
+.uf-btn-cancel:hover {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+/* =============================================================================
+   VALIDATION STATES
+   ============================================================================= */
+
+.user-form input:invalid:not(:placeholder-shown):not(:focus) {
+    border-color: var(--danger-color);
+}
+
+.user-form input:valid:not(:placeholder-shown):not(:disabled) {
+    border-color: var(--success-color, #10b981);
+}
+
+/* =============================================================================
+   FIELD ERRORS
+   ============================================================================= */
+
+.uf-input-error {
+    border-color: var(--danger-color) !important;
+}
+
+.uf-field-error {
+    display: block;
+    font-size: 12px;
+    color: var(--danger-color);
+    margin-top: 4px;
+}
+
+/* =============================================================================
+   DARK THEME ADJUSTMENTS
+   ============================================================================= */
+
+[data-theme="dark"] .uf-password-info {
+    background-color: var(--bg-tertiary, #1f2937);
+}

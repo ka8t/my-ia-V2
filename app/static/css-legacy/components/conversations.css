@@ -1,0 +1,86 @@
+/**
+ * Conversations Module - Styles
+ *
+ * Styles pour le module de gestion des conversations.
+ * Remplace les styles inline du fichier content-conversations.js
+ */
+
+/* ==========================================================================
+   MODALS
+   ========================================================================== */
+
+.conv-modal-lg {
+    max-width: 700px;
+    max-height: 80vh;
+    overflow-y: auto;
+    text-align: left;
+}
+
+.conv-modal-md {
+    max-width: 500px;
+}
+
+/* ==========================================================================
+   CONVERSATION VIEW
+   ========================================================================== */
+
+.conv-meta {
+    margin-bottom: 1rem;
+    font-size: 0.9em;
+    color: var(--text-secondary);
+}
+
+.conv-messages-container {
+    border-top: 1px solid var(--border-color);
+    padding-top: 1rem;
+}
+
+/* ==========================================================================
+   MESSAGE DISPLAY
+   ========================================================================== */
+
+.conv-message {
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    border-radius: 6px;
+}
+
+.conv-message-user {
+    background: var(--bg-hover);
+}
+
+.conv-message-assistant {
+    background: var(--bg-primary);
+}
+
+.conv-message-header {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    font-size: 0.85em;
+}
+
+.conv-message-header-user {
+    color: var(--primary-color);
+}
+
+.conv-message-header-assistant {
+    color: var(--success-color);
+}
+
+.conv-message-date {
+    font-weight: normal;
+    color: var(--text-secondary);
+}
+
+.conv-message-content {
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+/* ==========================================================================
+   FORMS
+   ========================================================================== */
+
+.conv-form-group-spaced {
+    margin: 1rem 0;
+}

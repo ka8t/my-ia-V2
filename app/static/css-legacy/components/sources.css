@@ -1,0 +1,259 @@
+/**
+ * Sources Module - Styles
+ *
+ * Styles pour le module de gestion des sources externes.
+ * Remplace les styles inline du fichier sources.js
+ */
+
+/* ==========================================================================
+   TABLE SOURCES
+   ========================================================================== */
+
+.sources-table-checkbox-col {
+    width: 40px;
+}
+
+.sources-table-actions-col {
+    width: 200px;
+}
+
+.source-display-name {
+    font-weight: 500;
+}
+
+.source-name-technical {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+/* ==========================================================================
+   INDEX STATS & FRESHNESS BADGES
+   ========================================================================== */
+
+.sources-badge-clickable {
+    cursor: pointer;
+}
+
+/* ==========================================================================
+   INDEX STATS MODAL
+   ========================================================================== */
+
+.sources-modal-sm {
+    max-width: 450px;
+}
+
+.sources-modal-md {
+    max-width: 600px;
+}
+
+.sources-modal-lg {
+    max-width: 700px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.sources-index-stats-grid {
+    display: grid;
+    gap: 1rem;
+    margin: 1.5rem 0;
+}
+
+.sources-stat-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.sources-stat-row:last-child {
+    border-bottom: none;
+}
+
+/* ==========================================================================
+   FRESHNESS & HISTORY MODAL
+   ========================================================================== */
+
+.sources-freshness-summary {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+}
+
+.sources-freshness-item {
+    flex: 1;
+}
+
+.sources-freshness-label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.sources-freshness-value {
+    margin-top: 0.25rem;
+}
+
+.sources-history-section h4 {
+    margin-bottom: 1rem;
+}
+
+.sources-history-section {
+    margin-top: 1rem;
+}
+
+.sources-history-table {
+    font-size: 0.85rem;
+}
+
+/* ==========================================================================
+   TYPE SELECTION POPUP
+   ========================================================================== */
+
+.sources-type-desc {
+    margin-bottom: 1.5rem;
+}
+
+.source-type-cards {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+.source-type-card {
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    text-align: center;
+}
+
+.source-type-card:hover {
+    border-color: var(--primary);
+    background: var(--bg-hover);
+}
+
+.source-type-card-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.source-type-card-title {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.source-type-card-desc {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+/* ==========================================================================
+   SOURCE FORM MODAL
+   ========================================================================== */
+
+.source-type-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    margin-right: 0.5rem;
+}
+
+.sources-config-section {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.sources-advanced-options,
+.sources-indexation-options {
+    margin-top: 1rem;
+}
+
+.sources-advanced-options > div,
+.sources-indexation-options > div {
+    padding: 1rem 0;
+}
+
+.sources-auto-refresh-separator {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+/* ==========================================================================
+   CONFIG FIELDS (MCP, WEB, API, DATABASE)
+   ========================================================================== */
+
+.sources-crawl-section {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.sources-form-row-flex {
+    display: flex;
+    gap: 1rem;
+}
+
+.sources-form-row-flex .form-group {
+    flex: 1;
+}
+
+/* ==========================================================================
+   TEST QUERY MODAL
+   ========================================================================== */
+
+.sources-test-modal {
+    max-width: 400px;
+}
+
+.sources-test-modal form {
+    text-align: left;
+}
+
+/* ==========================================================================
+   TEST RESULTS MODAL
+   ========================================================================== */
+
+.sources-test-results-modal {
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.sources-test-results-modal .content {
+    text-align: left;
+}
+
+.sources-test-result-item {
+    margin: 0.5rem 0;
+    padding: 0.5rem;
+    background: var(--bg-secondary);
+    border-radius: 4px;
+}
+
+.sources-test-result-item p {
+    margin: 0.25rem 0;
+}
+
+.sources-test-result-item a {
+    font-size: 0.85rem;
+}
+
+.sources-latency-badge {
+    margin-left: 0.5rem;
+}
+
+/* ==========================================================================
+   MODAL ACTIONS
+   ========================================================================== */
+
+.sources-modal-actions {
+    margin-top: 1.5rem;
+}

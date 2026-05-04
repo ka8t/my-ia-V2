@@ -1,0 +1,548 @@
+/**
+ * Composants Modales
+ *
+ * Styles pour:
+ * - Upload modal
+ * - Settings panel
+ * - Confirm modal
+ */
+
+/* =============================================================================
+   UPLOAD MODAL
+   ============================================================================= */
+
+.upload-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.upload-modal-content {
+    background-color: var(--bg-primary);
+    border-radius: var(--radius-lg);
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--shadow-lg);
+}
+
+.upload-modal-header {
+    padding: 20px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.upload-modal-header h2 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.upload-modal-body {
+    padding: 20px;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.upload-zone {
+    border: 2px dashed var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 40px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    background-color: var(--bg-secondary);
+}
+
+.upload-zone:hover,
+.upload-zone.dragover {
+    border-color: var(--accent-color);
+    background-color: var(--bg-tertiary);
+}
+
+.upload-zone svg {
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+}
+
+.upload-zone p {
+    color: var(--text-primary);
+    font-size: 16px;
+    margin-bottom: 8px;
+}
+
+.upload-zone small {
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.upload-files-list {
+    margin-top: 20px;
+}
+
+.upload-file-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    background-color: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    margin-bottom: 8px;
+}
+
+.upload-file-item-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+}
+
+.upload-file-item-icon {
+    width: 32px;
+    height: 32px;
+    background-color: var(--accent-color);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.upload-file-item-details {
+    flex: 1;
+}
+
+.upload-file-item-name {
+    font-size: 14px;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.upload-file-item-size {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.upload-file-item-remove {
+    background: none;
+    border: none;
+    color: var(--danger-color);
+    cursor: pointer;
+    font-size: 20px;
+    padding: 4px 8px;
+}
+
+.upload-progress {
+    margin-top: 20px;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background-color: var(--bg-secondary);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    margin-bottom: 12px;
+}
+
+.progress-fill {
+    height: 100%;
+    background-color: var(--accent-color);
+    transition: width var(--transition-normal);
+    width: 0%;
+}
+
+#progressText {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.upload-modal-footer {
+    padding: 20px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+.upload-success {
+    padding: 16px;
+    background-color: #10a37f20;
+    border: 1px solid var(--accent-color);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    text-align: center;
+    margin-bottom: 12px;
+}
+
+.upload-error {
+    padding: 16px;
+    background-color: #ef444420;
+    border: 1px solid var(--danger-color);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    text-align: center;
+    margin-bottom: 12px;
+}
+
+/* =============================================================================
+   SETTINGS PANEL
+   ============================================================================= */
+
+.settings-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 400px;
+    height: 100vh;
+    background-color: var(--bg-primary);
+    border-left: 1px solid var(--border-color);
+    box-shadow: -4px 0 12px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    transform: translateX(100%);
+    transition: transform var(--transition-normal) ease;
+}
+
+.settings-panel.open {
+    transform: translateX(0);
+}
+
+.settings-content {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.settings-header {
+    padding: 20px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.settings-header h2 {
+    font-size: 20px;
+}
+
+.settings-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+}
+
+/* Profile Link in Settings */
+.btn-profile-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.btn-profile-link:hover {
+    background-color: var(--bg-tertiary);
+    border-color: var(--accent-color);
+}
+
+.btn-profile-link svg {
+    color: var(--accent-color);
+}
+
+.btn-profile-link .arrow-icon {
+    margin-left: auto;
+    color: var(--text-secondary);
+}
+
+.setting-divider {
+    height: 1px;
+    background-color: var(--border-color);
+    margin: 16px 0;
+}
+
+/* =============================================================================
+   CONFIRM MODAL
+   ============================================================================= */
+
+.confirm-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10003; /* Au-dessus de progress-modal (10002) */
+    animation: fadeIn var(--transition-fast) ease-out;
+}
+
+.confirm-modal-content {
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-xl);
+    padding: 24px;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: var(--shadow-lg);
+    animation: modalSlideIn var(--transition-normal) ease-out;
+}
+
+/* Modal sizes */
+.confirm-modal-content.modal-small {
+    max-width: 320px;
+}
+
+.confirm-modal-content.modal-large {
+    max-width: 600px;
+}
+
+.confirm-modal-header {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 8px;
+}
+
+/* Generic modal header with title */
+.confirm-modal-header .modal-title-text {
+    flex: 1;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.confirm-modal-header .modal-title-text:not(:empty) ~ .drag-handle {
+    margin-left: auto;
+}
+
+/* Modal body for custom content */
+.modal-body {
+    margin-bottom: 20px;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.confirm-modal-icon {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background-color: var(--bg-tertiary);
+}
+
+.confirm-modal-icon.confirm-danger {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: var(--danger-color);
+}
+
+.confirm-modal-icon.confirm-warning {
+    background-color: rgba(245, 158, 11, 0.1);
+    color: var(--warning-color);
+}
+
+.confirm-modal-icon.confirm-info {
+    background-color: rgba(59, 130, 246, 0.1);
+    color: var(--info-color);
+}
+
+.confirm-modal-title {
+    font-size: 18px;
+    font-weight: 600;
+    text-align: center;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}
+
+.confirm-modal-message {
+    font-size: 14px;
+    text-align: center;
+    color: var(--text-secondary);
+    margin-bottom: 24px;
+    line-height: 1.5;
+}
+
+.confirm-modal-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.confirm-modal-actions button {
+    flex: 1;
+    padding: 12px 20px;
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.btn-confirm-cancel {
+    background-color: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+}
+
+.btn-confirm-cancel:hover {
+    background-color: var(--border-color);
+}
+
+.btn-confirm-ok {
+    background-color: var(--accent-color);
+    border: none;
+    color: white;
+}
+
+.btn-confirm-ok:hover {
+    background-color: var(--accent-hover);
+}
+
+.btn-confirm-ok.btn-danger {
+    background-color: var(--danger-color);
+}
+
+.btn-confirm-ok.btn-danger:hover {
+    background-color: #dc2626;
+}
+
+/* Select dans modale */
+.confirm-modal-select {
+    margin-bottom: 24px;
+}
+
+.confirm-modal-select select {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 14px;
+    cursor: pointer;
+    transition: border-color var(--transition-fast);
+}
+
+.confirm-modal-select select:hover,
+.confirm-modal-select select:focus {
+    border-color: var(--accent-color);
+    outline: none;
+}
+
+/* Form groups dans confirm-modal */
+.confirm-modal .form-group {
+    margin-bottom: 1rem;
+}
+
+.confirm-modal .form-group:last-child {
+    margin-bottom: 0;
+}
+
+.confirm-modal .form-group label {
+    display: block;
+    margin-bottom: 0.4rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.confirm-modal .form-group input,
+.confirm-modal .form-group select,
+.confirm-modal .form-group textarea {
+    width: 100%;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md, 6px);
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    font-family: inherit;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.confirm-modal .form-group input:focus,
+.confirm-modal .form-group select:focus,
+.confirm-modal .form-group textarea:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px rgba(16, 163, 127, 0.1);
+}
+
+.confirm-modal .form-group input::placeholder,
+.confirm-modal .form-group textarea::placeholder {
+    color: var(--text-secondary);
+    opacity: 0.7;
+}
+
+.confirm-modal .form-group small {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* =============================================================================
+   PROVIDER CHOICE MODAL
+   ============================================================================= */
+
+.provider-choice-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin: 1.5rem 0;
+}
+
+.provider-choice-buttons .btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    min-width: 140px;
+    justify-content: center;
+}
+
+.provider-choice-buttons .btn svg {
+    width: 18px;
+    height: 18px;
+}

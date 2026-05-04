@@ -1,0 +1,32 @@
+<div class="tests-section">
+    <h3>🧪 Tests Unitaires</h3>
+    <div class="tests-grid">
+        <div class="test-stat passed">
+            <div class="test-stat-value passed">{{passed}}</div>
+            <div class="test-stat-label">Passés</div>
+        </div>
+        <div class="test-stat failed">
+            <div class="test-stat-value failed">{{failed}}</div>
+            <div class="test-stat-label">Échoués</div>
+        </div>
+        <div class="test-stat errors">
+            <div class="test-stat-value errors">{{errors}}</div>
+            <div class="test-stat-label">Erreurs</div>
+        </div>
+        <div class="test-stat skipped">
+            <div class="test-stat-value skipped">{{skipped}}</div>
+            <div class="test-stat-label">Ignorés</div>
+        </div>
+        <div class="test-stat">
+            <div class="test-stat-value">{{success_rate}}%</div>
+            <div class="test-stat-label">Taux de succès</div>
+        </div>
+    </div>
+    <div class="test-progress">
+        <div class="test-progress-passed" style="width: {{passed_pct}}%"></div>
+        <div class="test-progress-failed" style="width: {{failed_pct}}%"></div>
+        <div class="test-progress-errors" style="width: {{errors_pct}}%"></div>
+        <div class="test-progress-skipped" style="width: {{skipped_pct}}%"></div>
+    </div>
+    {{failed_list}}
+</div>

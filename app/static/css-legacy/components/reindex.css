@@ -1,0 +1,344 @@
+/* =============================================================================
+   REINDEX COMPONENTS - Spinner, badge et barre de progression de réindexation
+   Partagé entre UI-FRONT et UI-BACK
+   ============================================================================= */
+
+/* Petit spinner inline pour les actions de table */
+.spinner-sm {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--border-color);
+    border-top-color: var(--accent-color);
+    border-radius: 50%;
+    animation: reindexSpin 0.8s linear infinite;
+    flex-shrink: 0;
+}
+
+/* Container spinner + texte dans la cellule actions */
+.reindex-loading {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0;
+}
+
+.reindex-loading-text {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+/* Badge "En cours" après retour API */
+.reindex-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.2rem 0.55rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    background-color: rgba(59, 130, 246, 0.15);
+    color: #3b82f6;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    animation: reindexPulse 2s ease-in-out infinite;
+}
+
+.reindex-badge svg {
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+    animation: reindexSpin 3s linear infinite;
+}
+
+/* Progress bar pour réindexation (dans la cellule actions) */
+.reindex-progress {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
+    min-width: 180px;
+    width: 100%;
+    padding: 0.25rem 0;
+}
+
+.reindex-progress-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+}
+
+.reindex-progress-bar-container {
+    flex: 1;
+    height: 10px;
+    background: var(--bg-tertiary);
+    border-radius: 5px;
+    overflow: hidden;
+    min-width: 80px;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.reindex-progress-bar {
+    height: 100%;
+    width: var(--progress, 0%);
+    background: linear-gradient(90deg, var(--accent-color), #60a5fa);
+    border-radius: 5px;
+    transition: width 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Animation de brillance sur la barre */
+.reindex-progress-bar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    animation: reindexShine 1.5s ease-in-out infinite;
+}
+
+.reindex-progress-text {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--accent-color);
+    white-space: nowrap;
+    min-width: 32px;
+    text-align: left;
+}
+
+.reindex-progress-message {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+    text-align: left;
+    font-weight: 500;
+}
+
+/* Bouton d'annulation dans la barre de progression (table) */
+.reindex-cancel-btn {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: var(--danger-color, #ef4444);
+    cursor: pointer;
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    margin-left: 0.5rem;
+}
+
+.reindex-cancel-btn:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.3);
+    border-color: rgba(239, 68, 68, 0.5);
+}
+
+.reindex-cancel-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* État annulation en cours (table) */
+.reindex-progress.cancelling .reindex-progress-bar {
+    background: linear-gradient(90deg, #f87171, #fbbf24);
+}
+
+/* =============================================================================
+   BANNIÈRE FLOTTANTE DE PROGRESSION GLOBALE
+   Affiche toutes les réindexations en cours en haut de page
+   ============================================================================= */
+
+.reindex-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    background: linear-gradient(135deg, #1e3a5f 0%, #2d4a6f 100%);
+    color: white;
+    padding: 0.75rem 1rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transform: translateY(-100%);
+    transition: transform 0.3s ease;
+}
+
+.reindex-banner.visible {
+    transform: translateY(0);
+}
+
+.reindex-banner-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+
+.reindex-banner-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.reindex-banner-title svg {
+    width: 18px;
+    height: 18px;
+    animation: reindexSpin 2s linear infinite;
+}
+
+.reindex-banner-count {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.reindex-banner-close {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: 0.25rem;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.reindex-banner-close:hover {
+    opacity: 1;
+}
+
+.reindex-banner-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.reindex-banner-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+}
+
+.reindex-banner-item-icon {
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.reindex-banner-item-name {
+    font-weight: 600;
+    font-size: 0.85rem;
+    min-width: 150px;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.reindex-banner-item-progress {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.reindex-banner-item-bar {
+    flex: 1;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    overflow: hidden;
+    min-width: 100px;
+}
+
+.reindex-banner-item-bar-fill {
+    height: 100%;
+    width: var(--progress, 0%);
+    background: linear-gradient(90deg, #60a5fa, #34d399);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.reindex-banner-item-percent {
+    font-weight: 700;
+    font-size: 0.85rem;
+    min-width: 40px;
+    text-align: right;
+}
+
+.reindex-banner-item-message {
+    font-size: 0.75rem;
+    opacity: 0.8;
+    min-width: 120px;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Bouton d'annulation */
+.reindex-banner-item-cancel {
+    background: rgba(239, 68, 68, 0.2);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    color: #fca5a5;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+.reindex-banner-item-cancel:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.4);
+    border-color: rgba(239, 68, 68, 0.6);
+    color: white;
+}
+
+.reindex-banner-item-cancel:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* État annulation en cours */
+.reindex-banner-item.cancelling {
+    opacity: 0.7;
+}
+
+.reindex-banner-item.cancelling .reindex-banner-item-bar-fill {
+    background: linear-gradient(90deg, #f87171, #fbbf24);
+}
+
+/* Animations */
+@keyframes reindexPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+@keyframes reindexSpin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes reindexShine {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}

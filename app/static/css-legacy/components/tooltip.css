@@ -1,0 +1,546 @@
+/**
+ * Composant Tooltip
+ *
+ * Utilisation: Ajouter l'attribut data-tooltip="Texte" sur un element
+ * Compatible avec .btn-icon et .btn-header-icon
+ */
+
+/* Tooltip pour boutons icone (apparait en haut) */
+.btn-icon::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 6px 10px;
+    background-color: var(--text-primary);
+    color: var(--bg-primary);
+    font-size: 11px;
+    white-space: nowrap;
+    border-radius: var(--radius-sm);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--transition-fast), visibility var(--transition-fast);
+    pointer-events: none;
+    margin-bottom: 6px;
+    z-index: 100;
+}
+
+.btn-icon::before {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: var(--text-primary);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--transition-fast), visibility var(--transition-fast);
+    margin-bottom: -4px;
+    z-index: 100;
+}
+
+.btn-icon:hover::after,
+.btn-icon:hover::before {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Tooltip pour boutons header (apparait en bas) */
+.btn-header-icon::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 6px 10px;
+    background-color: var(--text-primary);
+    color: var(--bg-primary);
+    font-size: 11px;
+    white-space: nowrap;
+    border-radius: var(--radius-sm);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--transition-fast), visibility var(--transition-fast);
+    pointer-events: none;
+    margin-top: 6px;
+    z-index: 100;
+}
+
+.btn-header-icon::before {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-bottom-color: var(--text-primary);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--transition-fast), visibility var(--transition-fast);
+    margin-top: -4px;
+    z-index: 100;
+}
+
+.btn-header-icon:hover::after,
+.btn-header-icon:hover::before {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Tooltip pour boutons sidebar footer (apparait en haut) */
+.sidebar-footer-buttons button {
+    position: relative;
+}
+
+.sidebar-footer-buttons button::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 6px 10px;
+    background-color: var(--text-primary);
+    color: var(--bg-primary);
+    font-size: 11px;
+    white-space: nowrap;
+    border-radius: var(--radius-sm);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--transition-fast), visibility var(--transition-fast);
+    pointer-events: none;
+    margin-bottom: 8px;
+    z-index: 1000;
+}
+
+.sidebar-footer-buttons button::before {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: var(--text-primary);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--transition-fast), visibility var(--transition-fast);
+    margin-bottom: -2px;
+    z-index: 1000;
+}
+
+.sidebar-footer-buttons button:hover::after,
+.sidebar-footer-buttons button:hover::before {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Tooltip pour bouton toggle sidebar (apparait en bas) */
+.btn-toggle-sidebar {
+    position: relative;
+}
+
+.btn-toggle-sidebar::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 6px 10px;
+    background-color: var(--text-primary);
+    color: var(--bg-primary);
+    font-size: 11px;
+    white-space: nowrap;
+    border-radius: var(--radius-sm);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--transition-fast), visibility var(--transition-fast);
+    pointer-events: none;
+    margin-top: 8px;
+    z-index: 100;
+}
+
+.btn-toggle-sidebar::before {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-bottom-color: var(--text-primary);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--transition-fast), visibility var(--transition-fast);
+    margin-top: -2px;
+    z-index: 100;
+}
+
+.btn-toggle-sidebar:hover::after,
+.btn-toggle-sidebar:hover::before {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Tooltip pour boutons send/stop (apparait en haut) */
+.btn-send,
+.btn-stop {
+    position: relative;
+}
+
+.btn-send::after,
+.btn-stop::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 6px 10px;
+    background-color: var(--text-primary);
+    color: var(--bg-primary);
+    font-size: 11px;
+    white-space: nowrap;
+    border-radius: var(--radius-sm);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--transition-fast), visibility var(--transition-fast);
+    pointer-events: none;
+    margin-bottom: 8px;
+    z-index: 100;
+}
+
+.btn-send::before,
+.btn-stop::before {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: var(--text-primary);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--transition-fast), visibility var(--transition-fast);
+    margin-bottom: -2px;
+    z-index: 100;
+}
+
+.btn-send:hover::after,
+.btn-send:hover::before,
+.btn-stop:hover::after,
+.btn-stop:hover::before {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Tooltip pour user-info (apparait en haut) */
+.user-info {
+    position: relative;
+}
+
+.user-info::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 6px 10px;
+    background-color: var(--text-primary);
+    color: var(--bg-primary);
+    font-size: 11px;
+    white-space: nowrap;
+    border-radius: var(--radius-sm);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--transition-fast), visibility var(--transition-fast);
+    pointer-events: none;
+    margin-bottom: 8px;
+    z-index: 100;
+}
+
+.user-info::before {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: var(--text-primary);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--transition-fast), visibility var(--transition-fast);
+    margin-bottom: -2px;
+    z-index: 100;
+}
+
+.user-info:hover::after,
+.user-info:hover::before {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Tooltip d'aide pour les modes */
+.mode-help-tooltip {
+    position: absolute;
+    bottom: 50px;
+    left: 0;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    box-shadow: var(--shadow-md);
+    z-index: 100;
+    max-width: 400px;
+    min-width: 300px;
+    animation: tooltipFadeIn var(--transition-fast) ease-out;
+}
+
+@keyframes tooltipFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.tooltip-content h4 {
+    font-size: 14px;
+    margin-bottom: 12px;
+    color: var(--text-primary);
+}
+
+.mode-comparison {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.mode-info {
+    padding: 10px;
+    background-color: var(--bg-primary);
+    border-radius: var(--radius-md);
+    border-left: 3px solid var(--accent-color);
+}
+
+.mode-info strong {
+    display: block;
+    font-size: 13px;
+    margin-bottom: 4px;
+    color: var(--text-primary);
+}
+
+.mode-info p {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+
+.mode-info small {
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+/* Tooltip pour icones de collection (sidebar) */
+.collection-icon {
+    position: relative;
+}
+
+.collection-icon::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 6px 10px;
+    background-color: var(--text-primary);
+    color: var(--bg-primary);
+    font-size: 11px;
+    white-space: nowrap;
+    border-radius: var(--radius-sm);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--transition-fast), visibility var(--transition-fast);
+    pointer-events: none;
+    margin-bottom: 8px;
+    z-index: 1000;
+}
+
+.collection-icon::before {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: var(--text-primary);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--transition-fast), visibility var(--transition-fast);
+    margin-bottom: -2px;
+    z-index: 1000;
+}
+
+.collection-icon:hover::after,
+.collection-icon:hover::before {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Tooltip pour badge de collection dans header (apparait en bas) */
+.collection-badge {
+    position: relative;
+}
+
+.collection-badge::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 6px 10px;
+    background-color: var(--text-primary);
+    color: var(--bg-primary);
+    font-size: 11px;
+    white-space: nowrap;
+    border-radius: var(--radius-sm);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--transition-fast), visibility var(--transition-fast);
+    pointer-events: none;
+    margin-top: 8px;
+    z-index: 1000;
+}
+
+.collection-badge::before {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-bottom-color: var(--text-primary);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--transition-fast), visibility var(--transition-fast);
+    margin-top: -2px;
+    z-index: 1000;
+}
+
+.collection-badge:hover::after,
+.collection-badge:hover::before {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Tooltip pour drag handle */
+.drag-handle {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    color: var(--text-secondary);
+    cursor: grab;
+    border-radius: var(--radius-sm);
+    transition: color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.drag-handle:hover {
+    color: var(--text-primary);
+    background-color: var(--bg-tertiary);
+}
+
+.drag-handle:active {
+    cursor: grabbing;
+}
+
+.drag-handle::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 6px 10px;
+    background-color: var(--text-primary);
+    color: var(--bg-primary);
+    font-size: 11px;
+    white-space: nowrap;
+    border-radius: var(--radius-sm);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--transition-fast), visibility var(--transition-fast);
+    pointer-events: none;
+    margin-top: 6px;
+    z-index: 1000;
+}
+
+.drag-handle::before {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-bottom-color: var(--text-primary);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--transition-fast), visibility var(--transition-fast);
+    margin-top: -4px;
+    z-index: 1000;
+}
+
+.drag-handle:hover::after,
+.drag-handle:hover::before {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Tooltip pour badge-icon dans les tableaux (apparait en haut) */
+.badge-icon {
+    position: relative;
+    display: inline-flex;
+}
+
+.badge-icon::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 6px 10px;
+    background-color: var(--text-primary);
+    color: var(--bg-primary);
+    font-size: 11px;
+    white-space: nowrap;
+    border-radius: var(--radius-sm);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--transition-fast), visibility var(--transition-fast);
+    pointer-events: none;
+    margin-bottom: 6px;
+    z-index: 9999;
+}
+
+.badge-icon::before {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: var(--text-primary);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--transition-fast), visibility var(--transition-fast);
+    margin-bottom: -4px;
+    z-index: 9999;
+}
+
+.badge-icon:hover::after,
+.badge-icon:hover::before {
+    opacity: 1;
+    visibility: visible;
+}

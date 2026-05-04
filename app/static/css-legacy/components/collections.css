@@ -1,0 +1,166 @@
+/**
+ * Collections Module - Styles
+ *
+ * Styles pour le module de gestion des collections.
+ * Remplace les styles inline du fichier content-collections.js
+ */
+
+/* ==========================================================================
+   MODALS
+   ========================================================================== */
+
+.collections-modal-sm {
+    max-width: 500px;
+}
+
+.collections-modal-md {
+    max-width: 600px;
+}
+
+.collections-modal-lg {
+    max-width: 700px;
+    max-height: 85vh;
+    overflow-y: auto;
+}
+
+.collections-modal-content {
+    text-align: left;
+}
+
+/* ==========================================================================
+   COLLECTION DETAILS
+   ========================================================================== */
+
+.collections-details-list {
+    margin-bottom: 1rem;
+}
+
+.collections-details-list p {
+    margin: 0.5rem 0;
+}
+
+/* ==========================================================================
+   PREVIEW (PEEK)
+   ========================================================================== */
+
+.collections-preview-header {
+    margin-bottom: 1rem;
+    font-size: 0.9em;
+    color: var(--text-secondary);
+}
+
+.collections-preview-content {
+    border-top: 1px solid var(--border-color);
+    padding-top: 1rem;
+}
+
+.collections-chunk-item {
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    background: var(--bg-hover);
+    border-radius: 6px;
+}
+
+.collections-chunk-header {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    font-size: 0.85em;
+    color: var(--primary-color);
+}
+
+.collections-chunk-header .source {
+    font-weight: normal;
+    color: var(--text-secondary);
+}
+
+.collections-chunk-content {
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-size: 0.9em;
+}
+
+/* ==========================================================================
+   SOURCES MANAGEMENT
+   ========================================================================== */
+
+.collections-sources-section {
+    margin-bottom: 1.5rem;
+}
+
+.collections-sources-section-separator {
+    margin-bottom: 1rem;
+    border-top: 1px solid var(--border-color);
+    padding-top: 1rem;
+}
+
+.collections-sources-title {
+    margin-bottom: 0.75rem;
+    font-size: 0.95em;
+}
+
+.collections-sources-title.primary {
+    color: var(--primary-color);
+}
+
+.collections-sources-title.secondary {
+    color: var(--text-secondary);
+}
+
+.collections-sources-empty {
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+.collections-source-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: var(--bg-hover);
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+}
+
+.collections-source-item.disabled {
+    opacity: 0.5;
+}
+
+.collections-source-info {
+    flex: 1;
+}
+
+.collections-source-name {
+    font-weight: 600;
+    font-size: 0.9em;
+}
+
+.collections-source-meta {
+    font-size: 0.8em;
+    color: var(--text-secondary);
+}
+
+.collections-source-priority {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.collections-source-priority label {
+    font-size: 0.8em;
+    color: var(--text-secondary);
+}
+
+.collections-source-priority-input {
+    width: 60px;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+}
+
+/* ==========================================================================
+   CORPUS MANAGEMENT
+   ========================================================================== */
+
+.collections-corpus-help {
+    margin-bottom: 0.5rem;
+}

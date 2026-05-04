@@ -1,0 +1,144 @@
+{
+    "_comment": "English translations for MY-IA backend",
+
+    "http_bad_request": "Bad request",
+    "http_unauthorized": "Unauthorized",
+    "http_forbidden": "Forbidden",
+    "http_not_found": "Resource not found",
+    "http_conflict": "Resource conflict",
+    "http_internal_error": "Internal server error",
+    "http_service_unavailable": "Service temporarily unavailable",
+
+    "error_invalid_api_key": "Invalid API key",
+    "error_invalid_authentication": "Invalid authentication",
+    "error_token_expired": "Token expired",
+    "error_token_invalid": "Invalid token",
+
+    "error_user_not_found": "User not found",
+    "error_user_email_exists": "A user with email '{email}' already exists",
+    "error_user_username_exists": "A user with username '{username}' already exists",
+    "error_user_pending": "Your account is pending administrator approval.",
+    "error_user_rejected": "Your registration request has been rejected.",
+    "error_user_unauthorized": "Unauthorized access.",
+    "error_admin_required": "Access forbidden: Admin role required",
+
+    "error_role_not_found": "Role not found",
+    "error_role_id_not_found": "Role {role_id} does not exist",
+
+    "error_collection_not_found": "Collection not found",
+    "error_collection_private_not_found": "Private collection not found",
+    "error_collection_user_not_found": "User collection not found",
+    "error_collection_exists": "Collection '{full_name}' already exists",
+    "error_collection_chroma_create": "Error creating ChromaDB collection",
+    "error_collection_chroma_clear": "Error clearing collection",
+
+    "error_source_not_found": "Source not found",
+    "error_source_timeout": "Source {name} timeout",
+    "error_source_error": "Source {name} error: {error}",
+
+    "error_document_not_found": "Document not found",
+    "error_document_file_not_found": "File not found",
+    "error_document_delete": "Error during deletion",
+    "error_document_already_deindexed": "Document is already deindexed",
+    "error_document_already_indexed": "Document is already indexed",
+
+    "error_conversation_mode_not_found": "Conversation mode not found",
+    "error_resource_type_not_found": "Resource type not found",
+    "error_audit_action_not_found": "Audit action not found",
+    "error_preferences_not_found": "User preferences not found",
+    "error_message_not_found": "Message not found",
+    "error_message_delete": "Failed to delete message",
+
+    "error_password_policy_not_found": "Password policy not found",
+    "error_password_policy_name_not_found": "Password policy '{name}' not found",
+
+    "error_country_not_found": "Country '{code}' not found",
+    "error_country_inactive": "Country '{code}' not found or inactive",
+    "error_city_not_found": "City ID {city_id} not found",
+    "error_current_password_incorrect": "Current password is incorrect",
+    "error_password_policy_violated": "New password does not meet policy requirements",
+    "error_password_recently_used": "This password has been used recently",
+
+    "error_file_type_not_allowed": "File type not allowed: {file_type}",
+    "error_file_type_not_allowed_reason": "File type not allowed: {file_type} ({reason})",
+
+    "error_session_invalid": "Invalid session_id: {session_id}",
+    "error_chroma_not_initialized": "ChromaDB client not initialized",
+    "error_collection_get_create": "Error getting/creating collection '{collection_name}': {error}",
+
+    "error_email_verify_username": "Error verifying username: {error}",
+    "error_email_already_verified": "Your email is already verified.",
+    "error_debug_disabled": "Debug mode disabled",
+    "error_debug_disabled_env": "Debug endpoints disabled. Enable them from the admin panel (System > Debug).",
+
+    "error_username_exists": "REGISTER_USERNAME_ALREADY_EXISTS",
+
+    "success_email_verification_sent": "Verification email sent.",
+    "success_password_changed": "Password changed successfully",
+    "success_file_indexed": "File '{filename}' indexed successfully ({chunks} chunks)",
+
+    "password_min_length": "Password must contain at least {min_length} characters",
+    "password_max_length": "Password must not exceed {max_length} characters",
+    "password_require_uppercase": "Password must contain at least one uppercase letter",
+    "password_require_lowercase": "Password must contain at least one lowercase letter",
+    "password_require_digit": "Password must contain at least one digit",
+    "password_require_special": "Password must contain at least one special character ({special_chars})",
+    "password_history_check": "This password has been used recently. Choose a password different from the last {history_count}.",
+
+    "password_suggest_add_chars": "Add {diff} more character(s)",
+    "password_suggest_uppercase": "Add an uppercase letter (A-Z)",
+    "password_suggest_lowercase": "Add a lowercase letter (a-z)",
+    "password_suggest_digit": "Add a digit (0-9)",
+    "password_suggest_special": "Add a special character ({special_chars})",
+    "password_suggest_length": "A password of 12+ characters is recommended",
+    "password_suggest_no_repeat": "Avoid repeated characters (aaa, 111)",
+    "password_suggest_no_sequence_digits": "Avoid number sequences (123, 456)",
+    "password_suggest_no_sequence_letters": "Avoid letter sequences (abc, xyz)",
+    "password_no_policy_found": "No policy found, using default values",
+
+    "email_subject_verify": "Verify your email address - {app_name}",
+    "email_subject_reset": "Password reset - {app_name}",
+    "email_subject_welcome": "Welcome to {app_name}!",
+    "email_subject_pending": "Registration pending approval - {app_name}",
+    "email_subject_rejected": "Registration rejected - {app_name}",
+    "email_subject_new_registration": "New registration pending - {user_email}",
+
+    "email_title_verify": "Verify your email",
+    "email_title_reset": "Password reset",
+    "email_title_welcome": "Welcome to {app_name}!",
+    "email_title_pending": "Registration pending",
+    "email_title_rejected": "Registration rejected",
+
+    "email_body_verify": "Hello {username}, please verify your email address.",
+    "email_body_reset": "Hello {username}, you have requested a password reset.",
+    "email_body_welcome": "Hello {username}, your account is now verified.",
+    "email_body_pending": "Hello {username}, your registration is pending approval.",
+    "email_body_rejected": "Hello {username}, your registration request has been rejected.",
+
+    "email_btn_verify": "Verify my email",
+    "email_btn_reset": "Reset my password",
+    "email_btn_login": "Sign in",
+    "email_btn_default": "Click here",
+
+    "email_text_verify": "Hello {username},\n\nPlease verify your email address by clicking the following link:\n{verification_url}\n\nThis link expires in 24 hours.\n\nIf you did not create a {app_name} account, please ignore this email.\n\nThe {app_name} Team",
+    "email_text_reset": "Hello {username},\n\nYou have requested a password reset.\nClick the following link to set a new password:\n{reset_url}\n\nThis link expires in 1 hour.\n\nIf you did not make this request, please ignore this email.\n\nThe {app_name} Team",
+    "email_text_welcome": "Hello {username},\n\nWelcome to {app_name}! Your account has been verified successfully.\n\nYou can now sign in and start using the application.\n\nThe {app_name} Team",
+    "email_text_pending": "Hello {username},\n\nYour registration request for {app_name} has been received.\nIt is currently being reviewed by our team.\n\nYou will receive an email once your account is validated.\nThis process usually takes 24 to 48 hours.\n\nThe {app_name} Team",
+    "email_text_rejected": "Hello {username},\n\nWe regret to inform you that your registration request for {app_name} has not been accepted.\n\nReason for rejection: {reason}\n\nIf you believe this is an error, please contact us.\n\nThe {app_name} Team",
+
+    "email_admin_new_registration_title": "New registration pending approval:",
+    "email_admin_new_registration_email": "Email: {user_email}",
+    "email_admin_new_registration_username": "Username: {username}",
+    "email_admin_new_registration_date": "Date: {registration_date}",
+    "email_admin_new_registration_method": "Method: {registration_method}",
+    "email_admin_new_registration_verified": "Email verified: {verified}",
+    "email_admin_new_registration_verified_yes": "Yes",
+    "email_admin_new_registration_verified_no": "No",
+    "email_admin_new_registration_action": "Log in to the admin dashboard to approve or reject this registration.",
+
+    "email_footer_sent_by": "This email was sent by {app_name}.",
+    "email_footer_ignore": "If you did not request this email, please ignore it.",
+
+    "prompt_chatbot_default": "You are a helpful AI assistant.",
+    "prompt_assistant_default": "You are a task-oriented assistant."
+}

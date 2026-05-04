@@ -1,0 +1,178 @@
+# =============================================================================
+# MY-IA V2 — docker-compose.yml
+# =============================================================================
+# Stack 100% Python : FastAPI sert HTML (Jinja) + API JSON.
+# Plus de containers ui_front / ui_back séparés.
+# =============================================================================
+
+name: ${SANITIZED_PREFIX}
+
+services:
+  # ---------- PostgreSQL ----------
+  postgres:
+    image: postgres:16-alpine
+    container_name: ${SANITIZED_PREFIX}_postgres
+    labels:
+      - "myia.managed=true"
+      - "${SANITIZED_PREFIX}.app.id=${SANITIZED_PREFIX}"
+      - "${SANITIZED_PREFIX}.version=${APP_VERSION:-2.0.0-dev}"
+      - "${SANITIZED_PREFIX}.service=postgres"
+    env_file: .env
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=postgres
+      - APP_DB_USER=${APP_DB_USER}
+      - APP_DB_PASSWORD=${APP_DB_PASSWORD}
+      - APP_DB_NAME=${APP_DB_NAME}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/docker/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh:ro
+    ports:
+      - "${POSTGRES_PORT:-5442}:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - internal
+
+  # ---------- ChromaDB ----------
+  chroma:
+    image: chromadb/chroma:latest
+    container_name: ${SANITIZED_PREFIX}_chroma
+    labels:
+      - "myia.managed=true"
+      - "${SANITIZED_PREFIX}.service=chroma"
+    env_file: .env
+    environment:
+      - IS_PERSISTENT=TRUE
+      - ANONYMIZED_TELEMETRY=FALSE
+    ports:
+      - "${CHROMA_PORT:-8010}:8000"
+    volumes:
+      - chroma_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/8000' 2>/dev/null"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    networks:
+      - internal
+
+  # ---------- Whisper (STT) ----------
+  whisper:
+    image: fedirz/faster-whisper-server:latest-cpu
+    container_name: ${SANITIZED_PREFIX}_whisper
+    labels:
+      - "myia.managed=true"
+      - "${SANITIZED_PREFIX}.service=whisper"
+    environment:
+      - WHISPER__MODEL=small
+      - WHISPER__INFERENCE_DEVICE=cpu
+    volumes:
+      - whisper_models:/root/.cache/huggingface
+    ports:
+      - "${WHISPER_PORT:-9011}:8000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=5)\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - internal
+
+  # ---------- App FastAPI (HTML + API) ----------
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ${SANITIZED_PREFIX}_app
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    labels:
+      - "myia.managed=true"
+      - "${SANITIZED_PREFIX}.app.id=${SANITIZED_PREFIX}"
+      - "${SANITIZED_PREFIX}.version=${APP_VERSION:-2.0.0-dev}"
+      - "${SANITIZED_PREFIX}.service=app"
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      chroma:
+        condition: service_started
+    environment:
+      - OLLAMA_HOST=${OLLAMA_HOST:-host.docker.internal}
+      - OLLAMA_PORT=${OLLAMA_PORT:-11434}
+      - CHROMA_HOST=${CHROMA_HOST:-chroma}
+      - CHROMA_PORT=${CHROMA_PORT:-8000}
+      - ANONYMIZED_TELEMETRY=FALSE
+      - DATABASE_URL=postgresql+asyncpg://${APP_DB_USER}:${APP_DB_PASSWORD}@postgres:5432/${APP_DB_NAME}
+      - SESSION_SECRET=${SESSION_SECRET}
+      - DEPLOY_ENV=${DEPLOY_ENV:-dev}
+      - UVICORN_WORKERS=${UVICORN_WORKERS:-1}
+    volumes:
+      - ./scripts:/code/scripts
+      - ./alembic.ini:/code/alembic.ini:ro
+      - ./data/uploads:/data/uploads
+      - ./models:/code/models
+      # Hot-reload dev (montés via docker-compose.dev.yml si besoin)
+    ports:
+      - "${APP_PORT:-8090}:8080"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - internal
+      - external
+
+  # ---------- pgAdmin (dev/admin DB) ----------
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: ${SANITIZED_PREFIX}_pgadmin
+    env_file: .env
+    entrypoint: /scripts/pgadmin-entrypoint.sh
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "${PGADMIN_PORT:-5060}:80"
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_EMAIL:-admin@local.dev}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASSWORD:-admin123}
+      - APP_NAME_PREFIX=${SANITIZED_PREFIX:-my_ia_v2}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+      - ./scripts/docker/pgadmin-entrypoint.sh:/scripts/pgadmin-entrypoint.sh:ro
+    restart: unless-stopped
+    networks:
+      - internal
+
+networks:
+  internal:
+    driver: bridge
+  external:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    name: ${SANITIZED_PREFIX}_postgres_data
+  chroma_data:
+    name: ${SANITIZED_PREFIX}_chroma_data
+  whisper_models:
+    name: ${SANITIZED_PREFIX}_whisper_models
+  pgadmin_data:
+    name: ${SANITIZED_PREFIX}_pgadmin_data

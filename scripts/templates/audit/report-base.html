@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rapport d'Audit {{project_name}} - {{timestamp}}</title>
+    <style>{{css}}</style>
+</head>
+<body>
+    <!-- Sidebar TOC -->
+    <nav class="sidebar-toc">
+        <h3>Navigation</h3>
+        <a href="#nav-header">🛡️ En-tête</a>
+        <a href="#nav-params">📋 Paramètres</a>
+        <a href="#nav-charts">📊 Visualisation</a>
+        <a href="#nav-summary">📋 Résumé</a>
+        <a href="#nav-health">💚 Score de Santé</a>
+        <a href="#nav-top-files">📁 Top Fichiers</a>
+        <a href="#nav-tests">🧪 Tests</a>
+        <a href="#nav-fixtures">🔬 Fixtures</a>
+        <a href="#nav-findings">🔍 Problèmes</a>
+        <a href="#nav-validations">✅ Validations</a>
+    </nav>
+
+    <!-- Navigation buttons -->
+    <button class="back-to-top" onclick="scrollToTop()" title="Retour en haut">↑</button>
+    <div class="nav-buttons">
+        <button class="nav-btn" id="navPrev" onclick="navPrev()" title="Section précédente (k)">←</button>
+        <button class="nav-btn" id="navNext" onclick="navNext()" title="Section suivante (j)">→</button>
+    </div>
+    <div class="keyboard-hint"><kbd>j</kbd>/<kbd>k</kbd> naviguer • <kbd>Ctrl+Home</kbd> début</div>
+
+    <div class="container">
+        <button class="print-btn" onclick="togglePrintMode()">🖨️ Version imprimable</button>
+
+        <div class="header" id="nav-header" data-nav-section="En-tête">
+            <h1>🛡️ Rapport d'Audit - {{project_name}}</h1>
+            <div class="meta">Généré le {{date_str}} • v{{project_version}}</div>
+        </div>
+
+        {{audit_params_html}}
+
+        <h2 id="nav-charts" data-nav-section="Visualisation" class="section-title">📊 Visualisation</h2>
+        <div class="charts-grid">
+            <div class="chart-card">
+                <h3>Répartition par Sévérité</h3>
+                <div class="chart-container"><canvas id="severityChart"></canvas></div>
+            </div>
+            <div class="chart-card">
+                <h3>Problèmes par Catégorie</h3>
+                <div class="chart-container"><canvas id="categoriesChart"></canvas></div>
+            </div>
+            <div class="chart-card">
+                <h3>Code Métier vs Dépendances</h3>
+                <div class="chart-container"><canvas id="codeVsDepsChart"></canvas></div>
+            </div>
+            <div class="chart-card">
+                <h3>🧪 Tests Unitaires</h3>
+                <div class="chart-container"><canvas id="testsChart"></canvas></div>
+            </div>
+            <div class="chart-card">
+                <h3>🔬 Validation Fixtures</h3>
+                <div class="chart-container"><canvas id="fixturesChart"></canvas></div>
+            </div>
+        </div>
+
+        <div class="charts-grid charts-grid-history">
+            <div class="chart-card">
+                <h3>📈 Évolution des Problèmes</h3>
+                <p class="chart-subtitle">HIGH / MEDIUM / LOW sur 10 audits</p>
+                <div class="chart-container chart-container-lg"><canvas id="historyChart"></canvas></div>
+            </div>
+            <div class="chart-card">
+                <h3>🧪 Évolution des Tests</h3>
+                <p class="chart-subtitle">Taux de succès et nombre de tests</p>
+                <div class="chart-container chart-container-lg"><canvas id="testsHistoryChart"></canvas></div>
+            </div>
+        </div>
+
+        <h2 id="nav-summary" data-nav-section="Résumé" class="section-title">📋 Résumé</h2>
+        <div class="stats">
+            <div class="stat-card"><div class="stat-value high">{{total_high}}</div><div class="stat-label">Critiques (HIGH)</div></div>
+            <div class="stat-card"><div class="stat-value medium">{{total_medium}}</div><div class="stat-label">Importants (MEDIUM)</div></div>
+            <div class="stat-card"><div class="stat-value low">{{total_low}}</div><div class="stat-label">Mineurs (LOW)</div></div>
+            <div class="stat-card"><div class="stat-value success">{{total_successes}}</div><div class="stat-label">Validations</div></div>
+            <div class="stat-card"><div class="stat-value business">{{total_business}}</div><div class="stat-label">📦 Code métier</div></div>
+            <div class="stat-card"><div class="stat-value deps">{{total_deps}}</div><div class="stat-label">🔗 Dépendances</div></div>
+            <div class="stat-card"><div class="stat-value {{tests_color}}">{{tests_rate}}%</div><div class="stat-label">🧪 Tests ({{tests_total}})</div></div>
+            <div class="stat-card"><div class="stat-value {{fixtures_color}}">{{fixtures_rate}}%</div><div class="stat-label">🔬 Fixtures ({{fixtures_total}})</div></div>
+        </div>
+
+        <div class="health-bar" id="nav-health" data-nav-section="Score de Santé">
+            <h3>Score de Santé Global : {{health_score}}%</h3>
+            <div class="health-track"><div class="health-fill {{health_class}}" style="width: {{health_score}}%"></div></div>
+        </div>
+
+        <div class="chart-card" id="nav-top-files" data-nav-section="Top Fichiers">
+            <h3>Top 10 Fichiers Problématiques</h3>
+            <div class="heatmap">{{heatmap_html}}</div>
+        </div>
+
+        <div id="nav-tests" data-nav-section="Tests">{{tests_html}}</div>
+
+        <div id="nav-fixtures" data-nav-section="Fixtures">{{fixtures_html}}</div>
+
+        <h2 id="nav-findings" data-nav-section="Problèmes" class="section-title">🔍 Problèmes Détectés</h2>
+        {{sections_html}}
+
+        {{comparison_html}}
+
+        <h2 id="nav-validations" data-nav-section="Validations" class="section-title">✅ Validations par Catégorie</h2>
+        {{successes_html}}
+
+        <div class="footer">
+            <p>{{project_name}} Audit v{{project_version}}</p>
+        </div>
+    </div>
+    <script>{{chartjs_lib}}</script>
+    <script>{{js}}</script>
+    <script>{{charts_js}}</script>
+</body>
+</html>

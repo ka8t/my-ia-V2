@@ -1,0 +1,59 @@
+/**
+ * Users Module - Styles
+ *
+ * Styles pour le module de gestion des utilisateurs.
+ * Remplace les styles inline du fichier users.js
+ */
+
+/* ==========================================================================
+   MODALS
+   ========================================================================== */
+
+.users-modal-sm {
+    max-width: 400px;
+}
+
+.users-modal-md {
+    max-width: 500px;
+}
+
+/* ==========================================================================
+   FORMS
+   ========================================================================== */
+
+.users-form-content {
+    text-align: left;
+}
+
+.users-form-group-spaced {
+    margin: 1rem 0;
+}
+
+.users-select-full {
+    width: 100%;
+    padding: 0.5rem;
+}
+
+/* ==========================================================================
+   WARNINGS & ERRORS
+   ========================================================================== */
+
+.users-warning-title {
+    color: var(--color-error);
+}
+
+.users-warning-message {
+    color: var(--color-warning);
+    margin-bottom: 1rem;
+}
+
+/* ==========================================================================
+   ADMINS LIST (blocked actions modal)
+   ========================================================================== */
+
+.users-admins-list {
+    text-align: left;
+    margin: 1rem 0;
+    max-height: 200px;
+    overflow-y: auto;
+}

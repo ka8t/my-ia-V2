@@ -1,0 +1,12 @@
+<div class="sub-group">
+    <div class="sub-group-header" onclick="this.parentElement.classList.toggle('open')">
+        <span class="sub-group-icon">✅</span>
+        <h3>{{category}} — {{count}} validations</h3>
+        <span class="sub-chevron">▶</span>
+    </div>
+    <div class="sub-group-content">
+        <ul class="success-list">
+            {{items}}
+        </ul>
+    </div>
+</div>

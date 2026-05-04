@@ -1,0 +1,634 @@
+/**
+ * Upload Component - Styles partagés pour l'upload de documents
+ * Utilisé par UI-FRONT et UI-BACK
+ */
+
+/* =============================================================================
+   UPLOAD MODAL
+   ============================================================================= */
+
+.upload-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.upload-modal-content {
+    background-color: var(--bg-primary);
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.upload-modal-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.upload-modal-header h2 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.upload-modal-body {
+    padding: 16px 20px;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.upload-modal-footer {
+    padding: 16px 20px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+/* =============================================================================
+   UPLOAD MODE TOGGLE (Fichiers / Dossier)
+   ============================================================================= */
+
+.upload-mode-toggle {
+    display: flex;
+    gap: 0;
+    margin: 12px 0;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.upload-mode-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border: none;
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-family: inherit;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.upload-mode-btn:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.upload-mode-btn.active {
+    background: var(--accent-color);
+    color: white;
+}
+
+.upload-mode-btn svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+.upload-mode-btn + .upload-mode-btn {
+    border-left: 1px solid var(--border-color);
+}
+
+/* =============================================================================
+   UPLOAD ZONE (Drag & Drop)
+   ============================================================================= */
+
+.upload-zone {
+    border: 2px dashed var(--border-color);
+    border-radius: 12px;
+    padding: 24px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background-color: var(--bg-secondary);
+}
+
+.upload-zone:hover {
+    border-color: var(--accent-color);
+    background-color: var(--bg-tertiary);
+}
+
+.upload-zone.dragover {
+    border-color: var(--accent-color);
+    background-color: var(--bg-tertiary);
+}
+
+.upload-zone svg {
+    width: 32px;
+    height: 32px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+.upload-zone p {
+    color: var(--text-primary);
+    font-size: 14px;
+    margin-bottom: 6px;
+}
+
+.upload-zone small,
+.upload-zone-hint {
+    color: var(--text-secondary);
+    font-size: 12px;
+}
+
+.upload-zone-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+/* =============================================================================
+   UPLOAD OPTIONS
+   ============================================================================= */
+
+.upload-collection-select {
+    margin-bottom: 12px;
+}
+
+.upload-collection-select label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 500;
+    font-size: 13px;
+    color: var(--text-primary);
+}
+
+.upload-collection-select .form-select {
+    width: 100%;
+    padding: 8px 32px 8px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md, 6px);
+    font-size: 13px;
+    font-family: inherit;
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236e6e80' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.upload-collection-select .form-select:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px rgba(16, 163, 127, 0.1);
+}
+
+.upload-options {
+    margin-top: 12px;
+}
+
+.upload-option-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.upload-option-label:hover {
+    color: var(--text-primary);
+}
+
+.upload-option-label input[type="checkbox"] {
+    cursor: pointer;
+}
+
+.upload-option + .upload-option {
+    margin-top: 8px;
+}
+
+/* =============================================================================
+   UPLOAD PROVIDER INFO (Admin mode)
+   ============================================================================= */
+
+.upload-provider-info {
+    margin-bottom: 12px;
+}
+
+.upload-provider-info label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 500;
+    font-size: 13px;
+    color: var(--text-primary);
+}
+
+.provider-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md, 6px);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.provider-badge .provider-icon {
+    display: flex;
+    align-items: center;
+}
+
+.provider-badge .provider-icon svg {
+    width: 18px;
+    height: 18px;
+    color: var(--accent-color);
+}
+
+.provider-badge.provider-ollama {
+    border-color: #10a37f;
+}
+
+.provider-badge.provider-ollama .provider-icon svg {
+    color: #10a37f;
+}
+
+.provider-badge.provider-llamacpp {
+    border-color: #8b5cf6;
+}
+
+.provider-badge.provider-llamacpp .provider-icon svg {
+    color: #8b5cf6;
+}
+
+/* =============================================================================
+   UPLOAD FILES LIST
+   ============================================================================= */
+
+.upload-files-list {
+    margin-top: 16px;
+}
+
+.upload-file-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    background-color: var(--bg-secondary);
+    border-radius: 8px;
+    margin-bottom: 6px;
+}
+
+.upload-file-item-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    min-width: 0;
+}
+
+.upload-file-item-icon {
+    width: 28px;
+    height: 28px;
+    background-color: var(--accent-color);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 10px;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.upload-file-item-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.upload-file-item-name {
+    font-size: 13px;
+    color: var(--text-primary);
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.upload-file-item-size {
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
+.upload-file-item-remove {
+    background: none;
+    border: none;
+    color: var(--danger-color);
+    cursor: pointer;
+    font-size: 18px;
+    padding: 4px 8px;
+    line-height: 1;
+}
+
+.upload-file-item-remove:hover {
+    opacity: 0.8;
+}
+
+/* =============================================================================
+   UPLOAD PROGRESS
+   ============================================================================= */
+
+.upload-progress {
+    margin-top: 16px;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 6px;
+    background-color: var(--bg-secondary);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.progress-fill {
+    height: 100%;
+    background-color: var(--accent-color);
+    transition: width 0.3s;
+    width: 0%;
+}
+
+.progress-text {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 13px;
+}
+
+/* =============================================================================
+   UPLOAD STAGES - Progression multi-étapes SSE
+   ============================================================================= */
+
+.upload-stages {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    padding: 12px;
+    background-color: var(--bg-secondary);
+    border-radius: 10px;
+    gap: 6px;
+}
+
+.upload-stage {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 6px;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+}
+
+.upload-stage .stage-icon {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    border-radius: 50%;
+    background-color: var(--bg-tertiary);
+    margin-bottom: 6px;
+    transition: all 0.3s ease;
+}
+
+.upload-stage .stage-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    transition: color 0.3s ease;
+}
+
+.upload-stage .stage-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
+/* Étape en attente */
+.upload-stage.pending .stage-icon {
+    background-color: var(--bg-tertiary);
+    color: var(--text-secondary);
+}
+
+/* Étape en cours */
+.upload-stage.in-progress {
+    background-color: rgba(16, 163, 127, 0.1);
+}
+
+.upload-stage.in-progress .stage-icon {
+    background-color: var(--accent-color);
+    color: white;
+    animation: stagePulse 1.5s ease-in-out infinite;
+}
+
+.upload-stage.in-progress .stage-label {
+    color: var(--accent-color);
+    font-weight: 600;
+}
+
+@keyframes stagePulse {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(16, 163, 127, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 6px rgba(16, 163, 127, 0);
+    }
+}
+
+/* Étape terminée */
+.upload-stage.completed .stage-icon {
+    background-color: var(--accent-color);
+    color: white;
+}
+
+.upload-stage.completed .stage-label {
+    color: var(--accent-color);
+}
+
+/* Étape en erreur */
+.upload-stage.error .stage-icon {
+    background-color: var(--danger-color);
+    color: white;
+}
+
+.upload-stage.error .stage-label {
+    color: var(--danger-color);
+}
+
+/* Barre de progression dans l'étape en cours */
+.stage-progress-bar {
+    width: 100%;
+    height: 3px;
+    background-color: var(--bg-tertiary);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 4px;
+}
+
+.stage-progress-fill {
+    height: 100%;
+    width: var(--progress, 0%);
+    background-color: var(--accent-color);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+
+/* =============================================================================
+   UPLOAD RESULTS
+   ============================================================================= */
+
+.upload-result {
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    font-size: 13px;
+}
+
+.upload-result.upload-success {
+    background-color: rgba(16, 163, 127, 0.1);
+    color: var(--accent-color);
+    border: 1px solid rgba(16, 163, 127, 0.2);
+}
+
+.upload-result.upload-error {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: var(--danger-color);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.upload-error-title {
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.upload-error-list {
+    margin: 0;
+    padding-left: 20px;
+    font-size: 12px;
+}
+
+.upload-error-list li {
+    margin-bottom: 4px;
+}
+
+/* Bouton fermer après succès */
+.upload-close-btn {
+    margin-top: 12px;
+    width: 100%;
+}
+
+/* =============================================================================
+   DARK MODE
+   ============================================================================= */
+
+[data-theme="dark"] .upload-stages {
+    background-color: #1a1a1a;
+}
+
+[data-theme="dark"] .upload-stage.in-progress {
+    background-color: rgba(16, 163, 127, 0.15);
+}
+
+/* =============================================================================
+   BACK OFFICE - Ajustements pour modale dynamique
+   ============================================================================= */
+
+.confirm-modal .upload-modal-content {
+    max-width: 450px;
+    text-align: left;
+}
+
+.confirm-modal .upload-zone {
+    padding: 1rem;
+}
+
+.confirm-modal .upload-zone svg {
+    width: 24px;
+    height: 24px;
+}
+
+.confirm-modal .upload-zone p {
+    font-size: 13px;
+    margin: 0.25rem 0;
+}
+
+.confirm-modal .upload-zone-hint {
+    font-size: 11px;
+}
+
+.confirm-modal .upload-file-item {
+    padding: 8px 10px;
+}
+
+.confirm-modal .upload-file-item-icon {
+    width: 24px;
+    height: 24px;
+    font-size: 9px;
+}
+
+.confirm-modal .upload-file-item-name {
+    font-size: 12px;
+}
+
+.confirm-modal .upload-file-item-size {
+    font-size: 10px;
+}
+
+.confirm-modal .upload-stages {
+    padding: 10px;
+    gap: 4px;
+}
+
+.confirm-modal .upload-stage {
+    padding: 4px;
+}
+
+.confirm-modal .upload-stage .stage-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+    margin-bottom: 4px;
+}
+
+.confirm-modal .upload-stage .stage-label {
+    font-size: 10px;
+}
+
+.confirm-modal .progress-bar {
+    height: 4px;
+    margin-bottom: 8px;
+}
+
+.confirm-modal .progress-text {
+    font-size: 12px;
+}

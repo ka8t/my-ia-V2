@@ -1,0 +1,134 @@
+/* =============================================================================
+   CPU Warning Banner
+   Affiche un avertissement quand le LLM tourne sur CPU (pas de GPU)
+   ============================================================================= */
+
+.cpu-warning-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background-color: #fef3c7;
+    border-bottom: 1px solid #fcd34d;
+    color: #92400e;
+    font-size: 14px;
+}
+
+[data-theme="dark"] .cpu-warning-banner {
+    background-color: #78350f;
+    border-color: #92400e;
+    color: #fef3c7;
+}
+
+.cpu-warning-icon {
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.cpu-warning-text {
+    flex: 1;
+}
+
+.cpu-warning-close {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: inherit;
+    opacity: 0.7;
+    padding: 4px;
+    line-height: 1;
+}
+
+.cpu-warning-close:hover {
+    opacity: 1;
+}
+
+/* Callout variant for admin dashboard */
+.cpu-warning-callout {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+    background-color: #fef3c7;
+    border: 1px solid #fcd34d;
+    border-radius: 8px;
+    color: #92400e;
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+[data-theme="dark"] .cpu-warning-callout {
+    background-color: #78350f;
+    border-color: #92400e;
+    color: #fef3c7;
+}
+
+.cpu-warning-callout .cpu-warning-icon {
+    font-size: 24px;
+    flex-shrink: 0;
+}
+
+.cpu-warning-callout .cpu-warning-content {
+    flex: 1;
+}
+
+.cpu-warning-callout .cpu-warning-title {
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.cpu-warning-callout .cpu-warning-text {
+    opacity: 0.9;
+}
+
+/* =============================================================================
+   API Error Banner
+   Affiche une erreur quand l'API n'est pas accessible
+   ============================================================================= */
+
+.api-error-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background-color: #fee2e2;
+    border-bottom: 1px solid #fca5a5;
+    color: #991b1b;
+    font-size: 14px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 10000;
+}
+
+[data-theme="dark"] .api-error-banner {
+    background-color: #7f1d1d;
+    border-color: #991b1b;
+    color: #fee2e2;
+}
+
+.api-error-icon {
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.api-error-text {
+    flex: 1;
+}
+
+.api-error-close {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: inherit;
+    opacity: 0.7;
+    padding: 4px;
+    line-height: 1;
+}
+
+.api-error-close:hover {
+    opacity: 1;
+}

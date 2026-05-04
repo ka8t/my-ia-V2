@@ -1,0 +1,206 @@
+/**
+ * Composants Boutons
+ *
+ * Classes disponibles:
+ * - .btn-primary : Bouton principal (accent)
+ * - .btn-secondary : Bouton secondaire
+ * - .btn-icon : Bouton icone avec tooltip
+ * - .btn-header-icon : Bouton icone dans header avec tooltip
+ * - .btn-action : Bouton d'action legacy
+ */
+
+/* Bouton primaire */
+.btn-primary {
+    padding: 10px 20px;
+    background-color: var(--accent-color);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background-color var(--transition-fast);
+}
+
+.btn-primary:hover:not(:disabled) {
+    background-color: var(--accent-hover);
+}
+
+.btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Bouton secondaire */
+.btn-secondary {
+    padding: 10px 20px;
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background-color var(--transition-fast);
+}
+
+.btn-secondary:hover {
+    background-color: var(--bg-tertiary);
+}
+
+/* Bouton icone avec tooltip */
+.btn-icon {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    background: none;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: all var(--transition-fast);
+}
+
+.btn-icon:hover {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+.btn-icon.copied {
+    background-color: #dcfce7;
+    border-color: #22c55e;
+    color: #16a34a;
+}
+
+[data-theme="dark"] .btn-icon.copied {
+    background-color: #14532d;
+    border-color: #22c55e;
+    color: #4ade80;
+}
+
+.btn-icon.btn-delete-msg:hover {
+    background-color: #fee2e2;
+    border-color: var(--danger-color);
+    color: #dc2626;
+}
+
+[data-theme="dark"] .btn-icon.btn-delete-msg:hover {
+    background-color: #450a0a;
+    border-color: var(--danger-color);
+    color: #f87171;
+}
+
+/* Bouton header avec tooltip */
+.btn-header-icon {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    background-color: var(--bg-tertiary);
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    color: var(--text-primary);
+    transition: all var(--transition-fast);
+}
+
+.btn-header-icon:hover {
+    background-color: var(--accent-color);
+    color: white;
+}
+
+/* Bouton action legacy */
+.btn-action {
+    padding: 6px 12px;
+    background: none;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--text-secondary);
+    transition: all var(--transition-fast);
+}
+
+.btn-action:hover {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+.btn-action svg {
+    vertical-align: middle;
+    margin-right: 4px;
+}
+
+/* Boutons speciaux */
+.btn-save {
+    background-color: var(--accent-color) !important;
+    color: white !important;
+    border-color: var(--accent-color) !important;
+}
+
+.btn-save:hover {
+    background-color: var(--accent-hover) !important;
+}
+
+.btn-cancel {
+    background-color: transparent !important;
+    color: var(--text-secondary) !important;
+}
+
+.btn-cancel:hover {
+    background-color: var(--bg-tertiary) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Bouton close */
+.btn-close {
+    background: none;
+    border: none;
+    font-size: 32px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    line-height: 1;
+}
+
+.btn-close:hover {
+    color: var(--text-primary);
+}
+
+/* Bouton d'aide */
+.btn-help {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    margin-left: 6px;
+    margin-top: -2px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    transition: all var(--transition-fast);
+    flex-shrink: 0;
+    min-width: 20px;
+    min-height: 20px;
+}
+
+.btn-help svg {
+    display: block;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    vertical-align: bottom;
+}
+
+.btn-help:hover {
+    background-color: var(--bg-tertiary);
+    color: var(--accent-color);
+}

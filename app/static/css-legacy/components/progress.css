@@ -1,0 +1,289 @@
+/**
+ * Progress Modal Component - Styles partagés
+ *
+ * Utilisé par UI-FRONT et UI-BACK pour afficher
+ * la progression des tâches longues (import, export, etc.)
+ */
+
+/* =============================================================================
+   PROGRESS MODAL OVERLAY
+   ============================================================================= */
+
+.progress-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10002;
+    backdrop-filter: blur(4px);
+    animation: progressFadeIn var(--transition-fast, 0.15s) ease-out;
+}
+
+.progress-modal-exit {
+    animation: progressFadeOut 0.3s ease-out forwards;
+}
+
+/* =============================================================================
+   PROGRESS MODAL CONTENT
+   ============================================================================= */
+
+.progress-modal-content {
+    background: var(--bg-secondary, #1a1a2e);
+    border: 1px solid var(--border-color, #2d2d44);
+    border-radius: var(--radius-xl, 16px);
+    padding: 2rem;
+    min-width: 400px;
+    max-width: 500px;
+    width: 90%;
+    box-shadow: var(--shadow-lg, 0 10px 40px rgba(0, 0, 0, 0.3));
+    position: relative;
+    animation: progressSlideIn var(--transition-normal, 0.3s) ease-out;
+}
+
+.progress-modal-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: none;
+    border: none;
+    color: var(--text-secondary, #9ca3af);
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: var(--radius-md, 8px);
+    transition: all var(--transition-fast, 0.15s);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.progress-modal-close:hover {
+    background: var(--bg-tertiary, #252538);
+    color: var(--text-primary, #ffffff);
+}
+
+.progress-modal-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary, #ffffff);
+    margin-bottom: 0.5rem;
+    text-align: center;
+}
+
+.progress-modal-subtitle {
+    font-size: 0.9rem;
+    color: var(--text-secondary, #9ca3af);
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+/* =============================================================================
+   PROGRESS CONTAINER
+   ============================================================================= */
+
+.progress-container {
+    background: var(--bg-primary, #0d0d1a);
+    border: 1px solid var(--border-color, #2d2d44);
+    border-radius: var(--radius-lg, 12px);
+    padding: 1.5rem;
+}
+
+.progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.progress-title {
+    font-weight: 600;
+    color: var(--text-primary, #ffffff);
+    font-size: 1rem;
+}
+
+.progress-percentage {
+    font-weight: 700;
+    font-size: 1.25rem;
+    color: var(--accent-color, #10a37f);
+}
+
+/* =============================================================================
+   PROGRESS BAR
+   ============================================================================= */
+
+.progress-bar-wrapper {
+    background: var(--bg-tertiary, #252538);
+    border-radius: var(--radius-md, 8px);
+    height: 12px;
+    overflow: hidden;
+    position: relative;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    border-radius: var(--radius-md, 8px);
+    background: linear-gradient(90deg, var(--accent-color, #10a37f) 0%, #4ade80 100%);
+    transition: width 0.3s ease-out;
+    position: relative;
+}
+
+.progress-bar-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.2) 50%,
+        transparent 100%
+    );
+    animation: progressShimmer 1.5s infinite;
+}
+
+.progress-bar-fill.complete {
+    background: linear-gradient(90deg, #4ade80 0%, #22c55e 100%);
+}
+
+.progress-bar-fill.complete::after {
+    animation: none;
+}
+
+.progress-bar-fill.error,
+.progress-bar-fill.progress-bar-error {
+    background: linear-gradient(90deg, var(--danger-color, #ef4444) 0%, #dc2626 100%);
+}
+
+.progress-bar-fill.error::after,
+.progress-bar-fill.progress-bar-error::after {
+    animation: none;
+}
+
+.progress-bar-fill.progress-bar-cancelled {
+    background: linear-gradient(90deg, var(--warning-color, #f59e0b) 0%, #d97706 100%);
+}
+
+.progress-bar-fill.progress-bar-cancelled::after {
+    animation: none;
+}
+
+.progress-bar-fill.progress-bar-full {
+    width: 100% !important;
+}
+
+/* =============================================================================
+   PROGRESS DETAILS
+   ============================================================================= */
+
+.progress-details {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.75rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary, #9ca3af);
+}
+
+.progress-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.progress-status-icon {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent-color, #10a37f);
+    animation: progressPulse 1s infinite;
+}
+
+.progress-status-icon.complete {
+    background: #4ade80;
+    animation: none;
+}
+
+.progress-status-icon.error {
+    background: var(--danger-color, #ef4444);
+    animation: none;
+}
+
+.progress-count {
+    font-family: monospace;
+    font-size: 0.85rem;
+}
+
+/* =============================================================================
+   PROGRESS MODAL ACTIONS
+   ============================================================================= */
+
+.progress-modal-actions {
+    display: flex;
+    justify-content: center;
+    margin-top: 1.5rem;
+}
+
+.progress-modal-actions .btn {
+    min-width: 120px;
+}
+
+/* =============================================================================
+   ANIMATIONS
+   ============================================================================= */
+
+@keyframes progressFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes progressFadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+@keyframes progressSlideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+@keyframes progressShimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+@keyframes progressPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+/* =============================================================================
+   RESPONSIVE
+   ============================================================================= */
+
+@media (max-width: 480px) {
+    .progress-modal-content {
+        min-width: unset;
+        width: 95%;
+        padding: 1.5rem;
+    }
+
+    .progress-container {
+        padding: 1rem;
+    }
+
+    .progress-modal-title {
+        font-size: 1.1rem;
+    }
+}

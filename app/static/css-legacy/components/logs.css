@@ -1,0 +1,221 @@
+/**
+ * Logs Module - Styles
+ *
+ * Styles pour le module d'administration des logs.
+ * Remplace les styles inline du fichier content-logs.js
+ */
+
+/* ==========================================================================
+   FILTRES
+   ========================================================================== */
+
+.logs-filters {
+    margin-bottom: 1rem;
+}
+
+.logs-filters .filter-group {
+    margin-top: 0.5rem;
+}
+
+.logs-filters .filter-group label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* ==========================================================================
+   STATISTIQUES
+   ========================================================================== */
+
+.logs-stats-header {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 1rem;
+}
+
+.logs-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.logs-stats-grid .stat-value.danger {
+    color: var(--danger);
+}
+
+.logs-stats-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+}
+
+.logs-cleanup-form {
+    margin-top: 1.5rem;
+}
+
+.logs-cleanup-form .form-row {
+    display: flex;
+    gap: 1rem;
+    align-items: end;
+    flex-wrap: wrap;
+}
+
+.logs-cleanup-form .cleanup-days-input {
+    width: 100px;
+}
+
+/* ==========================================================================
+   CONFIGURATION
+   ========================================================================== */
+
+.logs-config-title {
+    margin-bottom: 1rem;
+}
+
+.logs-config-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+}
+
+.logs-config-footer {
+    margin-top: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.logs-config-footer label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.logs-config-footer .cooldown-unit {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+.logs-config-footer .cooldown-input {
+    width: 80px;
+}
+
+.logs-config-retention-input {
+    width: 80px;
+}
+
+/* ==========================================================================
+   NOTIFICATIONS
+   ========================================================================== */
+
+.logs-notif-title {
+    margin-bottom: 1rem;
+}
+
+.logs-notif-desc {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    margin-bottom: 1.5rem;
+}
+
+.logs-notif-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+}
+
+.logs-notif-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.logs-notif-card-header h5 {
+    margin: 0;
+}
+
+.logs-notif-card-header label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.logs-notif-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+}
+
+.logs-notif-form-grid .full-width {
+    grid-column: 1 / 3;
+}
+
+.logs-notif-form-grid .tls-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+}
+
+.logs-notif-port-input {
+    width: 100px;
+}
+
+.logs-notif-test-btn {
+    margin-top: 0.75rem;
+}
+
+.logs-notif-save {
+    margin-top: 1.5rem;
+}
+
+/* ==========================================================================
+   DÉTAILS LOG (MODAL)
+   ========================================================================== */
+
+.log-detail-value {
+    font-family: monospace;
+    font-size: 0.85rem;
+}
+
+.log-detail-value.small {
+    font-size: 0.8rem;
+}
+
+.log-detail-user-id {
+    font-family: monospace;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.log-detail-context {
+    margin-top: 1rem;
+}
+
+.log-detail-context h4 {
+    margin-bottom: 0.5rem;
+}
+
+.log-detail-context pre {
+    background: var(--bg-secondary);
+    padding: 0.75rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    overflow: auto;
+    max-height: 300px;
+}
+
+.log-detail-user-agent {
+    font-size: 0.8rem;
+}
+
+/* ==========================================================================
+   TABLE LOGS
+   ========================================================================== */
+
+.logs-table-checkbox-col {
+    width: 40px;
+}

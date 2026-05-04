@@ -1,0 +1,58 @@
+# =============================================================================
+# MY-IA V2 — Dépendances Python (FastAPI + Jinja2 + HTMX backend)
+# =============================================================================
+
+# ----- Core FastAPI / Web -----
+fastapi
+uvicorn[standard]==0.32.0
+jinja2==3.1.4
+itsdangerous==2.2.0          # Sessions / CSRF / signed cookies
+python-multipart==0.0.9
+httpx==0.28.1
+
+# ----- Pydantic / Config -----
+pydantic==2.10.4
+pydantic-settings==2.7.1
+python-dotenv==1.0.1
+
+# ----- Auth -----
+fastapi-users[sqlalchemy]==13.0.0
+pwdlib[argon2]>=0.2.0
+bcrypt==4.1.2
+python-jose[cryptography]==3.3.0
+email-validator==2.1.0
+httpx-oauth==0.15.1
+aiosmtplib==3.0.1
+
+# ----- Database -----
+sqlalchemy==2.0.23
+asyncpg==0.29.0
+psycopg2-binary==2.9.9       # Driver synchrone pour scripts shell
+alembic==1.13.0
+
+# ----- RAG / Vector / LLM -----
+chromadb==1.4.1
+
+# ----- Document parsing (RAG ingestion) -----
+pymupdf==1.25.3
+beautifulsoup4==4.12.3
+lxml==5.1.0
+unstructured==0.15.13
+langchain==0.3.7
+langchain-text-splitters==0.3.2
+langchain-community==0.3.5
+python-magic==0.4.27
+python-docx==1.1.2
+openpyxl==3.1.5
+Pillow==10.4.0
+pytesseract==0.3.13
+pdf2image==1.17.0
+markdown==3.7
+
+# ----- Background tasks -----
+apscheduler==3.10.4
+aiofiles>=23.0.0
+
+# ----- Observabilité -----
+prometheus-client==0.20.0
+slowapi==0.1.9

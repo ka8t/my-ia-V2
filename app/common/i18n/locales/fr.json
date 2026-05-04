@@ -1,0 +1,144 @@
+{
+    "_comment": "Traductions francaises pour le backend MY-IA",
+
+    "http_bad_request": "Requete invalide",
+    "http_unauthorized": "Non autorise",
+    "http_forbidden": "Acces interdit",
+    "http_not_found": "Ressource non trouvee",
+    "http_conflict": "Conflit de ressource",
+    "http_internal_error": "Erreur interne du serveur",
+    "http_service_unavailable": "Service temporairement indisponible",
+
+    "error_invalid_api_key": "Cle API invalide",
+    "error_invalid_authentication": "Authentification invalide",
+    "error_token_expired": "Token expire",
+    "error_token_invalid": "Token invalide",
+
+    "error_user_not_found": "Utilisateur non trouve",
+    "error_user_email_exists": "Un utilisateur avec l'email '{email}' existe deja",
+    "error_user_username_exists": "Un utilisateur avec le nom '{username}' existe deja",
+    "error_user_pending": "Votre compte est en attente de validation par un administrateur.",
+    "error_user_rejected": "Votre demande d'inscription a ete refusee.",
+    "error_user_unauthorized": "Acces non autorise.",
+    "error_admin_required": "Acces interdit: Role administrateur requis",
+
+    "error_role_not_found": "Role non trouve",
+    "error_role_id_not_found": "Role {role_id} inexistant",
+
+    "error_collection_not_found": "Collection non trouvee",
+    "error_collection_private_not_found": "Collection privee non trouvee",
+    "error_collection_user_not_found": "Collection utilisateur non trouvee",
+    "error_collection_exists": "La collection '{full_name}' existe deja",
+    "error_collection_chroma_create": "Erreur creation collection ChromaDB",
+    "error_collection_chroma_clear": "Erreur vidage collection",
+
+    "error_source_not_found": "Source non trouvee",
+    "error_source_timeout": "Source {name} timeout",
+    "error_source_error": "Erreur source {name}: {error}",
+
+    "error_document_not_found": "Document non trouve",
+    "error_document_file_not_found": "Fichier non trouve",
+    "error_document_delete": "Erreur lors de la suppression",
+    "error_document_already_deindexed": "Le document est deja desindexe",
+    "error_document_already_indexed": "Le document est deja indexe",
+
+    "error_conversation_mode_not_found": "Mode de conversation non trouve",
+    "error_resource_type_not_found": "Type de ressource non trouve",
+    "error_audit_action_not_found": "Action d'audit non trouvee",
+    "error_preferences_not_found": "Preferences utilisateur non trouvees",
+    "error_message_not_found": "Message non trouve",
+    "error_message_delete": "Echec de la suppression du message",
+
+    "error_password_policy_not_found": "Politique de mot de passe non trouvee",
+    "error_password_policy_name_not_found": "Politique de mot de passe '{name}' non trouvee",
+
+    "error_country_not_found": "Pays '{code}' non trouve",
+    "error_country_inactive": "Pays '{code}' non trouve ou inactif",
+    "error_city_not_found": "Ville ID {city_id} non trouvee",
+    "error_current_password_incorrect": "Mot de passe actuel incorrect",
+    "error_password_policy_violated": "Le nouveau mot de passe ne respecte pas la politique",
+    "error_password_recently_used": "Ce mot de passe a deja ete utilise recemment",
+
+    "error_file_type_not_allowed": "Type de fichier non autorise: {file_type}",
+    "error_file_type_not_allowed_reason": "Type de fichier non autorise: {file_type} ({reason})",
+
+    "error_session_invalid": "session_id invalide: {session_id}",
+    "error_chroma_not_initialized": "Client ChromaDB non initialise",
+    "error_collection_get_create": "Erreur creation/recuperation collection '{collection_name}': {error}",
+
+    "error_email_verify_username": "Erreur lors de la verification du username: {error}",
+    "error_email_already_verified": "Votre email est deja verifie.",
+    "error_debug_disabled": "Mode debug desactive",
+    "error_debug_disabled_env": "Endpoints debug desactives. Activez-les depuis le panneau admin (Systeme > Debug).",
+
+    "error_username_exists": "REGISTER_USERNAME_ALREADY_EXISTS",
+
+    "success_email_verification_sent": "Email de verification envoye.",
+    "success_password_changed": "Mot de passe change avec succes",
+    "success_file_indexed": "Fichier '{filename}' indexe avec succes ({chunks} chunks)",
+
+    "password_min_length": "Le mot de passe doit contenir au moins {min_length} caracteres",
+    "password_max_length": "Le mot de passe ne doit pas depasser {max_length} caracteres",
+    "password_require_uppercase": "Le mot de passe doit contenir au moins une majuscule",
+    "password_require_lowercase": "Le mot de passe doit contenir au moins une minuscule",
+    "password_require_digit": "Le mot de passe doit contenir au moins un chiffre",
+    "password_require_special": "Le mot de passe doit contenir au moins un caractere special ({special_chars})",
+    "password_history_check": "Ce mot de passe a deja ete utilise recemment. Choisissez un mot de passe different des {history_count} derniers.",
+
+    "password_suggest_add_chars": "Ajoutez {diff} caractere(s) supplementaire(s)",
+    "password_suggest_uppercase": "Ajoutez une lettre majuscule (A-Z)",
+    "password_suggest_lowercase": "Ajoutez une lettre minuscule (a-z)",
+    "password_suggest_digit": "Ajoutez un chiffre (0-9)",
+    "password_suggest_special": "Ajoutez un caractere special ({special_chars})",
+    "password_suggest_length": "Un mot de passe de 12+ caracteres est recommande",
+    "password_suggest_no_repeat": "Evitez les caracteres repetes (aaa, 111)",
+    "password_suggest_no_sequence_digits": "Evitez les suites de chiffres (123, 456)",
+    "password_suggest_no_sequence_letters": "Evitez les suites de lettres (abc, xyz)",
+    "password_no_policy_found": "Aucune politique trouvee, utilisation des valeurs par defaut",
+
+    "email_subject_verify": "Verifiez votre adresse email - {app_name}",
+    "email_subject_reset": "Reinitialisation de mot de passe - {app_name}",
+    "email_subject_welcome": "Bienvenue sur {app_name} !",
+    "email_subject_pending": "Inscription en attente de validation - {app_name}",
+    "email_subject_rejected": "Inscription refusee - {app_name}",
+    "email_subject_new_registration": "Nouvelle inscription en attente - {user_email}",
+
+    "email_title_verify": "Verifiez votre email",
+    "email_title_reset": "Reinitialisation de mot de passe",
+    "email_title_welcome": "Bienvenue sur {app_name} !",
+    "email_title_pending": "Inscription en attente",
+    "email_title_rejected": "Inscription refusee",
+
+    "email_body_verify": "Bonjour {username}, veuillez verifier votre adresse email.",
+    "email_body_reset": "Bonjour {username}, vous avez demande une reinitialisation de mot de passe.",
+    "email_body_welcome": "Bonjour {username}, votre compte est maintenant verifie.",
+    "email_body_pending": "Bonjour {username}, votre inscription est en attente de validation.",
+    "email_body_rejected": "Bonjour {username}, votre demande d'inscription a ete refusee.",
+
+    "email_btn_verify": "Verifier mon email",
+    "email_btn_reset": "Reinitialiser mon mot de passe",
+    "email_btn_login": "Se connecter",
+    "email_btn_default": "Cliquez ici",
+
+    "email_text_verify": "Bonjour {username},\n\nVeuillez verifier votre adresse email en cliquant sur le lien suivant :\n{verification_url}\n\nCe lien expire dans 24 heures.\n\nSi vous n'avez pas cree de compte {app_name}, ignorez cet email.\n\nL'equipe {app_name}",
+    "email_text_reset": "Bonjour {username},\n\nVous avez demande une reinitialisation de votre mot de passe.\nCliquez sur le lien suivant pour definir un nouveau mot de passe :\n{reset_url}\n\nCe lien expire dans 1 heure.\n\nSi vous n'avez pas fait cette demande, ignorez cet email.\n\nL'equipe {app_name}",
+    "email_text_welcome": "Bonjour {username},\n\nBienvenue sur {app_name} ! Votre compte a ete verifie avec succes.\n\nVous pouvez maintenant vous connecter et commencer a utiliser l'application.\n\nL'equipe {app_name}",
+    "email_text_pending": "Bonjour {username},\n\nVotre demande d'inscription sur {app_name} a bien ete recue.\nElle est actuellement en cours d'examen par notre equipe.\n\nVous recevrez un email des que votre compte sera valide.\nCe processus prend generalement 24 a 48 heures.\n\nL'equipe {app_name}",
+    "email_text_rejected": "Bonjour {username},\n\nNous avons le regret de vous informer que votre demande d'inscription sur {app_name} n'a pas ete acceptee.\n\nMotif du refus : {reason}\n\nSi vous pensez qu'il s'agit d'une erreur, vous pouvez nous contacter.\n\nL'equipe {app_name}",
+
+    "email_admin_new_registration_title": "Nouvelle inscription en attente de validation:",
+    "email_admin_new_registration_email": "Email: {user_email}",
+    "email_admin_new_registration_username": "Username: {username}",
+    "email_admin_new_registration_date": "Date: {registration_date}",
+    "email_admin_new_registration_method": "Methode: {registration_method}",
+    "email_admin_new_registration_verified": "Email verifie: {verified}",
+    "email_admin_new_registration_verified_yes": "Oui",
+    "email_admin_new_registration_verified_no": "Non",
+    "email_admin_new_registration_action": "Connectez-vous au dashboard admin pour approuver ou refuser cette inscription.",
+
+    "email_footer_sent_by": "Cet email a ete envoye par {app_name}.",
+    "email_footer_ignore": "Si vous n'avez pas demande cet email, ignorez-le.",
+
+    "prompt_chatbot_default": "Tu es un assistant IA serviable.",
+    "prompt_assistant_default": "Tu es un assistant oriente taches."
+}

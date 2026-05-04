@@ -1,0 +1,30 @@
+<div class="fixtures-section">
+    <h3>🧪 Validation des Fixtures</h3>
+    <div class="fixtures-summary {{validity_class}}">
+        <span class="fixtures-icon">{{validity_icon}}</span>
+        <div>
+            <strong>{{validity_text}}</strong>
+            <div class="fixtures-subtitle">{{vulnerable_detected}}/{{vulnerable_total}} vulnérables détectés, {{clean_passed}}/{{clean_total}} clean validés</div>
+        </div>
+    </div>
+    <div class="fixtures-grid">
+        <div class="fixture-stat">
+            <div class="fixture-stat-value true-positive">{{vulnerable_detected}}</div>
+            <div class="fixture-stat-label">True Positives</div>
+        </div>
+        <div class="fixture-stat">
+            <div class="fixture-stat-value true-negative">{{clean_passed}}</div>
+            <div class="fixture-stat-label">True Negatives</div>
+        </div>
+        <div class="fixture-stat">
+            <div class="fixture-stat-value false-negative">{{vulnerable_missed}}</div>
+            <div class="fixture-stat-label">False Negatives</div>
+        </div>
+        <div class="fixture-stat">
+            <div class="fixture-stat-value false-positive">{{clean_false_positive}}</div>
+            <div class="fixture-stat-label">False Positives</div>
+        </div>
+    </div>
+    {{details}}
+    {{fixtures_list}}
+</div>

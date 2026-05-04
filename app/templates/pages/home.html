@@ -1,0 +1,24 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}MY-IA V2 — Bootstrap{% endblock %}
+
+{% block content %}
+<main style="max-width: 720px; margin: 4rem auto; font-family: system-ui, sans-serif; padding: 0 1.5rem; line-height: 1.6;">
+  <h1 style="font-size: 2rem; margin-bottom: 0.5rem;">MY-IA V2 🐍</h1>
+  <p style="color: #666; margin-bottom: 2rem;">Stack 100% Python — FastAPI + Jinja2 + HTMX</p>
+
+  <section style="background: #f5f5f7; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
+    <h2 style="font-size: 1.1rem; margin-bottom: 0.75rem;">Phase 0 — Bootstrap</h2>
+    <p>Squelette du projet en place. La logique métier sera branchée en Phase 1.</p>
+  </section>
+
+  <section style="background: #f5f5f7; padding: 1.5rem; border-radius: 8px;">
+    <h2 style="font-size: 1.1rem; margin-bottom: 0.75rem;">Endpoints disponibles</h2>
+    <ul style="margin: 0; padding-left: 1.25rem;">
+      <li><a href="/health">/health</a> — Santé de l'app</li>
+      <li><a href="/docs">/docs</a> — OpenAPI Swagger UI</li>
+      <li><a href="/redoc">/redoc</a> — OpenAPI ReDoc</li>
+    </ul>
+  </section>
+</main>
+{% endblock %}

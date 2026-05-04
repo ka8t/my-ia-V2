@@ -1,0 +1,185 @@
+/**
+ * MessageModal Component Styles
+ *
+ * Styles pour la modal de message partagee (succes, erreur, warning, info)
+ */
+
+/* =============================================================================
+   OVERLAY
+   ============================================================================= */
+
+.mm-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.mm-overlay.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* =============================================================================
+   CONTAINER
+   ============================================================================= */
+
+.mm-container {
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-xl, 16px);
+    padding: 32px 40px;
+    max-width: 420px;
+    width: 90%;
+    text-align: center;
+    box-shadow: var(--shadow-lg, 0 10px 40px rgba(0, 0, 0, 0.2));
+    transform: scale(0.9);
+    transition: transform 0.2s ease;
+}
+
+.mm-overlay.visible .mm-container {
+    transform: scale(1);
+}
+
+/* =============================================================================
+   ICON
+   ============================================================================= */
+
+.mm-icon {
+    margin-bottom: 16px;
+}
+
+.mm-icon svg {
+    width: 48px;
+    height: 48px;
+}
+
+/* Success */
+.mm-overlay.mm-success .mm-icon svg {
+    stroke: var(--success-color, #10b981);
+}
+
+/* Error */
+.mm-overlay.mm-error .mm-icon svg {
+    stroke: var(--danger-color, #ef4444);
+}
+
+/* Warning */
+.mm-overlay.mm-warning .mm-icon svg {
+    stroke: var(--warning-color, #f59e0b);
+}
+
+/* Info */
+.mm-overlay.mm-info .mm-icon svg {
+    stroke: var(--accent-color, #3b82f6);
+}
+
+/* =============================================================================
+   TITLE
+   ============================================================================= */
+
+.mm-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 12px 0;
+}
+
+/* =============================================================================
+   MESSAGE
+   ============================================================================= */
+
+.mm-message {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin: 0 0 8px 0;
+    line-height: 1.5;
+}
+
+/* =============================================================================
+   DETAILS
+   ============================================================================= */
+
+.mm-details {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin: 0 0 20px 0;
+    line-height: 1.5;
+    padding: 12px;
+    background-color: var(--bg-secondary);
+    border-radius: var(--radius-md, 8px);
+}
+
+/* =============================================================================
+   BUTTON
+   ============================================================================= */
+
+.mm-button {
+    padding: 12px 32px;
+    background-color: var(--accent-color);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md, 8px);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    margin-top: 8px;
+}
+
+.mm-button:hover {
+    background-color: var(--accent-hover);
+}
+
+/* Type-specific button colors */
+.mm-overlay.mm-success .mm-button {
+    background-color: var(--success-color, #10b981);
+}
+
+.mm-overlay.mm-success .mm-button:hover {
+    background-color: #059669;
+}
+
+.mm-overlay.mm-error .mm-button {
+    background-color: var(--danger-color, #ef4444);
+}
+
+.mm-overlay.mm-error .mm-button:hover {
+    background-color: #dc2626;
+}
+
+.mm-overlay.mm-warning .mm-button {
+    background-color: var(--warning-color, #f59e0b);
+}
+
+.mm-overlay.mm-warning .mm-button:hover {
+    background-color: #d97706;
+}
+
+/* =============================================================================
+   RESPONSIVE
+   ============================================================================= */
+
+@media (max-width: 480px) {
+    .mm-container {
+        padding: 24px;
+        margin: 16px;
+    }
+
+    .mm-title {
+        font-size: 18px;
+    }
+
+    .mm-message {
+        font-size: 13px;
+    }
+}

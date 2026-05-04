@@ -1,143 +1,154 @@
-# MY-IA — Règles de Développement
+# MY-IA V2 — Règles de Développement
 
 > Appliquer à chaque génération. Langue : Français.
 
 ## Contexte
-Chatbot RAG (FastAPI, PostgreSQL/SQLAlchemy 2.0, ChromaDB, Ollama, JWT). MacBook M1, Docker.
+Refonte 100% Python de [my-ia](https://github.com/ka8t/my-ia). Stack : FastAPI + Jinja2 + HTMX + Alpine.js + SQLAlchemy 2.0 async + PostgreSQL + ChromaDB + Ollama/llama.cpp + JWT (API) / cookies session (HTML). MacBook M1, Docker.
+
+**Origine** : tag `v1.0.0-js-final` sur `ka8t/my-ia`.
 
 ## Règles Fondamentales
 - **Validation** : Expliquer + lister fichiers → attendre "oui/ok/valide"
-- **Tests** : Executer après chaque modif jusqu'à succès, sans demander
+- **Tests** : Exécuter après chaque modif jusqu'à succès, sans demander
 - **Code** : Afficher le code complet généré
-- **Commits** : Auteur KL, jamais de référence Claude/Co-Authored-By. **TOUJOURS demander avant de commit** (ne jamais commiter automatiquement)
+- **Commits** : Auteur KL, jamais de référence Claude/Co-Authored-By. **TOUJOURS demander avant de commit**
 
 ## Architecture
+
 ```
 app/
-├── main.py              # MINIMAL (pas de logique métier)
-├── core/                # Config, deps
-├── common/              # Utils, exceptions, schemas partagés
-└── features/[feature]/  # Router → Service → Repository → Schemas
+├── main.py               # MINIMAL — montage routers, middleware, lifespan
+├── core/                 # config, deps, bootstrap, logging
+├── common/               # llm, rag, storage, crypto, i18n, utils, schemas
+├── features/             # Logique métier (Service/Repository/Schemas par feature)
+├── api/v1/               # Routes JSON (clients tiers, mobile)
+├── web/                  # Routes HTML (Jinja2 + HTMX)
+├── templates/            # layouts/, pages/, partials/, macros/
+├── static/               # css, js (htmx, alpine), icons, images
+├── locales/              # fr.json, en.json (port direct)
+└── alembic/versions/     # Migrations
 ```
-**Interdit** : Logique métier dans `main.py` ou `router.py`.
-**Réutilisation API** : Toujours vérifier si une API ou une fonction similaire n'existe pas déjà (via `grep` ou exploration des dossiers `features/`) avant d'implémenter une nouvelle demande.
+
+**Interdit** :
+- Logique métier dans `main.py`, `api/v1/*.py`, `web/*.py` → tout passe par `features/[feature]/service.py`
+- Réécrire un service déjà présent dans `app/common/` ou `features/[feature]/` (toujours `grep` avant)
+
+## Code Backend
+- **Async/Await** : Typage strict + `async/await` systématique
+- **Opérations lourdes** (embedding, indexation) → `BackgroundTasks` ou queue, jamais bloquer la requête
+- **Logging** : Chaque `try/except` dans un service doit loguer avec contexte précis
+  *Ex : `logger.error(f"Erreur création corpus {name}: {e}")`*
+- **Sécurité** : Toute route POST/PUT/DELETE doit valider la propriété de la ressource ou les droits `superuser`/`admin`
+- **API versioning** : Toutes les routes JSON sous `/api/v1/`
+
+## Frontend Jinja2 / HTMX (V2)
+
+**Règle d'or** : tout HTML rendu **côté serveur** via Jinja. Aucune génération de DOM en JS.
+
+### Structure templates
+```
+templates/
+├── layouts/{base,auth,user,admin}.html
+├── pages/{auth,chat,documents,admin}/*.html       # Pages complètes
+├── partials/                                       # Fragments rendus par HTMX
+└── macros/{card,form,table,icon,badge,toast}.html # Composants mutualisés
+```
+
+### Règles obligatoires
+- **Macros mutualisées** : avant de créer un nouveau template, vérifier `templates/macros/`
+- **Pas de HTML dupliqué** entre pages — extraire en macro ou partial
+- **HTMX pour les updates** : `hx-get`, `hx-post`, `hx-swap`, `hx-target`
+- **Alpine.js** uniquement pour : toggles, dropdowns, modals locaux (pas de state global)
+- **CSRF** : token automatique sur tous les `hx-post`/`hx-put`/`hx-delete` via middleware
+- **SVG icons** : macro `{{ icon('nom') }}` lisant `app/static/icons/*.svg`
+
+### i18n
+- Locales : `app/locales/{fr,en}.json` (port direct depuis my-ia)
+- Helper Jinja : `{{ t('cle') }}` (fonction injectée dans le contexte)
+- **TOUS les textes** affichés à l'utilisateur via `t()`, jamais de hardcode
+
+### Notifications (toasts)
+- **Persistance** : Warning et Error → persistants. Success/Info → temporaires (auto-dismiss CSS)
+- **Traduction obligatoire** via `t('cle')`
+- **DRY** : vérifier `app/locales/` avant d'ajouter une clé doublon
+
+### Tableaux
+- Tout tableau via macro `{{ table(headers, rows) }}` doit être triable
+- Tri serveur : `hx-get="?sort=col"` → re-render du tbody
+
+| Interdit | Utiliser |
+|----------|----------|
+| HTML inline dans le code Python | Templates Jinja + macros |
+| Manipulation DOM JS pour rendu | `hx-get` → partial Jinja |
+| Texte hardcodé | `{{ t('cle') }}` |
+| `style="..."` dans templates | Classes CSS dans `app/static/css/` |
+| SVG inline copié-collé | `{{ icon('nom') }}` |
+
+## Auth Web
+- **Cookies HttpOnly** signés (itsdangerous) via `SessionMiddleware`
+- **CSRF token** sur toutes les actions de modification (POST/PUT/DELETE) côté HTML
+- **JWT** réservé aux clients API (`/api/v1/*`)
+- `fastapi-users` gère les deux
+
+## Streaming Chat
+- **SSE via HTMX** (`hx-ext="sse"`, `sse-connect`, `sse-swap`)
+- Endpoint backend : `EventSourceResponse` (sse-starlette ou natif)
+- Token-by-token streaming RAG vers `partials/chat/message.html`
+
+## PostgreSQL & Migrations
+- Style : `snake_case`, pas de tirets, pas de mots réservés
+- **Migrations** : Toute modification de schéma → script Alembic dans `app/alembic/versions/`
+- BDD V2 : `my_ia_v2_db` (séparée de my-ia v1)
+
+## Corpus — Actions en Cascade
+Un **corpus** regroupe **documents** et **sources**. Toute fonctionnalité (réindexation, annulation) doit :
+1. S'appliquer aux deux types avec code partagé
+2. Supporter actions en cascade : action sur corpus → tous ses éléments
+3. Utiliser `app/common/utils/reindex.py` (`ReindexManager`)
 
 ## Git & Docker
 - `main` = Production (VPS), jamais de dev direct ni `--force`
 - `dev` = Développement, merger vers main quand testé
 - Rebuild uniquement si : `requirements.txt`, `Dockerfile`, `docker-compose.yml`
-- **Commits** : Ne JAMAIS commit sans demande explicite de l'utilisateur
-- **Déploiement** : Ne JAMAIS déployer (`./scripts/deploy.sh remote`) sans demande explicite de l'utilisateur
-- **audit.config.json** : Ne JAMAIS modifier ce fichier sans demande explicite de l'utilisateur
-
-## Code Backend
-- **Async/Await** : Typage strict + `async/await` systématique.
-- **Opérations Lourdes** : Les tâches comme l'embedding ou l'indexation doivent obligatoirement être asynchrones (BackgroundTasks ou queue) pour ne pas bloquer l'API.
-- **Logging** : Chaque `try/except` dans un service doit loguer l'erreur avec un contexte précis.
-  *Ex: `logger.error(f"Erreur lors de la création du corpus {name}: {e}")`*
-- **Sécurité** : Toute route de modification (POST, PUT, DELETE) doit valider la propriété de la ressource ou les droits `superuser`/`admin`.
-
-## PostgreSQL & Migrations
-- Style : `snake_case`, pas de tirets, pas de mots réservés.
-- **Migrations** : Toute modification de schéma doit impérativement s'accompagner d'un script de migration Alembic dans `app/alembic/versions/`.
-
-## Workflow Type : Upload & Indexation
-```
-  ┌─────────┐    ┌─────────┐    ┌─────────┐    ┌─────────┐    ┌─────────┐
-  │  Admin  │    │ Nginx   │    │ FastAPI │    │ Storage │    │ Ollama  │
-  │ Browser │    │ :8081   │    │ :8080   │    │ (disk)  │    │ :11434  │
-  └────┬────┘    └────┬────┘    └────┬────┘    └────┬────┘    └────┬────┘
-       │              │              │              │              │
-       │ 1. POST /upload/v2/async (multipart)       │              │
-       │──HTTPS:8081─▶│──HTTP:8080──▶│              │              │
-       │              │              │──save file──▶│              │
-       │              │              │──INSERT doc──▶PostgreSQL    │
-       │◀{doc_id, status:"pending"}──│              │              │
-       │              │              │              │              │
-       │              │              │ 2. Background task          │
-       │              │              │──parse PDF───▶│              │
-       │              │              │◀─text chunks──│              │
-       │              │              │              │              │
-       │              │              │ 3. Generate embeddings      │
-       │              │              │─────────────────────────────▶│
-       │              │              │◀─vectors────────────────────│
-       │              │              │              │              │
-       │              │              │ 4. Store in ChromaDB        │
-       │              │              │──────────────▶ChromaDB:8000 │
-       │              │              │              │              │
-       │ 5. GET /documents/{id}/reindex/status      │              │
-       │──polling────▶│─────────────▶│              │              │
-       │◀{progress:75}│◀─────────────│              │              │
-```
-
-## Frontend (UI-SHARED) & Rendu
-**Règle d'or : Tout code de rendu d'affichage doit impérativement utiliser le système de template et le système de render.**
-
-**Mutualisation UI** :
-- Les templates doivent être **communs/partagés au maximum**.
-- Vérifier systématiquement si un template existant (dans `UI-SHARED/js/Templates.js`) peut être utilisé ou adapté avant d'en créer un nouveau.
-
-**Tableaux & UX** :
-- Tout tableau généré via template doit pouvoir être **trié** sur les colonnes pertinentes (hors actions/sélection).
-
-**Notifications (Toasts) & i18n** :
-- **Persistance** : Les toasts de type **Warning** ou **Error** doivent être **persistants** (ne pas disparaître automatiquement). Les types **Success** ou **Info** peuvent être temporaires.
-- **Traduction (Obligatoire)** : **TOUS** les toasts (Success, Info, Warning, Error) doivent être systématiquement traduits via `t('cle')`. Aucun texte hardcodé n'est autorisé.
-- **DRY Toasts** : Éviter la duplication de clés de traduction pour des messages identiques (ex: "Erreur lors de la sauvegarde"). Vérifier `UI-SHARED/locales/` avant d'ajouter une clé.
-
-| Interdit | Utiliser |
-|----------|----------|
-| HTML inline / Manipulation DOM directe | `Templates.card()`, `Templates.render()` |
-| `style=""` | Classes CSS (`UI-SHARED/css/components/`) |
-| SVG inline | `Icons.nomIcone()` |
-| Texte hardcodé | `t('cle')` — `UI-SHARED/locales/{fr,en}.json` |
-
-## Corpus — Actions en Cascade
-Un **corpus** regroupe des **documents** et **sources**. Toute fonctionnalité (réindexation, annulation, etc.) doit :
-1. **S'appliquer aux deux types** (documents ET sources) avec code partagé
-2. **Supporter les actions en cascade** : action sur corpus → appliquée à tous ses éléments
-3. **Utiliser `app/common/utils/reindex.py`** : `ReindexManager` centralise progression et annulation
+- **Commits** : Ne JAMAIS commit sans demande explicite
+- **Déploiement** : Ne JAMAIS déployer sans demande explicite
+- Préfixe Docker : `my_ia_v2` (cohabitation avec my-ia v1 possible)
 
 ## Tests
 ```bash
 docker-compose exec app python -m pytest tests/[module]/ -v --tb=short
 ```
-- Docker obligatoire (SQLite incompatible UUID).
-- Fixtures : `@pytest_asyncio.fixture`.
-- Jointures : `.unique().scalar_one_or_none()`.
-- **Avant commit** : Créer les tests unitaires manquants pour le code modifié/ajouté, puis exécuter tous les tests concernés jusqu'à succès.
-- **Structure** : Tests dans `tests/[module]/test_[feature].py` (ex: `tests/admin/test_admin_bulk_users.py`).
+- Docker obligatoire (SQLite incompatible UUID)
+- Fixtures : `@pytest_asyncio.fixture`
+- Jointures : `.unique().scalar_one_or_none()`
+- **E2E** : Playwright (vrai navigateur, HTMX/Alpine évalués)
+- **Avant commit** : créer les tests unitaires manquants pour le code modifié, puis exécuter
+
+### Structure
+```
+tests/
+├── unit/              # Logique pure (services, utils)
+├── integration/       # Routes API + DB
+└── e2e/               # Playwright — pages HTML rendues
+```
 
 ## Documentation & Scripts
-- **Format** : HTML (pas Markdown) dans `docs/` avec `docs/assets/doc-style.css`.
-- **Plans** : `docs/Plans/PLAN-*.html` (en cours) ou `docs/Plans/Closed/` (terminés).
-- **OBLIGATOIRE pour les Plans HTML** : Toujours utiliser les classes CSS de `docs/assets/doc-style.css`. Ne JAMAIS créer de HTML sans styles.
-  ```html
-  <link rel="stylesheet" href="../assets/doc-style.css">
-  ```
-  **Classes requises** :
-  - `.header` + `.page` : En-tête avec icône et métadonnées
-  - `.toc` + `.toc-grid` : Table des matières
-  - `.section` + `.section-header` : Chaque section
-  - `.card`, `.cards` : Cartes d'information
-  - `.flow`, `.flow-step` : Diagrammes de flux horizontaux
-  - `.vflow`, `.vflow-step` : Timeline verticale
-  - `.callout`, `.callout-info/warning/danger` : Alertes
-  - `.checklist` : Listes de tâches
-  - `.feature-list` : Listes avec bordure accent
-  - `.badge-*` : Badges colorés
-- **Outils** : `./scripts/psql.sh`, `./scripts/start.sh`, `./scripts/stop.sh`.
+- **Format** : HTML (pas Markdown) dans `docs/` avec `docs/assets/doc-style.css`
+- **Plans** : `docs/Plans/PLAN-*.html` (en cours) ou `docs/Plans/Closed/` (terminés)
+- **OBLIGATOIRE pour les Plans HTML** : utiliser les classes CSS de `docs/assets/doc-style.css` (header, page, toc, section, card, callout, badge-*, etc.)
+- **Outils** : `./scripts/psql.sh`, `./scripts/start.sh`, `./scripts/stop.sh`, `./scripts/reset-password.sh`
 
 ## Checklist Pré-Commit
-- [ ] API ou fonction existante vérifiée avant implémentation.
-- [ ] Template existant vérifié et mutualisé.
-- [ ] Rendu d'affichage via système de template et render uniquement.
-- [ ] Tableaux triables (hors actions/sélection).
-- [ ] Toasts Warning/Error persistants.
-- [ ] TOUS les toasts traduits via i18n (sans doublons de clés).
-- [ ] Tâches lourdes en BackgroundTasks / Async.
-- [ ] Migration Alembic créée si modification de modèle.
-- [ ] Logs détaillés dans les blocs `try/except`.
-- [ ] Vérification des droits (owner/admin) on modification routes.
-- [ ] **Tests unitaires créés/mis à jour** pour le code modifié.
-- [ ] **Tests exécutés et passants** avant commit.
+- [ ] API ou fonction existante vérifiée avant implémentation (grep `app/common/`, `app/features/`)
+- [ ] Macro/partial Jinja existant vérifié et mutualisé avant création
+- [ ] Rendu HTML côté serveur uniquement (pas de DOM JS)
+- [ ] Tableaux triables côté serveur
+- [ ] Toasts Warning/Error persistants
+- [ ] TOUS les textes traduits via `t()` (sans doublons de clés)
+- [ ] Tâches lourdes en BackgroundTasks / Async
+- [ ] Migration Alembic créée si modification de modèle
+- [ ] Logs détaillés dans les blocs `try/except`
+- [ ] Vérification des droits (owner/admin) sur routes de modification
+- [ ] CSRF token vérifié sur les routes HTML POST/PUT/DELETE
+- [ ] Tests unitaires + E2E créés/mis à jour
+- [ ] Tests exécutés et passants

@@ -1,0 +1,34 @@
+<div class="section comparison-section" id="section-comparison">
+    <div class="section-header" onclick="toggleSection('section-comparison')">
+        <span class="section-icon">📊</span>
+        <h2>Comparaison avec baseline</h2>
+        <span class="badge badge-info">{{baseline_date}}</span>
+        <span class="chevron">▼</span>
+    </div>
+    <div class="section-content">
+        <div class="comparison-summary">
+            <div class="comparison-stat">
+                <div class="comparison-label">HIGH</div>
+                <div class="comparison-values">{{baseline_high}} → {{total_high}} {{delta_high}}</div>
+            </div>
+            <div class="comparison-stat">
+                <div class="comparison-label">MEDIUM</div>
+                <div class="comparison-values">{{baseline_medium}} → {{total_medium}} {{delta_medium}}</div>
+            </div>
+            <div class="comparison-stat">
+                <div class="comparison-label">LOW</div>
+                <div class="comparison-values">{{baseline_low}} → {{total_low}} {{delta_low}}</div>
+            </div>
+        </div>
+        <div class="comparison-details">
+            <div class="comparison-column new-issues">
+                <h3>➕ Nouveaux problèmes ({{new_count}})</h3>
+                {{new_items}}
+            </div>
+            <div class="comparison-column resolved-issues">
+                <h3>✅ Problèmes résolus ({{resolved_count}})</h3>
+                {{resolved_items}}
+            </div>
+        </div>
+    </div>
+</div>

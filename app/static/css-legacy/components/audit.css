@@ -1,0 +1,155 @@
+/**
+ * Audit Module - Styles
+ *
+ * Styles pour le module audit/logs.
+ * Remplace les styles inline du fichier audit.js
+ */
+
+/* ==========================================================================
+   FILTERS
+   ========================================================================== */
+
+.audit-filter-username {
+    min-width: 200px;
+}
+
+/* ==========================================================================
+   CODE & DETAILS
+   ========================================================================== */
+
+.audit-code-small {
+    font-size: 0.75rem;
+}
+
+.audit-user-agent {
+    word-break: break-all;
+    font-size: 0.8rem;
+}
+
+.audit-details-pre {
+    margin: 0;
+    white-space: pre-wrap;
+    font-size: 0.8rem;
+    background: var(--bg-tertiary);
+    padding: 0.5rem;
+    border-radius: 4px;
+}
+
+/* ==========================================================================
+   CONVERSATION DETAILS IN LOG VIEW
+   ========================================================================== */
+
+.audit-conv-section-title {
+    margin: 1rem 0 0.5rem 0;
+    color: var(--text-secondary);
+    border-top: 1px solid var(--border-color);
+    padding-top: 1rem;
+}
+
+.audit-conv-info {
+    background: var(--bg-secondary);
+    padding: 0.75rem;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+}
+
+.audit-conv-messages {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.audit-no-content {
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+/* ==========================================================================
+   MESSAGE DISPLAY
+   ========================================================================== */
+
+.audit-message {
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    border-radius: 6px;
+    border-left: 3px solid;
+}
+
+.audit-message-user {
+    background: var(--bg-tertiary);
+    border-left-color: var(--text-secondary);
+}
+
+.audit-message-assistant {
+    background: var(--primary-light, rgba(59, 130, 246, 0.1));
+    border-left-color: var(--primary-color);
+}
+
+.audit-message-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+}
+
+.audit-message-sender {
+    font-weight: 600;
+}
+
+.audit-message-date {
+    color: var(--text-secondary);
+}
+
+.audit-message-content {
+    white-space: pre-wrap;
+    font-size: 0.9rem;
+}
+
+.audit-message-sources {
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+/* ==========================================================================
+   EXPORTS SECTION
+   ========================================================================== */
+
+.exports-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+
+.export-card {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.5rem;
+}
+
+.export-card h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.1rem;
+    color: var(--text-primary);
+}
+
+.export-card p {
+    margin: 0 0 1rem 0;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.export-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.export-actions select {
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+}

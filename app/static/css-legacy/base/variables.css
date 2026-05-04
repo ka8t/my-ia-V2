@@ -1,0 +1,182 @@
+/**
+ * Variables CSS - Theme et configuration globale
+ *
+ * Ce fichier contient toutes les variables CSS utilisees dans l'application.
+ * Modifier ces valeurs pour personnaliser le theme.
+ */
+
+:root {
+    /* Couleurs de fond */
+    --bg-primary: #ffffff;
+    --bg-secondary: #f7f7f8;
+    --bg-tertiary: #ececf1;
+
+    /* Couleurs de texte */
+    --text-primary: #000000;
+    --text-secondary: #6e6e80;
+
+    /* Couleurs d'interface */
+    --border-color: #e5e5e5;
+    --accent-color: #10a37f;
+    --accent-hover: #0d8c6d;
+    --danger-color: #ef4444;
+    --warning-color: #f59e0b;
+    --info-color: #3b82f6;
+
+    /* Couleurs specifiques */
+    --user-bg: #f7f7f8;
+    --assistant-bg: #ffffff;
+    --code-bg: #f5f5f5;
+    --code-text: #1f2937;
+
+    /* Dimensions */
+    --sidebar-width: 280px;
+
+    /* Rayons de bordure */
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+
+    /* Transitions */
+    --transition-fast: 0.2s;
+    --transition-normal: 0.3s;
+
+    /* Ombres */
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
+    --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+/* Theme sombre */
+[data-theme="dark"] {
+    --bg-primary: #212121;
+    --bg-secondary: #2f2f2f;
+    --bg-tertiary: #3f3f3f;
+    --text-primary: #ececf1;
+    --text-secondary: #9b9ba5;
+    --border-color: #4d4d4d;
+    --user-bg: #2f2f2f;
+    --assistant-bg: #212121;
+    --code-bg: #282c34;
+    --code-text: #abb2bf;
+}
+
+/* ============================================
+   THÈMES PERSONNALISÉS
+   ============================================ */
+
+/* Corporate - Bleu professionnel */
+[data-theme="corporate"] {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f0f4f8;
+    --bg-tertiary: #e2e8f0;
+    --accent-color: #0066cc;
+    --accent-hover: #0052a3;
+    --border-color: #cbd5e1;
+    --user-bg: #e0e7ef;
+    --info-color: #0066cc;
+}
+
+/* Nature - Vert nature */
+[data-theme="nature"] {
+    --bg-primary: #fafdfb;
+    --bg-secondary: #ecfdf5;
+    --bg-tertiary: #d1fae5;
+    --accent-color: #059669;
+    --accent-hover: #047857;
+    --border-color: #a7f3d0;
+    --user-bg: #d1fae5;
+}
+
+/* Sunset - Orange chaleureux */
+[data-theme="sunset"] {
+    --bg-primary: #fffbf5;
+    --bg-secondary: #fff7ed;
+    --bg-tertiary: #ffedd5;
+    --accent-color: #ea580c;
+    --accent-hover: #c2410c;
+    --border-color: #fed7aa;
+    --user-bg: #ffedd5;
+    --warning-color: #ea580c;
+}
+
+/* Royal - Violet élégant */
+[data-theme="royal"] {
+    --bg-primary: #faf5ff;
+    --bg-secondary: #f3e8ff;
+    --bg-tertiary: #e9d5ff;
+    --accent-color: #7c3aed;
+    --accent-hover: #6d28d9;
+    --border-color: #d8b4fe;
+    --user-bg: #e9d5ff;
+    --info-color: #7c3aed;
+}
+
+/* ============================================
+   COMBINAISONS THÈME + MODE SOMBRE
+   ============================================ */
+
+/* Corporate Dark */
+[data-theme="corporate-dark"] {
+    --bg-primary: #212121;
+    --bg-secondary: #2f2f2f;
+    --bg-tertiary: #3f3f3f;
+    --text-primary: #ececf1;
+    --text-secondary: #9b9ba5;
+    --border-color: #4d4d4d;
+    --accent-color: #3b82f6;
+    --accent-hover: #2563eb;
+    --user-bg: #2f2f2f;
+    --assistant-bg: #212121;
+    --code-bg: #282c34;
+    --code-text: #abb2bf;
+}
+
+/* Nature Dark */
+[data-theme="nature-dark"] {
+    --bg-primary: #212121;
+    --bg-secondary: #2f2f2f;
+    --bg-tertiary: #3f3f3f;
+    --text-primary: #ececf1;
+    --text-secondary: #9b9ba5;
+    --border-color: #4d4d4d;
+    --accent-color: #34d399;
+    --accent-hover: #10b981;
+    --user-bg: #2f2f2f;
+    --assistant-bg: #212121;
+    --code-bg: #282c34;
+    --code-text: #abb2bf;
+}
+
+/* Sunset Dark */
+[data-theme="sunset-dark"] {
+    --bg-primary: #212121;
+    --bg-secondary: #2f2f2f;
+    --bg-tertiary: #3f3f3f;
+    --text-primary: #ececf1;
+    --text-secondary: #9b9ba5;
+    --border-color: #4d4d4d;
+    --accent-color: #fb923c;
+    --accent-hover: #f97316;
+    --user-bg: #2f2f2f;
+    --assistant-bg: #212121;
+    --code-bg: #282c34;
+    --code-text: #abb2bf;
+}
+
+/* Royal Dark */
+[data-theme="royal-dark"] {
+    --bg-primary: #212121;
+    --bg-secondary: #2f2f2f;
+    --bg-tertiary: #3f3f3f;
+    --text-primary: #ececf1;
+    --text-secondary: #9b9ba5;
+    --border-color: #4d4d4d;
+    --accent-color: #a78bfa;
+    --accent-hover: #8b5cf6;
+    --user-bg: #2f2f2f;
+    --assistant-bg: #212121;
+    --code-bg: #282c34;
+    --code-text: #abb2bf;
+}

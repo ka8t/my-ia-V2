@@ -1,0 +1,78 @@
+{
+  "_comment": "Configuration du script d'audit - Copier vers audit.config.json à la racine du projet",
+
+  "project": {
+    "_comment": "Informations du projet affichées dans le rapport",
+    "name": "Mon Projet",
+    "version": "1.0",
+    "description": "Description du projet"
+  },
+
+  "paths": {
+    "_comment_include": "Dossiers à scanner (chemins relatifs depuis la racine)",
+    "include": [
+      "src/",
+      "app/",
+      "lib/"
+    ],
+    "_comment_exclude": "Patterns à ignorer (node_modules, vendor, etc.)",
+    "exclude": [
+      "node_modules/",
+      "vendor/",
+      ".venv/",
+      "__pycache__/",
+      "*.min.js",
+      "*.bundle.js"
+    ],
+    "_comment_defaults": "Chemins par défaut pour les tests de fixtures",
+    "defaults": {
+      "python": "app/service.py",
+      "javascript": "src/app.js",
+      "html": "src/index.html"
+    }
+  },
+
+  "reports": {
+    "_comment": "Configuration des rapports générés",
+    "output_dir": "docs/audit-reports",
+    "history_dir": "docs/audit-reports/audit-datas",
+    "max_history": 10
+  },
+
+  "categories": {
+    "_comment": "enabled: activer/désactiver la catégorie | weight: poids dans le score (1-5)",
+    "security": { "enabled": true, "weight": 3 },
+    "architecture": { "enabled": true, "weight": 2 },
+    "ui": { "enabled": true, "weight": 1 },
+    "ux": { "enabled": true, "weight": 1 },
+    "maintenance": { "enabled": true, "weight": 1 }
+  },
+
+  "rules": {
+    "_comment_disabled": "Liste des règles à ignorer (ex: [\"TODO/FIXME\", \"console.log\"])",
+    "disabled": [],
+    "_comment_patterns": "Chemins personnalisés pour certaines règles",
+    "custom_patterns": {
+      "admin_routes": "app/features/admin",
+      "services": "app/features",
+      "templates": "src/templates"
+    }
+  },
+
+  "tests": {
+    "_comment": "Configuration des tests unitaires (optionnel)",
+    "enabled": true,
+    "tests_dir": "tests/",
+    "command": "python -m pytest {tests_dir} -v --tb=short",
+    "fixtures_dir": "tests/audit/fixtures"
+  },
+
+  "thresholds": {
+    "_comment": "Seuils pour le score de santé et les alertes CI/CD",
+    "max_high": 0,
+    "max_medium": 10,
+    "min_health": 80,
+    "health_good": 90,
+    "health_warning": 70
+  }
+}
