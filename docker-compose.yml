@@ -47,8 +47,10 @@ services:
     labels:
       - "myia.managed=true"
       - "${SANITIZED_PREFIX}.service=chroma"
-    env_file: .env
     environment:
+      # Pas de env_file : éviter que CHROMA_PORT (port d'hôte) écrase
+      # le port interne 8000 attendu par le mapping ports.
+      - CHROMA_PORT=8000
       - IS_PERSISTENT=TRUE
       - ANONYMIZED_TELEMETRY=FALSE
     ports:
@@ -109,10 +111,12 @@ services:
       chroma:
         condition: service_started
     environment:
+      # Ports internes du container — NE PAS confondre avec les ports d'hôte (.env)
+      - APP_PORT=8080
+      - CHROMA_PORT=8000
       - OLLAMA_HOST=${OLLAMA_HOST:-host.docker.internal}
       - OLLAMA_PORT=${OLLAMA_PORT:-11434}
       - CHROMA_HOST=${CHROMA_HOST:-chroma}
-      - CHROMA_PORT=${CHROMA_PORT:-8000}
       - ANONYMIZED_TELEMETRY=FALSE
       - DATABASE_URL=postgresql+asyncpg://${APP_DB_USER}:${APP_DB_PASSWORD}@postgres:5432/${APP_DB_NAME}
       - SESSION_SECRET=${SESSION_SECRET}
