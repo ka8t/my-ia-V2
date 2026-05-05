@@ -65,13 +65,17 @@
         {{ icon('logout' if source.is_enabled else 'sparkle', 14) }}
       </button>
     </form>
+    <a href="/web/admin/sources/{{ source.id }}/config"
+       class="admin-action" title="Configuration technique">
+      {{ icon('settings', 14) }}
+    </a>
     <button type="button"
             class="admin-action"
             hx-get="/web/admin/sources/{{ source.id }}/edit"
             hx-target="#source-{{ source.id }}"
             hx-swap="outerHTML"
-            title="Modifier">
-      {{ icon('settings', 14) }}
+            title="Modifier les champs simples">
+      {{ icon('arrow-up-right', 14) }}
     </button>
     <button type="button"
             class="admin-action admin-action--danger"

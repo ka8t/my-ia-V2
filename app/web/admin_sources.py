@@ -1,9 +1,6 @@
-"""Web routes — Admin sources de contexte (Phase 3.7.b — Vague 1).
+"""Web routes — Admin sources de contexte (Phase 3.7.b — Vagues 1, 2.5, 2.6).
 
-CRUD basique des sources de contexte (URL/API/database) — la config technique
-JSON par type (selectors web, paramètres API…) est laissée à l'admin V1 le
-temps de l'UX dédiée. Vague 2 portera : reindex/clear, health-check, bulk
-actions, indexation logs, scheduler status.
+CRUD + health-check + éditeur de config technique JSON par source_type.
 
 Routes
 ------
@@ -13,10 +10,17 @@ GET    /web/admin/sources/{id}/edit   — partial mode édition
 POST   /web/admin/sources/{id}/cancel — sortir du mode édition
 PATCH  /web/admin/sources/{id}        — update champs simples
 POST   /web/admin/sources/{id}/toggle — toggle is_enabled
+POST   /web/admin/sources/{id}/health-check — sonder la santé
 DELETE /web/admin/sources/{id}        — delete
+
+Config technique (Vague 2.6)
+----------------------------
+GET    /web/admin/sources/{id}/config — page éditeur JSON par type
+POST   /web/admin/sources/{id}/config — validation + save (champs requis selon type)
 """
 from __future__ import annotations
 
+import json
 import logging
 import re
 import uuid
@@ -367,3 +371,191 @@ async def admin_sources_delete(
             "<div class='toast toast--error'>Suppression impossible.</div>", status_code=500
         )
     return Response(status_code=200, content="")
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  Vague 2.6 — Éditeur de config technique JSON par type
+# ═════════════════════════════════════════════════════════════════════════════
+def _validate_source_config(source_type: str, config: dict) -> str | None:
+    """Valide les champs requis selon le ``source_type``. Renvoie un message
+    d'erreur lisible si invalide, ``None`` sinon.
+
+    Les règles reflètent ce que les connectors V1 (web/api/database/mcp)
+    attendent au minimum dans ``config``. Les champs optionnels et avancés
+    sont laissés à la main de l'utilisateur (JSON libre).
+    """
+    if source_type == "web":
+        provider = (config.get("provider") or "").strip().lower()
+        if not provider:
+            return "Champ 'provider' requis (ex : duckduckgo, google, url, scrape)."
+        if provider == "google":
+            for key in ("api_key", "search_engine_id"):
+                if not config.get(key):
+                    return f"Champ '{key}' requis pour le provider Google."
+        elif provider in ("url", "scrape"):
+            if not config.get("url") and not config.get("urls"):
+                return "Champ 'url' (ou 'urls') requis pour ce provider."
+    elif source_type == "api":
+        if not config.get("base_url"):
+            return "Champ 'base_url' requis."
+        if not config.get("endpoint"):
+            return "Champ 'endpoint' requis."
+    elif source_type == "database":
+        if not config.get("db_type"):
+            return "Champ 'db_type' requis (postgres, mysql, ...)."
+        if not config.get("query_template"):
+            return "Champ 'query_template' requis."
+        for key in ("host", "database", "username"):
+            if not config.get(key):
+                return f"Champ '{key}' requis."
+    elif source_type == "mcp":
+        if not config.get("server_command") and not config.get("server_url"):
+            return "Champ 'server_command' ou 'server_url' requis."
+    return None
+
+
+# Champs documentés par type pour aider l'utilisateur à composer son JSON.
+# Affichés sous forme d'aide (label → description) dans la page éditeur.
+_FIELD_HINTS: dict[str, list[tuple[str, str, bool]]] = {
+    "web": [
+        ("provider", "Fournisseur : duckduckgo, google, url, scrape", True),
+        ("api_key", "Clé API (provider=google)", False),
+        ("search_engine_id", "CX Google (provider=google)", False),
+        ("language", "Langue de recherche, ex: 'fr'", False),
+        ("url", "URL unique (provider=url/scrape)", False),
+        ("urls", "Liste d'URLs (provider=url/scrape)", False),
+        ("max_depth", "Profondeur de crawl (default 0)", False),
+        ("max_pages", "Nombre max de pages (default 50)", False),
+    ],
+    "api": [
+        ("base_url", "URL de base de l'API", True),
+        ("endpoint", "Chemin de l'endpoint, ex : /search", True),
+        ("method", "GET, POST, PUT (default GET)", False),
+        ("headers", "Objet JSON { 'Authorization': '...' }", False),
+        ("query_param", "Nom du paramètre de query (default 'q')", False),
+        ("response_path", "Chemin JSON vers la liste des résultats", False),
+        ("content_field", "Champ texte dans chaque résultat (default 'content')", False),
+        ("metadata_fields", "Liste des champs métadonnées à conserver", False),
+        ("body_template", "Template de body POST (objet JSON)", False),
+    ],
+    "database": [
+        ("db_type", "postgres | mysql | sqlite", True),
+        ("host", "Hôte de la BDD", True),
+        ("port", "Port (default 5432 pour postgres)", False),
+        ("database", "Nom de la base", True),
+        ("username", "Utilisateur", True),
+        ("password", "Mot de passe (sera stocké en clair, à protéger)", False),
+        ("query_template", "Requête SQL paramétrée, ex : SELECT ... WHERE x ILIKE :q", True),
+    ],
+    "mcp": [
+        ("server_command", "Commande à lancer pour le serveur MCP local", False),
+        ("server_url", "URL d'un serveur MCP distant", False),
+    ],
+}
+
+
+@router.get("/{source_id}/config", response_class=HTMLResponse)
+async def admin_sources_config_get(
+    request: Request,
+    source_id: uuid.UUID,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    s = await _get_source_or_404(db, source_id)
+    if s is None:
+        return HTMLResponse("Source introuvable.", status_code=404)
+
+    config_text = json.dumps(s.config or {}, indent=2, ensure_ascii=False)
+    return templates.TemplateResponse(
+        request,
+        "pages/admin/source-config.html",
+        web_context(
+            request,
+            title=f"Source · {s.display_name} · config",
+            active_section="sources",
+            user=user,
+            source=s,
+            config_text=config_text,
+            field_hints=_FIELD_HINTS.get(s.source_type, []),
+            error=None,
+        ),
+    )
+
+
+@router.post("/{source_id}/config", response_class=HTMLResponse)
+async def admin_sources_config_post(
+    request: Request,
+    source_id: uuid.UUID,
+    config_text: Annotated[str, Form()] = "",
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    if (err := _csrf_or_400(request, csrf_token)):
+        return err
+
+    s = await _get_source_or_404(db, source_id)
+    if s is None:
+        return HTMLResponse("Source introuvable.", status_code=404)
+
+    def _render_with_error(msg: str, raw: str, status_code: int = 400) -> HTMLResponse:
+        return templates.TemplateResponse(
+            request,
+            "pages/admin/source-config.html",
+            web_context(
+                request,
+                title=f"Source · {s.display_name} · config",
+                active_section="sources",
+                user=user,
+                source=s,
+                config_text=raw,
+                field_hints=_FIELD_HINTS.get(s.source_type, []),
+                error=msg,
+            ),
+            status_code=status_code,
+        )
+
+    raw = (config_text or "").strip() or "{}"
+    try:
+        parsed = json.loads(raw)
+    except json.JSONDecodeError as e:
+        return _render_with_error(f"JSON invalide : {e.msg} (ligne {e.lineno}, col {e.colno}).", raw)
+
+    if not isinstance(parsed, dict):
+        return _render_with_error("La config doit être un objet JSON (pas une liste, ni une string).", raw)
+
+    err_msg = _validate_source_config(s.source_type, parsed)
+    if err_msg:
+        return _render_with_error(err_msg, raw)
+
+    try:
+        s.config = parsed
+        await db.commit()
+        await db.refresh(s)
+        logger.info("Admin %s a mis à jour config source '%s' (type=%s)",
+                    user.get("email"), s.name, s.source_type)
+    except Exception as e:
+        await db.rollback()
+        logger.error("Erreur save config source '%s': %s", s.name, e)
+        return _render_with_error(
+            "Erreur lors de la sauvegarde — voir les logs serveur.",
+            json.dumps(parsed, indent=2, ensure_ascii=False),
+            status_code=500,
+        )
+
+    # Rendu du formulaire avec le JSON re-formaté + flash de succès
+    return templates.TemplateResponse(
+        request,
+        "pages/admin/source-config.html",
+        web_context(
+            request,
+            title=f"Source · {s.display_name} · config",
+            active_section="sources",
+            user=user,
+            source=s,
+            config_text=json.dumps(s.config, indent=2, ensure_ascii=False),
+            field_hints=_FIELD_HINTS.get(s.source_type, []),
+            error=None,
+            success="Configuration enregistrée.",
+        ),
+    )

@@ -1,0 +1,100 @@
+{% extends "layouts/admin.html" %}
+{% from "macros/icon.html" import icon %}
+
+{% block title %}{{ source.display_name }} — Configuration — Admin{% endblock %}
+
+{% block admin_content %}
+
+<header class="admin-page__head">
+  <div class="admin-page__eyebrow">
+    <a href="/web/admin/sources" class="admin-breadcrumb">← Toutes les sources</a>
+  </div>
+  <h1 class="admin-page__title">
+    {{ source.display_name }}
+    <span class="admin-status admin-status--{{ 'approved' if source.is_enabled else 'inactive' }}">
+      {{ 'activée' if source.is_enabled else 'désactivée' }}
+    </span>
+  </h1>
+  <p class="admin-page__lede">
+    Configuration technique <strong>{{ source.source_type }}</strong>.
+    Les champs requis dépendent du type — voir l'aide ci-dessous.
+  </p>
+  <p class="admin-corpus__slug">slug : <code>{{ source.name }}</code></p>
+</header>
+
+<section class="admin-section">
+  {% if success %}
+  <div class="admin-callout admin-callout--success">
+    <p>{{ success }}</p>
+  </div>
+  {% endif %}
+  {% if error %}
+  <div class="admin-callout admin-callout--danger">
+    <p><strong>Erreur :</strong> {{ error }}</p>
+  </div>
+  {% endif %}
+
+  <form method="post" action="/web/admin/sources/{{ source.id }}/config"
+        class="admin-form admin-form--stacked">
+    {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+
+    <label class="admin-form__field">
+      <span class="admin-form__label">Configuration JSON</span>
+      <textarea name="config_text"
+                rows="20"
+                class="admin-form__textarea admin-form__textarea--code"
+                spellcheck="false"
+                autocapitalize="off"
+                autocorrect="off">{{ config_text }}</textarea>
+    </label>
+
+    <div class="admin-form__actions">
+      <a href="/web/admin/sources" class="admin-btn admin-btn--ghost">Annuler</a>
+      <button type="submit" class="admin-btn admin-btn--primary">
+        {{ icon('check-circle', 12) }} Enregistrer
+      </button>
+    </div>
+  </form>
+</section>
+
+{# ─── Aide : champs documentés pour ce type ─── #}
+<section class="admin-section">
+  <h2 class="admin-section__title">{{ icon('settings', 16) }} Champs reconnus — type <code>{{ source.source_type }}</code></h2>
+
+  {% if field_hints %}
+  <table class="admin-config-fields">
+    <thead>
+      <tr>
+        <th>Clé</th>
+        <th>Description</th>
+        <th>Requis</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for key, desc, required in field_hints %}
+      <tr>
+        <td><code>{{ key }}</code></td>
+        <td>{{ desc }}</td>
+        <td>
+          {% if required %}
+            <span class="admin-status admin-status--rejected">requis</span>
+          {% else %}
+            <span class="admin-config__hint">optionnel</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p class="admin-config__hint">
+    Tout champ supplémentaire est conservé tel quel. Les connectors
+    accèdent au dictionnaire <code>config</code> via <code>config.get('clé')</code>.
+  </p>
+  {% else %}
+  <p class="admin-empty admin-empty--small">
+    Aucune aide spécifique pour ce type — toute clé JSON valide est acceptée.
+  </p>
+  {% endif %}
+</section>
+
+{% endblock %}
