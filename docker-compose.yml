@@ -131,6 +131,12 @@ services:
       # Jinja2 re-reads templates à chaque requête. Aucun rebuild nécessaire
       # pour les modifs de fichiers Python, HTML ou CSS.
       - ./app:/code/app
+      # Tests (montés pour pouvoir lancer pytest depuis le container).
+      # pytest crée .pytest_cache/ → mount RW. requirements-test.txt installé
+      # à la volée par scripts/test/run.sh (pas dans l'image prod).
+      - ./tests:/code/tests
+      - ./pytest.ini:/code/pytest.ini:ro
+      - ./requirements-test.txt:/code/requirements-test.txt:ro
     ports:
       - "${APP_PORT:-8090}:8080"
     restart: unless-stopped

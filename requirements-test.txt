@@ -6,7 +6,9 @@
 # =============================================================================
 
 # Framework de test
-pytest==9.0.2
+# Note : pytest pinné à 8.3.x pour compatibilité avec pytest-playwright (qui
+# borne <9). À relâcher quand pytest-playwright >=0.8 sera disponible.
+pytest==8.3.4
 pytest-asyncio==1.3.0
 pytest-cov==4.1.0
 pytest-timeout==2.2.0
