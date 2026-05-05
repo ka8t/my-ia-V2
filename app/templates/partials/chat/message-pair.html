@@ -17,20 +17,26 @@
   <div class="chat-message__body">{{ query }}</div>
 </article>
 
-<article class="chat-message chat-message--assistant">
+<article class="chat-message chat-message--assistant"
+         hx-ext="sse"
+         sse-connect="/web/chat/stream/{{ stream_id }}"
+         sse-close="done">
   <div class="chat-message__meta">
     <span class="chat-message__role">MY-IA</span>
     <span class="chat-message__status" aria-live="polite">
       {{ icon('sparkle', 12) }}<span> en réflexion…</span>
     </span>
   </div>
+
   <div class="chat-message__body"
        data-streaming="1"
-       hx-ext="sse"
-       sse-connect="/web/chat/stream/{{ stream_id }}"
        sse-swap="token"
-       sse-close="done"
        hx-swap="beforeend"
-       hx-on::sse-close="this.removeAttribute('data-streaming'); this.closest('.chat-message').querySelector('.chat-message__status').remove();"
+       hx-on::sse-close="this.removeAttribute('data-streaming'); var s=this.closest('.chat-message').querySelector('.chat-message__status'); if(s) s.remove(); window.renderChatMarkdown(this);"
        hx-on::sse-error="this.removeAttribute('data-streaming'); var s=this.closest('.chat-message').querySelector('.chat-message__status'); if(s){s.textContent='Erreur de streaming.'; s.style.color='var(--color-danger)';}"></div>
+
+  {# Slot for the sources event — HTMX swaps the rendered HTML fragment in. #}
+  <div class="chat-message__sources"
+       sse-swap="sources"
+       hx-swap="innerHTML"></div>
 </article>

@@ -4,4 +4,29 @@
     <span class="chat-message__role">MY-IA</span>
   </div>
   <div class="chat-message__body">{{ m.content }}</div>
+
+  {% if m.sources and m.sources.get('items') %}
+  {% set items = m.sources.get('items') %}
+  <div class="chat-message__sources">
+    <div class="chat-sources" data-rendered="1">
+      <div class="chat-sources__header">
+        <span class="chat-sources__count">
+          {{ items|length }} source{{ 's' if items|length > 1 }}
+        </span>
+        <span class="chat-sources__label">RÉFÉRENCES UTILISÉES</span>
+      </div>
+      <ul class="chat-sources__list">
+        {% for s in items %}
+        {% set kind = 'document' if s.get('type') == 'document' else 'source' %}
+        <li class="chat-source chat-source--{{ kind }}">
+          <span class="chat-source__kind">{{ 'Document' if kind == 'document' else 'Source' }}</span>
+          <span class="chat-source__name" title="{{ s.get('display_name') or s.get('technical_name') or '—' }}">
+            {{ s.get('display_name') or s.get('technical_name') or '—' }}
+          </span>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  {% endif %}
 </article>

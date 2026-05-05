@@ -4,118 +4,130 @@
 {% block title %}{{ title or "Chat" }} — MY-IA{% endblock %}
 
 {% block app_content %}
-<section class="chat-shell">
+<div class="chat-layout">
 
-  {# ─── Header (visible when a conversation is loaded) ─── #}
-  {% if conversation %}
-  <header class="chat-header">
-    <a class="chat-header__back" href="/web/chat" title="Nouvelle conversation">
-      {{ icon('diamond', 14) }}
-      <span>Nouvelle</span>
-    </a>
-    <h1 class="chat-header__title">{{ conversation.title }}</h1>
-    <span class="chat-header__meta">
-      {% if conversation.created_at %}
-        {{ conversation.created_at.strftime('%d %b %Y · %H:%M') }}
-      {% endif %}
-    </span>
-  </header>
-  {% endif %}
+  {# ─── Sidebar conversations ─── #}
+  <aside class="chat-sidebar"
+         hx-on::sidebar-refresh="htmx.ajax('GET', '/web/chat/sidebar' + (this.dataset.active ? '?active=' + this.dataset.active : ''), {target: this, select: '#chat-sidebar-list', swap: 'innerHTML'})"
+         data-active="{{ conversation.id if conversation }}">
+    <header class="chat-sidebar__header">
+      <span class="chat-sidebar__heading">Conversations</span>
+      <a class="chat-sidebar__new" href="/web/chat" title="Nouvelle conversation">
+        {{ icon('sparkle', 14) }}
+        <span>Nouvelle</span>
+      </a>
+    </header>
 
-  {# ─── Thread ─── #}
-  <div id="chat-thread"
-       class="chat-thread"
-       data-empty="{{ '1' if not messages else '0' }}"
-       hx-on::htmx:after-swap="this.scrollTop = this.scrollHeight">
+    <div class="chat-sidebar__listwrap">
+      {% include 'partials/chat/sidebar-list.html' %}
+    </div>
+  </aside>
 
-    {% if not messages %}
-      {# Empty state — shown only on /web/chat with no history #}
-      <div class="chat-empty">
-        <div class="chat-empty__hero">
-          <div class="chat-empty__eyebrow"><span>Chat / 01</span></div>
-          <h2 class="chat-empty__title">
-            Que voulez-vous <em>savoir</em><br>
-            aujourd'hui ?
-          </h2>
-          <p class="chat-empty__lede">
-            Posez une question. Vos documents et sources connectées sont
-            interrogés pour fournir une réponse contextualisée.
-          </p>
+  {# ─── Chat shell ─── #}
+  <section class="chat-shell">
 
-          {% if not_found %}
-          <div class="toast toast--error" style="margin-top: var(--space-6)" role="alert">
-            <span class="toast__icon">{{ icon('alert-circle', 16) }}</span>
-            <div class="toast__body">
-              <div class="toast__title">Conversation introuvable</div>
-              <div>Cette conversation n'existe plus ou ne vous appartient pas.</div>
-            </div>
-          </div>
-          {% endif %}
-
-          {% if suggestions %}
-          <ul class="chat-suggestions">
-            {% for s in suggestions %}
-            <li>
-              <button type="button"
-                      class="chat-suggestion"
-                      onclick="document.getElementById('chat-query').value=this.dataset.q; document.getElementById('chat-query').focus();"
-                      data-q="{{ s }}">
-                <span>{{ s }}</span>
-                {{ icon('arrow-up-right', 12) }}
-              </button>
-            </li>
-            {% endfor %}
-          </ul>
-          {% endif %}
-        </div>
-      </div>
-    {% else %}
-      {# Render history #}
-      {% for m in messages %}
-        {% if m.sender_type == 'user' %}
-          {% include 'partials/chat/message-user.html' %}
-        {% else %}
-          {% include 'partials/chat/message-assistant-static.html' %}
-        {% endif %}
-      {% endfor %}
-    {% endif %}
-
-  </div>
-
-  {# ─── Input ─── #}
-  <form class="chat-input"
-        hx-post="/web/chat/messages"
-        hx-target="#chat-thread"
-        hx-swap="beforeend"
-        hx-disabled-elt="button[type=submit]"
-        hx-on::before-request="document.getElementById('chat-thread').dataset.empty='0'"
-        hx-on::after-request="if (event.detail.successful) { this.querySelector('textarea').value=''; this.querySelector('textarea').focus(); }"
-        autocomplete="off">
-
-    {% if csrf_token %}
-    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    {% endif %}
     {% if conversation %}
-    <input type="hidden" name="conversation_id" value="{{ conversation.id }}">
+    <header class="chat-header">
+      <h1 class="chat-header__title">{{ conversation.title }}</h1>
+      <span class="chat-header__meta">
+        {% if conversation.created_at %}
+          {{ conversation.created_at.strftime('%d %b %Y · %H:%M') }}
+        {% endif %}
+      </span>
+    </header>
     {% endif %}
 
-    <label for="chat-query" class="sr-only">Votre message</label>
-    <textarea
-      id="chat-query"
-      class="chat-input__field"
-      name="query"
-      rows="1"
-      required
-      placeholder="Posez votre question…"
-      x-data
-      x-on:input="$el.style.height='auto'; $el.style.height=$el.scrollHeight+'px'"
-      x-on:keydown.enter.prevent="if (!$event.shiftKey) $el.closest('form').requestSubmit()"
-    ></textarea>
+    <div id="chat-thread"
+         class="chat-thread"
+         data-empty="{{ '1' if not messages else '0' }}"
+         hx-on::htmx:after-swap="this.scrollTop = this.scrollHeight">
 
-    <button type="submit" class="chat-input__send" aria-label="Envoyer">
-      {{ icon('arrow-right', 16) }}
-    </button>
-  </form>
+      {% if not messages %}
+        <div class="chat-empty">
+          <div class="chat-empty__hero">
+            <div class="chat-empty__eyebrow"><span>Chat / 01</span></div>
+            <h2 class="chat-empty__title">
+              Que voulez-vous <em>savoir</em><br>
+              aujourd'hui ?
+            </h2>
+            <p class="chat-empty__lede">
+              Posez une question. Vos documents et sources connectées sont
+              interrogés pour fournir une réponse contextualisée.
+            </p>
 
-</section>
+            {% if not_found %}
+            <div class="toast toast--error" style="margin-top: var(--space-6)" role="alert">
+              <span class="toast__icon">{{ icon('alert-circle', 16) }}</span>
+              <div class="toast__body">
+                <div class="toast__title">Conversation introuvable</div>
+                <div>Cette conversation n'existe plus ou ne vous appartient pas.</div>
+              </div>
+            </div>
+            {% endif %}
+
+            {% if suggestions %}
+            <ul class="chat-suggestions">
+              {% for s in suggestions %}
+              <li>
+                <button type="button"
+                        class="chat-suggestion"
+                        onclick="document.getElementById('chat-query').value=this.dataset.q; document.getElementById('chat-query').focus();"
+                        data-q="{{ s }}">
+                  <span>{{ s }}</span>
+                  {{ icon('arrow-up-right', 12) }}
+                </button>
+              </li>
+              {% endfor %}
+            </ul>
+            {% endif %}
+          </div>
+        </div>
+      {% else %}
+        {% for m in messages %}
+          {% if m.sender_type == 'user' %}
+            {% include 'partials/chat/message-user.html' %}
+          {% else %}
+            {% include 'partials/chat/message-assistant-static.html' %}
+          {% endif %}
+        {% endfor %}
+      {% endif %}
+
+    </div>
+
+    <form class="chat-input"
+          hx-post="/web/chat/messages"
+          hx-target="#chat-thread"
+          hx-swap="beforeend"
+          hx-disabled-elt="button[type=submit]"
+          hx-on::before-request="document.getElementById('chat-thread').dataset.empty='0'"
+          hx-on::after-request="if (event.detail.successful) { this.querySelector('textarea').value=''; this.querySelector('textarea').focus(); document.querySelector('.chat-sidebar').dispatchEvent(new CustomEvent('sidebar-refresh')); }"
+          autocomplete="off">
+
+      {% if csrf_token %}
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      {% endif %}
+      {% if conversation %}
+      <input type="hidden" name="conversation_id" value="{{ conversation.id }}">
+      {% endif %}
+
+      <label for="chat-query" class="sr-only">Votre message</label>
+      <textarea
+        id="chat-query"
+        class="chat-input__field"
+        name="query"
+        rows="1"
+        required
+        placeholder="Posez votre question…"
+        x-data
+        x-on:input="$el.style.height='auto'; $el.style.height=$el.scrollHeight+'px'"
+        x-on:keydown.enter.prevent="if (!$event.shiftKey) $el.closest('form').requestSubmit()"
+      ></textarea>
+
+      <button type="submit" class="chat-input__send" aria-label="Envoyer">
+        {{ icon('arrow-right', 16) }}
+      </button>
+    </form>
+
+  </section>
+</div>
 {% endblock %}

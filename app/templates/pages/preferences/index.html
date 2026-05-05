@@ -1,0 +1,184 @@
+{% extends "layouts/user.html" %}
+{% from "macros/icon.html" import icon %}
+{% from "macros/field.html" import field %}
+{% from "macros/button.html" import button %}
+
+{% block title %}Préférences — MY-IA{% endblock %}
+
+{% block app_content %}
+<section class="prefs-shell">
+
+  <header class="prefs-header">
+    <div class="prefs-header__eyebrow"><span>Réglages / 03</span></div>
+    <h1 class="prefs-header__title">
+      Vos <em>préférences</em>.
+    </h1>
+    <p class="prefs-header__lede">
+      Profil, mot de passe, langue, mode RAG. Tout est modifiable
+      sans rechargement.
+    </p>
+  </header>
+
+  {# ─── Profil ─── #}
+  <section class="pref-card">
+    <header class="pref-card__head">
+      <span class="pref-card__index">01</span>
+      <div>
+        <h2 class="pref-card__title">Profil</h2>
+        <p class="pref-card__desc">
+          Vos informations affichées dans l'application.
+          L'adresse e-mail ne peut pas être changée ici.
+        </p>
+      </div>
+    </header>
+
+    <form class="pref-card__form"
+          hx-post="/web/preferences/profile"
+          hx-target="next .pref-status"
+          hx-swap="innerHTML"
+          hx-disabled-elt="button[type=submit]">
+
+      {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+
+      <div class="pref-grid">
+        {{ field('first_name', 'Prénom',
+                 type='text',
+                 value=db_user.first_name or '',
+                 placeholder='—') }}
+
+        {{ field('last_name', 'Nom',
+                 type='text',
+                 value=db_user.last_name or '',
+                 placeholder='—') }}
+      </div>
+
+      <div class="pref-readonly">
+        <span class="pref-readonly__label">Adresse e-mail</span>
+        <span class="pref-readonly__value">{{ db_user.email }}</span>
+      </div>
+      <div class="pref-readonly">
+        <span class="pref-readonly__label">Identifiant</span>
+        <span class="pref-readonly__value">{{ db_user.username }}</span>
+      </div>
+
+      <div class="pref-card__actions">
+        {{ button('Enregistrer', block=False, lg=False, arrow=True) }}
+      </div>
+    </form>
+    <div class="pref-status" aria-live="polite"></div>
+  </section>
+
+
+  {# ─── Mot de passe ─── #}
+  <section class="pref-card">
+    <header class="pref-card__head">
+      <span class="pref-card__index">02</span>
+      <div>
+        <h2 class="pref-card__title">Mot de passe</h2>
+        <p class="pref-card__desc">
+          Choisissez un nouveau mot de passe d'au moins 8 caractères.
+          Vous restez connecté après le changement.
+        </p>
+      </div>
+    </header>
+
+    <form class="pref-card__form"
+          hx-post="/web/preferences/password"
+          hx-target="next .pref-status"
+          hx-swap="innerHTML"
+          hx-disabled-elt="button[type=submit]"
+          hx-on::after-request="if (event.detail.successful && event.detail.xhr.status === 200) this.reset()">
+
+      {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+
+      {{ field('current_password', 'Mot de passe actuel',
+               type='password', autocomplete='current-password', required=True) }}
+
+      <div class="pref-grid">
+        {{ field('new_password', 'Nouveau mot de passe',
+                 type='password', autocomplete='new-password', required=True,
+                 placeholder='Min. 8 caractères') }}
+
+        {{ field('new_password_confirm', 'Confirmation',
+                 type='password', autocomplete='new-password', required=True) }}
+      </div>
+
+      <div class="pref-card__actions">
+        {{ button('Modifier le mot de passe', block=False, lg=False, arrow=True) }}
+      </div>
+    </form>
+    <div class="pref-status" aria-live="polite"></div>
+  </section>
+
+
+  {# ─── Préférences applicatives ─── #}
+  <section class="pref-card">
+    <header class="pref-card__head">
+      <span class="pref-card__index">03</span>
+      <div>
+        <h2 class="pref-card__title">Application</h2>
+        <p class="pref-card__desc">
+          Langue, thème, mode RAG et affichage des sources dans le chat.
+        </p>
+      </div>
+    </header>
+
+    <form class="pref-card__form"
+          hx-post="/web/preferences/settings"
+          hx-target="next .pref-status"
+          hx-swap="innerHTML"
+          hx-disabled-elt="button[type=submit]">
+
+      {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+
+      <div class="pref-grid">
+        <div class="field">
+          <label class="field__label" for="pref-lang"><span>Langue</span></label>
+          <select class="field__input" id="pref-lang" name="language">
+            <option value="fr" {% if prefs.language == 'fr' %}selected{% endif %}>Français</option>
+            <option value="en" {% if prefs.language == 'en' %}selected{% endif %}>English</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="pref-theme"><span>Thème</span></label>
+          <select class="field__input" id="pref-theme" name="theme">
+            <option value="auto"  {% if prefs.theme == 'auto'  %}selected{% endif %}>Automatique (système)</option>
+            <option value="light" {% if prefs.theme == 'light' %}selected{% endif %}>Clair</option>
+            <option value="dark"  {% if prefs.theme == 'dark'  %}selected{% endif %}>Sombre</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="pref-grid">
+        <div class="field">
+          <label class="field__label" for="pref-rag"><span>Mode RAG</span></label>
+          <select class="field__input" id="pref-rag" name="rag_mode">
+            <option value="auto" {% if prefs.rag_mode == 'auto' %}selected{% endif %}>Automatique</option>
+            <option value="fast" {% if prefs.rag_mode == 'fast' %}selected{% endif %}>Rapide</option>
+            <option value="full" {% if prefs.rag_mode == 'full' %}selected{% endif %}>Complet</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="pref-sources"><span>Sources</span></label>
+          <label class="pref-toggle">
+            <input type="checkbox"
+                   id="pref-sources"
+                   name="show_sources"
+                   value="1"
+                   {% if prefs.show_sources %}checked{% endif %}>
+            <span>Afficher les sources sous chaque réponse</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="pref-card__actions">
+        {{ button('Enregistrer les préférences', block=False, lg=False, arrow=True) }}
+      </div>
+    </form>
+    <div class="pref-status" aria-live="polite"></div>
+  </section>
+
+</section>
+{% endblock %}

@@ -128,11 +128,23 @@ SUGGESTIONS = [
 ]
 
 
+async def _load_sidebar_conversations(
+    db: AsyncSession, user_id: uuid.UUID, limit: int = 50
+) -> list:
+    """Return the user's most recent (non-archived) conversations for the sidebar."""
+    convs, _total = await ConversationRepository.list_by_user(
+        db, user_id, limit=limit, offset=0
+    )
+    return [c for c in convs if c.archived_at is None]
+
+
 @router.get("", response_class=HTMLResponse)
 async def chat_index(
     request: Request,
     user: dict = Depends(require_web_auth),
+    db: AsyncSession = Depends(get_async_session),
 ) -> HTMLResponse:
+    sidebar_convs = await _load_sidebar_conversations(db, uuid.UUID(user["id"]))
     return templates.TemplateResponse(
         request,
         "pages/chat/chat.html",
@@ -143,6 +155,36 @@ async def chat_index(
             conversation=None,
             messages=[],
             suggestions=SUGGESTIONS,
+            sidebar_conversations=sidebar_convs,
+        ),
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  GET /web/chat/sidebar — partial used by HTMX to refresh the sidebar
+#  (must be declared BEFORE the dynamic /{conversation_id} route below)
+# ─────────────────────────────────────────────────────────────────────────────
+@router.get("/sidebar", response_class=HTMLResponse)
+async def chat_sidebar(
+    request: Request,
+    active: str | None = None,
+    user: dict = Depends(require_web_auth),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    sidebar_convs = await _load_sidebar_conversations(db, uuid.UUID(user["id"]))
+    active_id: uuid.UUID | None = None
+    if active:
+        try:
+            active_id = uuid.UUID(active)
+        except ValueError:
+            active_id = None
+    return templates.TemplateResponse(
+        request,
+        "partials/chat/sidebar-list.html",
+        web_context(
+            request,
+            sidebar_conversations=sidebar_convs,
+            active_id=active_id,
         ),
     )
 
@@ -154,9 +196,11 @@ async def chat_conversation(
     user: dict = Depends(require_web_auth),
     db: AsyncSession = Depends(get_async_session),
 ) -> HTMLResponse:
-    conv, messages = await _load_conversation(db, conversation_id, uuid.UUID(user["id"]))
+    user_uuid = uuid.UUID(user["id"])
+    conv, messages = await _load_conversation(db, conversation_id, user_uuid)
+    sidebar_convs = await _load_sidebar_conversations(db, user_uuid)
+
     if conv is None:
-        # Conversation introuvable → revenir à l'index
         return templates.TemplateResponse(
             request,
             "pages/chat/chat.html",
@@ -167,6 +211,7 @@ async def chat_conversation(
                 conversation=None,
                 messages=[],
                 suggestions=SUGGESTIONS,
+                sidebar_conversations=sidebar_convs,
                 not_found=True,
             ),
         )
@@ -181,6 +226,7 @@ async def chat_conversation(
             conversation=conv,
             messages=messages,
             suggestions=[],
+            sidebar_conversations=sidebar_convs,
         ),
     )
 
@@ -267,15 +313,44 @@ def _sse(event: str, data: str = "") -> bytes:
     return ("\n".join(out)).encode("utf-8")
 
 
+def _render_sources_html(sources: list) -> str:
+    """Render the sources list as a static HTML fragment swapped into the bubble."""
+    if not sources:
+        return ""
+    parts = ['<div class="chat-sources" data-rendered="1">']
+    parts.append(
+        '<div class="chat-sources__header">'
+        '<span class="chat-sources__count">'
+        f'{len(sources)} source{"s" if len(sources) > 1 else ""}'
+        '</span>'
+        '<span class="chat-sources__label">RÉFÉRENCES UTILISÉES</span>'
+        '</div>'
+    )
+    parts.append('<ul class="chat-sources__list">')
+    for s in sources:
+        display = _html.escape(str(s.get("display_name") or s.get("technical_name") or "—"))
+        kind = "document" if s.get("type") == "document" else "source"
+        kind_label = "Document" if kind == "document" else "Source"
+        parts.append(
+            f'<li class="chat-source chat-source--{kind}">'
+            f'<span class="chat-source__kind">{kind_label}</span>'
+            f'<span class="chat-source__name" title="{display}">{display}</span>'
+            f'</li>'
+        )
+    parts.append('</ul></div>')
+    return "".join(parts)
+
+
 async def _ndjson_to_sse(
     ndjson_stream: AsyncIterator[str],
 ) -> AsyncIterator[bytes]:
     """Translate the ChatService NDJSON stream into HTMX-friendly SSE events.
 
     Events emitted:
-      - ``event: token``  ``data: <html-escaped chunk>``
-      - ``event: done``   ``data:``  (closes the stream client-side)
-      - ``event: error``  ``data: <html-escaped message>``
+      - ``event: sources``  ``data: <html fragment with source cards>``
+      - ``event: token``    ``data: <html-escaped chunk>``
+      - ``event: done``     ``data:``  (closes the stream client-side)
+      - ``event: error``    ``data: <html-escaped message>``
     """
     try:
         async for raw in ndjson_stream:
@@ -290,12 +365,16 @@ async def _ndjson_to_sse(
             if "response" in payload:
                 # token chunk — html-escape so '<' / '&' don't break the DOM
                 yield _sse("token", _html.escape(payload["response"]))
-                # tiny yield to flush
-                await asyncio.sleep(0)
+                await asyncio.sleep(0)  # flush
+
+            elif "sources" in payload:
+                html_fragment = _render_sources_html(payload["sources"] or [])
+                if html_fragment:
+                    yield _sse("sources", html_fragment)
+                    await asyncio.sleep(0)
 
             elif payload.get("error"):
                 yield _sse("error", _html.escape(str(payload.get("error"))))
-                # done is also true on error; close cleanly below
                 yield _sse("done", "")
                 return
 
@@ -303,7 +382,7 @@ async def _ndjson_to_sse(
                 yield _sse("done", "")
                 return
 
-            # ignore other payload kinds for now (sources, suggestions…)
+            # ignore other payload kinds (suggestions, metadata…)
     except Exception as exc:  # pragma: no cover - defensive
         logger.exception("SSE adapter crashed: %s", exc)
         yield _sse("error", "Une erreur interne est survenue.")

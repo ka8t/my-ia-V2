@@ -1,0 +1,50 @@
+{# ─────────────────────────────────────────────────────────────────────
+ # partials/documents/row.html
+ # Une ligne du tableau Documents.
+ # Si le statut est "pending", la ligne se ré-interroge toutes les 3s
+ # via hx-get + hx-trigger="every 3s" pour rafraîchir le statut.
+ # ────────────────────────────────────────────────────────────────────── #}
+{% from "macros/icon.html" import icon %}
+
+<div class="docs-row{% if just_uploaded %} docs-row--just-uploaded{% endif %}"
+     id="doc-{{ doc.id }}"
+     {% if status.kind == 'pending' %}
+     hx-get="/web/documents/{{ doc.id }}/row"
+     hx-trigger="every 4s"
+     hx-target="this"
+     hx-swap="outerHTML"
+     {% endif %}>
+
+  <div class="docs-row__cell docs-row__name" title="{{ doc.filename }}">
+    <span class="docs-row__icon">{{ icon('document', 16) }}</span>
+    <span class="docs-row__filename">{{ doc.filename }}</span>
+  </div>
+
+  <div class="docs-row__cell">
+    <span class="docs-row__type">{{ doc.file_type or '—' }}</span>
+  </div>
+
+  <div class="docs-row__cell docs-row__size">{{ size }}</div>
+
+  <div class="docs-row__cell">
+    <span class="docs-status docs-status--{{ status.kind }}">
+      {% if status.kind == 'pending' %}
+      <span class="docs-status__dot" aria-hidden="true"></span>
+      {% endif %}
+      <span class="docs-status__label">{{ status.label }}</span>
+      <span class="docs-status__detail">{{ status.detail }}</span>
+    </span>
+  </div>
+
+  <div class="docs-row__cell docs-row__actions">
+    <button type="button"
+            class="docs-row__action docs-row__action--danger"
+            hx-delete="/web/documents/{{ doc.id }}"
+            hx-confirm="Supprimer définitivement « {{ doc.filename }} » ?"
+            hx-target="#doc-{{ doc.id }}"
+            hx-swap="outerHTML"
+            aria-label="Supprimer">
+      {{ icon('arrow-up-right', 14) }}
+    </button>
+  </div>
+</div>

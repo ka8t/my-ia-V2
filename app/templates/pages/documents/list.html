@@ -1,0 +1,94 @@
+{% extends "layouts/user.html" %}
+{% from "macros/icon.html" import icon %}
+{% from "macros/button.html" import button %}
+
+{% block title %}Documents — MY-IA{% endblock %}
+
+{% block app_content %}
+<section class="docs-shell">
+
+  <header class="docs-header">
+    <div>
+      <div class="docs-header__eyebrow"><span>Bibliothèque / 02</span></div>
+      <h1 class="docs-header__title">
+        Vos <em>documents</em>.
+      </h1>
+      <p class="docs-header__lede">
+        Téléversez les fichiers à indexer pour vos conversations.
+        PDF, Office, Markdown, texte&nbsp;: ils sont chunkés et embeddés
+        en arrière-plan.
+      </p>
+    </div>
+    <div class="docs-header__count">
+      <span class="docs-header__count-num">{{ total }}</span>
+      <span class="docs-header__count-label">document{{ 's' if total != 1 }}</span>
+    </div>
+  </header>
+
+  {# ─── Upload zone ─── #}
+  <form class="docs-upload"
+        hx-post="/web/documents/upload"
+        hx-encoding="multipart/form-data"
+        hx-target="#docs-list"
+        hx-swap="afterbegin"
+        hx-disabled-elt="button[type=submit]"
+        hx-on::before-request="document.getElementById('docs-empty')?.remove()"
+        hx-on::after-request="if (event.detail.successful) { this.reset(); document.getElementById('upload-error').innerHTML=''; } else { document.getElementById('upload-error').innerHTML=event.detail.xhr.responseText; }"
+        x-data="{ fileName: '' }">
+
+    {% if csrf_token %}
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    {% endif %}
+
+    <label class="docs-upload__drop"
+           x-on:dragover.prevent="$el.classList.add('is-drag')"
+           x-on:dragleave.prevent="$el.classList.remove('is-drag')"
+           x-on:drop.prevent="$el.classList.remove('is-drag'); var f=$event.dataTransfer.files[0]; if (f) { $refs.input.files=$event.dataTransfer.files; fileName=f.name; }">
+      <input
+        type="file"
+        name="file"
+        x-ref="input"
+        x-on:change="fileName = $el.files[0]?.name || ''"
+        required>
+      <span class="docs-upload__icon">{{ icon('document', 26) }}</span>
+      <span class="docs-upload__hint">
+        <strong x-text="fileName || 'Glissez-déposez un fichier'"></strong>
+        <small x-show="!fileName">ou cliquez pour parcourir</small>
+        <small x-show="fileName" x-cloak>Cliquez sur Téléverser pour confirmer</small>
+      </span>
+    </label>
+
+    <div class="docs-upload__actions">
+      {{ button('Téléverser', block=False, lg=False, arrow=True) }}
+    </div>
+
+    <div id="upload-error" aria-live="polite" class="docs-upload__error"></div>
+  </form>
+
+  {# ─── Liste ─── #}
+  <div class="docs-list-head">
+    <span>Fichier</span>
+    <span>Type</span>
+    <span>Taille</span>
+    <span>Statut</span>
+    <span></span>
+  </div>
+
+  <div id="docs-list" class="docs-list">
+    {% if rows %}
+      {% for r in rows %}
+        {% with doc=r.doc, status=r.status, size=r.size %}
+          {% include 'partials/documents/row.html' %}
+        {% endwith %}
+      {% endfor %}
+    {% else %}
+      <div id="docs-empty" class="docs-empty">
+        <span>Aucun document pour l'instant. Téléversez votre premier fichier.</span>
+      </div>
+    {% endif %}
+  </div>
+
+</section>
+
+<style>[x-cloak] { display: none !important; }</style>
+{% endblock %}

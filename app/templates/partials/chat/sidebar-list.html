@@ -1,0 +1,31 @@
+{# ─────────────────────────────────────────────────────────────────────
+ # partials/chat/sidebar-list.html
+ # Liste des conversations dans la sidebar.
+ # Rendu inline dans pages/chat/chat.html ET retourné par
+ # GET /web/chat/sidebar pour rafraîchissement post-envoi.
+ # ────────────────────────────────────────────────────────────────────── #}
+{% from "macros/icon.html" import icon %}
+
+<ul class="chat-sidebar__list" id="chat-sidebar-list">
+  {% if sidebar_conversations %}
+    {% for c in sidebar_conversations %}
+      {% set is_active = (conversation and conversation.id == c.id) or (active_id and active_id == c.id) %}
+      <li>
+        <a class="chat-sidebar__item{% if is_active %} chat-sidebar__item--active{% endif %}"
+           href="/web/chat/{{ c.id }}"
+           title="{{ c.title }}">
+          <span class="chat-sidebar__item-title">{{ c.title }}</span>
+          {% if c.updated_at %}
+          <span class="chat-sidebar__item-meta">
+            {{ c.updated_at.strftime('%d %b · %H:%M') }}
+          </span>
+          {% endif %}
+        </a>
+      </li>
+    {% endfor %}
+  {% else %}
+    <li class="chat-sidebar__empty">
+      <span>Aucune conversation pour l'instant.</span>
+    </li>
+  {% endif %}
+</ul>

@@ -20,6 +20,48 @@
   <script src="https://unpkg.com/htmx-ext-sse@2.2.2" defer></script>
   <script src="https://unpkg.com/alpinejs@3.14.3" defer></script>
 
+  {# Markdown + syntax highlighting (utilisé par le chat — rendu post-stream).
+     Thèmes light/dark sélectionnés automatiquement via prefers-color-scheme. #}
+  <script src="https://unpkg.com/marked@12.0.2/marked.min.js" defer></script>
+  <script src="https://unpkg.com/highlight.js@11.9.0/lib/core.min.js" defer></script>
+  <script src="https://unpkg.com/highlight.js@11.9.0/lib/common.min.js" defer></script>
+  <link rel="stylesheet"
+        href="https://unpkg.com/highlight.js@11.9.0/styles/github.min.css"
+        media="(prefers-color-scheme: light)">
+  <link rel="stylesheet"
+        href="https://unpkg.com/highlight.js@11.9.0/styles/github-dark.min.css"
+        media="(prefers-color-scheme: dark)">
+
+  {# Helpers JS chat — rendu markdown des messages assistants #}
+  <script defer>
+    window.renderChatMarkdown = function (bodyEl) {
+      if (!bodyEl || bodyEl.dataset.rendered === '1') return;
+      if (typeof marked === 'undefined') return;
+      var raw = bodyEl.textContent || '';
+      bodyEl.innerHTML = marked.parse(raw, { breaks: true, gfm: true });
+      bodyEl.dataset.rendered = '1';
+      if (typeof hljs !== 'undefined') {
+        bodyEl.querySelectorAll('pre code').forEach(function (b) {
+          try { hljs.highlightElement(b); } catch (_) {}
+        });
+      }
+    };
+
+    // Render markdown on history messages once the libs are loaded.
+    document.addEventListener('DOMContentLoaded', function () {
+      // Wait until marked is loaded (defer order can vary).
+      var tries = 0;
+      var iv = setInterval(function () {
+        if (typeof marked !== 'undefined' || tries++ > 40) {
+          clearInterval(iv);
+          document
+            .querySelectorAll('.chat-message--assistant .chat-message__body:not([data-streaming])')
+            .forEach(function (el) { window.renderChatMarkdown(el); });
+        }
+      }, 50);
+    });
+  </script>
+
   {# HTMX 2 ne swap pas sur 4xx/5xx par défaut. Pour l'auth web on veut
      swap les partiels d'erreur retournés en 400/401/403 (toasts inline).
      IMPORTANT: les events SSE n'ont pas d'XHR (EventSource), donc check

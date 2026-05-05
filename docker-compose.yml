@@ -127,7 +127,10 @@ services:
       - ./alembic.ini:/code/alembic.ini:ro
       - ./data/uploads:/data/uploads
       - ./models:/code/models
-      # Hot-reload dev (montés via docker-compose.dev.yml si besoin)
+      # Hot-reload code/templates/static — uvicorn --reload watches /code,
+      # Jinja2 re-reads templates à chaque requête. Aucun rebuild nécessaire
+      # pour les modifs de fichiers Python, HTML ou CSS.
+      - ./app:/code/app
     ports:
       - "${APP_PORT:-8090}:8080"
     restart: unless-stopped
