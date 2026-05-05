@@ -30,7 +30,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db import get_async_session
 from app.models import (
     ApprovalStatus,
+    ContextSource,
     Conversation,
+    Corpus,
     Document,
     Role,
     User,
@@ -87,12 +89,16 @@ async def admin_dashboard(
     )).scalar_one()
     total_conversations = (await db.execute(select(func.count(Conversation.id)))).scalar_one()
     total_documents = (await db.execute(select(func.count(Document.id)))).scalar_one()
+    total_corpus = (await db.execute(select(func.count(Corpus.id)))).scalar_one()
+    total_sources = (await db.execute(select(func.count(ContextSource.id)))).scalar_one()
 
     stats = {
         "users": total_users,
         "users_pending": pending_users,
         "conversations": total_conversations,
         "documents": total_documents,
+        "corpus": total_corpus,
+        "sources": total_sources,
     }
 
     return templates.TemplateResponse(

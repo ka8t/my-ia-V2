@@ -1,0 +1,71 @@
+{# ─────────────────────────────────────────────────────────────────────
+ # partials/admin/corpus-row-edit.html
+ # Mode édition. PATCH → swap vers corpus-row.
+ # Cancel → POST .../cancel → swap vers corpus-row.
+ # ────────────────────────────────────────────────────────────────────── #}
+{% from "macros/icon.html" import icon %}
+
+<div class="admin-corpus-row admin-corpus-row--editing admin-table-row" id="corpus-{{ corpus.id }}">
+
+  <div class="admin-table-cell admin-table-cell--name">
+    <form class="admin-corpus__edit"
+          id="corpus-form-{{ corpus.id }}"
+          hx-patch="/web/admin/corpus/{{ corpus.id }}"
+          hx-target="#corpus-{{ corpus.id }}"
+          hx-swap="outerHTML">
+      {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+      <input type="text"
+             name="display_name"
+             value="{{ corpus.display_name }}"
+             class="admin-form__input admin-form__input--inline"
+             autocomplete="off"
+             autofocus
+             required>
+      <textarea name="description"
+                rows="1"
+                class="admin-form__textarea admin-form__textarea--inline"
+                placeholder="Description…">{{ corpus.description or '' }}</textarea>
+      {% if error %}
+      <div class="admin-config__error">{{ error }}</div>
+      {% endif %}
+    </form>
+  </div>
+
+  <div class="admin-table-cell">
+    <span class="admin-table-cell__mono">{{ document_count }}</span>
+  </div>
+  <div class="admin-table-cell">
+    <span class="admin-table-cell__mono">{{ source_count }}</span>
+  </div>
+  <div class="admin-table-cell">
+    <span class="admin-table-cell__mono">{{ collection_count }}</span>
+  </div>
+
+  <div class="admin-table-cell">
+    <label class="admin-config__bool">
+      <input type="checkbox"
+             form="corpus-form-{{ corpus.id }}"
+             name="is_active"
+             value="true"
+             {% if corpus.is_active %}checked{% endif %}>
+      <span>actif</span>
+    </label>
+  </div>
+
+  <div class="admin-table-cell admin-table-cell--actions">
+    <button type="submit"
+            form="corpus-form-{{ corpus.id }}"
+            class="admin-action admin-action--accent"
+            title="Enregistrer">
+      {{ icon('check-circle', 14) }}
+    </button>
+    <form hx-post="/web/admin/corpus/{{ corpus.id }}/cancel"
+          hx-target="#corpus-{{ corpus.id }}"
+          hx-swap="outerHTML"
+          class="admin-action-form">
+      <button type="submit" class="admin-action" title="Annuler">
+        {{ icon('alert-circle', 14) }}
+      </button>
+    </form>
+  </div>
+</div>

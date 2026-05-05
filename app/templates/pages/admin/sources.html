@@ -1,0 +1,123 @@
+{% extends "layouts/admin.html" %}
+{% from "macros/icon.html" import icon %}
+
+{% block title %}Sources — Admin{% endblock %}
+
+{% block admin_content %}
+
+<header class="admin-page__head">
+  <div class="admin-page__eyebrow"><span>Console / 05</span></div>
+  <h1 class="admin-page__title">
+    Sources de <em>contexte</em>.
+  </h1>
+  <p class="admin-page__lede">
+    Sources externes (web, API, base de données) qui enrichissent le RAG.
+    La configuration technique (sélecteurs, paramètres API) reste à éditer
+    via l'admin V1 le temps de l'UX dédiée.
+  </p>
+</header>
+
+{# ─── Actions globales ─── #}
+<div class="admin-actions-bar" x-data="{ open: false }">
+  <button type="button" class="admin-cta" @click="open = true">
+    {{ icon('sparkle', 14) }}
+    <span>Nouvelle source</span>
+  </button>
+
+  {# ─── Modal création ─── #}
+  <div class="admin-modal" x-show="open" x-cloak
+       x-transition:enter="transition ease-out duration-200"
+       x-transition:enter-start="opacity-0"
+       x-transition:enter-end="opacity-100"
+       @keydown.escape.window="open = false">
+    <div class="admin-modal__backdrop" @click="open = false"></div>
+    <div class="admin-modal__panel" @click.stop>
+      <header class="admin-modal__head">
+        <h2 class="admin-modal__title">Créer une source</h2>
+        <button type="button" class="admin-modal__close" @click="open = false" title="Fermer">
+          {{ icon('alert-circle', 14) }}
+        </button>
+      </header>
+      <form class="admin-form"
+            hx-post="/web/admin/sources"
+            hx-target="#sources-table-body"
+            hx-swap="afterbegin"
+            @htmx:after-request="open = false; $el.reset()">
+        {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+        <label class="admin-form__field">
+          <span class="admin-form__label">Nom</span>
+          <input type="text" name="display_name" required class="admin-form__input"
+                 placeholder="Ex : Wikipedia FR" autofocus>
+        </label>
+        <label class="admin-form__field">
+          <span class="admin-form__label">Type</span>
+          <select name="source_type" required class="admin-form__input">
+            {% for t in source_types %}
+            <option value="{{ t }}">{{ t }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label class="admin-form__field">
+          <span class="admin-form__label">Description (optionnel)</span>
+          <textarea name="description" rows="2" class="admin-form__textarea"></textarea>
+        </label>
+        <p class="admin-form__hint">
+          La source est créée <strong>désactivée</strong>. La configuration
+          technique (URL, sélecteurs…) doit être complétée via l'admin V1
+          avant activation.
+        </p>
+        <div class="admin-form__actions">
+          <button type="button" class="admin-btn admin-btn--ghost" @click="open = false">Annuler</button>
+          <button type="submit" class="admin-btn admin-btn--primary">Créer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{# ─── Filtres ─── #}
+<nav class="admin-filters">
+  <a class="admin-filter{% if not filter_type %} admin-filter--active{% endif %}"
+     href="/web/admin/sources{% if filter_enabled %}?enabled={{ filter_enabled }}{% endif %}">Tous types</a>
+  {% for t in source_types %}
+  <a class="admin-filter{% if filter_type == t %} admin-filter--active{% endif %}"
+     href="/web/admin/sources?source_type={{ t }}{% if filter_enabled %}&enabled={{ filter_enabled }}{% endif %}">
+    {{ t }}
+  </a>
+  {% endfor %}
+
+  <span class="admin-filter-sep"></span>
+
+  <a class="admin-filter{% if not filter_enabled %} admin-filter--active{% endif %}"
+     href="/web/admin/sources{% if filter_type %}?source_type={{ filter_type }}{% endif %}">Toutes</a>
+  <a class="admin-filter{% if filter_enabled == 'yes' %} admin-filter--active{% endif %}"
+     href="/web/admin/sources?enabled=yes{% if filter_type %}&source_type={{ filter_type }}{% endif %}">Actives</a>
+  <a class="admin-filter{% if filter_enabled == 'no' %} admin-filter--active{% endif %}"
+     href="/web/admin/sources?enabled=no{% if filter_type %}&source_type={{ filter_type }}{% endif %}">Inactives</a>
+</nav>
+
+{# ─── Table ─── #}
+<div class="admin-table-wrap">
+  <div class="admin-table-head admin-source-row">
+    <span>Nom</span>
+    <span>Type</span>
+    <span>Statut</span>
+    <span>Santé</span>
+    <span>Indexée</span>
+    <span></span>
+  </div>
+
+  <div class="admin-table-body" id="sources-table-body">
+    {% if sources %}
+      {% for s in sources %}
+        {% with source=s %}
+          {% include 'partials/admin/source-row.html' %}
+        {% endwith %}
+      {% endfor %}
+    {% else %}
+      <div class="admin-empty">Aucune source ne correspond à ces filtres.</div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

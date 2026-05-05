@@ -1,0 +1,60 @@
+{# ─────────────────────────────────────────────────────────────────────
+ # partials/admin/corpus-row.html
+ # Mode lecture. Bouton "Modifier" → swap vers corpus-row-edit.
+ # ────────────────────────────────────────────────────────────────────── #}
+{% from "macros/icon.html" import icon %}
+
+<div class="admin-corpus-row admin-table-row" id="corpus-{{ corpus.id }}">
+
+  <div class="admin-table-cell admin-table-cell--name">
+    <a href="/web/admin/corpus/{{ corpus.id }}" class="admin-corpus__name">
+      {{ corpus.display_name }}
+    </a>
+    {% if corpus.description %}
+    <span class="admin-corpus__desc" title="{{ corpus.description }}">{{ corpus.description }}</span>
+    {% endif %}
+    <span class="admin-corpus__slug">{{ corpus.name }}</span>
+  </div>
+
+  <div class="admin-table-cell">
+    <span class="admin-table-cell__mono">{{ document_count }}</span>
+  </div>
+  <div class="admin-table-cell">
+    <span class="admin-table-cell__mono">{{ source_count }}</span>
+  </div>
+  <div class="admin-table-cell">
+    <span class="admin-table-cell__mono">{{ collection_count }}</span>
+  </div>
+
+  <div class="admin-table-cell">
+    {% if corpus.is_active %}
+      <span class="admin-status admin-status--approved">actif</span>
+    {% else %}
+      <span class="admin-status admin-status--inactive">inactif</span>
+    {% endif %}
+  </div>
+
+  <div class="admin-table-cell admin-table-cell--actions">
+    <a href="/web/admin/corpus/{{ corpus.id }}"
+       class="admin-action" title="Voir le détail">
+      {{ icon('arrow-right', 14) }}
+    </a>
+    <button type="button"
+            class="admin-action"
+            hx-get="/web/admin/corpus/{{ corpus.id }}/edit"
+            hx-target="#corpus-{{ corpus.id }}"
+            hx-swap="outerHTML"
+            title="Modifier">
+      {{ icon('settings', 14) }}
+    </button>
+    <button type="button"
+            class="admin-action admin-action--danger"
+            hx-delete="/web/admin/corpus/{{ corpus.id }}"
+            hx-confirm="Supprimer définitivement « {{ corpus.display_name }} » ? Les liaisons documents/sources/bibliothèques seront retirées (les éléments eux-mêmes sont préservés)."
+            hx-target="#corpus-{{ corpus.id }}"
+            hx-swap="outerHTML"
+            title="Supprimer">
+      {{ icon('arrow-up-right', 14) }}
+    </button>
+  </div>
+</div>

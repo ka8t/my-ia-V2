@@ -1,0 +1,93 @@
+{% extends "layouts/admin.html" %}
+{% from "macros/icon.html" import icon %}
+
+{% block title %}Corpus — Admin{% endblock %}
+
+{% block admin_content %}
+
+<header class="admin-page__head">
+  <div class="admin-page__eyebrow"><span>Console / 04</span></div>
+  <h1 class="admin-page__title">
+    Corpus <em>thématiques</em>.
+  </h1>
+  <p class="admin-page__lede">
+    Un corpus regroupe documents et sources externes pour le RAG.
+    Les bibliothèques (collections) peuvent ensuite y être assignées
+    pour filtrer leur contexte de recherche.
+  </p>
+</header>
+
+{# ─── Actions globales ─── #}
+<div class="admin-actions-bar" x-data="{ open: false }">
+  <button type="button" class="admin-cta" @click="open = true">
+    {{ icon('sparkle', 14) }}
+    <span>Nouveau corpus</span>
+  </button>
+
+  {# ─── Modal création ─── #}
+  <div class="admin-modal" x-show="open" x-cloak
+       x-transition:enter="transition ease-out duration-200"
+       x-transition:enter-start="opacity-0"
+       x-transition:enter-end="opacity-100"
+       @keydown.escape.window="open = false">
+    <div class="admin-modal__backdrop" @click="open = false"></div>
+    <div class="admin-modal__panel" @click.stop>
+      <header class="admin-modal__head">
+        <h2 class="admin-modal__title">Créer un corpus</h2>
+        <button type="button" class="admin-modal__close" @click="open = false" title="Fermer">
+          {{ icon('alert-circle', 14) }}
+        </button>
+      </header>
+      <form class="admin-form"
+            hx-post="/web/admin/corpus"
+            hx-target="#corpus-table-body"
+            hx-swap="afterbegin"
+            @htmx:after-request="open = false; $el.reset()">
+        {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+        <label class="admin-form__field">
+          <span class="admin-form__label">Nom</span>
+          <input type="text" name="display_name" required class="admin-form__input"
+                 placeholder="Ex : Documentation interne" autofocus>
+        </label>
+        <label class="admin-form__field">
+          <span class="admin-form__label">Description (optionnel)</span>
+          <textarea name="description" rows="2" class="admin-form__textarea"
+                    placeholder="À quoi sert ce corpus ?"></textarea>
+        </label>
+        <div class="admin-form__actions">
+          <button type="button" class="admin-btn admin-btn--ghost" @click="open = false">Annuler</button>
+          <button type="submit" class="admin-btn admin-btn--primary">Créer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{# ─── Table ─── #}
+<div class="admin-table-wrap">
+  <div class="admin-table-head admin-corpus-row">
+    <span>Nom</span>
+    <span>Documents</span>
+    <span>Sources</span>
+    <span>Bibliothèques</span>
+    <span>Statut</span>
+    <span></span>
+  </div>
+
+  <div class="admin-table-body" id="corpus-table-body">
+    {% if rows %}
+      {% for r in rows %}
+        {% with corpus=r.corpus,
+                document_count=r.document_count,
+                source_count=r.source_count,
+                collection_count=r.collection_count %}
+          {% include 'partials/admin/corpus-row.html' %}
+        {% endwith %}
+      {% endfor %}
+    {% else %}
+      <div class="admin-empty">Aucun corpus. Créez le premier avec le bouton ci-dessus.</div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

@@ -78,6 +78,18 @@
           </a>
         </li>
         <li>
+          <a class="admin-nav__item{% if active_section == 'corpus' %} admin-nav__item--active{% endif %}"
+             href="/web/admin/corpus">
+            {{ icon('sparkle', 14) }}<span>Corpus</span>
+          </a>
+        </li>
+        <li>
+          <a class="admin-nav__item{% if active_section == 'sources' %} admin-nav__item--active{% endif %}"
+             href="/web/admin/sources">
+            {{ icon('arrow-up-right', 14) }}<span>Sources</span>
+          </a>
+        </li>
+        <li>
           <a class="admin-nav__item admin-nav__item--soon" aria-disabled="true">
             {{ icon('chat', 14) }}<span>Conversations</span>
             <span class="admin-nav__soon">Bientôt</span>

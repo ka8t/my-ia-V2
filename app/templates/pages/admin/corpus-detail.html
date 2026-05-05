@@ -1,0 +1,112 @@
+{% extends "layouts/admin.html" %}
+{% from "macros/icon.html" import icon %}
+
+{% block title %}Corpus · {{ corpus.display_name }} — Admin{% endblock %}
+
+{% block admin_content %}
+
+<header class="admin-page__head">
+  <div class="admin-page__eyebrow">
+    <a href="/web/admin/corpus" class="admin-breadcrumb">← Tous les corpus</a>
+  </div>
+  <h1 class="admin-page__title">
+    {{ corpus.display_name }}
+    {% if corpus.is_active %}
+      <span class="admin-status admin-status--approved">actif</span>
+    {% else %}
+      <span class="admin-status admin-status--inactive">inactif</span>
+    {% endif %}
+  </h1>
+  {% if corpus.description %}
+  <p class="admin-page__lede">{{ corpus.description }}</p>
+  {% endif %}
+  <p class="admin-corpus__slug">slug : <code>{{ corpus.name }}</code></p>
+</header>
+
+<section class="admin-stats">
+  <div class="admin-stat admin-stat--readonly">
+    <div class="admin-stat__num">{{ documents|length }}</div>
+    <div class="admin-stat__label">Document{{ 's' if documents|length != 1 }}</div>
+  </div>
+  <div class="admin-stat admin-stat--readonly">
+    <div class="admin-stat__num">{{ corpus_sources|length }}</div>
+    <div class="admin-stat__label">Source{{ 's' if corpus_sources|length != 1 }}</div>
+  </div>
+  <div class="admin-stat admin-stat--readonly">
+    <div class="admin-stat__num">{{ collections|length }}</div>
+    <div class="admin-stat__label">Bibliothèque{{ 's' if collections|length != 1 }}</div>
+  </div>
+</section>
+
+{# ─── Documents rattachés ─── #}
+<section class="admin-section">
+  <h2 class="admin-section__title">{{ icon('document', 16) }} Documents</h2>
+  {% if documents %}
+  <ul class="admin-bare-list">
+    {% for d in documents %}
+    <li class="admin-bare-list__item">
+      <span class="admin-bare-list__main">{{ d.filename }}</span>
+      <span class="admin-bare-list__meta">
+        {{ d.file_type or '—' }} ·
+        {% if d.chunk_count and d.chunk_count > 0 %}
+          {{ d.chunk_count }} chunks
+        {% else %}
+          non indexé
+        {% endif %}
+      </span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="admin-empty admin-empty--small">Aucun document rattaché.</p>
+  {% endif %}
+  <p class="admin-hint">
+    Le rattachement de documents au corpus se fait depuis l'admin V1
+    (ou en Vague 2 V2).
+  </p>
+</section>
+
+{# ─── Sources rattachées ─── #}
+<section class="admin-section">
+  <h2 class="admin-section__title">{{ icon('settings', 16) }} Sources</h2>
+  {% if corpus_sources %}
+  <ul class="admin-bare-list">
+    {% for cs, s in corpus_sources %}
+    <li class="admin-bare-list__item">
+      <span class="admin-bare-list__main">
+        <a href="/web/admin/sources">{{ s.display_name }}</a>
+      </span>
+      <span class="admin-bare-list__meta">
+        {{ s.source_type }} ·
+        priorité {{ cs.priority }} ·
+        {% if cs.is_enabled %}activée{% else %}désactivée{% endif %}
+      </span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="admin-empty admin-empty--small">Aucune source rattachée.</p>
+  {% endif %}
+</section>
+
+{# ─── Bibliothèques (collections) assignées ─── #}
+<section class="admin-section">
+  <h2 class="admin-section__title">{{ icon('sparkle', 16) }} Bibliothèques</h2>
+  {% if collections %}
+  <ul class="admin-bare-list">
+    {% for c in collections %}
+    <li class="admin-bare-list__item">
+      <span class="admin-bare-list__main">{{ c.display_name }}</span>
+      <span class="admin-bare-list__meta">
+        {{ c.type }} ·
+        {{ c.document_count }} doc{{ 's' if c.document_count != 1 }}
+      </span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="admin-empty admin-empty--small">Aucune bibliothèque assignée.</p>
+  {% endif %}
+</section>
+
+{% endblock %}

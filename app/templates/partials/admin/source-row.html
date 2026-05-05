@@ -1,0 +1,75 @@
+{# ─────────────────────────────────────────────────────────────────────
+ # partials/admin/source-row.html — mode lecture
+ # ────────────────────────────────────────────────────────────────────── #}
+{% from "macros/icon.html" import icon %}
+
+<div class="admin-source-row admin-table-row" id="source-{{ source.id }}">
+
+  <div class="admin-table-cell admin-table-cell--name">
+    <span class="admin-source__name">{{ source.display_name }}</span>
+    {% if source.description %}
+    <span class="admin-corpus__desc" title="{{ source.description }}">{{ source.description }}</span>
+    {% endif %}
+    <span class="admin-corpus__slug">{{ source.name }}</span>
+  </div>
+
+  <div class="admin-table-cell">
+    <span class="admin-config__cat">{{ source.source_type }}</span>
+  </div>
+
+  <div class="admin-table-cell">
+    {% if source.is_enabled %}
+      <span class="admin-status admin-status--approved">activée</span>
+    {% else %}
+      <span class="admin-status admin-status--inactive">désactivée</span>
+    {% endif %}
+  </div>
+
+  <div class="admin-table-cell">
+    {% if source.health_status == 'healthy' %}
+      <span class="admin-status admin-status--approved">healthy</span>
+    {% elif source.health_status == 'unhealthy' %}
+      <span class="admin-status admin-status--rejected">unhealthy</span>
+    {% else %}
+      <span class="admin-status admin-status--pending">{{ source.health_status }}</span>
+    {% endif %}
+  </div>
+
+  <div class="admin-table-cell">
+    {% if source.chunk_count and source.chunk_count > 0 %}
+      <span class="admin-table-cell__mono">{{ source.chunk_count }} chunks</span>
+    {% else %}
+      <span class="admin-table-cell__mono admin-config__hint">non indexée</span>
+    {% endif %}
+  </div>
+
+  <div class="admin-table-cell admin-table-cell--actions">
+    <form hx-post="/web/admin/sources/{{ source.id }}/toggle"
+          hx-target="#source-{{ source.id }}" hx-swap="outerHTML"
+          class="admin-action-form">
+      {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+      <button type="submit"
+              class="admin-action {% if source.is_enabled %}{% else %}admin-action--accent{% endif %}"
+              title="{{ 'Désactiver' if source.is_enabled else 'Activer' }}">
+        {{ icon('logout' if source.is_enabled else 'sparkle', 14) }}
+      </button>
+    </form>
+    <button type="button"
+            class="admin-action"
+            hx-get="/web/admin/sources/{{ source.id }}/edit"
+            hx-target="#source-{{ source.id }}"
+            hx-swap="outerHTML"
+            title="Modifier">
+      {{ icon('settings', 14) }}
+    </button>
+    <button type="button"
+            class="admin-action admin-action--danger"
+            hx-delete="/web/admin/sources/{{ source.id }}"
+            hx-confirm="Supprimer définitivement « {{ source.display_name }} » ? Les rattachements aux corpus et bibliothèques seront retirés."
+            hx-target="#source-{{ source.id }}"
+            hx-swap="outerHTML"
+            title="Supprimer">
+      {{ icon('arrow-up-right', 14) }}
+    </button>
+  </div>
+</div>

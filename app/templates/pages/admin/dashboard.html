@@ -36,6 +36,20 @@
     <span class="admin-stat__cta">{{ icon('arrow-up-right', 12) }}</span>
   </a>
 
+  <a class="admin-stat" href="/web/admin/corpus">
+    <div class="admin-stat__num">{{ stats.corpus }}</div>
+    <div class="admin-stat__label">Corpus</div>
+    <div class="admin-stat__sub">Regroupements thématiques</div>
+    <span class="admin-stat__cta">{{ icon('arrow-up-right', 12) }}</span>
+  </a>
+
+  <a class="admin-stat" href="/web/admin/sources">
+    <div class="admin-stat__num">{{ stats.sources }}</div>
+    <div class="admin-stat__label">Source{{ 's' if stats.sources != 1 }}</div>
+    <div class="admin-stat__sub">Web · API · BDD</div>
+    <span class="admin-stat__cta">{{ icon('arrow-up-right', 12) }}</span>
+  </a>
+
   <div class="admin-stat admin-stat--readonly">
     <div class="admin-stat__num">{{ stats.conversations }}</div>
     <div class="admin-stat__label">Conversation{{ 's' if stats.conversations != 1 }}</div>
@@ -49,12 +63,13 @@
     <h2 class="admin-callout__title">Migration en cours.</h2>
   </div>
   <p class="admin-callout__body">
-    L'admin V2 couvre désormais utilisateurs, documents et
-    <a href="/web/admin/config">configuration système</a> (clé/valeur générique).
-    Les modules métier (LLM, RAG, storage, audit&hellip;) avec UX dédiée
-    restent disponibles dans l'admin V1
-    sur <a href="https://localhost:8081" target="_blank" rel="noopener">port 8081</a>
-    le temps de leur portage progressif.
+    L'admin V2 couvre désormais utilisateurs, documents,
+    <a href="/web/admin/corpus">corpus</a>, <a href="/web/admin/sources">sources</a>
+    et <a href="/web/admin/config">configuration système</a>.
+    Les actions lourdes (réindexation, bulk, health-check, indexation logs)
+    et la configuration technique des sources restent disponibles dans
+    l'admin V1 sur <a href="https://localhost:8081" target="_blank" rel="noopener">port 8081</a>
+    le temps de leur portage en Vague 2.
   </p>
 </section>
 
