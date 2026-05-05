@@ -1,0 +1,86 @@
+{# ─────────────────────────────────────────────────────────────────────
+ # reindex-progress.html — état d'avancement de réindexation d'un corpus.
+ #
+ # Variables :
+ #   corpus_id (UUID), state (dict via _aggregate_progress), flash (str?)
+ #
+ # Polling auto-stoppant : hx-trigger="every 2s" actif uniquement si
+ # state.status == 'running'. Dès que le serveur répond avec un autre
+ # statut, le partial est rendu sans hx-trigger → polling cesse seul.
+ # ────────────────────────────────────────────────────────────────────── #}
+{% from "macros/icon.html" import icon %}
+
+{% set is_running = state.status == 'running' %}
+{% set status_class = {
+  'idle': 'admin-status--inactive',
+  'running': 'admin-status--pending',
+  'completed': 'admin-status--approved',
+  'cancelled': 'admin-status--inactive',
+  'failed': 'admin-status--rejected',
+}[state.status] | default('admin-status--inactive') %}
+
+<div id="reindex-progress"
+     class="admin-reindex"
+     {% if is_running %}
+     hx-get="/web/admin/corpus/{{ corpus_id }}/reindex/status"
+     hx-trigger="every 2s"
+     hx-swap="outerHTML"
+     {% endif %}>
+
+  <div class="admin-reindex__head">
+    <span class="admin-status {{ status_class }}">{{ state.status }}</span>
+    {% if state.total > 0 %}
+      <span class="admin-config__hint">
+        {{ state.completed }}/{{ state.total }} terminés
+        {% if state.running %} · {{ state.running }} en cours{% endif %}
+        {% if state.failed %} · {{ state.failed }} échec(s){% endif %}
+        {% if state.cancelled %} · {{ state.cancelled }} annulé(s){% endif %}
+      </span>
+    {% endif %}
+  </div>
+
+  {% if state.total > 0 %}
+  <progress class="admin-reindex__bar" value="{{ state.progress }}" max="100"></progress>
+  <p class="admin-reindex__msg">{{ state.message }}</p>
+  {% else %}
+  <p class="admin-reindex__msg admin-config__hint">{{ state.message }}</p>
+  {% endif %}
+
+  {% if flash %}
+  <p class="admin-reindex__flash">{{ flash }}</p>
+  {% endif %}
+
+  <div class="admin-reindex__actions">
+    {% if is_running %}
+      <form hx-post="/web/admin/corpus/{{ corpus_id }}/reindex/cancel"
+            hx-target="#reindex-progress"
+            hx-swap="outerHTML"
+            class="admin-action-form">
+        {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+        <button type="submit" class="admin-btn admin-btn--ghost">
+          {{ icon('alert-circle', 12) }} Annuler la réindexation
+        </button>
+      </form>
+    {% else %}
+      <form hx-post="/web/admin/corpus/{{ corpus_id }}/reindex"
+            hx-target="#reindex-progress"
+            hx-swap="outerHTML"
+            class="admin-action-form">
+        {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+        <button type="submit" class="admin-btn admin-btn--primary">
+          {{ icon('sparkle', 12) }} Réindexer
+        </button>
+      </form>
+      <form hx-post="/web/admin/corpus/{{ corpus_id }}/clear-index"
+            hx-target="#reindex-progress"
+            hx-swap="outerHTML"
+            hx-confirm="Vider l'index ChromaDB pour ce corpus ? Les documents/sources rattachés perdent leurs chunks (les fichiers et la BDD restent)."
+            class="admin-action-form">
+        {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+        <button type="submit" class="admin-btn admin-btn--ghost">
+          {{ icon('alert-circle', 12) }} Vider l'index
+        </button>
+      </form>
+    {% endif %}
+  </div>
+</div>

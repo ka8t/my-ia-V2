@@ -1,16 +1,17 @@
-"""Web routes — Admin corpus (Phase 3.7.b — Vagues 1 & 2.1-2.3).
+"""Web routes — Admin corpus (Phase 3.7.b — Vagues 1, 2.1-2.4).
 
-CRUD corpus + gestion des relations corpus↔documents/sources/collections.
-Les actions en cascade (reindex, clear, health-check) sont prévues en
-Vagues 2.4/2.5.
+CRUD corpus + gestion des relations corpus↔documents/sources/collections +
+actions en cascade (reindex, clear, cancel) avec polling HTMX.
 
-Routes corpus
--------------
+Routes corpus (Vague 1)
+-----------------------
 GET    /web/admin/corpus              — liste avec compteurs
 GET    /web/admin/corpus/{id}         — détail interactif
 POST   /web/admin/corpus              — create (form)
 GET    /web/admin/corpus/{id}/edit    — partial mode édition
-POST   /web/admin/corpus/{id}/cancel  — sortir du mode édition
+POST   /web/admin/corpus/{id}/cancel  — sortir du mode édition (note : conflit
+                                         de sémantique avec ../reindex/cancel,
+                                         résolu par préfixe path différent)
 PATCH  /web/admin/corpus/{id}         — update (form)
 DELETE /web/admin/corpus/{id}         — delete (CASCADE rompt les liaisons)
 
@@ -29,6 +30,14 @@ GET    /web/admin/corpus/{id}/collections/picker    — modal liste available
 POST   /web/admin/corpus/{id}/collections           — attach collection (publique)
 PATCH  /web/admin/corpus/{id}/collections/{col_id}  — update priority
 DELETE /web/admin/corpus/{id}/collections/{col_id}  — detach collection
+
+Routes actions en cascade (Vague 2.4)
+-------------------------------------
+POST   /web/admin/corpus/{id}/reindex             — kick-off BG reindex docs+sources
+POST   /web/admin/corpus/{id}/reindex/cancel      — request cancel (cascade)
+GET    /web/admin/corpus/{id}/reindex/status      — polling HTMX (every 2s tant
+                                                    que running, sinon stoppe)
+POST   /web/admin/corpus/{id}/clear-index         — vide chunks ChromaDB
 """
 from __future__ import annotations
 
@@ -37,7 +46,7 @@ import re
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Form, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, Form, Request
 from fastapi.responses import HTMLResponse, Response
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -890,3 +899,237 @@ async def admin_corpus_detach_collection(
             "<div class='toast toast--error'>Erreur lors du retrait.</div>", status_code=500
         )
     return Response(status_code=200, content="")
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  Vague 2.4 — Reindex / Clear / Cancel + polling HTMX
+# ═════════════════════════════════════════════════════════════════════════════
+def _aggregate_progress(progresses: list[dict]) -> dict:
+    """Agrège les progress par-item d'un corpus en un état global.
+
+    Statuts possibles : ``idle`` (rien en cours), ``running``, ``completed``,
+    ``cancelled``, ``failed``. Le partial active le polling tant que ``running``.
+    """
+    if not progresses:
+        return {"status": "idle", "progress": 0, "message": "Pas de réindexation en cours.",
+                "running": 0, "completed": 0, "failed": 0, "cancelled": 0, "total": 0}
+
+    counts = {"running": 0, "completed": 0, "failed": 0, "cancelled": 0}
+    progress_sum = 0
+    for p in progresses:
+        st = p.get("status", "idle")
+        if st in counts:
+            counts[st] += 1
+        progress_sum += int(p.get("progress", 0) or 0)
+
+    total = len(progresses)
+    avg = progress_sum // total if total else 0
+
+    if counts["running"] > 0:
+        global_status = "running"
+        message = f"{counts['running']} en cours, {counts['completed']}/{total} terminés"
+    elif counts["failed"] > 0 and counts["completed"] + counts["cancelled"] == total - counts["failed"]:
+        global_status = "failed"
+        message = f"{counts['failed']} échec(s) sur {total}"
+    elif counts["cancelled"] > 0 and counts["running"] == 0:
+        global_status = "cancelled"
+        message = f"Annulé ({counts['completed']}/{total} terminés avant annulation)"
+    elif counts["completed"] == total:
+        global_status = "completed"
+        message = f"{total} élément(s) réindexé(s)"
+    else:
+        global_status = "idle"
+        message = "État inconnu"
+
+    return {
+        "status": global_status,
+        "progress": avg,
+        "message": message,
+        **counts,
+        "total": total,
+    }
+
+
+async def _render_reindex_progress(
+    request: Request, corpus_id: uuid.UUID, *, flash: str | None = None
+) -> HTMLResponse:
+    """Calcule l'état d'avancement du corpus et rend le partial."""
+    from app.common.utils.reindex import ReindexManager
+
+    items = ReindexManager.get_corpus_items(str(corpus_id))
+    progresses = [ReindexManager.get_progress(it) for it in items]
+    state = _aggregate_progress(progresses)
+
+    return templates.TemplateResponse(
+        request,
+        "partials/admin/reindex-progress.html",
+        web_context(request, corpus_id=corpus_id, state=state, flash=flash),
+    )
+
+
+@router.get("/{corpus_id}/reindex/status", response_class=HTMLResponse)
+async def admin_corpus_reindex_status(
+    request: Request,
+    corpus_id: uuid.UUID,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    if (await _get_corpus_or_404(db, corpus_id)) is None:
+        return HTMLResponse("", status_code=404)
+    return await _render_reindex_progress(request, corpus_id)
+
+
+@router.post("/{corpus_id}/reindex", response_class=HTMLResponse)
+async def admin_corpus_reindex(
+    request: Request,
+    corpus_id: uuid.UUID,
+    background_tasks: BackgroundTasks,
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    if (err := _csrf_or_400(request, csrf_token)):
+        return err
+    if (await _get_corpus_or_404(db, corpus_id)) is None:
+        return HTMLResponse("", status_code=404)
+
+    # Charger les items rattachés via le service partagé.
+    result = await db.execute(
+        select(Corpus)
+        .where(Corpus.id == corpus_id)
+        .options(
+            selectinload(Corpus.corpus_documents),
+            selectinload(Corpus.sources),
+        )
+    )
+    corpus = result.unique().scalar_one()
+    document_ids = [cd.document_id for cd in corpus.corpus_documents]
+    source_ids = [cs.source_id for cs in corpus.sources]
+
+    if not document_ids and not source_ids:
+        return await _render_reindex_progress(
+            request, corpus_id, flash="Aucun élément rattaché à réindexer."
+        )
+
+    # Réutiliser les BG tasks privés du router API V1 — évite la duplication
+    # de logique d'indexation. À factoriser dans un module dédié à terme.
+    from app.common.utils.reindex import ReindexManager
+    from app.features.admin.corpus.router import (
+        _run_doc_reindex_in_background,
+        _run_source_reindex_in_background,
+    )
+    from app.features.sources.history import IndexationHistoryService
+
+    queued_docs = 0
+    for doc_id in document_ids:
+        existing = ReindexManager.get_doc_progress(str(doc_id))
+        if existing.get("status") == "running":
+            continue
+        background_tasks.add_task(
+            _run_doc_reindex_in_background, document_id=doc_id, corpus_id=corpus_id
+        )
+        queued_docs += 1
+
+    queued_sources = 0
+    admin_id = user.get("id")
+    for source_id in source_ids:
+        try:
+            log_entry = await IndexationHistoryService.start_indexation(
+                db=db,
+                source_id=source_id,
+                trigger_type="corpus_reindex",
+                triggered_by=admin_id,
+            )
+            await db.commit()
+        except Exception as e:
+            logger.error("Erreur start_indexation source %s: %s", source_id, e)
+            await db.rollback()
+            continue
+
+        background_tasks.add_task(
+            _run_source_reindex_in_background,
+            source_id=source_id,
+            triggered_by=admin_id,
+            log_id=str(log_entry.id),
+            corpus_id=corpus_id,
+        )
+        queued_sources += 1
+
+    logger.info(
+        "Admin %s lança reindex corpus %s (%d docs, %d sources)",
+        user.get("email"), corpus_id, queued_docs, queued_sources,
+    )
+
+    flash = f"Réindexation lancée : {queued_docs} document(s), {queued_sources} source(s)."
+    return await _render_reindex_progress(request, corpus_id, flash=flash)
+
+
+@router.post("/{corpus_id}/reindex/cancel", response_class=HTMLResponse)
+async def admin_corpus_reindex_cancel(
+    request: Request,
+    corpus_id: uuid.UUID,
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    if (err := _csrf_or_400(request, csrf_token)):
+        return err
+    if (await _get_corpus_or_404(db, corpus_id)) is None:
+        return HTMLResponse("", status_code=404)
+
+    from app.common.utils.reindex import ReindexManager
+
+    cancelled = ReindexManager.request_corpus_cancel(str(corpus_id))
+    if cancelled == 0:
+        return await _render_reindex_progress(
+            request, corpus_id, flash="Aucune réindexation en cours pour ce corpus."
+        )
+
+    logger.info("Admin %s a annulé reindex corpus %s (%d items)",
+                user.get("email"), corpus_id, cancelled)
+    return await _render_reindex_progress(
+        request, corpus_id, flash=f"Annulation demandée pour {cancelled} élément(s)."
+    )
+
+
+@router.post("/{corpus_id}/clear-index", response_class=HTMLResponse)
+async def admin_corpus_clear_index(
+    request: Request,
+    corpus_id: uuid.UUID,
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    if (err := _csrf_or_400(request, csrf_token)):
+        return err
+
+    # Réutiliser le service V1 qui gère le clear chunks ChromaDB en cascade.
+    from app.core.deps import get_chroma_client, get_storage_service
+    from app.features.admin.corpus.service import AdminCorpusService
+
+    if (await _get_corpus_or_404(db, corpus_id)) is None:
+        return HTMLResponse("", status_code=404)
+
+    try:
+        service = AdminCorpusService(
+            session=db,
+            storage_service=get_storage_service(),
+            chroma_client=get_chroma_client(),
+        )
+        result = await service.clear_corpus_index(corpus_id)
+    except Exception as e:
+        logger.error("Erreur clear_corpus_index %s: %s", corpus_id, e)
+        return HTMLResponse(
+            "<div class='toast toast--error'>Erreur lors du vidage de l'index.</div>",
+            status_code=500,
+        )
+
+    logger.info(
+        "Admin %s a vidé l'index du corpus %s (%s)", user.get("email"), corpus_id, result
+    )
+    flash = (
+        f"Index vidé : {result.get('documents_cleared', 0)} document(s), "
+        f"{result.get('sources_cleared', 0)} source(s), "
+        f"{result.get('total_chunks', 0)} chunk(s) supprimé(s)."
+    )
+    return await _render_reindex_progress(request, corpus_id, flash=flash)

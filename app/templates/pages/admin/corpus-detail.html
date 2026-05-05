@@ -38,6 +38,20 @@
   </div>
 </section>
 
+{# ─────────────── Réindexation / vidage de l'index (Vague 2.4) ─────────────── #}
+<section class="admin-section">
+  <div class="admin-section__header">
+    <h2 class="admin-section__title">{{ icon('settings', 16) }} Réindexation</h2>
+  </div>
+  <div hx-get="/web/admin/corpus/{{ corpus.id }}/reindex/status"
+       hx-trigger="load"
+       hx-swap="outerHTML"
+       id="reindex-progress"
+       class="admin-reindex admin-reindex--placeholder">
+    <p class="admin-config__hint">Chargement de l'état…</p>
+  </div>
+</section>
+
 {# ─────────────── Documents rattachés ─────────────── #}
 <section class="admin-section" x-data="{ pickerOpen: false }">
   <div class="admin-section__header">
