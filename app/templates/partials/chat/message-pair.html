@@ -1,0 +1,36 @@
+{# ─────────────────────────────────────────────────────────────────────
+ # partials/chat/message-pair.html
+ #
+ # Returned by POST /web/chat/messages. Renders both bubbles back-to-back:
+ #   - user   : the query that was just sent
+ #   - assist : empty bubble subscribed to the SSE stream that fills it
+ #
+ # NOTE: sse-connect, sse-swap et hx-swap doivent être sur le MÊME élément
+ # pour que l'extension applique le swap "beforeend" correctement.
+ # ────────────────────────────────────────────────────────────────────── #}
+{% from "macros/icon.html" import icon %}
+
+<article class="chat-message chat-message--user">
+  <div class="chat-message__meta">
+    <span class="chat-message__role">vous</span>
+  </div>
+  <div class="chat-message__body">{{ query }}</div>
+</article>
+
+<article class="chat-message chat-message--assistant">
+  <div class="chat-message__meta">
+    <span class="chat-message__role">MY-IA</span>
+    <span class="chat-message__status" aria-live="polite">
+      {{ icon('sparkle', 12) }}<span> en réflexion…</span>
+    </span>
+  </div>
+  <div class="chat-message__body"
+       data-streaming="1"
+       hx-ext="sse"
+       sse-connect="/web/chat/stream/{{ stream_id }}"
+       sse-swap="token"
+       sse-close="done"
+       hx-swap="beforeend"
+       hx-on::sse-close="this.removeAttribute('data-streaming'); this.closest('.chat-message').querySelector('.chat-message__status').remove();"
+       hx-on::sse-error="this.removeAttribute('data-streaming'); var s=this.closest('.chat-message').querySelector('.chat-message__status'); if(s){s.textContent='Erreur de streaming.'; s.style.color='var(--color-danger)';}"></div>
+</article>

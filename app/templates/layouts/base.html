@@ -21,10 +21,15 @@
   <script src="https://unpkg.com/alpinejs@3.14.3" defer></script>
 
   {# HTMX 2 ne swap pas sur 4xx/5xx par défaut. Pour l'auth web on veut
-     swap les partiels d'erreur retournés en 400/401/403 (toasts inline). #}
+     swap les partiels d'erreur retournés en 400/401/403 (toasts inline).
+     IMPORTANT: les events SSE n'ont pas d'XHR (EventSource), donc check
+     l'existence de xhr avant d'accéder à .status, sinon ça throw et
+     bloque tous les swaps SSE. #}
   <script>
     document.addEventListener('htmx:beforeSwap', function (evt) {
-      var s = evt.detail.xhr.status;
+      var xhr = evt.detail && evt.detail.xhr;
+      if (!xhr) return;
+      var s = xhr.status;
       if (s >= 400 && s < 500) {
         evt.detail.shouldSwap = true;
         evt.detail.isError = false;
