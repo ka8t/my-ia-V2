@@ -6,15 +6,31 @@
   <meta name="color-scheme" content="light dark">
   <title>{% block title %}{{ title|default('MY-IA') }}{% endblock %}</title>
 
+  {# Inline SVG favicon — diamond mark, accent rust #}
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23B5482F' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 12 L12 3 L21 12 L12 21 Z'/%3E%3Cpath d='M7.5 12 L12 7.5 L16.5 12 L12 16.5 Z'/%3E%3C/svg%3E">
+
   {# Design system — order matters: tokens → base → components #}
   <link rel="stylesheet" href="{{ url_for('static', path='css/tokens.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', path='css/base.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', path='css/components.css') }}">
 
-  {# HTMX + Alpine.js (CDN) #}
+  {# HTMX 2 + extensions + Alpine.js (CDN)
+     Note: l'extension SSE pour HTMX 2 est un package distinct (htmx-ext-sse). #}
   <script src="https://unpkg.com/htmx.org@2.0.3" defer></script>
-  <script src="https://unpkg.com/htmx.org@2.0.3/dist/ext/sse.js" defer></script>
+  <script src="https://unpkg.com/htmx-ext-sse@2.2.2" defer></script>
   <script src="https://unpkg.com/alpinejs@3.14.3" defer></script>
+
+  {# HTMX 2 ne swap pas sur 4xx/5xx par défaut. Pour l'auth web on veut
+     swap les partiels d'erreur retournés en 400/401/403 (toasts inline). #}
+  <script>
+    document.addEventListener('htmx:beforeSwap', function (evt) {
+      var s = evt.detail.xhr.status;
+      if (s >= 400 && s < 500) {
+        evt.detail.shouldSwap = true;
+        evt.detail.isError = false;
+      }
+    });
+  </script>
 
   {% block head %}{% endblock %}
 </head>
