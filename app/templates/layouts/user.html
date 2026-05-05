@@ -1,0 +1,79 @@
+{% extends "layouts/base.html" %}
+{% from "macros/icon.html" import icon %}
+
+{% block title %}{{ title|default('MY-IA') }}{% endblock %}
+
+{% block content %}
+<div class="app-shell">
+
+  {# ─── Topbar ─── #}
+  <header class="app-topbar">
+    <a class="app-topbar__brand" href="/">
+      {{ icon('diamond', 18) }}
+      <span>MY-IA</span>
+    </a>
+
+    <nav class="app-topbar__nav">
+      {% if current_user %}
+      {# User menu (Alpine.js dropdown) #}
+      <div class="user-menu" x-data="{ open: false }" @click.outside="open = false" @keydown.escape="open = false">
+
+        <button type="button"
+                class="user-menu__trigger"
+                @click="open = !open"
+                :aria-expanded="open"
+                aria-haspopup="menu">
+          <span class="user-menu__avatar">
+            {{ (current_user.username or current_user.email or '?')[0]|upper }}
+          </span>
+          <span class="user-menu__email">{{ current_user.email }}</span>
+        </button>
+
+        <div class="user-menu__panel"
+             role="menu"
+             x-show="open"
+             x-transition:enter="transition transform ease-out duration-200"
+             x-transition:enter-start="opacity-0 -translate-y-1"
+             x-transition:enter-end="opacity-100 translate-y-0"
+             x-cloak>
+
+          <div class="user-menu__panel-header">
+            <span class="user-menu__panel-header-name">{{ current_user.username or current_user.email }}</span>
+            <span class="user-menu__panel-header-meta">
+              {{ current_user.email }}{% if current_user.is_superuser %} · admin{% endif %}
+            </span>
+          </div>
+
+          <a class="user-menu__item" href="/web/preferences" role="menuitem">
+            <span>Préférences</span>
+            {{ icon('settings', 14) }}
+          </a>
+
+          <form method="post" action="/web/logout"
+                hx-post="/web/logout"
+                hx-target="body"
+                hx-swap="none">
+            {% if csrf_token %}
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            {% endif %}
+            <button type="submit" class="user-menu__item user-menu__item--danger" role="menuitem">
+              <span>Se déconnecter</span>
+              {{ icon('logout', 14) }}
+            </button>
+          </form>
+
+        </div>
+      </div>
+      {% endif %}
+    </nav>
+  </header>
+
+  {# ─── Content ─── #}
+  <main class="app-content">
+    {% block app_content %}{% endblock %}
+  </main>
+
+</div>
+
+<style>[x-cloak] { display: none !important; }</style>
+{% endblock %}

@@ -16,9 +16,9 @@ import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -33,6 +33,7 @@ from app.features.user.service import UserNotApprovedException
 from app.features.sources.scheduler import start_scheduler, stop_scheduler
 from app.web.jinja import make_templates, web_context
 from app.web.auth import router as web_auth_router
+from app.web.deps import AuthRedirect, require_web_auth
 
 # --- Routers ---
 from app.features.health.router import router as health_router
@@ -183,6 +184,12 @@ async def user_not_approved_exception_handler(
     )
 
 
+# Exception handler — redirection vers /web/login si dépendance require_web_auth
+@app.exception_handler(AuthRedirect)
+async def auth_redirect_handler(request: Request, exc: AuthRedirect):
+    return RedirectResponse(url=exc.location, status_code=303)
+
+
 # ============================================================================
 # MIDDLEWARE (ordre d'ajout = inverse exécution ; dernier = plus externe)
 # ============================================================================
@@ -221,10 +228,15 @@ templates = make_templates(TEMPLATES_DIR)
 
 
 @app.get("/", response_class=HTMLResponse, tags=["web"])
-async def home(request: Request) -> HTMLResponse:
-    """Page d'accueil V2 (placeholder Phase 0/1)."""
+async def home(
+    request: Request,
+    user: dict = Depends(require_web_auth),
+) -> HTMLResponse:
+    """Page d'accueil V2 — protégée. Redirige vers /web/login si non auth."""
     return templates.TemplateResponse(
-        request, "pages/home.html", web_context(request, title=settings.app_name)
+        request,
+        "pages/home.html",
+        web_context(request, title=settings.app_name, user=user),
     )
 
 

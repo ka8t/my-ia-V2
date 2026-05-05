@@ -1,0 +1,10 @@
+{# ─────────────────────────────────────────────────────────────────────
+ # partials/auth/register-error.html
+ # Returned by failure path of POST /web/register.
+ # ────────────────────────────────────────────────────────────────────── #}
+{% from "macros/toast.html" import toast %}
+{% if error %}
+{{ toast('error',
+         message=error,
+         title="Inscription impossible") }}
+{% endif %}

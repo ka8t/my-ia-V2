@@ -1,24 +1,73 @@
-{% extends "layouts/base.html" %}
+{% extends "layouts/user.html" %}
+{% from "macros/icon.html" import icon %}
 
-{% block title %}MY-IA V2 — Bootstrap{% endblock %}
+{% block title %}Accueil — MY-IA{% endblock %}
 
-{% block content %}
-<main style="max-width: 720px; margin: 4rem auto; font-family: system-ui, sans-serif; padding: 0 1.5rem; line-height: 1.6;">
-  <h1 style="font-size: 2rem; margin-bottom: 0.5rem;">MY-IA V2 🐍</h1>
-  <p style="color: #666; margin-bottom: 2rem;">Stack 100% Python — FastAPI + Jinja2 + HTMX</p>
+{% block app_content %}
 
-  <section style="background: #f5f5f7; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
-    <h2 style="font-size: 1.1rem; margin-bottom: 0.75rem;">Phase 0 — Bootstrap</h2>
-    <p>Squelette du projet en place. La logique métier sera branchée en Phase 1.</p>
-  </section>
+{% set greeting_name = current_user.username or current_user.email.split('@')[0] %}
 
-  <section style="background: #f5f5f7; padding: 1.5rem; border-radius: 8px;">
-    <h2 style="font-size: 1.1rem; margin-bottom: 0.75rem;">Endpoints disponibles</h2>
-    <ul style="margin: 0; padding-left: 1.25rem;">
-      <li><a href="/health">/health</a> — Santé de l'app</li>
-      <li><a href="/docs">/docs</a> — OpenAPI Swagger UI</li>
-      <li><a href="/redoc">/redoc</a> — OpenAPI ReDoc</li>
-    </ul>
-  </section>
-</main>
+<section class="home-hero">
+  <div class="home-hero__eyebrow"><span>Bienvenue</span></div>
+  <h1 class="home-hero__title">
+    Bonjour <em>{{ greeting_name }}</em>.
+  </h1>
+  <p class="home-hero__lede">
+    Votre espace de travail conversationnel. Posez une question,
+    explorez vos sources, ou ouvrez une conversation existante.
+  </p>
+</section>
+
+<section class="action-grid">
+
+  <a class="action-card" href="/web/chat">
+    <div class="action-card__head">
+      <span class="action-card__index">01</span>
+      <span class="action-card__icon">{{ icon('chat', 22) }}</span>
+    </div>
+    <div>
+      <h2 class="action-card__title">Nouvelle conversation</h2>
+      <p class="action-card__desc">
+        Démarrer un échange à partir de vos documents et sources connectées.
+      </p>
+    </div>
+    <span class="action-card__cta">
+      <span>Commencer</span>{{ icon('arrow-right', 12) }}
+    </span>
+  </a>
+
+  <a class="action-card" href="/web/documents">
+    <div class="action-card__head">
+      <span class="action-card__index">02</span>
+      <span class="action-card__icon">{{ icon('document', 22) }}</span>
+    </div>
+    <div>
+      <h2 class="action-card__title">Mes documents</h2>
+      <p class="action-card__desc">
+        Téléverser, indexer et organiser les sources qui alimentent vos conversations.
+      </p>
+    </div>
+    <span class="action-card__cta">
+      <span>Parcourir</span>{{ icon('arrow-right', 12) }}
+    </span>
+  </a>
+
+  <a class="action-card" href="/web/preferences">
+    <div class="action-card__head">
+      <span class="action-card__index">03</span>
+      <span class="action-card__icon">{{ icon('settings', 22) }}</span>
+    </div>
+    <div>
+      <h2 class="action-card__title">Préférences</h2>
+      <p class="action-card__desc">
+        Profil, langue, voix, modèles. Personnaliser votre expérience.
+      </p>
+    </div>
+    <span class="action-card__cta">
+      <span>Configurer</span>{{ icon('arrow-right', 12) }}
+    </span>
+  </a>
+
+</section>
+
 {% endblock %}

@@ -1,0 +1,4 @@
+{% from "macros/toast.html" import toast %}
+{% if error %}
+{{ toast('error', message=error, title="Mise à jour impossible") }}
+{% endif %}

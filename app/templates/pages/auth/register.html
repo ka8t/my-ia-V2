@@ -1,0 +1,80 @@
+{% extends "layouts/auth.html" %}
+{% from "macros/field.html" import field %}
+{% from "macros/button.html" import button, link_button %}
+
+{% block title %}Créer un compte — MY-IA{% endblock %}
+
+{% block brand_hero %}
+<div class="auth-shell__hero">
+  <div class="auth-shell__eyebrow"><span>Inscription</span></div>
+  <h1 class="auth-shell__title">
+    Rejoindre<br>
+    l'<em>atelier</em>.
+  </h1>
+  <p class="auth-shell__lede">
+    Créez votre compte. Un administrateur validera votre inscription
+    avant de vous donner accès à la plateforme.
+  </p>
+</div>
+{% endblock %}
+
+{% block auth_form %}
+<div class="auth-card">
+
+  <header class="auth-card__header">
+    <span class="auth-card__index"><span>02 / Inscription</span></span>
+    <h2 class="auth-card__title">Créer un compte.</h2>
+    <p class="auth-card__subtitle">
+      Renseignez votre adresse e-mail et un mot de passe.
+      Votre compte devra être validé par un administrateur.
+    </p>
+  </header>
+
+  <div id="register-error" aria-live="polite">
+    {% include 'partials/auth/register-error.html' ignore missing %}
+  </div>
+
+  <form class="auth-card__form"
+        method="post"
+        action="/web/register"
+        hx-post="/web/register"
+        hx-target="#register-error"
+        hx-swap="innerHTML"
+        hx-disabled-elt="button[type=submit]"
+        autocomplete="on">
+
+    {% if csrf_token %}
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    {% endif %}
+
+    {{ field('email', 'Adresse e-mail',
+             type='email',
+             autocomplete='email',
+             autofocus=True,
+             required=True,
+             placeholder='vous@exemple.fr',
+             value=form.email if form else '') }}
+
+    {{ field('password', 'Mot de passe',
+             type='password',
+             autocomplete='new-password',
+             required=True,
+             placeholder='Minimum 8 caractères') }}
+
+    {{ field('password_confirm', 'Confirmer le mot de passe',
+             type='password',
+             autocomplete='new-password',
+             required=True,
+             placeholder='Retapez votre mot de passe') }}
+
+    <div class="auth-card__actions">
+      {{ button('Créer mon compte', block=True, lg=True, arrow=True) }}
+    </div>
+  </form>
+
+  <div class="auth-card__divider"><span>Déjà un compte ?</span></div>
+
+  {{ link_button('Se connecter', href='/web/login', block=True) }}
+
+</div>
+{% endblock %}

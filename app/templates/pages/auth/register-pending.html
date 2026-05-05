@@ -1,0 +1,44 @@
+{% extends "layouts/auth.html" %}
+{% from "macros/icon.html" import icon %}
+{% from "macros/button.html" import link_button %}
+
+{% block title %}Compte en attente — MY-IA{% endblock %}
+
+{% block brand_hero %}
+<div class="auth-shell__hero">
+  <div class="auth-shell__eyebrow"><span>Confirmation</span></div>
+  <h1 class="auth-shell__title">
+    Compte<br>
+    <em>enregistré</em>.
+  </h1>
+  <p class="auth-shell__lede">
+    Votre demande a été transmise à l'équipe d'administration.
+    Vous recevrez un e-mail dès qu'elle aura été validée.
+  </p>
+</div>
+{% endblock %}
+
+{% block auth_form %}
+<div class="auth-card">
+
+  <header class="auth-card__header">
+    <span class="auth-card__index"><span>03 / En attente</span></span>
+    <h2 class="auth-card__title">Merci, {{ email or 'vous' }}.</h2>
+    <p class="auth-card__subtitle">
+      Votre compte a bien été créé. Un administrateur doit l'approuver
+      avant que vous puissiez vous connecter.
+    </p>
+  </header>
+
+  <div class="toast" role="status">
+    <span class="toast__icon">{{ icon('info-circle', 16) }}</span>
+    <div class="toast__body">
+      <div class="toast__title">Statut</div>
+      <div>En attente de validation par un administrateur.</div>
+    </div>
+  </div>
+
+  {{ link_button('Retour à la connexion', href='/web/login', block=True) }}
+
+</div>
+{% endblock %}
