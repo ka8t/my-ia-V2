@@ -2316,6 +2316,186 @@ select.field__input {
 
 
 /* ─────────────────────────────────────────────────────────────────────────────
+ *  ADMIN — Configuration système (Phase 3.7.a)
+ * ───────────────────────────────────────────────────────────────────────────── */
+
+/* Barre regroupant filtres catégories + recherche */
+.admin-filters-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+.admin-filters-bar .admin-filters { margin-bottom: 0; }
+
+.admin-search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 280px;
+  flex: 0 1 380px;
+}
+.admin-search__input {
+  flex: 1;
+  background: transparent;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-fg);
+  transition: border-color var(--duration-fast) var(--ease-out);
+}
+.admin-search__input:focus { outline: none; border-color: var(--color-fg); }
+.admin-search__input::placeholder { color: var(--color-fg-subtle); }
+.admin-search__btn {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  color: var(--color-fg-muted);
+  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--ease-out),
+              color var(--duration-fast) var(--ease-out);
+}
+.admin-search__btn:hover { border-color: var(--color-fg); color: var(--color-fg); }
+
+
+/* Config row grid : key | category | value | type | updated | actions */
+.admin-config-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) 110px minmax(0, 1.6fr) 80px 150px 100px;
+  gap: var(--space-3);
+  align-items: center;
+}
+@media (max-width: 1100px) {
+  .admin-config-row {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.4fr) 80px 100px;
+  }
+  .admin-config-row > .admin-table-cell:nth-child(2),
+  .admin-config-row > .admin-table-cell:nth-child(5) { display: none; }
+}
+
+.admin-config-row--editing {
+  background: var(--color-bg-raised);
+}
+
+.admin-config__key {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-fg);
+  background: transparent;
+  padding: 0;
+  word-break: break-all;
+}
+
+.admin-config__desc {
+  display: block;
+  font-size: var(--text-xs);
+  color: var(--color-fg-subtle);
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.admin-config__cat {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-fg-muted);
+  padding: 2px var(--space-2);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  display: inline-block;
+}
+
+.admin-config__type {
+  font-size: var(--text-xs);
+  color: var(--color-fg-subtle);
+  text-transform: lowercase;
+}
+
+.admin-config__hint {
+  font-size: var(--text-xs);
+  color: var(--color-accent);
+  font-style: italic;
+}
+
+.admin-config__value-cell { min-width: 0; }
+
+.admin-config__value {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-fg);
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.admin-config__value--sensitive {
+  color: var(--color-fg-subtle);
+  letter-spacing: 2px;
+}
+
+/* Edit form (occupe la cellule valeur) */
+.admin-config__edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  width: 100%;
+}
+
+.admin-config__input,
+.admin-config__textarea {
+  width: 100%;
+  background: var(--color-surface);
+  border: 1px solid var(--color-fg-muted);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-fg);
+  transition: border-color var(--duration-fast) var(--ease-out);
+}
+.admin-config__input:focus,
+.admin-config__textarea:focus { outline: none; border-color: var(--color-fg); }
+.admin-config__textarea { resize: vertical; min-height: 60px; }
+
+.admin-config__bool {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-fg);
+  cursor: pointer;
+}
+.admin-config__bool input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-fg);
+  cursor: pointer;
+}
+
+.admin-config__error {
+  font-size: var(--text-xs);
+  color: var(--color-danger);
+  font-family: var(--font-mono);
+  padding: 2px 0;
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────────────
  *  ENTRY ANIMATIONS — staggered, deliberate
  * ───────────────────────────────────────────────────────────────────────────── */
 @keyframes auth-rise {

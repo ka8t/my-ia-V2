@@ -84,9 +84,9 @@
           </a>
         </li>
         <li>
-          <a class="admin-nav__item admin-nav__item--soon" aria-disabled="true">
+          <a class="admin-nav__item{% if active_section == 'config' %} admin-nav__item--active{% endif %}"
+             href="/web/admin/config">
             {{ icon('settings', 14) }}<span>Système</span>
-            <span class="admin-nav__soon">Bientôt</span>
           </a>
         </li>
       </ul>

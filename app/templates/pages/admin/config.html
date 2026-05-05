@@ -1,0 +1,67 @@
+{% extends "layouts/admin.html" %}
+{% from "macros/icon.html" import icon %}
+
+{% block title %}Configuration système — Admin{% endblock %}
+
+{% block admin_content %}
+
+<header class="admin-page__head">
+  <div class="admin-page__eyebrow"><span>Console / 03</span></div>
+  <h1 class="admin-page__title">
+    Configuration <em>système</em>.
+  </h1>
+  <p class="admin-page__lede">
+    Toutes les clés de <code>system_configs</code>. Filtrez par catégorie,
+    cherchez par nom, éditez en place. Les modifications prennent effet
+    immédiatement (recharger un service peut être nécessaire selon la clé).
+  </p>
+</header>
+
+{# ─── Barre de filtres : catégories + recherche ─── #}
+<form method="get" action="/web/admin/config" class="admin-filters-bar">
+  <nav class="admin-filters">
+    <a class="admin-filter{% if not filter_category %} admin-filter--active{% endif %}"
+       href="/web/admin/config{% if filter_q %}?q={{ filter_q }}{% endif %}">Toutes</a>
+    {% for c in categories %}
+    <a class="admin-filter{% if filter_category == c %} admin-filter--active{% endif %}"
+       href="/web/admin/config?category={{ c }}{% if filter_q %}&q={{ filter_q }}{% endif %}">
+      {{ c }}
+    </a>
+    {% endfor %}
+  </nav>
+  <div class="admin-search">
+    {% if filter_category %}<input type="hidden" name="category" value="{{ filter_category }}">{% endif %}
+    <input type="search" name="q" value="{{ filter_q or '' }}"
+           placeholder="Rechercher (clé, valeur, description)…"
+           class="admin-search__input">
+    <button type="submit" class="admin-search__btn" title="Rechercher">
+      {{ icon('arrow-right', 14) }}
+    </button>
+  </div>
+</form>
+
+{# ─── Table ─── #}
+<div class="admin-table-wrap">
+  <div class="admin-table-head admin-config-row">
+    <span>Clé</span>
+    <span>Catégorie</span>
+    <span>Valeur</span>
+    <span>Type</span>
+    <span>Modifiée</span>
+    <span></span>
+  </div>
+
+  <div class="admin-table-body">
+    {% if configs %}
+      {% for c in configs %}
+        {% with cfg=c %}
+          {% include 'partials/admin/config-row.html' %}
+        {% endwith %}
+      {% endfor %}
+    {% else %}
+      <div class="admin-empty">Aucune clé ne correspond à ces filtres.</div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

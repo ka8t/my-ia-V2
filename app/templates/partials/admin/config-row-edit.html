@@ -1,0 +1,95 @@
+{# ─────────────────────────────────────────────────────────────────────
+ # partials/admin/config-row-edit.html
+ # Row mode édition. Submit → PATCH → swap vers config-row.
+ # Cancel → POST .../cancel → swap vers config-row.
+ # Type-aware editor : bool=checkbox, int/float=number, json/list=textarea.
+ # ────────────────────────────────────────────────────────────────────── #}
+{% from "macros/icon.html" import icon %}
+
+<div class="admin-config-row admin-config-row--editing admin-table-row" id="cfg-{{ cfg.id }}">
+
+  <div class="admin-table-cell admin-table-cell--name">
+    <span class="admin-table-cell__email" title="{{ cfg.key }}">
+      <code class="admin-config__key">{{ cfg.key }}</code>
+    </span>
+    {% if cfg.description %}
+    <span class="admin-config__desc">{{ cfg.description }}</span>
+    {% endif %}
+  </div>
+
+  <div class="admin-table-cell">
+    <span class="admin-config__cat">{{ cfg.category }}</span>
+  </div>
+
+  <div class="admin-table-cell admin-config__value-cell">
+    <form class="admin-config__edit-form"
+          hx-patch="/web/admin/config/{{ cfg.key }}"
+          hx-target="#cfg-{{ cfg.id }}"
+          hx-swap="outerHTML"
+          id="cfg-form-{{ cfg.id }}">
+      {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+
+      {% if cfg.value_type == 'bool' %}
+        {# Checkbox seule : si décochée, "value" n'est pas envoyé → coerce traite "" comme false. #}
+        <label class="admin-config__bool">
+          <input type="checkbox" name="value" value="true"
+                 {% if cfg.value == 'true' %}checked{% endif %}>
+          <span>activer</span>
+        </label>
+
+      {% elif cfg.value_type in ('int', 'float') %}
+        <input type="number"
+               name="value"
+               value="{{ cfg.value }}"
+               {% if cfg.value_type == 'float' %}step="any"{% else %}step="1"{% endif %}
+               class="admin-config__input"
+               autofocus>
+
+      {% elif cfg.value_type in ('json', 'list') %}
+        <textarea name="value"
+                  rows="3"
+                  class="admin-config__textarea"
+                  spellcheck="false"
+                  autofocus>{{ cfg.value }}</textarea>
+
+      {% else %}
+        <input type="text"
+               name="value"
+               value="{{ cfg.value }}"
+               class="admin-config__input"
+               autocomplete="off"
+               spellcheck="false"
+               autofocus>
+      {% endif %}
+
+      {% if error %}
+      <div class="admin-config__error">{{ error }}</div>
+      {% endif %}
+    </form>
+  </div>
+
+  <div class="admin-table-cell">
+    <span class="admin-table-cell__mono admin-config__type">{{ cfg.value_type }}</span>
+  </div>
+
+  <div class="admin-table-cell">
+    <span class="admin-table-cell__mono admin-config__hint">Édition…</span>
+  </div>
+
+  <div class="admin-table-cell admin-table-cell--actions">
+    <button type="submit"
+            form="cfg-form-{{ cfg.id }}"
+            class="admin-action admin-action--accent"
+            title="Enregistrer">
+      {{ icon('check-circle', 14) }}
+    </button>
+    <form hx-post="/web/admin/config/{{ cfg.key }}/cancel"
+          hx-target="#cfg-{{ cfg.id }}"
+          hx-swap="outerHTML"
+          class="admin-action-form">
+      <button type="submit" class="admin-action" title="Annuler">
+        {{ icon('alert-circle', 14) }}
+      </button>
+    </form>
+  </div>
+</div>

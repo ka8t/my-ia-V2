@@ -1,0 +1,58 @@
+{# ─────────────────────────────────────────────────────────────────────
+ # partials/admin/config-row.html
+ # Row mode lecture. Bouton "Modifier" → swap vers config-row-edit.
+ # ────────────────────────────────────────────────────────────────────── #}
+{% from "macros/icon.html" import icon %}
+
+<div class="admin-config-row admin-table-row" id="cfg-{{ cfg.id }}">
+
+  <div class="admin-table-cell admin-table-cell--name">
+    <span class="admin-table-cell__email" title="{{ cfg.key }}">
+      <code class="admin-config__key">{{ cfg.key }}</code>
+    </span>
+    {% if cfg.description %}
+    <span class="admin-config__desc" title="{{ cfg.description }}">{{ cfg.description }}</span>
+    {% endif %}
+  </div>
+
+  <div class="admin-table-cell">
+    <span class="admin-config__cat">{{ cfg.category }}</span>
+  </div>
+
+  <div class="admin-table-cell admin-config__value-cell">
+    {% if cfg.is_sensitive %}
+      <span class="admin-config__value admin-config__value--sensitive" title="Valeur masquée">
+        ••••••••
+      </span>
+    {% elif cfg.value_type == 'bool' %}
+      {% if cfg.value == 'true' %}
+        <span class="admin-status admin-status--approved">activé</span>
+      {% else %}
+        <span class="admin-status admin-status--inactive">désactivé</span>
+      {% endif %}
+    {% else %}
+      <span class="admin-config__value" title="{{ cfg.value }}">{{ cfg.value }}</span>
+    {% endif %}
+  </div>
+
+  <div class="admin-table-cell">
+    <span class="admin-table-cell__mono admin-config__type">{{ cfg.value_type }}</span>
+  </div>
+
+  <div class="admin-table-cell">
+    <span class="admin-table-cell__mono">
+      {% if cfg.updated_at %}{{ cfg.updated_at.strftime('%d %b %Y · %H:%M') }}{% else %}—{% endif %}
+    </span>
+  </div>
+
+  <div class="admin-table-cell admin-table-cell--actions">
+    <button type="button"
+            class="admin-action"
+            hx-get="/web/admin/config/{{ cfg.key }}/edit"
+            hx-target="#cfg-{{ cfg.id }}"
+            hx-swap="outerHTML"
+            title="Modifier">
+      {{ icon('settings', 14) }}
+    </button>
+  </div>
+</div>

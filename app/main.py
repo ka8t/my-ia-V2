@@ -36,6 +36,7 @@ from app.web.auth import router as web_auth_router
 from app.web.chat import router as web_chat_router
 from app.web.documents import router as web_documents_router
 from app.web.admin import router as web_admin_router
+from app.web.admin_config import router as web_admin_config_router
 from app.web.preferences import router as web_preferences_router
 from app.web.deps import AuthRedirect, require_web_auth
 
@@ -252,6 +253,7 @@ app.include_router(web_chat_router)
 app.include_router(web_documents_router)
 app.include_router(web_preferences_router)
 app.include_router(web_admin_router)
+app.include_router(web_admin_config_router)
 
 
 # ============================================================================
