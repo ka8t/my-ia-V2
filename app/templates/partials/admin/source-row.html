@@ -33,6 +33,17 @@
     {% else %}
       <span class="admin-status admin-status--pending">{{ source.health_status }}</span>
     {% endif %}
+    {% if source.last_latency_ms is not none %}
+      <span class="admin-config__hint">{{ source.last_latency_ms }} ms</span>
+    {% endif %}
+    <form hx-post="/web/admin/sources/{{ source.id }}/health-check"
+          hx-target="#source-{{ source.id }}" hx-swap="outerHTML"
+          class="admin-action-form admin-action-form--inline">
+      {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+      <button type="submit" class="admin-action" title="Sonder maintenant">
+        {{ icon('arrow-up-right', 12) }}
+      </button>
+    </form>
   </div>
 
   <div class="admin-table-cell">

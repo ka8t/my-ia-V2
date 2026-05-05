@@ -284,3 +284,63 @@ async def test_delete_ok(admin_client: AsyncClient, admin_csrf: str) -> None:
 async def test_delete_unknown_returns_404(admin_client: AsyncClient) -> None:
     r = await admin_client.delete(f"/web/admin/sources/{_uuid.uuid4()}")
     assert r.status_code == 404
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  Health-check (Vague 2.5)
+# ─────────────────────────────────────────────────────────────────────────────
+async def test_health_check_updates_status_and_timestamp(
+    admin_client: AsyncClient, admin_csrf: str
+) -> None:
+    """Une source créée avec config={} retournera unhealthy mais last_health_check
+    et health_status doivent être renseignés post-sonde."""
+    name = f"Pytest Health {fresh_slug()}"
+    await _create_source_via_api(admin_client, admin_csrf, name)
+    s_obj = await _get_source_by_display_name(name)
+    assert s_obj is not None
+    assert s_obj.last_health_check is None
+    assert s_obj.health_status == "unknown"
+
+    r = await admin_client.post(
+        f"/web/admin/sources/{s_obj.id}/health-check",
+        data={"csrf_token": admin_csrf},
+    )
+    assert r.status_code == 200
+    assert f'id="source-{s_obj.id}"' in r.text
+
+    async with async_session_maker() as session:
+        refreshed = await session.get(ContextSource, s_obj.id)
+        assert refreshed is not None
+        assert refreshed.last_health_check is not None
+        # Pas d'URL valide → unhealthy attendu (le service capture l'exception)
+        assert refreshed.health_status in {"healthy", "unhealthy"}
+
+
+async def test_health_check_unknown_returns_404(
+    admin_client: AsyncClient, admin_csrf: str
+) -> None:
+    r = await admin_client.post(
+        f"/web/admin/sources/{_uuid.uuid4()}/health-check",
+        data={"csrf_token": admin_csrf},
+    )
+    assert r.status_code == 404
+
+
+async def test_health_check_invalid_csrf_returns_400(
+    admin_client: AsyncClient, admin_csrf: str
+) -> None:
+    name = f"Pytest HCsrf {fresh_slug()}"
+    await _create_source_via_api(admin_client, admin_csrf, name)
+    s_obj = await _get_source_by_display_name(name)
+    assert s_obj is not None
+
+    r = await admin_client.post(
+        f"/web/admin/sources/{s_obj.id}/health-check",
+        data={"csrf_token": "wrong"},
+    )
+    assert r.status_code == 400
+
+
+async def test_health_check_anon_redirected(client: AsyncClient) -> None:
+    r = await client.post(f"/web/admin/sources/{_uuid.uuid4()}/health-check")
+    assert r.status_code == 303

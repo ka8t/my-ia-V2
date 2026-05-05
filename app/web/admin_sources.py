@@ -261,6 +261,46 @@ async def admin_sources_toggle(
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+#  POST /web/admin/sources/{id}/health-check — sonde la source (Vague 2.5)
+# ─────────────────────────────────────────────────────────────────────────────
+@router.post("/{source_id}/health-check", response_class=HTMLResponse)
+async def admin_sources_health_check(
+    request: Request,
+    source_id: uuid.UUID,
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    if (err := _csrf_or_400(request, csrf_token)):
+        return err
+
+    # Vérifier que la source existe avant d'appeler le service partagé.
+    s = await _get_source_or_404(db, source_id)
+    if s is None:
+        return HTMLResponse("", status_code=404)
+
+    # Réutiliser le service V1 (même logique que /api/admin/sources/{id}/health).
+    # Il met à jour health_status / last_health_check / last_latency_ms en BDD
+    # et avale les exceptions du connector → unhealthy en cas d'échec.
+    from app.features.sources.service import SourceService
+
+    try:
+        await SourceService.health_check(db, source_id)
+    except Exception as e:
+        logger.error("Erreur health-check source '%s': %s", s.name, e)
+        return HTMLResponse(
+            "<div class='toast toast--error'>Erreur lors de la sonde.</div>",
+            status_code=500,
+        )
+
+    # Recharger pour avoir les valeurs fraîches dans le row.
+    refreshed = await _get_source_or_404(db, source_id)
+    if refreshed is None:
+        return HTMLResponse("", status_code=404)
+    return await _render_row(request, refreshed, edit=False)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 #  PATCH /web/admin/sources/{id} — update champs simples
 # ─────────────────────────────────────────────────────────────────────────────
 @router.patch("/{source_id}", response_class=HTMLResponse)
