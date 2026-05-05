@@ -1,0 +1,42 @@
+{# ─────────────────────────────────────────────────────────────────────
+ # corpus-document-picker.html — contenu de la modal "rattacher document".
+ # Variables : corpus_id (UUID), rows (list[(Document, user_email)])
+ # ────────────────────────────────────────────────────────────────────── #}
+{% from "macros/icon.html" import icon %}
+
+{% if rows %}
+<ul class="admin-bare-list admin-bare-list--picker">
+  {% for doc, user_email in rows %}
+  <li class="admin-bare-list__item">
+    <span class="admin-bare-list__main">
+      {{ doc.filename }}
+      <span class="admin-bare-list__meta">{{ user_email }}</span>
+    </span>
+    <span class="admin-bare-list__meta">
+      {{ doc.file_type or '—' }} ·
+      {% if doc.chunk_count and doc.chunk_count > 0 %}
+        {{ doc.chunk_count }} chunks
+      {% else %}
+        non indexé
+      {% endif %}
+    </span>
+    <span class="admin-bare-list__actions">
+      <form hx-post="/web/admin/corpus/{{ corpus_id }}/documents"
+            hx-target="#corpus-documents-list"
+            hx-swap="beforeend"
+            hx-on::after-request="if (event.detail.successful) this.closest('li').remove()">
+        {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+        <input type="hidden" name="document_id" value="{{ doc.id }}">
+        <button type="submit" class="admin-action admin-action--accent" title="Rattacher">
+          {{ icon('check-circle', 14) }}
+        </button>
+      </form>
+    </span>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p class="admin-empty admin-empty--small">
+  Tous les documents sont déjà rattachés à ce corpus, ou la base est vide.
+</p>
+{% endif %}

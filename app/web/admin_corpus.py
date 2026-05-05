@@ -1,18 +1,34 @@
-"""Web routes — Admin corpus (Phase 3.7.b — Vague 1).
+"""Web routes — Admin corpus (Phase 3.7.b — Vagues 1 & 2.1-2.3).
 
-CRUD basique des corpus thématiques (regroupement documents + sources).
-La gestion des relations corpus↔collections, corpus↔sources et les actions
-en cascade (reindex, clear) sont prévues en Vague 2.
+CRUD corpus + gestion des relations corpus↔documents/sources/collections.
+Les actions en cascade (reindex, clear, health-check) sont prévues en
+Vagues 2.4/2.5.
 
-Routes
-------
+Routes corpus
+-------------
 GET    /web/admin/corpus              — liste avec compteurs
-GET    /web/admin/corpus/{id}         — détail (read-only items rattachés)
+GET    /web/admin/corpus/{id}         — détail interactif
 POST   /web/admin/corpus              — create (form)
 GET    /web/admin/corpus/{id}/edit    — partial mode édition
 POST   /web/admin/corpus/{id}/cancel  — sortir du mode édition
 PATCH  /web/admin/corpus/{id}         — update (form)
 DELETE /web/admin/corpus/{id}         — delete (CASCADE rompt les liaisons)
+
+Routes relations (Vagues 2.1+2.2+2.3)
+-------------------------------------
+GET    /web/admin/corpus/{id}/documents/picker      — modal liste available
+POST   /web/admin/corpus/{id}/documents             — attach document
+DELETE /web/admin/corpus/{id}/documents/{doc_id}    — detach document
+
+GET    /web/admin/corpus/{id}/sources/picker        — modal liste available
+POST   /web/admin/corpus/{id}/sources               — attach source
+PATCH  /web/admin/corpus/{id}/sources/{src_id}      — update priority/is_enabled
+DELETE /web/admin/corpus/{id}/sources/{src_id}      — detach source
+
+GET    /web/admin/corpus/{id}/collections/picker    — modal liste available
+POST   /web/admin/corpus/{id}/collections           — attach collection (publique)
+PATCH  /web/admin/corpus/{id}/collections/{col_id}  — update priority
+DELETE /web/admin/corpus/{id}/collections/{col_id}  — detach collection
 """
 from __future__ import annotations
 
@@ -33,6 +49,7 @@ from app.models import (
     Collection,
     ContextSource,
     Corpus,
+    CorpusCollection,
     CorpusDocument,
     CorpusSource,
     Document,
@@ -333,8 +350,22 @@ async def admin_corpus_delete(
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  GET /web/admin/corpus/{id} — détail (read-only)
+#  GET /web/admin/corpus/{id} — détail interactif
 # ─────────────────────────────────────────────────────────────────────────────
+async def _load_corpus_detail(db: AsyncSession, corpus_id: uuid.UUID) -> Corpus | None:
+    """Charge un Corpus avec ses 3 relations eager-loaded."""
+    result = await db.execute(
+        select(Corpus)
+        .where(Corpus.id == corpus_id)
+        .options(
+            selectinload(Corpus.corpus_documents).selectinload(CorpusDocument.document),
+            selectinload(Corpus.sources).selectinload(CorpusSource.source),
+            selectinload(Corpus.collections).selectinload(CorpusCollection.collection),
+        )
+    )
+    return result.unique().scalar_one_or_none()
+
+
 @router.get("/{corpus_id}", response_class=HTMLResponse)
 async def admin_corpus_detail(
     request: Request,
@@ -342,23 +373,13 @@ async def admin_corpus_detail(
     user: dict = Depends(require_web_admin),
     db: AsyncSession = Depends(get_async_session),
 ) -> HTMLResponse:
-    # Eager-load des relations utiles
-    result = await db.execute(
-        select(Corpus)
-        .where(Corpus.id == corpus_id)
-        .options(
-            selectinload(Corpus.corpus_documents).selectinload(CorpusDocument.document),
-            selectinload(Corpus.sources).selectinload(CorpusSource.source),
-            selectinload(Corpus.assigned_collections),
-        )
-    )
-    c = result.unique().scalar_one_or_none()
+    c = await _load_corpus_detail(db, corpus_id)
     if c is None:
         return HTMLResponse("Corpus introuvable.", status_code=404)
 
     documents = [cd.document for cd in c.corpus_documents if cd.document is not None]
-    corpus_sources = [(cs, cs.source) for cs in c.sources if cs.source is not None]
-    collections = list(c.assigned_collections or [])
+    corpus_sources = [cs for cs in c.sources if cs.source is not None]
+    corpus_collections = [cc for cc in c.collections if cc.collection is not None]
 
     return templates.TemplateResponse(
         request,
@@ -372,6 +393,500 @@ async def admin_corpus_detail(
             corpus=c,
             documents=documents,
             corpus_sources=corpus_sources,
-            collections=collections,
+            corpus_collections=corpus_collections,
         ),
     )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  Helpers — render rows / partials de relation
+# ─────────────────────────────────────────────────────────────────────────────
+async def _render_document_row(request: Request, corpus_id: uuid.UUID, doc: Document) -> HTMLResponse:
+    return templates.TemplateResponse(
+        request,
+        "partials/admin/corpus-document-row.html",
+        web_context(request, corpus_id=corpus_id, doc=doc),
+    )
+
+
+async def _render_source_row(request: Request, corpus_id: uuid.UUID, cs: CorpusSource) -> HTMLResponse:
+    return templates.TemplateResponse(
+        request,
+        "partials/admin/corpus-source-row.html",
+        web_context(request, corpus_id=corpus_id, cs=cs),
+    )
+
+
+async def _render_collection_row(
+    request: Request, corpus_id: uuid.UUID, cc: CorpusCollection
+) -> HTMLResponse:
+    return templates.TemplateResponse(
+        request,
+        "partials/admin/corpus-collection-row.html",
+        web_context(request, corpus_id=corpus_id, cc=cc),
+    )
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  Vague 2.1 — Documents : picker, attach, detach
+# ═════════════════════════════════════════════════════════════════════════════
+@router.get("/{corpus_id}/documents/picker", response_class=HTMLResponse)
+async def admin_corpus_documents_picker(
+    request: Request,
+    corpus_id: uuid.UUID,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    if (await _get_corpus_or_404(db, corpus_id)) is None:
+        return HTMLResponse("Corpus introuvable.", status_code=404)
+
+    # Documents non encore rattachés à ce corpus
+    attached_ids = (
+        await db.execute(
+            select(CorpusDocument.document_id).where(CorpusDocument.corpus_id == corpus_id)
+        )
+    ).scalars().all()
+
+    query = (
+        select(Document, User.email)
+        .join(User, User.id == Document.user_id)
+        .order_by(Document.created_at.desc())
+        .limit(200)
+    )
+    if attached_ids:
+        query = query.where(Document.id.notin_(attached_ids))
+
+    rows = (await db.execute(query)).unique().all()
+    return templates.TemplateResponse(
+        request,
+        "partials/admin/corpus-document-picker.html",
+        web_context(request, corpus_id=corpus_id, rows=rows),
+    )
+
+
+@router.post("/{corpus_id}/documents", response_class=HTMLResponse)
+async def admin_corpus_attach_document(
+    request: Request,
+    corpus_id: uuid.UUID,
+    document_id: Annotated[uuid.UUID, Form()],
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    if (err := _csrf_or_400(request, csrf_token)):
+        return err
+    if (await _get_corpus_or_404(db, corpus_id)) is None:
+        return HTMLResponse("Corpus introuvable.", status_code=404)
+
+    doc = (
+        await db.execute(select(Document).where(Document.id == document_id))
+    ).scalar_one_or_none()
+    if doc is None:
+        return HTMLResponse(
+            "<div class='toast toast--error'>Document introuvable.</div>", status_code=404
+        )
+
+    existing = await db.execute(
+        select(CorpusDocument).where(
+            CorpusDocument.corpus_id == corpus_id,
+            CorpusDocument.document_id == document_id,
+        )
+    )
+    if existing.scalar_one_or_none() is not None:
+        return HTMLResponse(
+            "<div class='toast toast--error'>Document déjà rattaché à ce corpus.</div>",
+            status_code=409,
+        )
+
+    try:
+        db.add(CorpusDocument(corpus_id=corpus_id, document_id=document_id, priority=0))
+        await db.commit()
+        logger.info("Admin %s attached doc %s to corpus %s", user.get("email"), document_id, corpus_id)
+    except Exception as e:
+        await db.rollback()
+        logger.error("Erreur attach document %s au corpus %s: %s", document_id, corpus_id, e)
+        return HTMLResponse(
+            "<div class='toast toast--error'>Erreur lors du rattachement.</div>", status_code=500
+        )
+
+    return await _render_document_row(request, corpus_id, doc)
+
+
+@router.delete("/{corpus_id}/documents/{document_id}", response_class=Response)
+async def admin_corpus_detach_document(
+    request: Request,
+    corpus_id: uuid.UUID,
+    document_id: uuid.UUID,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> Response:
+    cd = (
+        await db.execute(
+            select(CorpusDocument).where(
+                CorpusDocument.corpus_id == corpus_id,
+                CorpusDocument.document_id == document_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if cd is None:
+        return Response(status_code=404)
+    try:
+        await db.delete(cd)
+        await db.commit()
+        logger.info("Admin %s detached doc %s from corpus %s", user.get("email"), document_id, corpus_id)
+    except Exception as e:
+        await db.rollback()
+        logger.error("Erreur detach document %s du corpus %s: %s", document_id, corpus_id, e)
+        return HTMLResponse(
+            "<div class='toast toast--error'>Erreur lors du retrait.</div>", status_code=500
+        )
+    return Response(status_code=200, content="")
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  Vague 2.2 — Sources : picker, attach, update (priority/is_enabled), detach
+# ═════════════════════════════════════════════════════════════════════════════
+@router.get("/{corpus_id}/sources/picker", response_class=HTMLResponse)
+async def admin_corpus_sources_picker(
+    request: Request,
+    corpus_id: uuid.UUID,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    if (await _get_corpus_or_404(db, corpus_id)) is None:
+        return HTMLResponse("Corpus introuvable.", status_code=404)
+
+    attached_ids = (
+        await db.execute(
+            select(CorpusSource.source_id).where(CorpusSource.corpus_id == corpus_id)
+        )
+    ).scalars().all()
+
+    query = select(ContextSource).order_by(ContextSource.display_name)
+    if attached_ids:
+        query = query.where(ContextSource.id.notin_(attached_ids))
+    sources = (await db.execute(query)).scalars().all()
+
+    return templates.TemplateResponse(
+        request,
+        "partials/admin/corpus-source-picker.html",
+        web_context(request, corpus_id=corpus_id, sources=sources),
+    )
+
+
+def _clamp_priority(value: int) -> int:
+    return max(1, min(int(value), 1000))
+
+
+@router.post("/{corpus_id}/sources", response_class=HTMLResponse)
+async def admin_corpus_attach_source(
+    request: Request,
+    corpus_id: uuid.UUID,
+    source_id: Annotated[uuid.UUID, Form()],
+    priority: Annotated[int, Form()] = 100,
+    is_enabled: Annotated[str | None, Form()] = "true",
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    if (err := _csrf_or_400(request, csrf_token)):
+        return err
+    if (await _get_corpus_or_404(db, corpus_id)) is None:
+        return HTMLResponse("Corpus introuvable.", status_code=404)
+
+    src = (
+        await db.execute(select(ContextSource).where(ContextSource.id == source_id))
+    ).scalar_one_or_none()
+    if src is None:
+        return HTMLResponse(
+            "<div class='toast toast--error'>Source introuvable.</div>", status_code=404
+        )
+
+    existing = await db.execute(
+        select(CorpusSource).where(
+            CorpusSource.corpus_id == corpus_id,
+            CorpusSource.source_id == source_id,
+        )
+    )
+    if existing.scalar_one_or_none() is not None:
+        return HTMLResponse(
+            "<div class='toast toast--error'>Source déjà rattachée à ce corpus.</div>",
+            status_code=409,
+        )
+
+    try:
+        cs = CorpusSource(
+            corpus_id=corpus_id,
+            source_id=source_id,
+            priority=_clamp_priority(priority),
+            is_enabled=is_enabled == "true",
+        )
+        db.add(cs)
+        await db.commit()
+        # Re-charger avec source pour le row
+        cs = (
+            await db.execute(
+                select(CorpusSource)
+                .options(selectinload(CorpusSource.source))
+                .where(CorpusSource.id == cs.id)
+            )
+        ).scalar_one()
+        logger.info("Admin %s attached source %s to corpus %s", user.get("email"), source_id, corpus_id)
+    except Exception as e:
+        await db.rollback()
+        logger.error("Erreur attach source %s au corpus %s: %s", source_id, corpus_id, e)
+        return HTMLResponse(
+            "<div class='toast toast--error'>Erreur lors du rattachement.</div>", status_code=500
+        )
+
+    return await _render_source_row(request, corpus_id, cs)
+
+
+@router.patch("/{corpus_id}/sources/{source_id}", response_class=HTMLResponse)
+async def admin_corpus_update_source(
+    request: Request,
+    corpus_id: uuid.UUID,
+    source_id: uuid.UUID,
+    priority: Annotated[int, Form()] = 100,
+    is_enabled: Annotated[str | None, Form()] = None,
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    if (err := _csrf_or_400(request, csrf_token)):
+        return err
+
+    cs = (
+        await db.execute(
+            select(CorpusSource)
+            .options(selectinload(CorpusSource.source))
+            .where(
+                CorpusSource.corpus_id == corpus_id,
+                CorpusSource.source_id == source_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if cs is None:
+        return HTMLResponse("", status_code=404)
+
+    try:
+        cs.priority = _clamp_priority(priority)
+        cs.is_enabled = is_enabled == "true"
+        await db.commit()
+        await db.refresh(cs)
+    except Exception as e:
+        await db.rollback()
+        logger.error("Erreur update CorpusSource %s/%s: %s", corpus_id, source_id, e)
+        return HTMLResponse(
+            "<div class='toast toast--error'>Erreur lors de la sauvegarde.</div>", status_code=500
+        )
+
+    return await _render_source_row(request, corpus_id, cs)
+
+
+@router.delete("/{corpus_id}/sources/{source_id}", response_class=Response)
+async def admin_corpus_detach_source(
+    request: Request,
+    corpus_id: uuid.UUID,
+    source_id: uuid.UUID,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> Response:
+    cs = (
+        await db.execute(
+            select(CorpusSource).where(
+                CorpusSource.corpus_id == corpus_id,
+                CorpusSource.source_id == source_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if cs is None:
+        return Response(status_code=404)
+    try:
+        await db.delete(cs)
+        await db.commit()
+        logger.info("Admin %s detached source %s from corpus %s", user.get("email"), source_id, corpus_id)
+    except Exception as e:
+        await db.rollback()
+        logger.error("Erreur detach source %s du corpus %s: %s", source_id, corpus_id, e)
+        return HTMLResponse(
+            "<div class='toast toast--error'>Erreur lors du retrait.</div>", status_code=500
+        )
+    return Response(status_code=200, content="")
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  Vague 2.3 — Collections : picker, attach (publiques), update, detach
+# ═════════════════════════════════════════════════════════════════════════════
+@router.get("/{corpus_id}/collections/picker", response_class=HTMLResponse)
+async def admin_corpus_collections_picker(
+    request: Request,
+    corpus_id: uuid.UUID,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    if (await _get_corpus_or_404(db, corpus_id)) is None:
+        return HTMLResponse("Corpus introuvable.", status_code=404)
+
+    attached_ids = (
+        await db.execute(
+            select(CorpusCollection.collection_id).where(
+                CorpusCollection.corpus_id == corpus_id
+            )
+        )
+    ).scalars().all()
+
+    query = (
+        select(Collection)
+        .where(Collection.type == "public")
+        .order_by(Collection.display_name)
+    )
+    if attached_ids:
+        query = query.where(Collection.id.notin_(attached_ids))
+    collections = (await db.execute(query)).scalars().all()
+
+    return templates.TemplateResponse(
+        request,
+        "partials/admin/corpus-collection-picker.html",
+        web_context(request, corpus_id=corpus_id, collections=collections),
+    )
+
+
+@router.post("/{corpus_id}/collections", response_class=HTMLResponse)
+async def admin_corpus_attach_collection(
+    request: Request,
+    corpus_id: uuid.UUID,
+    collection_id: Annotated[uuid.UUID, Form()],
+    priority: Annotated[int, Form()] = 100,
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    if (err := _csrf_or_400(request, csrf_token)):
+        return err
+    if (await _get_corpus_or_404(db, corpus_id)) is None:
+        return HTMLResponse("Corpus introuvable.", status_code=404)
+
+    coll = (
+        await db.execute(select(Collection).where(Collection.id == collection_id))
+    ).scalar_one_or_none()
+    if coll is None:
+        return HTMLResponse(
+            "<div class='toast toast--error'>Bibliothèque introuvable.</div>", status_code=404
+        )
+    if coll.type != "public":
+        return HTMLResponse(
+            "<div class='toast toast--error'>Seules les bibliothèques publiques peuvent rejoindre un corpus.</div>",
+            status_code=400,
+        )
+
+    existing = await db.execute(
+        select(CorpusCollection).where(
+            CorpusCollection.corpus_id == corpus_id,
+            CorpusCollection.collection_id == collection_id,
+        )
+    )
+    if existing.scalar_one_or_none() is not None:
+        return HTMLResponse(
+            "<div class='toast toast--error'>Bibliothèque déjà rattachée à ce corpus.</div>",
+            status_code=409,
+        )
+
+    try:
+        cc = CorpusCollection(
+            corpus_id=corpus_id,
+            collection_id=collection_id,
+            priority=_clamp_priority(priority),
+        )
+        db.add(cc)
+        await db.commit()
+        cc = (
+            await db.execute(
+                select(CorpusCollection)
+                .options(selectinload(CorpusCollection.collection))
+                .where(CorpusCollection.id == cc.id)
+            )
+        ).scalar_one()
+        logger.info("Admin %s attached collection %s to corpus %s", user.get("email"), collection_id, corpus_id)
+    except Exception as e:
+        await db.rollback()
+        logger.error("Erreur attach collection %s au corpus %s: %s", collection_id, corpus_id, e)
+        return HTMLResponse(
+            "<div class='toast toast--error'>Erreur lors du rattachement.</div>", status_code=500
+        )
+
+    return await _render_collection_row(request, corpus_id, cc)
+
+
+@router.patch("/{corpus_id}/collections/{collection_id}", response_class=HTMLResponse)
+async def admin_corpus_update_collection(
+    request: Request,
+    corpus_id: uuid.UUID,
+    collection_id: uuid.UUID,
+    priority: Annotated[int, Form()] = 100,
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    if (err := _csrf_or_400(request, csrf_token)):
+        return err
+
+    cc = (
+        await db.execute(
+            select(CorpusCollection)
+            .options(selectinload(CorpusCollection.collection))
+            .where(
+                CorpusCollection.corpus_id == corpus_id,
+                CorpusCollection.collection_id == collection_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if cc is None:
+        return HTMLResponse("", status_code=404)
+
+    try:
+        cc.priority = _clamp_priority(priority)
+        await db.commit()
+        await db.refresh(cc)
+    except Exception as e:
+        await db.rollback()
+        logger.error("Erreur update CorpusCollection %s/%s: %s", corpus_id, collection_id, e)
+        return HTMLResponse(
+            "<div class='toast toast--error'>Erreur lors de la sauvegarde.</div>", status_code=500
+        )
+
+    return await _render_collection_row(request, corpus_id, cc)
+
+
+@router.delete("/{corpus_id}/collections/{collection_id}", response_class=Response)
+async def admin_corpus_detach_collection(
+    request: Request,
+    corpus_id: uuid.UUID,
+    collection_id: uuid.UUID,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> Response:
+    cc = (
+        await db.execute(
+            select(CorpusCollection).where(
+                CorpusCollection.corpus_id == corpus_id,
+                CorpusCollection.collection_id == collection_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if cc is None:
+        return Response(status_code=404)
+    try:
+        await db.delete(cc)
+        await db.commit()
+        logger.info(
+            "Admin %s detached collection %s from corpus %s",
+            user.get("email"), collection_id, corpus_id,
+        )
+    except Exception as e:
+        await db.rollback()
+        logger.error("Erreur detach collection %s du corpus %s: %s", collection_id, corpus_id, e)
+        return HTMLResponse(
+            "<div class='toast toast--error'>Erreur lors du retrait.</div>", status_code=500
+        )
+    return Response(status_code=200, content="")

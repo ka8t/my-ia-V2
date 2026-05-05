@@ -1,0 +1,46 @@
+{# ─────────────────────────────────────────────────────────────────────
+ # corpus-collection-row.html — ligne d'une bibliothèque rattachée.
+ # Variables : corpus_id (UUID), cc (CorpusCollection avec .collection)
+ # ────────────────────────────────────────────────────────────────────── #}
+{% from "macros/icon.html" import icon %}
+
+<li class="admin-bare-list__item admin-bare-list__item--editable" id="corpus-col-{{ cc.collection_id }}">
+  <span class="admin-bare-list__main">
+    {{ cc.collection.display_name }}
+    <span class="admin-corpus__slug">{{ cc.collection.name }}</span>
+  </span>
+
+  <form class="admin-bare-list__inline-form"
+        hx-patch="/web/admin/corpus/{{ corpus_id }}/collections/{{ cc.collection_id }}"
+        hx-target="#corpus-col-{{ cc.collection_id }}"
+        hx-swap="outerHTML"
+        hx-trigger="change">
+    {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+
+    <span class="admin-bare-list__meta">
+      {{ cc.collection.type }} ·
+      {{ cc.collection.document_count }} doc{{ 's' if cc.collection.document_count != 1 }}
+    </span>
+
+    <label class="admin-form__inline-label" title="Priorité (1 = haute, 1000 = basse)">
+      <span>Priorité</span>
+      <input type="number"
+             name="priority"
+             value="{{ cc.priority }}"
+             min="1" max="1000"
+             class="admin-form__input admin-form__input--narrow">
+    </label>
+  </form>
+
+  <span class="admin-bare-list__actions">
+    <button type="button"
+            class="admin-action admin-action--danger"
+            hx-delete="/web/admin/corpus/{{ corpus_id }}/collections/{{ cc.collection_id }}"
+            hx-confirm="Retirer « {{ cc.collection.display_name }} » du corpus ? La bibliothèque elle-même reste préservée."
+            hx-target="#corpus-col-{{ cc.collection_id }}"
+            hx-swap="outerHTML"
+            title="Retirer du corpus">
+      {{ icon('alert-circle', 14) }}
+    </button>
+  </span>
+</li>

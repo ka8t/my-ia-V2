@@ -1,0 +1,48 @@
+{# ─────────────────────────────────────────────────────────────────────
+ # corpus-source-picker.html — contenu de la modal "rattacher source".
+ # Variables : corpus_id (UUID), sources (list[ContextSource])
+ # ────────────────────────────────────────────────────────────────────── #}
+{% from "macros/icon.html" import icon %}
+
+{% if sources %}
+<ul class="admin-bare-list admin-bare-list--picker">
+  {% for s in sources %}
+  <li class="admin-bare-list__item">
+    <span class="admin-bare-list__main">
+      {{ s.display_name }}
+      <span class="admin-corpus__slug">{{ s.name }}</span>
+    </span>
+    <span class="admin-bare-list__meta">
+      {{ s.source_type }} ·
+      {% if s.is_enabled %}activée{% else %}désactivée{% endif %}
+    </span>
+    <form class="admin-bare-list__inline-form"
+          hx-post="/web/admin/corpus/{{ corpus_id }}/sources"
+          hx-target="#corpus-sources-list"
+          hx-swap="beforeend"
+          hx-on::after-request="if (event.detail.successful) this.closest('li').remove()">
+      {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+      <input type="hidden" name="source_id" value="{{ s.id }}">
+
+      <label class="admin-form__inline-label">
+        <span>Priorité</span>
+        <input type="number" name="priority" value="100" min="1" max="1000"
+               class="admin-form__input admin-form__input--narrow">
+      </label>
+      <label class="admin-config__bool">
+        <input type="checkbox" name="is_enabled" value="true" checked>
+        <span>activée</span>
+      </label>
+
+      <button type="submit" class="admin-action admin-action--accent" title="Rattacher">
+        {{ icon('check-circle', 14) }}
+      </button>
+    </form>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p class="admin-empty admin-empty--small">
+  Toutes les sources existantes sont déjà rattachées à ce corpus, ou il n'y en a aucune.
+</p>
+{% endif %}

@@ -1,0 +1,50 @@
+{# ─────────────────────────────────────────────────────────────────────
+ # corpus-source-row.html — ligne d'une source rattachée à un corpus.
+ # Permet update inline (priority + is_enabled) et detach.
+ # Variables : corpus_id (UUID), cs (CorpusSource avec .source)
+ # ────────────────────────────────────────────────────────────────────── #}
+{% from "macros/icon.html" import icon %}
+
+<li class="admin-bare-list__item admin-bare-list__item--editable" id="corpus-src-{{ cs.source_id }}">
+  <span class="admin-bare-list__main">
+    <a href="/web/admin/sources">{{ cs.source.display_name }}</a>
+    <span class="admin-corpus__slug">{{ cs.source.name }}</span>
+  </span>
+
+  <form class="admin-bare-list__inline-form"
+        hx-patch="/web/admin/corpus/{{ corpus_id }}/sources/{{ cs.source_id }}"
+        hx-target="#corpus-src-{{ cs.source_id }}"
+        hx-swap="outerHTML"
+        hx-trigger="change">
+    {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+
+    <span class="admin-bare-list__meta">{{ cs.source.source_type }}</span>
+
+    <label class="admin-form__inline-label" title="Priorité (1 = haute, 1000 = basse)">
+      <span>Priorité</span>
+      <input type="number"
+             name="priority"
+             value="{{ cs.priority }}"
+             min="1" max="1000"
+             class="admin-form__input admin-form__input--narrow">
+    </label>
+
+    <label class="admin-config__bool" title="Activée pour ce corpus">
+      <input type="checkbox" name="is_enabled" value="true"
+             {% if cs.is_enabled %}checked{% endif %}>
+      <span>activée</span>
+    </label>
+  </form>
+
+  <span class="admin-bare-list__actions">
+    <button type="button"
+            class="admin-action admin-action--danger"
+            hx-delete="/web/admin/corpus/{{ corpus_id }}/sources/{{ cs.source_id }}"
+            hx-confirm="Retirer « {{ cs.source.display_name }} » du corpus ? La source elle-même reste préservée."
+            hx-target="#corpus-src-{{ cs.source_id }}"
+            hx-swap="outerHTML"
+            title="Retirer du corpus">
+      {{ icon('alert-circle', 14) }}
+    </button>
+  </span>
+</li>

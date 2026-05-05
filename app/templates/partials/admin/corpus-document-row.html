@@ -1,0 +1,28 @@
+{# ─────────────────────────────────────────────────────────────────────
+ # corpus-document-row.html — ligne d'un document rattaché à un corpus.
+ # Variables : corpus_id (UUID), doc (Document)
+ # ────────────────────────────────────────────────────────────────────── #}
+{% from "macros/icon.html" import icon %}
+
+<li class="admin-bare-list__item" id="corpus-doc-{{ doc.id }}">
+  <span class="admin-bare-list__main">{{ doc.filename }}</span>
+  <span class="admin-bare-list__meta">
+    {{ doc.file_type or '—' }} ·
+    {% if doc.chunk_count and doc.chunk_count > 0 %}
+      {{ doc.chunk_count }} chunks
+    {% else %}
+      non indexé
+    {% endif %}
+  </span>
+  <span class="admin-bare-list__actions">
+    <button type="button"
+            class="admin-action admin-action--danger"
+            hx-delete="/web/admin/corpus/{{ corpus_id }}/documents/{{ doc.id }}"
+            hx-confirm="Retirer « {{ doc.filename }} » du corpus ? Le document lui-même reste préservé."
+            hx-target="#corpus-doc-{{ doc.id }}"
+            hx-swap="outerHTML"
+            title="Retirer du corpus">
+      {{ icon('alert-circle', 14) }}
+    </button>
+  </span>
+</li>

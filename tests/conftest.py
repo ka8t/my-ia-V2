@@ -22,7 +22,7 @@ from sqlalchemy import delete
 
 from app.db import async_session_maker
 from app.main import app
-from app.models import ContextSource, Corpus
+from app.models import Collection, ContextSource, Corpus, Document
 
 ADMIN_EMAIL = "admin@test.example"
 ADMIN_PASSWORD = "0vpFCb^8BYbM@%w^Q#75p6.1"
@@ -100,6 +100,8 @@ async def _cleanup_test_data() -> AsyncGenerator[None, None]:
     async with async_session_maker() as s:
         await s.execute(delete(Corpus).where(Corpus.name.like(f"{TEST_PREFIX}%")))
         await s.execute(delete(ContextSource).where(ContextSource.name.like(f"{TEST_PREFIX}%")))
+        await s.execute(delete(Document).where(Document.filename.like(f"{TEST_PREFIX}%")))
+        await s.execute(delete(Collection).where(Collection.name.like(f"{TEST_PREFIX}%")))
         await s.commit()
 
 
