@@ -1,0 +1,48 @@
+{# ─────────────────────────────────────────────────────────────────────
+ # macros/field.html
+ #
+ # Bottom-border input field with mono small-caps label.
+ #
+ # Usage:
+ #   {{ field('email', 'Adresse e-mail', type='email', required=True) }}
+ #   {{ field('password', 'Mot de passe',
+ #            type='password',
+ #            aside='Oublié ?', aside_href='/web/password-reset') }}
+ # ────────────────────────────────────────────────────────────────────── #}
+{% macro field(
+  name,
+  label,
+  type='text',
+  required=False,
+  autofocus=False,
+  autocomplete='',
+  placeholder='',
+  value='',
+  aside=None,
+  aside_href='#',
+  error=None
+) -%}
+<div class="field{% if error %} field--error{% endif %}">
+  <label class="field__label" for="field-{{ name }}">
+    <span>{{ label }}</span>
+    {%- if aside %}
+    <a class="field__label-aside" href="{{ aside_href }}" tabindex="-1">{{ aside }}</a>
+    {%- endif %}
+  </label>
+  <input
+    class="field__input"
+    type="{{ type }}"
+    id="field-{{ name }}"
+    name="{{ name }}"
+    {% if value %}value="{{ value }}"{% endif %}
+    {% if required %}required{% endif %}
+    {% if autofocus %}autofocus{% endif %}
+    {% if autocomplete %}autocomplete="{{ autocomplete }}"{% endif %}
+    {% if type == 'email' %}autocapitalize="off" spellcheck="false"{% endif %}
+    {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+  >
+  {%- if error %}
+  <span class="field__error">{{ error }}</span>
+  {%- endif %}
+</div>
+{%- endmacro %}

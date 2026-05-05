@@ -20,7 +20,6 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
@@ -32,6 +31,8 @@ from app.core.logging import setup_logging, setup_db_logging, stop_db_logging
 from app.common.llm import get_provider, close_provider
 from app.features.user.service import UserNotApprovedException
 from app.features.sources.scheduler import start_scheduler, stop_scheduler
+from app.web.jinja import make_templates, web_context
+from app.web.auth import router as web_auth_router
 
 # --- Routers ---
 from app.features.health.router import router as health_router
@@ -213,18 +214,24 @@ app.add_middleware(
 
 
 # ============================================================================
-# STATIC & TEMPLATES (Jinja2)
+# STATIC & TEMPLATES (Jinja2 — globals wired via app.web.jinja)
 # ============================================================================
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
-templates = Jinja2Templates(directory=TEMPLATES_DIR)
+templates = make_templates(TEMPLATES_DIR)
 
 
 @app.get("/", response_class=HTMLResponse, tags=["web"])
 async def home(request: Request) -> HTMLResponse:
     """Page d'accueil V2 (placeholder Phase 0/1)."""
     return templates.TemplateResponse(
-        request, "pages/home.html", {"title": settings.app_name}
+        request, "pages/home.html", web_context(request, title=settings.app_name)
     )
+
+
+# ============================================================================
+# ROUTERS WEB (HTML — Jinja2 + HTMX)
+# ============================================================================
+app.include_router(web_auth_router)
 
 
 # ============================================================================

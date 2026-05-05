@@ -1,0 +1,28 @@
+{# ─────────────────────────────────────────────────────────────────────
+ # macros/toast.html
+ #
+ # Inline alert. Levels: error, success, info (default).
+ #
+ # Usage:
+ #   {{ toast('error', 'Identifiants invalides.', title='Échec') }}
+ #   {{ toast('success', 'Préférences enregistrées.') }}
+ # ────────────────────────────────────────────────────────────────────── #}
+{% from "macros/icon.html" import icon %}
+
+{% macro toast(level='info', message='', title='', icon_name=None) -%}
+{%- set _icon_map = {
+  'error':   'alert-circle',
+  'success': 'check-circle',
+  'info':    'info-circle',
+} -%}
+{%- set _icon = icon_name or _icon_map.get(level, 'info-circle') -%}
+<div class="toast{% if level in ['error', 'success'] %} toast--{{ level }}{% endif %}" role="alert">
+  <span class="toast__icon">{{ icon(_icon, 16) }}</span>
+  <div class="toast__body">
+    {%- if title %}
+    <div class="toast__title">{{ title }}</div>
+    {%- endif %}
+    <div>{{ message }}</div>
+  </div>
+</div>
+{%- endmacro %}

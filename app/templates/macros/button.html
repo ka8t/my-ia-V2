@@ -1,0 +1,38 @@
+{# ─────────────────────────────────────────────────────────────────────
+ # macros/button.html
+ #
+ # Usage:
+ #   {{ button('Se connecter') }}
+ #   {{ button('Annuler', variant='ghost') }}
+ #   {{ button('Continuer', block=True, lg=True, arrow=True) }}
+ # ────────────────────────────────────────────────────────────────────── #}
+{% from "macros/icon.html" import icon %}
+
+{% macro button(label, variant='primary', type='submit', block=False, lg=False, arrow=False, disabled=False, name='', value='') -%}
+<button
+  type="{{ type }}"
+  class="btn btn--{{ variant }}{% if block %} btn--block{% endif %}{% if lg %} btn--lg{% endif %}"
+  {% if name %}name="{{ name }}"{% endif %}
+  {% if value %}value="{{ value }}"{% endif %}
+  {% if disabled %}disabled{% endif %}
+>
+  <span>{{ label }}</span>
+  {%- if arrow -%}
+  <span class="btn__arrow">{{ icon('arrow-right', 14) }}</span>
+  {%- endif -%}
+</button>
+{%- endmacro %}
+
+
+{# Link styled as a button — for navigation use cases #}
+{% macro link_button(label, href, variant='ghost', block=False, lg=False, arrow=False) -%}
+<a
+  href="{{ href }}"
+  class="btn btn--{{ variant }}{% if block %} btn--block{% endif %}{% if lg %} btn--lg{% endif %}"
+>
+  <span>{{ label }}</span>
+  {%- if arrow -%}
+  <span class="btn__arrow">{{ icon('arrow-right', 14) }}</span>
+  {%- endif -%}
+</a>
+{%- endmacro %}

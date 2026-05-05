@@ -1,0 +1,50 @@
+{% extends "layouts/base.html" %}
+{% from "macros/icon.html" import icon %}
+
+{% block title %}{{ title|default('Connexion') }} — MY-IA{% endblock %}
+
+{% block content %}
+<main class="auth-shell">
+
+  {# ─── Brand panel ─── #}
+  <aside class="auth-shell__brand">
+    <span class="auth-shell__grid" aria-hidden="true"></span>
+
+    <header class="auth-shell__meta">
+      <span class="auth-shell__meta-mark">
+        {{ icon('diamond', 22) }}
+        <span>MY-IA</span>
+      </span>
+      <span>v2.0 · Atelier</span>
+    </header>
+
+    {% block brand_hero %}
+    <div class="auth-shell__hero">
+      <div class="auth-shell__eyebrow">
+        <span>Plateforme conversationnelle</span>
+      </div>
+      <h1 class="auth-shell__title">
+        Une mémoire <em>vivante</em>,<br>
+        pour interroger<br>
+        votre savoir.
+      </h1>
+      <p class="auth-shell__lede">
+        Recherche augmentée par contexte, ancrée dans vos documents.
+        Locale, souveraine, sans nuage.
+      </p>
+    </div>
+    {% endblock %}
+
+    <footer class="auth-shell__footer">
+      <span>Self-hosted · FastAPI · Python</span>
+      <span>© Atelier MY-IA</span>
+    </footer>
+  </aside>
+
+  {# ─── Form panel ─── #}
+  <section class="auth-shell__form">
+    {% block auth_form %}{% endblock %}
+  </section>
+
+</main>
+{% endblock %}

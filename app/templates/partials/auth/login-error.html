@@ -1,0 +1,13 @@
+{# ─────────────────────────────────────────────────────────────────────
+ # partials/auth/login-error.html
+ #
+ # Returned by the failure path of POST /web/login.
+ # Initial GET on /web/login pulls this in via {% include … ignore missing %}
+ # but renders nothing because `error` is not set.
+ # ────────────────────────────────────────────────────────────────────── #}
+{% from "macros/toast.html" import toast %}
+{% if error %}
+{{ toast('error',
+         message=error,
+         title="Échec de l'authentification") }}
+{% endif %}

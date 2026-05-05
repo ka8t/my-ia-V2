@@ -1,0 +1,162 @@
+/* =============================================================================
+ * MY-IA V2 — DESIGN TOKENS
+ * Atelier · warm paper / deep ink / single rust accent
+ * ============================================================================= */
+
+:root {
+  /* ──────────────────────────────────────────────────────────────────────────
+   *  COLOR — Light (default)
+   * ────────────────────────────────────────────────────────────────────────── */
+
+  /* Surfaces — warm paper, slightly off-white, never sterile */
+  --color-bg:          #F2EBDD;   /* primary canvas — warm cream */
+  --color-bg-subtle:   #ECE3D0;   /* recessed panels */
+  --color-bg-raised:   #F8F2E5;   /* lifted surfaces */
+  --color-surface:     #FBF6EC;   /* card / sheet */
+
+  /* Foreground — warm ink, never pure black */
+  --color-fg:          #1A1612;   /* primary ink */
+  --color-fg-muted:    #5C544A;   /* secondary text */
+  --color-fg-subtle:   #8B8276;   /* tertiary, hints, metadata */
+
+  /* Lines — earthen, drawn-on-paper */
+  --color-line:        #D4C9B6;
+  --color-line-strong: #B8AC95;
+
+  /* Accent — rust / sienna. Singular. Used sparingly. */
+  --color-accent:        #B5482F;
+  --color-accent-strong: #9A3A24;
+  --color-accent-soft:   #E8C9BC;
+  --color-accent-fg:     #FBF6EC;
+
+  /* Status */
+  --color-danger:      #A8302A;
+  --color-danger-soft: #F2D5D2;
+  --color-success:     #4F6E3D;
+  --color-success-soft:#DCE5D2;
+
+  /* ──────────────────────────────────────────────────────────────────────────
+   *  TYPOGRAPHY
+   * ────────────────────────────────────────────────────────────────────────── */
+  --font-display: 'Fraunces', 'Iowan Old Style', 'Apple Garamond', Georgia, serif;
+  --font-body:    'Geist', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+  --font-mono:    'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
+
+  /* Type scale — modular, ratio ~1.25 */
+  --text-xs:   0.6875rem;   /* 11 */
+  --text-sm:   0.8125rem;   /* 13 */
+  --text-base: 0.9375rem;   /* 15 — body */
+  --text-lg:   1.125rem;    /* 18 */
+  --text-xl:   1.4375rem;   /* 23 */
+  --text-2xl:  1.8125rem;   /* 29 */
+  --text-3xl:  2.625rem;    /* 42 */
+  --text-4xl:  3.75rem;     /* 60 */
+  --text-5xl:  5.5rem;      /* 88 — hero serif */
+
+  --leading-tight:  1.05;
+  --leading-snug:   1.25;
+  --leading-normal: 1.55;
+  --leading-loose:  1.7;
+
+  --tracking-tight:   -0.02em;
+  --tracking-normal:   0;
+  --tracking-wide:     0.04em;
+  --tracking-wider:    0.10em;
+  --tracking-widest:   0.18em;
+
+  --weight-light:    300;
+  --weight-regular:  400;
+  --weight-medium:   500;
+  --weight-semibold: 600;
+  --weight-bold:     700;
+
+  /* ──────────────────────────────────────────────────────────────────────────
+   *  SPACING — 4px base, no 0.5 increments past space-3
+   * ────────────────────────────────────────────────────────────────────────── */
+  --space-0-5: 0.125rem;
+  --space-1:   0.25rem;
+  --space-2:   0.5rem;
+  --space-3:   0.75rem;
+  --space-4:   1rem;
+  --space-5:   1.25rem;
+  --space-6:   1.5rem;
+  --space-8:   2rem;
+  --space-10:  2.5rem;
+  --space-12:  3rem;
+  --space-16:  4rem;
+  --space-20:  5rem;
+  --space-24:  6rem;
+  --space-32:  8rem;
+
+  /* ──────────────────────────────────────────────────────────────────────────
+   *  RADII — sharper than convention; corners barely softened
+   * ────────────────────────────────────────────────────────────────────────── */
+  --radius-none: 0;
+  --radius-sm:   2px;
+  --radius-md:   4px;
+  --radius-lg:   8px;
+  --radius-full: 999px;
+
+  /* ──────────────────────────────────────────────────────────────────────────
+   *  SHADOW — elongated, ink-toned, low-opacity
+   * ────────────────────────────────────────────────────────────────────────── */
+  --shadow-sm: 0 1px 0 rgba(26, 22, 18, 0.04);
+  --shadow-md: 0 8px 24px -12px rgba(26, 22, 18, 0.18),
+               0 2px 6px -2px rgba(26, 22, 18, 0.08);
+  --shadow-lg: 0 24px 48px -16px rgba(26, 22, 18, 0.22),
+               0 4px 12px -4px rgba(26, 22, 18, 0.10);
+
+  /* ──────────────────────────────────────────────────────────────────────────
+   *  MOTION
+   * ────────────────────────────────────────────────────────────────────────── */
+  --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  --duration-fast:       120ms;
+  --duration-normal:     240ms;
+  --duration-slow:       480ms;
+  --duration-deliberate: 720ms;
+
+  /* ──────────────────────────────────────────────────────────────────────────
+   *  LAYOUT
+   * ────────────────────────────────────────────────────────────────────────── */
+  --container-max: 1280px;
+  --grain-opacity: 0.06;
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+ *  COLOR — Dark
+ * ──────────────────────────────────────────────────────────────────────────── */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg:          #161310;
+    --color-bg-subtle:   #100E0B;
+    --color-bg-raised:   #1F1B17;
+    --color-surface:     #25201B;
+
+    --color-fg:          #F1E8D6;
+    --color-fg-muted:    #A89C87;
+    --color-fg-subtle:   #756B5C;
+
+    --color-line:        #3A332A;
+    --color-line-strong: #5C5145;
+
+    --color-accent:        #D9613D;
+    --color-accent-strong: #E97551;
+    --color-accent-soft:   #3A2018;
+    --color-accent-fg:     #161310;
+
+    --color-danger:      #DA5048;
+    --color-danger-soft: #3A1612;
+    --color-success:     #82A66A;
+    --color-success-soft:#1F2B16;
+
+    --shadow-sm: 0 1px 0 rgba(0, 0, 0, 0.30);
+    --shadow-md: 0 8px 24px -12px rgba(0, 0, 0, 0.50),
+                 0 2px 6px -2px rgba(0, 0, 0, 0.30);
+    --shadow-lg: 0 24px 48px -16px rgba(0, 0, 0, 0.60),
+                 0 4px 12px -4px rgba(0, 0, 0, 0.40);
+
+    --grain-opacity: 0.10;
+  }
+}

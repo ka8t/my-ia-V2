@@ -1,0 +1,62 @@
+{% extends "layouts/auth.html" %}
+{% from "macros/field.html" import field %}
+{% from "macros/button.html" import button, link_button %}
+
+{% block title %}Connexion — MY-IA{% endblock %}
+
+{% block auth_form %}
+<div class="auth-card">
+
+  <header class="auth-card__header">
+    <span class="auth-card__index"><span>01 / Connexion</span></span>
+    <h2 class="auth-card__title">Bienvenue.</h2>
+    <p class="auth-card__subtitle">
+      Entrez vos identifiants pour accéder à votre espace.
+    </p>
+  </header>
+
+  {# Target zone for HTMX swap on auth failure.
+     Renders the login-error partial only when `error` is set in context. #}
+  <div id="login-error" aria-live="polite">
+    {% include 'partials/auth/login-error.html' ignore missing %}
+  </div>
+
+  <form class="auth-card__form"
+        method="post"
+        action="/web/login"
+        hx-post="/web/login"
+        hx-target="#login-error"
+        hx-swap="innerHTML"
+        hx-disabled-elt="button[type=submit]"
+        autocomplete="on">
+
+    {% if csrf_token %}
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    {% endif %}
+
+    {{ field('email', 'Adresse e-mail',
+             type='email',
+             autocomplete='username',
+             autofocus=True,
+             required=True,
+             placeholder='vous@exemple.fr') }}
+
+    {{ field('password', 'Mot de passe',
+             type='password',
+             autocomplete='current-password',
+             required=True,
+             placeholder='••••••••',
+             aside='Oublié ?',
+             aside_href='/web/password-reset') }}
+
+    <div class="auth-card__actions">
+      {{ button('Se connecter', block=True, lg=True, arrow=True) }}
+    </div>
+  </form>
+
+  <div class="auth-card__divider"><span>Pas encore de compte ?</span></div>
+
+  {{ link_button('Créer un compte', href='/web/register', block=True) }}
+
+</div>
+{% endblock %}
