@@ -96,14 +96,25 @@ def _coerce_value(value_type: str, raw: str) -> tuple[bool, str, str | None]:
         except (ValueError, TypeError):
             return False, raw, f"Nombre invalide : « {raw} »"
 
-    if value_type in {"json", "list"}:
+    if value_type == "json":
         try:
             parsed = json.loads(raw)
         except json.JSONDecodeError as e:
             return False, raw, f"JSON invalide : {e.msg}"
-        if value_type == "list" and not isinstance(parsed, list):
-            return False, raw, "Une liste JSON est attendue (ex: [\"a\", \"b\"])."
         return True, json.dumps(parsed, ensure_ascii=False, separators=(",", ":")), None
+
+    if value_type == "list":
+        # Tolérer JSON array OU CSV (legacy). On normalise toujours en JSON array.
+        try:
+            parsed = json.loads(raw)
+            if isinstance(parsed, list):
+                return True, json.dumps(parsed, ensure_ascii=False, separators=(",", ":")), None
+        except json.JSONDecodeError:
+            pass
+        # Fallback CSV : split + trim + drop empties
+        items = [s.strip() for s in raw.split(",")]
+        items = [s for s in items if s]
+        return True, json.dumps(items, ensure_ascii=False, separators=(",", ":")), None
 
     return True, raw, None
 
