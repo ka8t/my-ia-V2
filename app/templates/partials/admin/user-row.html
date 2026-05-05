@@ -1,0 +1,97 @@
+{# ─────────────────────────────────────────────────────────────────────
+ # partials/admin/user-row.html
+ # Une ligne du tableau utilisateurs.
+ # Le row entier est swap-cible quand les actions sont POSTées.
+ # ────────────────────────────────────────────────────────────────────── #}
+{% from "macros/icon.html" import icon %}
+
+<div class="admin-user-row admin-table-row" id="user-{{ user_row.id }}">
+
+  <div class="admin-table-cell admin-table-cell--name">
+    <span class="admin-table-cell__avatar">{{ (user_row.username or user_row.email or '?')[0]|upper }}</span>
+    <span class="admin-table-cell__email" title="{{ user_row.email }}">{{ user_row.email }}</span>
+  </div>
+
+  <div class="admin-table-cell">
+    <span class="admin-table-cell__mono">{{ user_row.username }}</span>
+  </div>
+
+  <div class="admin-table-cell">
+    <form class="admin-inline-select"
+          hx-post="/web/admin/users/{{ user_row.id }}/role"
+          hx-target="#user-{{ user_row.id }}"
+          hx-swap="outerHTML">
+      {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+      <select name="role_id" onchange="this.form.requestSubmit()">
+        {% for r in roles %}
+        <option value="{{ r.id }}" {% if r.id == user_row.role_id %}selected{% endif %}>
+          {{ r.name }}
+        </option>
+        {% endfor %}
+      </select>
+    </form>
+  </div>
+
+  <div class="admin-table-cell">
+    {% set st = user_row.approval_status.value if user_row.approval_status.value is defined else user_row.approval_status %}
+    <span class="admin-status admin-status--{{ st }}">
+      {% if st == 'pending' %}En attente
+      {% elif st == 'approved' %}Approuvé
+      {% elif st == 'rejected' %}Refusé
+      {% else %}{{ st }}
+      {% endif %}
+    </span>
+    {% if not user_row.is_active %}
+    <span class="admin-status admin-status--inactive">Désactivé</span>
+    {% endif %}
+  </div>
+
+  <div class="admin-table-cell">
+    <span class="admin-table-cell__mono">
+      {% if user_row.created_at %}{{ user_row.created_at.strftime('%d %b %Y') }}{% else %}—{% endif %}
+    </span>
+  </div>
+
+  <div class="admin-table-cell admin-table-cell--actions">
+
+    {% if st == 'pending' %}
+    <form hx-post="/web/admin/users/{{ user_row.id }}/approve"
+          hx-target="#user-{{ user_row.id }}" hx-swap="outerHTML"
+          class="admin-action-form">
+      {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+      <button type="submit" class="admin-action admin-action--accent" title="Approuver">
+        {{ icon('check-circle', 14) }}
+      </button>
+    </form>
+
+    <form hx-post="/web/admin/users/{{ user_row.id }}/reject"
+          hx-target="#user-{{ user_row.id }}" hx-swap="outerHTML"
+          class="admin-action-form">
+      {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+      <button type="submit" class="admin-action admin-action--danger" title="Refuser">
+        {{ icon('alert-circle', 14) }}
+      </button>
+    </form>
+    {% endif %}
+
+    <form hx-post="/web/admin/users/{{ user_row.id }}/active"
+          hx-target="#user-{{ user_row.id }}" hx-swap="outerHTML"
+          class="admin-action-form">
+      {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+      <button type="submit" class="admin-action" title="{{ 'Désactiver' if user_row.is_active else 'Réactiver' }}">
+        {{ icon('logout' if user_row.is_active else 'sparkle', 14) }}
+      </button>
+    </form>
+
+    <button type="button"
+            class="admin-action admin-action--danger"
+            hx-delete="/web/admin/users/{{ user_row.id }}"
+            hx-confirm="Supprimer définitivement {{ user_row.email }} ? Toutes ses conversations et documents seront perdus."
+            hx-target="#user-{{ user_row.id }}"
+            hx-swap="outerHTML"
+            title="Supprimer">
+      {{ icon('arrow-up-right', 14) }}
+    </button>
+
+  </div>
+</div>

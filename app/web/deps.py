@@ -33,3 +33,18 @@ def require_web_auth(request: Request) -> dict:
     if not user:
         raise AuthRedirect()
     return user
+
+
+def require_web_admin(request: Request) -> dict:
+    """Return the session user dict if the user is a superuser, otherwise
+    raise ``AuthRedirect`` (anonymous → /web/login, non-admin → /).
+
+    Note: V2 considers ``is_superuser`` as the admin gate. Role-based
+    permissions can layer on top later via the existing roles table.
+    """
+    user = request.session.get("user")
+    if not user:
+        raise AuthRedirect("/web/login")
+    if not user.get("is_superuser"):
+        raise AuthRedirect("/")
+    return user

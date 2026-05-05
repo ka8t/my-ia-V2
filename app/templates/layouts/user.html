@@ -49,6 +49,13 @@
             {{ icon('settings', 14) }}
           </a>
 
+          {% if current_user.is_superuser %}
+          <a class="user-menu__item" href="/web/admin" role="menuitem">
+            <span>Console d'administration</span>
+            {{ icon('sparkle', 14) }}
+          </a>
+          {% endif %}
+
           <form method="post" action="/web/logout"
                 hx-post="/web/logout"
                 hx-target="body"

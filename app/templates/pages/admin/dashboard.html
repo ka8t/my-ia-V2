@@ -1,0 +1,59 @@
+{% extends "layouts/admin.html" %}
+{% from "macros/icon.html" import icon %}
+
+{% block title %}Tableau de bord — Admin{% endblock %}
+
+{% block admin_content %}
+
+<header class="admin-page__head">
+  <div class="admin-page__eyebrow"><span>Console / 00</span></div>
+  <h1 class="admin-page__title">
+    Tableau <em>de bord</em>.
+  </h1>
+  <p class="admin-page__lede">
+    Vue d'ensemble de l'instance : utilisateurs, conversations, documents.
+  </p>
+</header>
+
+<section class="admin-stats">
+  <a class="admin-stat" href="/web/admin/users">
+    <div class="admin-stat__num">{{ stats.users }}</div>
+    <div class="admin-stat__label">Utilisateur{{ 's' if stats.users != 1 }}</div>
+    {% if stats.users_pending and stats.users_pending > 0 %}
+    <div class="admin-stat__sub admin-stat__sub--accent">
+      {{ stats.users_pending }} en attente de validation
+    </div>
+    {% else %}
+    <div class="admin-stat__sub">Aucun en attente</div>
+    {% endif %}
+    <span class="admin-stat__cta">{{ icon('arrow-up-right', 12) }}</span>
+  </a>
+
+  <a class="admin-stat" href="/web/admin/documents">
+    <div class="admin-stat__num">{{ stats.documents }}</div>
+    <div class="admin-stat__label">Document{{ 's' if stats.documents != 1 }}</div>
+    <div class="admin-stat__sub">Toutes bibliothèques</div>
+    <span class="admin-stat__cta">{{ icon('arrow-up-right', 12) }}</span>
+  </a>
+
+  <div class="admin-stat admin-stat--readonly">
+    <div class="admin-stat__num">{{ stats.conversations }}</div>
+    <div class="admin-stat__label">Conversation{{ 's' if stats.conversations != 1 }}</div>
+    <div class="admin-stat__sub">Tous utilisateurs</div>
+  </div>
+</section>
+
+<section class="admin-callout">
+  <div class="admin-callout__head">
+    <span class="admin-callout__eyebrow">Console V2</span>
+    <h2 class="admin-callout__title">Migration en cours.</h2>
+  </div>
+  <p class="admin-callout__body">
+    L'admin V2 couvre actuellement utilisateurs et documents. Les modules
+    système (LLM, RAG, storage, audit&hellip;) restent disponibles dans l'admin V1
+    sur <a href="https://localhost:8081" target="_blank" rel="noopener">port 8081</a>
+    le temps de leur portage progressif.
+  </p>
+</section>
+
+{% endblock %}

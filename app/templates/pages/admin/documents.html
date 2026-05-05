@@ -1,0 +1,71 @@
+{% extends "layouts/admin.html" %}
+{% from "macros/icon.html" import icon %}
+
+{% block title %}Documents — Admin{% endblock %}
+
+{% block admin_content %}
+
+<header class="admin-page__head">
+  <div class="admin-page__eyebrow"><span>Console / 02</span></div>
+  <h1 class="admin-page__title">
+    Tous les <em>documents</em>.
+  </h1>
+  <p class="admin-page__lede">
+    Vue cross-utilisateur des documents indexés (200 derniers).
+  </p>
+</header>
+
+<div class="admin-table-wrap">
+  <div class="admin-table-head admin-doc-row">
+    <span>Fichier</span>
+    <span>Propriétaire</span>
+    <span>Type</span>
+    <span>Taille</span>
+    <span>Indexation</span>
+    <span></span>
+  </div>
+
+  <div class="admin-table-body">
+    {% if rows %}
+      {% for r in rows %}
+      <div class="admin-doc-row admin-table-row" id="adoc-{{ r.doc.id }}">
+        <div class="admin-table-cell admin-table-cell--name">
+          <span class="admin-table-cell__icon">{{ icon('document', 14) }}</span>
+          <span class="admin-table-cell__email" title="{{ r.doc.filename }}">{{ r.doc.filename }}</span>
+        </div>
+        <div class="admin-table-cell">
+          <span class="admin-table-cell__mono">{{ r.user_email }}</span>
+        </div>
+        <div class="admin-table-cell">
+          <span class="admin-table-cell__mono">{{ r.doc.file_type or '—' }}</span>
+        </div>
+        <div class="admin-table-cell">
+          <span class="admin-table-cell__mono">{{ r.size }}</span>
+        </div>
+        <div class="admin-table-cell">
+          {% if r.indexed %}
+          <span class="admin-status admin-status--approved">Indexé · {{ r.doc.chunk_count }} chunks</span>
+          {% else %}
+          <span class="admin-status admin-status--pending">En cours…</span>
+          {% endif %}
+        </div>
+        <div class="admin-table-cell admin-table-cell--actions">
+          <button type="button"
+                  class="admin-action admin-action--danger"
+                  hx-delete="/web/admin/documents/{{ r.doc.id }}"
+                  hx-confirm="Supprimer définitivement « {{ r.doc.filename }} » ?"
+                  hx-target="#adoc-{{ r.doc.id }}"
+                  hx-swap="outerHTML"
+                  title="Supprimer">
+            {{ icon('arrow-up-right', 14) }}
+          </button>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="admin-empty">Aucun document.</div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

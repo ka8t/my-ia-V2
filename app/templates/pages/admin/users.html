@@ -1,0 +1,55 @@
+{% extends "layouts/admin.html" %}
+{% from "macros/icon.html" import icon %}
+
+{% block title %}Utilisateurs — Admin{% endblock %}
+
+{% block admin_content %}
+
+<header class="admin-page__head">
+  <div class="admin-page__eyebrow"><span>Console / 01</span></div>
+  <h1 class="admin-page__title">
+    Gestion des <em>utilisateurs</em>.
+  </h1>
+  <p class="admin-page__lede">
+    Validez les inscriptions, attribuez des rôles, désactivez ou supprimez
+    des comptes.
+  </p>
+</header>
+
+{# ─── Filters ─── #}
+<nav class="admin-filters">
+  <a class="admin-filter{% if not filter_status %} admin-filter--active{% endif %}"
+     href="/web/admin/users">Tous</a>
+  <a class="admin-filter{% if filter_status == 'pending' %} admin-filter--active{% endif %}"
+     href="/web/admin/users?status=pending">En attente</a>
+  <a class="admin-filter{% if filter_status == 'approved' %} admin-filter--active{% endif %}"
+     href="/web/admin/users?status=approved">Approuvés</a>
+  <a class="admin-filter{% if filter_status == 'rejected' %} admin-filter--active{% endif %}"
+     href="/web/admin/users?status=rejected">Refusés</a>
+</nav>
+
+{# ─── Table ─── #}
+<div class="admin-table-wrap">
+  <div class="admin-table-head admin-user-row">
+    <span>E-mail</span>
+    <span>Identifiant</span>
+    <span>Rôle</span>
+    <span>Statut</span>
+    <span>Inscrit le</span>
+    <span></span>
+  </div>
+
+  <div class="admin-table-body">
+    {% if users %}
+      {% for u in users %}
+        {% with user_row=u %}
+          {% include 'partials/admin/user-row.html' %}
+        {% endwith %}
+      {% endfor %}
+    {% else %}
+      <div class="admin-empty">Aucun utilisateur ne correspond à ce filtre.</div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}
