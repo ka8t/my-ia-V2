@@ -1,0 +1,64 @@
+{% extends "layouts/admin.html" %}
+{% from "macros/admin_form.html" import page_header, flash, field_text, field_int, field_select, field_list, form_actions %}
+
+{% block title %}Stockage — Admin{% endblock %}
+
+{% block admin_content %}
+
+{{ page_header(
+  title="Stockage",
+  eyebrow="Système",
+  lede="Backend de stockage, taille des uploads, types acceptés et bloqués."
+) }}
+
+{{ flash(success=success, error=error) }}
+
+<form method="post" action="/web/admin/system/storage" class="admin-form admin-form--stacked">
+  {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+
+  <fieldset class="admin-fieldset">
+    <legend>Backend</legend>
+    {{ field_select(
+      name="backend",
+      label="Type de backend (storage.backend)",
+      value=values["storage.backend"] or "local",
+      options=[("local", "Local (filesystem)"), ("s3", "S3"), ("minio", "MinIO")],
+    ) }}
+    {{ field_text("local_path", "Répertoire local (storage.local_path)",
+                  values["storage.local_path"], placeholder="/data/uploads",
+                  hint="Utilisé uniquement si backend=local.") }}
+  </fieldset>
+
+  <fieldset class="admin-fieldset">
+    <legend>Quotas</legend>
+    {{ field_int("max_file_size_mb", "Taille max d'un upload en MB (storage.max_file_size_mb)",
+                 values["storage.max_file_size_mb"], default=50, min=1, max=10240,
+                 hint="Refus côté serveur au-delà de cette valeur.") }}
+    {{ field_int("default_quota_mb", "Quota par défaut par utilisateur en MB (storage.default_quota_mb)",
+                 values["storage.default_quota_mb"], default=100, min=1, max=1048576) }}
+  </fieldset>
+
+  <fieldset class="admin-fieldset">
+    <legend>Types acceptés / bloqués</legend>
+    {{ field_list(
+      name="allowed_mime_types",
+      label="MIME types acceptés (storage.allowed_mime_types)",
+      value=values["storage.allowed_mime_types"],
+      placeholder="application/pdf\ntext/plain\nimage/png",
+      hint="Une valeur par ligne (ou séparées par virgule). Liste blanche stricte.",
+      rows=8,
+    ) }}
+    {{ field_list(
+      name="blocked_extensions",
+      label="Extensions bloquées (storage.blocked_extensions)",
+      value=values["storage.blocked_extensions"],
+      placeholder=".exe\n.bat\n.sh",
+      hint="Le préfixe '.' est ajouté automatiquement si manquant.",
+      rows=6,
+    ) }}
+  </fieldset>
+
+  {{ form_actions() }}
+</form>
+
+{% endblock %}

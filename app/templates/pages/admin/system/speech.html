@@ -1,0 +1,86 @@
+{% extends "layouts/admin.html" %}
+{% from "macros/admin_form.html" import page_header, flash, field_text, field_int, field_float, field_bool, field_select, form_actions %}
+
+{% block title %}Speech (STT/TTS) — Admin{% endblock %}
+
+{% block admin_content %}
+
+{{ page_header(
+  title="Speech (STT / TTS)",
+  eyebrow="Système",
+  lede="Speech-to-text (Whisper) et text-to-speech."
+) }}
+
+{{ flash(success=success, error=error) }}
+
+<form method="post" action="/web/admin/system/speech" class="admin-form admin-form--stacked">
+  {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+
+  <fieldset class="admin-fieldset">
+    <legend>Activation</legend>
+    {{ field_bool("enabled", "Speech-to-text activé (speech.enabled)",
+                  values["speech.enabled"]) }}
+    {{ field_text("default_language", "Langue par défaut (speech.default_language)",
+                  values["speech.default_language"], placeholder="fr, en, es, de") }}
+  </fieldset>
+
+  <fieldset class="admin-fieldset">
+    <legend>Whisper (STT)</legend>
+    {{ field_select(
+      name="model",
+      label="Modèle Whisper (speech.model)",
+      value=values["speech.model"] or "small",
+      options=[
+        ("tiny", "tiny (39M, rapide)"),
+        ("base", "base (74M)"),
+        ("small", "small (244M, recommandé)"),
+        ("medium", "medium (769M)"),
+        ("large", "large (1.5G)"),
+        ("large-v2", "large-v2"),
+        ("large-v3", "large-v3"),
+      ],
+    ) }}
+    {{ field_text("whisper_host", "Hôte serveur Whisper (whisper.host)",
+                  values["whisper.host"], placeholder="whisper, host.docker.internal") }}
+    {{ field_int("whisper_port", "Port serveur Whisper (whisper.port)",
+                 values["whisper.port"], default=8000, min=1, max=65535) }}
+    {{ field_int("max_duration", "Durée max d'enregistrement en secondes (speech.max_duration)",
+                 values["speech.max_duration"], default=60, min=1, max=3600) }}
+    {{ field_int("timeout", "Timeout transcription en secondes (speech.timeout)",
+                 values["speech.timeout"], default=120, min=1, max=600) }}
+  </fieldset>
+
+  <fieldset class="admin-fieldset">
+    <legend>Détection de fin de parole</legend>
+    {{ field_int("silence_duration_ms", "Silence requis pour stop auto (ms) (speech.silence_duration_ms)",
+                 values["speech.silence_duration_ms"], default=1500, min=0, max=10000) }}
+    {{ field_float("silence_threshold", "Seuil de silence (speech.silence_threshold)",
+                   values["speech.silence_threshold"], default=0.01, step=0.001, min=0.0, max=1.0,
+                   hint="Amplitude RMS sous laquelle l'audio est considéré silencieux.") }}
+    {{ field_bool("auto_send_enabled", "Envoi auto après silence (speech.auto_send_enabled)",
+                  values["speech.auto_send_enabled"]) }}
+  </fieldset>
+
+  <fieldset class="admin-fieldset">
+    <legend>TTS (Text-to-speech)</legend>
+    {{ field_bool("tts_enabled", "TTS activé (speech.tts_enabled)",
+                  values["speech.tts_enabled"]) }}
+    {{ field_select(
+      name="tts_mode",
+      label="Mode TTS (speech.tts_mode)",
+      value=values["speech.tts_mode"] or "native",
+      options=[
+        ("native", "Natif (navigateur Web Speech API)"),
+        ("server", "Serveur (TTS distant)"),
+        ("off", "Désactivé"),
+      ],
+    ) }}
+    {{ field_float("tts_default_rate", "Vitesse par défaut (speech.tts_default_rate)",
+                   values["speech.tts_default_rate"], default=1.0, step=0.1, min=0.5, max=2.0,
+                   hint="1.0 = normal, 0.5 = lent, 2.0 = rapide.") }}
+  </fieldset>
+
+  {{ form_actions() }}
+</form>
+
+{% endblock %}

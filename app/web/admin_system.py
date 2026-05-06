@@ -585,3 +585,198 @@ async def rag_overrides_post(
         success=f"{saved} clé(s) enregistrée(s)." if not errors else None,
         error=" ; ".join(errors) if errors else None,
     )
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  Phase 3.8.b — Storage
+# ═════════════════════════════════════════════════════════════════════════════
+STORAGE_KEYS = [
+    "storage.backend", "storage.local_path",
+    "storage.max_file_size_mb", "storage.default_quota_mb",
+    "storage.allowed_mime_types", "storage.blocked_extensions",
+]
+
+
+def _parse_list_textarea(raw: str) -> list[str]:
+    """Parse un textarea (1 valeur par ligne, ou séparées par virgule).
+
+    Vide les blanks, conserve l'ordre, dédupe.
+    """
+    if not raw:
+        return []
+    items: list[str] = []
+    seen: set[str] = set()
+    for line in raw.replace(",", "\n").splitlines():
+        v = line.strip()
+        if v and v not in seen:
+            items.append(v)
+            seen.add(v)
+    return items
+
+
+def _list_to_textarea(value: Any) -> str:
+    """Inverse de _parse_list_textarea pour le rendu (1 item par ligne)."""
+    if value is None:
+        return ""
+    if isinstance(value, list):
+        return "\n".join(str(v) for v in value)
+    if isinstance(value, str):
+        # Peut être déjà une liste sérialisée si _convert_value n'a pas été appelé
+        return value
+    return str(value)
+
+
+@router.get("/storage", response_class=HTMLResponse)
+async def storage_get(
+    request: Request,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    return await _render_page(
+        request, "pages/admin/system/storage.html",
+        title="Stockage", active_section="system_storage", user=user,
+        values=await _load_keys(db, STORAGE_KEYS),
+    )
+
+
+@router.post("/storage", response_class=HTMLResponse)
+async def storage_post(
+    request: Request,
+    backend: Annotated[str, Form()] = "local",
+    local_path: Annotated[str, Form()] = "/data/uploads",
+    max_file_size_mb: Annotated[int, Form()] = 50,
+    default_quota_mb: Annotated[int, Form()] = 100,
+    allowed_mime_types: Annotated[str, Form()] = "",
+    blocked_extensions: Annotated[str, Form()] = "",
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    if (err := _csrf_or_400(request, csrf_token)):
+        return err
+
+    if backend not in ("local", "s3", "minio"):
+        return await _render_page(
+            request, "pages/admin/system/storage.html",
+            title="Stockage", active_section="system_storage", user=user,
+            values=await _load_keys(db, STORAGE_KEYS),
+            error="Backend invalide (attendu : local, s3, minio).",
+        )
+
+    mime_types = _parse_list_textarea(allowed_mime_types)
+    extensions = _parse_list_textarea(blocked_extensions)
+    # Normaliser les extensions : doivent commencer par "."
+    extensions = [e if e.startswith(".") else f".{e}" for e in extensions]
+
+    updates = {
+        "storage.backend": backend,
+        "storage.local_path": local_path.strip(),
+        "storage.max_file_size_mb": max(1, _to_int(max_file_size_mb, 50)),
+        "storage.default_quota_mb": max(1, _to_int(default_quota_mb, 100)),
+        "storage.allowed_mime_types": mime_types,
+        "storage.blocked_extensions": extensions,
+    }
+    saved, errors = await _bulk_set(db, user, updates)
+    return await _render_page(
+        request, "pages/admin/system/storage.html",
+        title="Stockage", active_section="system_storage", user=user,
+        values=await _load_keys(db, STORAGE_KEYS),
+        success=f"{saved} clé(s) enregistrée(s)." if not errors else None,
+        error=" ; ".join(errors) if errors else None,
+    )
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  Phase 3.8.b — Speech (STT + TTS)
+# ═════════════════════════════════════════════════════════════════════════════
+SPEECH_KEYS = [
+    "speech.enabled", "speech.default_language", "speech.model",
+    "speech.max_duration", "speech.timeout",
+    "speech.silence_duration_ms", "speech.silence_threshold",
+    "speech.auto_send_enabled",
+    "speech.tts_enabled", "speech.tts_mode", "speech.tts_default_rate",
+    "whisper.host", "whisper.port",
+]
+
+
+@router.get("/speech", response_class=HTMLResponse)
+async def speech_get(
+    request: Request,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    return await _render_page(
+        request, "pages/admin/system/speech.html",
+        title="Speech (STT/TTS)", active_section="system_speech", user=user,
+        values=await _load_keys(db, SPEECH_KEYS),
+    )
+
+
+@router.post("/speech", response_class=HTMLResponse)
+async def speech_post(
+    request: Request,
+    enabled: Annotated[str | None, Form()] = None,
+    default_language: Annotated[str, Form()] = "fr",
+    model: Annotated[str, Form()] = "small",
+    max_duration: Annotated[int, Form()] = 60,
+    timeout: Annotated[int, Form()] = 120,
+    silence_duration_ms: Annotated[int, Form()] = 1500,
+    silence_threshold: Annotated[float, Form()] = 0.01,
+    auto_send_enabled: Annotated[str | None, Form()] = None,
+    tts_enabled: Annotated[str | None, Form()] = None,
+    tts_mode: Annotated[str, Form()] = "native",
+    tts_default_rate: Annotated[float, Form()] = 1.0,
+    whisper_host: Annotated[str, Form()] = "whisper",
+    whisper_port: Annotated[int, Form()] = 8000,
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    if (err := _csrf_or_400(request, csrf_token)):
+        return err
+
+    if model not in ("tiny", "base", "small", "medium", "large", "large-v2", "large-v3"):
+        return await _render_page(
+            request, "pages/admin/system/speech.html",
+            title="Speech (STT/TTS)", active_section="system_speech", user=user,
+            values=await _load_keys(db, SPEECH_KEYS),
+            error="Modèle Whisper invalide.",
+        )
+    if tts_mode not in ("native", "server", "off"):
+        return await _render_page(
+            request, "pages/admin/system/speech.html",
+            title="Speech (STT/TTS)", active_section="system_speech", user=user,
+            values=await _load_keys(db, SPEECH_KEYS),
+            error="Mode TTS invalide.",
+        )
+    if not (0.5 <= tts_default_rate <= 2.0):
+        return await _render_page(
+            request, "pages/admin/system/speech.html",
+            title="Speech (STT/TTS)", active_section="system_speech", user=user,
+            values=await _load_keys(db, SPEECH_KEYS),
+            error="tts_default_rate doit être entre 0.5 et 2.0.",
+        )
+
+    updates = {
+        "speech.enabled": _to_bool(enabled),
+        "speech.default_language": default_language.strip() or "fr",
+        "speech.model": model,
+        "speech.max_duration": max(1, _to_int(max_duration, 60)),
+        "speech.timeout": max(1, _to_int(timeout, 120)),
+        "speech.silence_duration_ms": max(0, _to_int(silence_duration_ms, 1500)),
+        "speech.silence_threshold": max(0.0, min(_to_float(silence_threshold, 0.01), 1.0)),
+        "speech.auto_send_enabled": _to_bool(auto_send_enabled),
+        "speech.tts_enabled": _to_bool(tts_enabled),
+        "speech.tts_mode": tts_mode,
+        "speech.tts_default_rate": _to_float(tts_default_rate, 1.0),
+        "whisper.host": whisper_host.strip(),
+        "whisper.port": max(1, min(_to_int(whisper_port, 8000), 65535)),
+    }
+    saved, errors = await _bulk_set(db, user, updates)
+    return await _render_page(
+        request, "pages/admin/system/speech.html",
+        title="Speech (STT/TTS)", active_section="system_speech", user=user,
+        values=await _load_keys(db, SPEECH_KEYS),
+        success=f"{saved} clé(s) enregistrée(s)." if not errors else None,
+        error=" ; ".join(errors) if errors else None,
+    )

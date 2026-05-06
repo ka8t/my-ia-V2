@@ -96,6 +96,33 @@
 {% endmacro %}
 
 
+{% macro field_list(name, label, value, hint=None, placeholder=None, rows=6) %}
+{# Textarea : 1 valeur par ligne. Le serveur parse via _parse_list_textarea. #}
+{% set as_text = (value | join('\n')) if value is iterable and value is not string else (value or '') %}
+<label class="admin-form__field">
+  <span class="admin-form__label">{{ label }}</span>
+  <textarea name="{{ name }}" rows="{{ rows }}"
+            class="admin-form__textarea admin-form__textarea--code"
+            spellcheck="false" autocapitalize="off"
+            {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}>{{ as_text }}</textarea>
+  {% if hint %}<small class="admin-config__hint">{{ hint }}</small>{% endif %}
+</label>
+{% endmacro %}
+
+
+{% macro field_select(name, label, value, options, hint=None) %}
+<label class="admin-form__field">
+  <span class="admin-form__label">{{ label }}</span>
+  <select name="{{ name }}" class="admin-form__input">
+    {% for opt_value, opt_label in options %}
+    <option value="{{ opt_value }}" {% if (value or '') == opt_value %}selected{% endif %}>{{ opt_label }}</option>
+    {% endfor %}
+  </select>
+  {% if hint %}<small class="admin-config__hint">{{ hint }}</small>{% endif %}
+</label>
+{% endmacro %}
+
+
 {% macro form_actions(submit_label="Enregistrer", cancel_href=None) %}
 <div class="admin-form__actions">
   {% if cancel_href %}
