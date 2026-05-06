@@ -1,0 +1,35 @@
+{% extends "layouts/admin.html" %}
+{% from "macros/admin_form.html" import page_header, flash, field_text, field_bool, form_actions %}
+
+{% block title %}RAG · Comportement — Admin{% endblock %}
+
+{% block admin_content %}
+
+{{ page_header(
+  title="RAG · Comportement",
+  eyebrow="Système / RAG",
+  lede="Comportement par défaut du moteur RAG (corpus, scope, filtres)."
+) }}
+
+{{ flash(success=success, error=error) }}
+
+<form method="post" action="/web/admin/system/rag/behavior" class="admin-form admin-form--stacked">
+  {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+
+  {{ field_bool("use_corpus", "Utiliser les corpus thématiques par défaut (rag.use_corpus)",
+                values["rag.use_corpus"],
+                hint="Si désactivé, le RAG ignore les corpus et cherche partout.") }}
+  {{ field_bool("include_global_sources", "Inclure les sources globales (rag.include_global_sources)",
+                values["rag.include_global_sources"],
+                hint="Sources non rattachées à un corpus restent interrogées.") }}
+  {{ field_bool("source_filter_by_collection", "Filtrer les sources par bibliothèque (rag.source_filter_by_collection)",
+                values["rag.source_filter_by_collection"]) }}
+  {{ field_text("default_group", "Groupe par défaut (rag.default_group)",
+                values["rag.default_group"],
+                placeholder="ex: general, internal",
+                hint="Groupe assigné aux nouveaux corpus ou collections.") }}
+
+  {{ form_actions() }}
+</form>
+
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends "layouts/admin.html" %}
+{% from "macros/admin_form.html" import page_header, flash, field_int, field_float, field_text, form_actions %}
+
+{% block title %}RAG · Recherche — Admin{% endblock %}
+
+{% block admin_content %}
+
+{{ page_header(
+  title="RAG · Recherche",
+  eyebrow="Système / RAG",
+  lede="Paramètres de la recherche vectorielle et du re-ranking."
+) }}
+
+{{ flash(success=success, error=error) }}
+
+<form method="post" action="/web/admin/system/rag/search" class="admin-form admin-form--stacked">
+  {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+
+  {{ field_int("top_k", "Top K (rag.top_k)",
+               values["rag.top_k"], default=10, min=1, max=200,
+               hint="Nombre de chunks récupérés par recherche (avant re-ranking).") }}
+  {{ field_float("similarity_threshold", "Seuil de similarité (rag.similarity_threshold)",
+                 values["rag.similarity_threshold"], default=0.0, step=0.01, min=0.0, max=1.0,
+                 hint="Chunks avec score < seuil sont rejetés (0.0 = tout accepter).") }}
+  {{ field_float("keyword_boost", "Boost mots-clés (rag.keyword_boost)",
+                 values["rag.keyword_boost"], default=0.0, step=0.05, min=0.0, max=2.0,
+                 hint="Pondération des matches mots-clés vs vecteurs (0 = vecteurs seuls).") }}
+  {{ field_float("temperature", "Température de génération (rag.temperature)",
+                 values["rag.temperature"], default=0.7, step=0.05, min=0.0, max=2.0,
+                 hint="0 = déterministe, 1+ = créatif.") }}
+  {{ field_text("stopwords_language", "Langue stopwords (rag.stopwords_language)",
+                values["rag.stopwords_language"], placeholder="fr, en") }}
+
+  {{ form_actions() }}
+</form>
+
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends "layouts/admin.html" %}
+{% from "macros/admin_form.html" import page_header, flash, field_int, field_radio, form_actions %}
+
+{% block title %}RAG · Chunking — Admin{% endblock %}
+
+{% block admin_content %}
+
+{{ page_header(
+  title="RAG · Chunking",
+  eyebrow="Système / RAG",
+  lede="Découpage des documents en chunks lors de l'indexation."
+) }}
+
+{{ flash(success=success, error=error) }}
+
+<form method="post" action="/web/admin/system/rag/chunking" class="admin-form admin-form--stacked">
+  {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+
+  {{ field_int("chunk_size", "Taille du chunk (rag.chunk_size)",
+               values["rag.chunk_size"], default=800, min=64, max=8192,
+               hint="Tokens par chunk. 800 est un bon compromis qualité/coût.") }}
+  {{ field_int("chunk_overlap", "Recouvrement (rag.chunk_overlap)",
+               values["rag.chunk_overlap"], default=100, min=0, max=2048,
+               hint="Tokens partagés entre chunks consécutifs (préserve le contexte).") }}
+  {{ field_int("min_chunk_length", "Taille minimale (rag.min_chunk_length)",
+               values["rag.min_chunk_length"], default=50, min=0, max=1024,
+               hint="Chunks plus petits sont fusionnés ou ignorés.") }}
+  {{ field_radio(
+    name="chunking_strategy",
+    label="Stratégie (rag.chunking_strategy)",
+    value=values["rag.chunking_strategy"] or "recursive",
+    options=[
+      ("recursive", "Récursif (séparateurs hiérarchiques)"),
+      ("fixed", "Fixe (taille constante)"),
+      ("semantic", "Sémantique (par embedding)"),
+      ("sentence", "Phrase par phrase"),
+    ],
+  ) }}
+
+  {{ form_actions() }}
+</form>
+
+{% endblock %}

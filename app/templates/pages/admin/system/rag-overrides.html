@@ -1,0 +1,131 @@
+{% extends "layouts/admin.html" %}
+{% from "macros/admin_form.html" import page_header, flash, form_actions %}
+
+{% block title %}RAG · Overrides — Admin{% endblock %}
+
+{% block admin_content %}
+
+{{ page_header(
+  title="RAG · Overrides (avancé)",
+  eyebrow="Système / RAG",
+  lede="Surcharges per-provider et per-mode. Laisser vide = utiliser la valeur globale."
+) }}
+
+{{ flash(success=success, error=error) }}
+
+<form method="post" action="/web/admin/system/rag/overrides" class="admin-form admin-form--stacked">
+  {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+
+  {% macro override_section(provider, label) %}
+  <fieldset class="admin-fieldset">
+    <legend>Override · {{ label }}</legend>
+    <div class="admin-form__grid">
+      <label class="admin-form__field">
+        <span class="admin-form__label">rag.{{ provider }}.chunk_size</span>
+        <input type="number" name="rag.{{ provider }}.chunk_size"
+               value="{{ values['rag.' ~ provider ~ '.chunk_size'] or '' }}"
+               min="0" class="admin-form__input admin-form__input--narrow">
+      </label>
+      <label class="admin-form__field">
+        <span class="admin-form__label">rag.{{ provider }}.chunk_overlap</span>
+        <input type="number" name="rag.{{ provider }}.chunk_overlap"
+               value="{{ values['rag.' ~ provider ~ '.chunk_overlap'] or '' }}"
+               min="0" class="admin-form__input admin-form__input--narrow">
+      </label>
+      <label class="admin-form__field">
+        <span class="admin-form__label">rag.{{ provider }}.chunking_strategy</span>
+        <input type="text" name="rag.{{ provider }}.chunking_strategy"
+               value="{{ values['rag.' ~ provider ~ '.chunking_strategy'] or '' }}"
+               class="admin-form__input">
+      </label>
+      <label class="admin-form__field">
+        <span class="admin-form__label">rag.{{ provider }}.min_chunk_length</span>
+        <input type="number" name="rag.{{ provider }}.min_chunk_length"
+               value="{{ values['rag.' ~ provider ~ '.min_chunk_length'] or '' }}"
+               min="0" class="admin-form__input admin-form__input--narrow">
+      </label>
+      <label class="admin-form__field">
+        <span class="admin-form__label">rag.{{ provider }}.top_k</span>
+        <input type="number" name="rag.{{ provider }}.top_k"
+               value="{{ values['rag.' ~ provider ~ '.top_k'] or '' }}"
+               min="1" max="200" class="admin-form__input admin-form__input--narrow">
+      </label>
+      <label class="admin-form__field">
+        <span class="admin-form__label">rag.{{ provider }}.similarity_threshold</span>
+        <input type="number" name="rag.{{ provider }}.similarity_threshold"
+               value="{{ values['rag.' ~ provider ~ '.similarity_threshold'] or '' }}"
+               step="0.01" min="0" max="1" class="admin-form__input admin-form__input--narrow">
+      </label>
+      <label class="admin-form__field">
+        <span class="admin-form__label">rag.{{ provider }}.keyword_boost</span>
+        <input type="number" name="rag.{{ provider }}.keyword_boost"
+               value="{{ values['rag.' ~ provider ~ '.keyword_boost'] or '' }}"
+               step="0.05" min="0" max="2" class="admin-form__input admin-form__input--narrow">
+      </label>
+      <label class="admin-form__field">
+        <span class="admin-form__label">rag.{{ provider }}.stopwords_language</span>
+        <input type="text" name="rag.{{ provider }}.stopwords_language"
+               value="{{ values['rag.' ~ provider ~ '.stopwords_language'] or '' }}"
+               class="admin-form__input">
+      </label>
+      <label class="admin-form__field">
+        <span class="admin-form__label">rag.{{ provider }}.temperature</span>
+        <input type="number" name="rag.{{ provider }}.temperature"
+               value="{{ values['rag.' ~ provider ~ '.temperature'] or '' }}"
+               step="0.05" min="0" max="2" class="admin-form__input admin-form__input--narrow">
+      </label>
+    </div>
+    <label class="admin-config__bool">
+      <input type="checkbox" name="rag.{{ provider }}.use_corpus" value="true"
+             {% if values['rag.' ~ provider ~ '.use_corpus'] %}checked{% endif %}>
+      <span>rag.{{ provider }}.use_corpus</span>
+    </label>
+    <label class="admin-config__bool">
+      <input type="checkbox" name="rag.{{ provider }}.require_sources" value="true"
+             {% if values['rag.' ~ provider ~ '.require_sources'] %}checked{% endif %}>
+      <span>rag.{{ provider }}.require_sources</span>
+    </label>
+  </fieldset>
+  {% endmacro %}
+
+  {{ override_section('ollama', 'Ollama') }}
+  {{ override_section('llamacpp', 'llama.cpp') }}
+
+  {% macro mode_section(mode, label) %}
+  <fieldset class="admin-fieldset">
+    <legend>Mode · {{ label }}</legend>
+    <div class="admin-form__grid">
+      <label class="admin-form__field">
+        <span class="admin-form__label">rag.mode.{{ mode }}.max_context_tokens</span>
+        <input type="number" name="rag.mode.{{ mode }}.max_context_tokens"
+               value="{{ values['rag.mode.' ~ mode ~ '.max_context_tokens'] or '' }}"
+               min="0" class="admin-form__input admin-form__input--narrow">
+      </label>
+      <label class="admin-form__field">
+        <span class="admin-form__label">rag.mode.{{ mode }}.top_k</span>
+        <input type="number" name="rag.mode.{{ mode }}.top_k"
+               value="{{ values['rag.mode.' ~ mode ~ '.top_k'] or '' }}"
+               min="1" max="200" class="admin-form__input admin-form__input--narrow">
+      </label>
+      <label class="admin-form__field">
+        <span class="admin-form__label">rag.mode.{{ mode }}.temperature</span>
+        <input type="number" name="rag.mode.{{ mode }}.temperature"
+               value="{{ values['rag.mode.' ~ mode ~ '.temperature'] or '' }}"
+               step="0.05" min="0" max="2" class="admin-form__input admin-form__input--narrow">
+      </label>
+    </div>
+    <label class="admin-config__bool">
+      <input type="checkbox" name="rag.mode.{{ mode }}.rerank_enabled" value="true"
+             {% if values['rag.mode.' ~ mode ~ '.rerank_enabled'] %}checked{% endif %}>
+      <span>rag.mode.{{ mode }}.rerank_enabled</span>
+    </label>
+  </fieldset>
+  {% endmacro %}
+
+  {{ mode_section('fast', 'Fast') }}
+  {{ mode_section('full', 'Full') }}
+
+  {{ form_actions() }}
+</form>
+
+{% endblock %}
