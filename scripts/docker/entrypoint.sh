@@ -130,23 +130,27 @@ start_application() {
         dev)
             log_info "Mode DEV : hot-reload actif (--reload)"
             log_success "Lancement uvicorn sur $host:$port"
-            exec uvicorn app.main:app --host "$host" --port "$port" --reload
+            exec uvicorn app.main:app --host "$host" --port "$port" --reload \
+                --proxy-headers --forwarded-allow-ips='*'
             ;;
         staging)
             log_info "Mode STAGING : $workers worker(s), pas de reload"
             log_success "Lancement uvicorn sur $host:$port"
-            exec uvicorn app.main:app --host "$host" --port "$port" --workers "$workers"
+            exec uvicorn app.main:app --host "$host" --port "$port" --workers "$workers" \
+                --proxy-headers --forwarded-allow-ips='*'
             ;;
         prod)
             log_info "Mode PROD : $workers worker(s), log-level warning"
             log_success "Lancement uvicorn sur $host:$port"
             exec uvicorn app.main:app --host "$host" --port "$port" \
-                --workers "$workers" --log-level warning
+                --workers "$workers" --log-level warning \
+                --proxy-headers --forwarded-allow-ips='*'
             ;;
         *)
             log_warning "DEPLOY_ENV=$env inconnu, fallback sur mode dev"
             log_success "Lancement uvicorn sur $host:$port"
-            exec uvicorn app.main:app --host "$host" --port "$port" --reload
+            exec uvicorn app.main:app --host "$host" --port "$port" --reload \
+                --proxy-headers --forwarded-allow-ips='*'
             ;;
     esac
 }
