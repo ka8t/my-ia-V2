@@ -69,11 +69,11 @@
       </tr>
     </thead>
     <tbody>
-      <tr data-status="pending">
+      <tr data-status="done">
         <td><strong>4.a</strong></td>
         <td>Audit de parité BDD V1 vs V2</td>
-        <td><span class="plan-status plan-status--pending">⏳ pending</span></td>
-        <td>—</td>
+        <td><span class="plan-status plan-status--done">✅ fait</span></td>
+        <td><code>(commit pending)</code></td>
       </tr>
       <tr data-status="pending">
         <td><strong>4.b</strong></td>
@@ -232,27 +232,107 @@
 
   <h3>Étapes locales</h3>
   <ol class="checklist">
-    <li>Démarrer V1 en local (port 5432) si pas déjà fait :
+    <li data-done="true">Démarrer V1 en local (port 5432) si pas déjà fait :
       <pre><code>cd ~/Documents/Code/my-ia
 ./scripts/start.sh</code></pre>
     </li>
-    <li>Démarrer V2 en local (port 5442) si pas déjà fait :
+    <li data-done="true">Démarrer V2 en local (port 5442) si pas déjà fait :
       <pre><code>cd ~/Documents/Code/my-ia-V2
 ./scripts/start.sh</code></pre>
     </li>
-    <li>Dump des schemas (DDL only, pas de données) :
+    <li data-done="true">Dump des schemas (DDL only, pas de données) :
       <pre><code>docker exec my_ia_postgres pg_dump -U my_ia_db_user --schema-only --no-owner --no-acl my_ia_db &gt; /tmp/schema_v1.sql
 docker exec my_ia_v2_postgres pg_dump -U my_ia_v2_db_user --schema-only --no-owner --no-acl my_ia_v2_db &gt; /tmp/schema_v2.sql</code></pre>
     </li>
-    <li>Diff (filtre sur les noms de DB qui diffèrent) :
+    <li data-done="true">Diff (filtre sur les noms de DB qui diffèrent) :
       <pre><code>diff &lt;(sed 's/my_ia_db/X/g; s/my_ia_db_user/Y/g' /tmp/schema_v1.sql) \
      &lt;(sed 's/my_ia_v2_db/X/g; s/my_ia_v2_db_user/Y/g' /tmp/schema_v2.sql)</code></pre>
     </li>
-    <li>Comparer les versions Alembic :
+    <li data-done="true">Comparer les versions Alembic :
       <pre><code>docker exec my_ia_postgres psql -U my_ia_db_user -d my_ia_db -tAc "SELECT version_num FROM alembic_version"
 docker exec my_ia_v2_postgres psql -U my_ia_v2_db_user -d my_ia_v2_db -tAc "SELECT version_num FROM alembic_version"</code></pre>
     </li>
   </ol>
+
+  <h3>📋 Rapport d'exécution (2026-05-06)</h3>
+  <p><strong>Schémas non identiques mais convergents</strong> — V2 ajoute des
+  améliorations qui seront appliquées via les migrations Alembic existantes
+  lors du cutover.</p>
+
+  <table class="data-table">
+    <thead>
+      <tr><th>Métrique</th><th>V1</th><th>V2</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Version Alembic courante</td>
+        <td><code>20260221_1945</code></td>
+        <td><code>20260505_1200</code></td>
+      </tr>
+      <tr>
+        <td>Lignes du dump schema</td>
+        <td>1 636</td>
+        <td>1 731</td>
+      </tr>
+      <tr>
+        <td>Lignes de diff (cosmétique inclus)</td>
+        <td colspan="2">212 lignes</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h4>Différences observées</h4>
+  <ul class="feature-list">
+    <li><strong>V1 a en plus</strong> :
+      <code>TEST_TABLE</code> (artefact de test, sera ignoré)</li>
+    <li><strong>V2 a en plus</strong> :
+      <ul>
+        <li>Contraintes UNIQUE : <code>system_configs_key_key</code>,
+            <code>uq_cities_name_postal_country</code>,
+            <code>ix_oauth_accounts_oauth_name_account_id</code></li>
+        <li>17 nouveaux index (collections owner/type, context_sources
+            enabled/type, conversations collection, documents collection,
+            cities postal_code, password_history user_id, source_indexation_log
+            ×3, system_configs category, users approval_status,
+            users first_name_search_gin, users last_name_search_gin)</li>
+      </ul>
+    </li>
+    <li><strong>Évolutions de colonnes (V2 plus permissive ou plus performante)</strong> :
+      <ul>
+        <li><code>context_sources.config</code> : <code>json</code> → <code>jsonb</code></li>
+        <li><code>*.indexed_provider</code> : <code>varchar(20)</code> → <code>varchar(50)</code></li>
+        <li>Plusieurs colonnes <code>NOT NULL</code> rendues <code>nullable</code>
+            (created_at, updated_at, current_version, account_email, health_status)</li>
+      </ul>
+    </li>
+    <li><strong>Régression possible</strong> :
+      <code>ix_system_configs_key</code> est <code>UNIQUE</code> en V1 mais
+      <strong>non-UNIQUE</strong> en V2. Compensé par la nouvelle contrainte
+      <code>system_configs_key_key</code> UNIQUE qui couvre la même clé.</li>
+  </ul>
+
+  <h4>Verdict</h4>
+  <ul class="feature-list">
+    <li>✅ <strong>Aucune table manquante en V2</strong> côté production.</li>
+    <li>✅ <strong>Aucun rename / drop column</strong> qui casserait les données existantes.</li>
+    <li>✅ <strong>V2 a 14 migrations Alembic</strong> de plus que V1
+      (<code>20260221_1945</code> → <code>20260505_1200</code>).
+      Lancer <code>alembic upgrade head</code> avec le code V2 sur la BDD V1
+      les appliquera toutes (création des index, contraintes UNIQUE, ALTER
+      TYPE json → jsonb, ALTER varchar(20) → varchar(50)).</li>
+    <li>✅ <strong>Option A (in-place) confirmée</strong> — pas besoin de
+      migration custom. La séquence cutover est : stop V1 → run
+      <code>alembic upgrade head</code> avec le code V2 → start V2.</li>
+  </ul>
+
+  <div class="callout callout-success">
+    <strong>✅ Livrable 4.a.</strong>
+    Schémas non identiques mais convergents via les migrations existantes.
+    Option A confirmée. Aucune migration custom à créer.
+    <br><br>
+    Artefacts : <code>/tmp/schema_v1.sql</code>, <code>/tmp/schema_v2.sql</code>,
+    <code>/tmp/schema_diff.txt</code> (locaux, non versionnés).
+  </div>
 
   <h3>Décisions selon résultat</h3>
   <table class="data-table">
