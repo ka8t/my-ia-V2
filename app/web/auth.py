@@ -146,10 +146,11 @@ async def login_post(
     # Rotate CSRF after auth so the old token can't be replayed
     request.session.pop("csrf_token", None)
 
-    # 5) Redirect — HTMX uses HX-Redirect, browsers use 303
+    # 5) Redirect — admins atterrissent directement sur la console.
+    target = "/web/admin" if user.is_superuser else "/"
     if request.headers.get("HX-Request"):
-        return Response(status_code=204, headers={"HX-Redirect": "/"})
-    return RedirectResponse(url="/", status_code=303)
+        return Response(status_code=204, headers={"HX-Redirect": target})
+    return RedirectResponse(url=target, status_code=303)
 
 
 # ─────────────────────────────────────────────────────────────────────────────

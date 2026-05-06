@@ -48,6 +48,20 @@ REQUIRED_CSS_CLASSES = [
 ]
 
 
+async def test_admin_login_redirects_to_admin_console(client: AsyncClient) -> None:
+    """Login d'un superuser → redirige direct sur /web/admin (pas /)."""
+    from tests.conftest import ADMIN_EMAIL, ADMIN_PASSWORD, extract_csrf
+
+    r = await client.get("/web/login")
+    csrf = extract_csrf(r.text)
+    r = await client.post(
+        "/web/login",
+        data={"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD, "csrf_token": csrf},
+    )
+    assert r.status_code in (302, 303)
+    assert r.headers["location"] == "/web/admin"
+
+
 async def test_static_css_contains_all_wave2_classes(client: AsyncClient) -> None:
     """Le fichier components.css est servi et contient toutes les nouvelles classes."""
     r = await client.get("/static/css/components.css")

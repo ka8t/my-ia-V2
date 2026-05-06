@@ -14,6 +14,12 @@
     </a>
 
     <nav class="app-topbar__nav">
+      {% if current_user and current_user.is_superuser %}
+      <a href="/web/admin" class="app-topbar__admin-link" title="Console d'administration">
+        {{ icon('sparkle', 14) }}<span>Admin</span>
+      </a>
+      {% endif %}
+
       {% if current_user %}
       {# User menu (Alpine.js dropdown) #}
       <div class="user-menu" x-data="{ open: false }" @click.outside="open = false" @keydown.escape="open = false">
