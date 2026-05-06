@@ -780,3 +780,167 @@ async def speech_post(
         success=f"{saved} clé(s) enregistrée(s)." if not errors else None,
         error=" ; ".join(errors) if errors else None,
     )
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  Phase 3.8.c — SMTP (config générale email + serveur sortant)
+# ═════════════════════════════════════════════════════════════════════════════
+SMTP_KEYS = [
+    "email.backend", "email.from", "email.from_name",
+    "notification.email_smtp_host", "notification.email_smtp_port",
+    "notification.email_smtp_user", "notification.email_smtp_password",
+    "notification.email_smtp_tls",
+]
+
+
+# Marqueur des champs "sensibles" : si vide à la soumission, on conserve la
+# valeur stockée (au lieu de l'écraser par "").
+_SENSITIVE_PRESERVE_EMPTY = {
+    "notification.email_smtp_password",
+    "notification.webhook_secret",
+}
+
+
+async def _bulk_set_with_secret_preserve(
+    db: AsyncSession, user: dict, updates: dict[str, Any]
+) -> tuple[int, list[str]]:
+    """Variante de _bulk_set : pour les clés _SENSITIVE_PRESERVE_EMPTY, si la
+    valeur fournie est vide ou None, on saute le set (la valeur en BDD reste)."""
+    filtered: dict[str, Any] = {}
+    for k, v in updates.items():
+        if k in _SENSITIVE_PRESERVE_EMPTY and (v is None or v == ""):
+            continue
+        filtered[k] = v
+    return await _bulk_set(db, user, filtered)
+
+
+@router.get("/smtp", response_class=HTMLResponse)
+async def smtp_get(
+    request: Request,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    values = await _load_keys(db, SMTP_KEYS)
+    # On masque le password à l'affichage : la page indique seulement s'il
+    # existe une valeur stockée (l'admin ne le revoit jamais en clair).
+    has_password = bool(values.get("notification.email_smtp_password"))
+    return await _render_page(
+        request, "pages/admin/system/smtp.html",
+        title="SMTP", active_section="system_smtp", user=user, values=values,
+        extra={"has_password": has_password},
+    )
+
+
+@router.post("/smtp", response_class=HTMLResponse)
+async def smtp_post(
+    request: Request,
+    backend: Annotated[str, Form()] = "console",
+    email_from: Annotated[str, Form(alias="email_from")] = "",
+    email_from_name: Annotated[str, Form(alias="email_from_name")] = "",
+    smtp_host: Annotated[str, Form()] = "",
+    smtp_port: Annotated[int, Form()] = 587,
+    smtp_user: Annotated[str, Form()] = "",
+    smtp_password: Annotated[str, Form()] = "",
+    smtp_tls: Annotated[str | None, Form()] = None,
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    if (err := _csrf_or_400(request, csrf_token)):
+        return err
+
+    if backend not in ("console", "smtp"):
+        return await _render_page(
+            request, "pages/admin/system/smtp.html",
+            title="SMTP", active_section="system_smtp", user=user,
+            values=await _load_keys(db, SMTP_KEYS),
+            error="Backend email invalide (attendu : console, smtp).",
+            extra={"has_password": bool(smtp_password)},
+        )
+
+    updates = {
+        "email.backend": backend,
+        "email.from": email_from.strip(),
+        "email.from_name": email_from_name.strip(),
+        "notification.email_smtp_host": smtp_host.strip(),
+        "notification.email_smtp_port": max(1, min(_to_int(smtp_port, 587), 65535)),
+        "notification.email_smtp_user": smtp_user.strip(),
+        "notification.email_smtp_password": smtp_password,  # preserve si vide
+        "notification.email_smtp_tls": _to_bool(smtp_tls),
+    }
+    saved, errors = await _bulk_set_with_secret_preserve(db, user, updates)
+    refreshed = await _load_keys(db, SMTP_KEYS)
+    return await _render_page(
+        request, "pages/admin/system/smtp.html",
+        title="SMTP", active_section="system_smtp", user=user, values=refreshed,
+        success=f"{saved} clé(s) enregistrée(s)." if not errors else None,
+        error=" ; ".join(errors) if errors else None,
+        extra={"has_password": bool(refreshed.get("notification.email_smtp_password"))},
+    )
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  Phase 3.8.c — Notifications (Email alertes + Slack + Webhook)
+# ═════════════════════════════════════════════════════════════════════════════
+NOTIFICATIONS_KEYS = [
+    "notification.email_enabled", "notification.email_from_address",
+    "notification.email_to_addresses",
+    "notification.slack_enabled", "notification.slack_webhook_url",
+    "notification.webhook_enabled", "notification.webhook_url",
+    "notification.webhook_secret",
+]
+
+
+@router.get("/notifications", response_class=HTMLResponse)
+async def notifications_get(
+    request: Request,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    values = await _load_keys(db, NOTIFICATIONS_KEYS)
+    has_secret = bool(values.get("notification.webhook_secret"))
+    return await _render_page(
+        request, "pages/admin/system/notifications.html",
+        title="Notifications", active_section="system_notifications", user=user,
+        values=values, extra={"has_secret": has_secret},
+    )
+
+
+@router.post("/notifications", response_class=HTMLResponse)
+async def notifications_post(
+    request: Request,
+    email_enabled: Annotated[str | None, Form()] = None,
+    email_from_address: Annotated[str, Form()] = "",
+    email_to_addresses: Annotated[str, Form()] = "",
+    slack_enabled: Annotated[str | None, Form()] = None,
+    slack_webhook_url: Annotated[str, Form()] = "",
+    webhook_enabled: Annotated[str | None, Form()] = None,
+    webhook_url: Annotated[str, Form()] = "",
+    webhook_secret: Annotated[str, Form()] = "",
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    if (err := _csrf_or_400(request, csrf_token)):
+        return err
+
+    updates = {
+        "notification.email_enabled": _to_bool(email_enabled),
+        "notification.email_from_address": email_from_address.strip(),
+        "notification.email_to_addresses": email_to_addresses.strip(),
+        "notification.slack_enabled": _to_bool(slack_enabled),
+        "notification.slack_webhook_url": slack_webhook_url.strip(),
+        "notification.webhook_enabled": _to_bool(webhook_enabled),
+        "notification.webhook_url": webhook_url.strip(),
+        "notification.webhook_secret": webhook_secret,  # preserve si vide
+    }
+    saved, errors = await _bulk_set_with_secret_preserve(db, user, updates)
+    refreshed = await _load_keys(db, NOTIFICATIONS_KEYS)
+    return await _render_page(
+        request, "pages/admin/system/notifications.html",
+        title="Notifications", active_section="system_notifications", user=user,
+        values=refreshed,
+        success=f"{saved} clé(s) enregistrée(s)." if not errors else None,
+        error=" ; ".join(errors) if errors else None,
+        extra={"has_secret": bool(refreshed.get("notification.webhook_secret"))},
+    )

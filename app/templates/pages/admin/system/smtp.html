@@ -1,0 +1,64 @@
+{% extends "layouts/admin.html" %}
+{% from "macros/admin_form.html" import page_header, flash, field_text, field_int, field_bool, field_select, form_actions %}
+
+{% block title %}SMTP — Admin{% endblock %}
+
+{% block admin_content %}
+
+{{ page_header(
+  title="SMTP",
+  eyebrow="Système",
+  lede="Backend de l'envoi d'emails (reset password, invitations, alertes admin)."
+) }}
+
+{{ flash(success=success, error=error) }}
+
+<form method="post" action="/web/admin/system/smtp" class="admin-form admin-form--stacked">
+  {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+
+  <fieldset class="admin-fieldset">
+    <legend>Backend & expéditeur</legend>
+    {{ field_select(
+      name="backend",
+      label="Backend (email.backend)",
+      value=values["email.backend"] or "console",
+      options=[
+        ("console", "Console (logs, pour dev)"),
+        ("smtp", "SMTP (production)"),
+      ],
+    ) }}
+    {{ field_text("email_from", "Adresse expéditeur (email.from)",
+                  values["email.from"], placeholder="noreply@myia.local") }}
+    {{ field_text("email_from_name", "Nom expéditeur (email.from_name)",
+                  values["email.from_name"], placeholder="MY-IA") }}
+  </fieldset>
+
+  <fieldset class="admin-fieldset">
+    <legend>Serveur SMTP sortant</legend>
+    {{ field_text("smtp_host", "Hôte SMTP (notification.email_smtp_host)",
+                  values["notification.email_smtp_host"],
+                  placeholder="smtp.gmail.com, smtp.mailgun.org") }}
+    {{ field_int("smtp_port", "Port SMTP (notification.email_smtp_port)",
+                 values["notification.email_smtp_port"], default=587, min=1, max=65535,
+                 hint="25 (clair), 465 (SSL implicite), 587 (STARTTLS, recommandé).") }}
+    {{ field_text("smtp_user", "Utilisateur SMTP (notification.email_smtp_user)",
+                  values["notification.email_smtp_user"]) }}
+
+    <label class="admin-form__field">
+      <span class="admin-form__label">Mot de passe SMTP (notification.email_smtp_password)</span>
+      <input type="password" name="smtp_password" class="admin-form__input"
+             placeholder="{% if has_password %}(défini — laisser vide pour conserver){% else %}(non défini){% endif %}"
+             autocomplete="off">
+      <small class="admin-config__hint">
+        Laisser vide pour conserver la valeur stockée. Le mot de passe n'est jamais réaffiché.
+      </small>
+    </label>
+
+    {{ field_bool("smtp_tls", "STARTTLS activé (notification.email_smtp_tls)",
+                  values["notification.email_smtp_tls"]) }}
+  </fieldset>
+
+  {{ form_actions() }}
+</form>
+
+{% endblock %}

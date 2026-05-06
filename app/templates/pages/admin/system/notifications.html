@@ -1,0 +1,63 @@
+{% extends "layouts/admin.html" %}
+{% from "macros/admin_form.html" import page_header, flash, field_text, field_bool, form_actions %}
+
+{% block title %}Notifications — Admin{% endblock %}
+
+{% block admin_content %}
+
+{{ page_header(
+  title="Notifications",
+  eyebrow="Système",
+  lede="Canaux d'alertes admin (email, Slack, webhook générique)."
+) }}
+
+{{ flash(success=success, error=error) }}
+
+<form method="post" action="/web/admin/system/notifications" class="admin-form admin-form--stacked">
+  {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+
+  <fieldset class="admin-fieldset">
+    <legend>Email — alertes admin</legend>
+    {{ field_bool("email_enabled", "Notifications par email activées (notification.email_enabled)",
+                  values["notification.email_enabled"],
+                  hint="Utilise le serveur SMTP configuré dans l'onglet « SMTP ».") }}
+    {{ field_text("email_from_address", "Adresse d'envoi (notification.email_from_address)",
+                  values["notification.email_from_address"],
+                  placeholder="alerts@myia.local") }}
+    {{ field_text("email_to_addresses", "Destinataires (notification.email_to_addresses)",
+                  values["notification.email_to_addresses"],
+                  placeholder="admin1@example.com,admin2@example.com",
+                  hint="Liste séparée par virgules.") }}
+  </fieldset>
+
+  <fieldset class="admin-fieldset">
+    <legend>Slack</legend>
+    {{ field_bool("slack_enabled", "Notifications Slack activées (notification.slack_enabled)",
+                  values["notification.slack_enabled"]) }}
+    {{ field_text("slack_webhook_url", "Webhook URL (notification.slack_webhook_url)",
+                  values["notification.slack_webhook_url"],
+                  placeholder="https://hooks.slack.com/services/...") }}
+  </fieldset>
+
+  <fieldset class="admin-fieldset">
+    <legend>Webhook générique</legend>
+    {{ field_bool("webhook_enabled", "Webhook activé (notification.webhook_enabled)",
+                  values["notification.webhook_enabled"]) }}
+    {{ field_text("webhook_url", "URL cible (notification.webhook_url)",
+                  values["notification.webhook_url"],
+                  placeholder="https://example.com/myia-alerts") }}
+    <label class="admin-form__field">
+      <span class="admin-form__label">Secret HMAC (notification.webhook_secret)</span>
+      <input type="password" name="webhook_secret" class="admin-form__input"
+             placeholder="{% if has_secret %}(défini — laisser vide pour conserver){% else %}(non défini){% endif %}"
+             autocomplete="off">
+      <small class="admin-config__hint">
+        Utilisé pour signer le payload (header X-Signature). Laisser vide pour conserver.
+      </small>
+    </label>
+  </fieldset>
+
+  {{ form_actions() }}
+</form>
+
+{% endblock %}
