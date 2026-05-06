@@ -82,7 +82,10 @@ async def admin_dashboard(
     user: dict = Depends(require_web_admin),
     db: AsyncSession = Depends(get_async_session),
 ) -> HTMLResponse:
-    # Compteurs
+    """Dashboard admin enrichi (Phase 3.9.d) — overview + trends + usage daily."""
+    from app.features.admin.dashboard.service import DashboardService
+
+    # Compteurs simples (utilisés par les tuiles cliquables existantes)
     total_users = (await db.execute(select(func.count(User.id)))).scalar_one()
     pending_users = (await db.execute(
         select(func.count(User.id)).where(User.approval_status == ApprovalStatus.PENDING)
@@ -101,10 +104,30 @@ async def admin_dashboard(
         "sources": total_sources,
     }
 
+    # Analytics enrichies — best-effort, on n'échoue pas le dashboard si une
+    # sous-requête plante.
+    overview = trends = usage_daily = None
+    try:
+        overview = await DashboardService.get_overview(db)
+    except Exception as e:
+        logger.warning("Dashboard overview unavailable: %s", e)
+    try:
+        trends = await DashboardService.get_trends(db)
+    except Exception as e:
+        logger.warning("Dashboard trends unavailable: %s", e)
+    try:
+        usage_daily = await DashboardService.get_usage_daily(db, days=30)
+    except Exception as e:
+        logger.warning("Dashboard usage_daily unavailable: %s", e)
+
     return templates.TemplateResponse(
         request,
         "pages/admin/dashboard.html",
-        await _admin_context(db, request, title="Admin", active_section="dashboard", user=user, stats=stats),
+        await _admin_context(
+            db, request, title="Admin", active_section="dashboard", user=user,
+            stats=stats,
+            overview=overview, trends=trends, usage_daily=usage_daily,
+        ),
     )
 
 
