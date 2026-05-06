@@ -116,6 +116,24 @@ async def _load_conversation(
     return conv, messages
 
 
+async def _load_available_collections(
+    db: AsyncSession, user_id: uuid.UUID
+):
+    """Reproduit l'API V1 /api/collections pour le sélecteur chat.
+
+    Retourne ``AvailableCollectionsResponse`` (my_collection + public_collections)
+    ou None si l'utilisateur n'existe pas en BDD (sécurité).
+    """
+    from app.core.deps import get_chroma_client
+    from app.features.collections.service import CollectionService
+
+    user = await db.get(User, user_id)
+    if user is None:
+        return None
+    service = CollectionService(session=db, chroma_client=get_chroma_client())
+    return await service.get_available_collections(user)
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 #  GET /web/chat — empty state
 #  GET /web/chat/{conversation_id} — with history
@@ -144,7 +162,9 @@ async def chat_index(
     user: dict = Depends(require_web_auth),
     db: AsyncSession = Depends(get_async_session),
 ) -> HTMLResponse:
-    sidebar_convs = await _load_sidebar_conversations(db, uuid.UUID(user["id"]))
+    user_uuid = uuid.UUID(user["id"])
+    sidebar_convs = await _load_sidebar_conversations(db, user_uuid)
+    available_collections = await _load_available_collections(db, user_uuid)
     return templates.TemplateResponse(
         request,
         "pages/chat/chat.html",
@@ -156,6 +176,7 @@ async def chat_index(
             messages=[],
             suggestions=SUGGESTIONS,
             sidebar_conversations=sidebar_convs,
+            available_collections=available_collections,
         ),
     )
 
@@ -199,6 +220,7 @@ async def chat_conversation(
     user_uuid = uuid.UUID(user["id"])
     conv, messages = await _load_conversation(db, conversation_id, user_uuid)
     sidebar_convs = await _load_sidebar_conversations(db, user_uuid)
+    available_collections = await _load_available_collections(db, user_uuid)
 
     if conv is None:
         return templates.TemplateResponse(
@@ -212,6 +234,7 @@ async def chat_conversation(
                 messages=[],
                 suggestions=SUGGESTIONS,
                 sidebar_conversations=sidebar_convs,
+                available_collections=available_collections,
                 not_found=True,
             ),
         )
@@ -227,6 +250,7 @@ async def chat_conversation(
             messages=messages,
             suggestions=[],
             sidebar_conversations=sidebar_convs,
+            available_collections=available_collections,
         ),
     )
 
@@ -239,6 +263,7 @@ async def submit_message(
     request: Request,
     query: Annotated[str, Form()],
     conversation_id: Annotated[str | None, Form()] = None,
+    collection_id: Annotated[str | None, Form()] = None,
     csrf_token: Annotated[str | None, Form()] = None,
     user: dict = Depends(require_web_auth),
     db: AsyncSession = Depends(get_async_session),
@@ -258,9 +283,7 @@ async def submit_message(
 
     user_id = uuid.UUID(user["id"])
 
-    # 1) Get-or-create conversation
-    coll = await _get_or_create_user_collection(db, user_id)
-
+    # 1) Charger la conversation existante si un id est fourni
     if conversation_id:
         try:
             conv = await ConversationRepository.get_by_id(
@@ -271,12 +294,39 @@ async def submit_message(
     else:
         conv = None
 
+    # 2) Si pas de conversation, en créer une.
+    #    Sélection de la collection (parité V1 createNewConversation) :
+    #    - Si collection_id explicite : l'utiliser (privée du user OU publique)
+    #    - Sinon : fallback sur la collection privée du user
     if conv is None:
+        target_collection_id = None
+        if collection_id:
+            try:
+                requested_id = uuid.UUID(collection_id)
+            except ValueError:
+                requested_id = None
+            if requested_id is not None:
+                requested = (
+                    await db.execute(
+                        select(Collection).where(Collection.id == requested_id)
+                    )
+                ).unique().scalar_one_or_none()
+                # Sécurité : autoriser une collection privée seulement si elle
+                # appartient au user, ou une collection publique pour tous.
+                if requested is not None and (
+                    requested.type == "public" or requested.owner_id == user_id
+                ):
+                    target_collection_id = requested.id
+
+        if target_collection_id is None:
+            coll = await _get_or_create_user_collection(db, user_id)
+            target_collection_id = coll.id
+
         conv = await ConversationRepository.create(
             db,
             user_id=user_id,
             title=query[:80] or "Nouvelle conversation",
-            collection_id=coll.id,
+            collection_id=target_collection_id,
             mode_id=1,
         )
 

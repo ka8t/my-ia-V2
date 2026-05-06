@@ -3224,3 +3224,77 @@ select.field__input {
   border-radius: 1px 1px 0 0;
 }
 .admin-sparkline__bar:hover { opacity: 1; }
+
+
+/* Phase 4.d-bis — Sélecteur de bibliothèque chat (parité V1) */
+.chat-collection-picker {
+  margin: 0 0 var(--space-3) 0;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-raised);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.chat-collection-picker__legend {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-fg-muted);
+  padding: 0 var(--space-2);
+}
+.chat-collection-picker__options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.chat-collection-option {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  background: var(--color-bg);
+  transition: border-color var(--duration-fast) var(--ease-out);
+}
+.chat-collection-option:hover { border-color: var(--color-fg-muted); }
+.chat-collection-option:has(input:checked) { border-color: var(--color-accent); }
+.chat-collection-option input[type="radio"] {
+  margin: 0;
+}
+.chat-collection-option__main {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.chat-collection-option__main small {
+  color: var(--color-fg-subtle);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+/* Badge collection (en-tête conversation existante) */
+.collection-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.collection-badge--private {
+  background: var(--color-bg-raised);
+  color: var(--color-fg-muted);
+  border: 1px solid var(--color-line);
+}
+.collection-badge--public {
+  background: rgba(181, 72, 47, 0.08);
+  color: var(--color-accent);
+  border: 1px solid var(--color-accent);
+}
+.chat-header__sep { margin: 0 var(--space-2); color: var(--color-fg-subtle); }
