@@ -2820,3 +2820,172 @@ select.field__input {
 .app-topbar         { animation: auth-fade var(--duration-normal)     var(--ease-out) 0s both; }
 .home-hero          { animation: auth-rise var(--duration-deliberate) var(--ease-out) 0.05s both; }
 .action-grid        { animation: auth-rise var(--duration-deliberate) var(--ease-out) 0.15s both; }
+
+
+/* ============================================================================
+   Phase 3.7.b Vague 2 — additions admin (corpus relations, reindex, source config)
+   ============================================================================ */
+
+/* Section enrichie : title + bouton d'action sur la même ligne */
+.admin-section__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+/* Variante CTA compacte (bouton "Rattacher"/"Réindexer" en sidebar de section) */
+.admin-cta--small {
+  padding: var(--space-1) var(--space-3);
+  font-size: 11px;
+}
+
+/* Inline form sans wrapping, pour les action-forms compactes (health-check) */
+.admin-action-form--inline {
+  display: inline-flex;
+  align-items: center;
+  margin-left: var(--space-2);
+}
+
+/* Listes interactives — bare-list étendue pour relations corpus */
+.admin-bare-list--picker {
+  max-height: 60vh;
+  overflow-y: auto;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+}
+.admin-bare-list__item--editable {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: var(--space-3);
+}
+.admin-bare-list__inline-form {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+.admin-bare-list__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+
+/* Modal en version "wide" pour les pickers (listes longues) */
+.admin-modal__panel--wide {
+  width: min(720px, 96vw);
+}
+.admin-modal__body {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+/* Reindex / clear — partial avec polling auto */
+.admin-reindex {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  padding: var(--space-4);
+  background: var(--color-bg-raised);
+}
+.admin-reindex--placeholder {
+  background: transparent;
+  border-style: dashed;
+}
+.admin-reindex__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.admin-reindex__bar {
+  width: 100%;
+  height: 6px;
+  appearance: none;
+  -webkit-appearance: none;
+  background: var(--color-bg);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.admin-reindex__bar::-webkit-progress-bar { background: var(--color-bg); }
+.admin-reindex__bar::-webkit-progress-value {
+  background: var(--color-accent);
+  transition: width var(--duration-fast) var(--ease-out);
+}
+.admin-reindex__bar::-moz-progress-bar { background: var(--color-accent); }
+.admin-reindex__msg {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--color-fg-muted);
+  margin: 0;
+}
+.admin-reindex__flash {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-accent);
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-bg);
+  border-left: 2px solid var(--color-accent);
+}
+.admin-reindex__actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+/* Callouts colorées (succès / danger) — utilisées dans les pages forms */
+.admin-callout--success {
+  border-left: 3px solid var(--color-success);
+  padding-left: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+.admin-callout--success p { margin: 0; color: var(--color-success); font-family: var(--font-mono); font-size: var(--text-sm); }
+.admin-callout--danger {
+  border-left: 3px solid var(--color-danger);
+  padding-left: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+.admin-callout--danger p { margin: 0; color: var(--color-danger); font-family: var(--font-mono); font-size: var(--text-sm); }
+
+/* Form en version "stacked" (page entière au lieu d'inline) */
+.admin-form--stacked {
+  max-width: 900px;
+}
+.admin-form__textarea--code {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  min-height: 320px;
+  tab-size: 2;
+}
+
+/* Tableau d'aide sur la page source-config */
+.admin-config-fields {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
+.admin-config-fields th,
+.admin-config-fields td {
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+  border-bottom: 1px solid var(--color-line);
+  vertical-align: top;
+}
+.admin-config-fields th {
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-fg-muted);
+}
+.admin-config-fields code {
+  font-size: 12px;
+  color: var(--color-accent);
+}
