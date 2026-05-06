@@ -20,7 +20,7 @@
 # Genere les identifiants PostgreSQL a partir du prefixe.
 #
 # Usage:
-#   generate_pg_identifiers "my_ia"
+#   generate_pg_identifiers "my_ia_v2"
 #
 # Resultat:
 #   Definit les variables globales:

@@ -17,7 +17,7 @@ cat > "$SERVERS_JSON" << EOF
 {
   "Servers": {
     "1": {
-      "Name": "${APP_NAME_PREFIX:-my_ia} PostgreSQL",
+      "Name": "${APP_NAME_PREFIX:-my_ia_v2} PostgreSQL",
       "Group": "MY-IA",
       "Host": "postgres",
       "Port": 5432,
@@ -34,7 +34,7 @@ EOF
 if [ ! -f "$MARKER_FILE" ]; then
     echo "[PGADMIN] Premiere execution - import du serveur MY-IA..."
     echo "[PGADMIN] Serveur:"
-    echo "  - Name: ${APP_NAME_PREFIX:-my_ia} PostgreSQL"
+    echo "  - Name: ${APP_NAME_PREFIX:-my_ia_v2} PostgreSQL"
     echo "  - Host: postgres"
     echo "  - Port: 5432"
     echo "  - Username: ${POSTGRES_USER:-my_ia_postgres_admin}"

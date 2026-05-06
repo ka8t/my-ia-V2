@@ -856,7 +856,7 @@ handle_existing_container() {
 # Verifie tous les containers d'un projet et propose de les gerer.
 #
 # Usage:
-#   check_project_containers "my_ia"
+#   check_project_containers "my_ia_v2"
 #
 # Parametres:
 #   $1 - Prefixe du projet (APP_NAME_PREFIX)
@@ -935,7 +935,7 @@ check_project_containers() {
 # Retourne la liste des volumes Docker d'un projet.
 #
 # Usage:
-#   volumes=$(get_project_volumes "my_ia")
+#   volumes=$(get_project_volumes "my_ia_v2")
 #
 # Parametres:
 #   $1 - Prefixe du projet (APP_NAME_PREFIX)
@@ -958,7 +958,7 @@ get_project_volumes() {
 # Supprime les volumes Docker d'un projet (tous ou individuellement).
 #
 # Usage:
-#   delete_project_volumes "my_ia"
+#   delete_project_volumes "my_ia_v2"
 #
 # Parametres:
 #   $1 - Prefixe du projet (APP_NAME_PREFIX)
@@ -1042,7 +1042,7 @@ delete_project_volumes() {
 # Supprime containers et volumes d'un projet.
 #
 # Usage:
-#   cleanup_project "my_ia"
+#   cleanup_project "my_ia_v2"
 #
 # Retour:
 #   0 si nettoyage reussi (ou partiel accepte), 1 si abandonne

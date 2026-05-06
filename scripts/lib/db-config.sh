@@ -44,7 +44,7 @@ _check_db_config_prereqs() {
 
 # Determine le nom du container PostgreSQL
 _get_postgres_container() {
-    local prefix="${SANITIZED_PREFIX:-my_ia}"
+    local prefix="${SANITIZED_PREFIX:-my_ia_v2}"
     echo "${prefix}_postgres"
 }
 

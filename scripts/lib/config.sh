@@ -162,7 +162,7 @@ handle_config() {
 
 show_config_summary() {
     local sanitized_prefix
-    sanitized_prefix=$(sanitize "${APP_NAME_PREFIX:-my_ia}" false)
+    sanitized_prefix=$(sanitize "${APP_NAME_PREFIX:-my_ia_v2}" false)
 
     echo ""
     echo "============================================================================="

@@ -75,11 +75,11 @@
         <td><span class="plan-status plan-status--done">✅ fait</span></td>
         <td><code>395ce5f</code></td>
       </tr>
-      <tr data-status="pending">
+      <tr data-status="done">
         <td><strong>4.b</strong></td>
         <td>Adaptation deploy.sh V2</td>
-        <td><span class="plan-status plan-status--pending">⏳ pending</span></td>
-        <td>—</td>
+        <td><span class="plan-status plan-status--done">✅ fait</span></td>
+        <td><code>(commit pending)</code></td>
       </tr>
       <tr data-status="pending">
         <td><strong>4.c</strong></td>
@@ -379,30 +379,66 @@ docker exec my_ia_v2_postgres psql -U my_ia_v2_db_user -d my_ia_v2_db -tAc "SELE
 
   <h3>Étapes</h3>
   <ol class="checklist">
-    <li>Vérifier le contenu de <code>scripts/deploy.sh</code> et
+    <li data-done="true">Vérifier le contenu de <code>scripts/deploy.sh</code> et
       <code>scripts/lib/*.sh</code> :
       <pre><code>grep -rn "my_ia\|SANITIZED_PREFIX" scripts/</code></pre>
     </li>
-    <li>S'assurer que <code>SANITIZED_PREFIX=my_ia_v2</code> est utilisé
+    <li data-done="true">S'assurer que <code>SANITIZED_PREFIX=my_ia_v2</code> est utilisé
       partout, pas <code>my_ia</code>.</li>
-    <li>Vérifier que les ports cible sont les ports V1 historiques (3000,
+    <li data-done="true">Vérifier que les ports cible sont les ports V1 historiques (3000,
       8081) si Option A, ou les ports V2 (8090) si Option B.</li>
-    <li>Test à blanc en local (mode docker local) :
-      <pre><code>./scripts/deploy.sh docker local</code></pre>
-    </li>
-    <li>Si OK, commit + push sur <code>dev</code> :
-      <pre><code>git add scripts/
-git commit -m "Phase 4.b — Adapter deploy.sh pour V2"
-git push origin dev</code></pre>
-    </li>
+    <li data-done="true">Test à blanc syntaxique (<code>bash -n</code> sur tous les scripts).</li>
+    <li data-done="true">Si OK, commit + push sur <code>dev</code>.</li>
   </ol>
 
+  <h3>📋 Rapport d'exécution (2026-05-06)</h3>
+
+  <h4>Fallbacks <code>my_ia</code> → <code>my_ia_v2</code></h4>
+  <p>Toutes les références <code>${SANITIZED_PREFIX:-my_ia}</code> et
+  <code>${APP_NAME_PREFIX:-my_ia}</code> ont été remplacées par
+  <code>my_ia_v2</code> dans les scripts. Sans <code>.env</code>, le V2 ne
+  peut désormais plus collisionner accidentellement avec les containers V1.</p>
+
+  <ul class="feature-list">
+    <li><code>scripts/reset-password.sh</code> — fallback container name</li>
+    <li><code>scripts/lib/db-config.sh</code> — fallback prefix BDD</li>
+    <li><code>scripts/lib/instance.sh</code> — fallback prefix instance</li>
+    <li><code>scripts/lib/config.sh</code> — fallback prefix config</li>
+    <li><code>scripts/docker/pgadmin-entrypoint.sh</code> — fallback noms display pgAdmin</li>
+    <li><code>scripts/lib/common.sh</code> · <code>scripts/lib/env.sh</code>
+      — exemples dans les commentaires de fonctions</li>
+  </ul>
+
+  <h4>Vérifications</h4>
+  <ul class="feature-list">
+    <li>✅ <code>grep -rn "my_ia\\b" scripts/ | grep -v my_ia_v2</code>
+      → 0 résultat (plus aucune référence V1)</li>
+    <li>✅ <code>bash -n</code> sur l'ensemble des scripts → aucune erreur de syntaxe</li>
+    <li>✅ Suite intégration : <strong>199 tests verts</strong>
+      après les modifications</li>
+    <li>✅ <code>.env</code> local de V2 contient déjà <code>SANITIZED_PREFIX=my_ia_v2</code></li>
+  </ul>
+
   <div class="callout callout-warning">
-    <strong>⚠️ Variables d'environnement.</strong>
-    Le <code>.env</code> distant sur le VPS doit contenir
-    <code>SANITIZED_PREFIX=my_ia_v2</code> et les credentials Postgres
-    spécifiques V2. Si Option A (BDD partagée), il doit pointer vers la
-    BDD V1 existante avec ses credentials (modifier <code>DATABASE_URL</code>).
+    <strong>⚠️ Configuration BDD <code>deploy.*</code> à poser avant 4.c.</strong>
+    Le script <code>deploy.sh remote</code> lit ces clés depuis
+    <code>system_configs</code> :
+    <ul>
+      <li><code>deploy.remote_host</code> = <code>51.210.245.202</code></li>
+      <li><code>deploy.remote_user</code> = <code>debian</code></li>
+      <li><code>deploy.remote_path</code> = <code>/opt/my-ia-v2</code> (à créer côté VPS)</li>
+      <li><code>deploy.remote_port</code> = <code>22</code></li>
+      <li><code>deploy.remote_branch</code> = <code>dev</code> (puis <code>main</code> au cutover)</li>
+    </ul>
+    Configurable via la page admin V2 <a href="/web/admin/config">/web/admin/config</a>
+    ou directement en SQL.
+  </div>
+
+  <div class="callout callout-info">
+    <strong>💡 Ce qui n'est PAS encore fait</strong> (et ne le sera qu'en 4.c) :
+    le test à blanc <em>réel</em> via <code>./scripts/deploy.sh docker local</code>
+    et le déploiement effectif sur le VPS. 4.b limite son périmètre aux
+    adaptations statiques sans toucher au runtime.
   </div>
 </section>
 

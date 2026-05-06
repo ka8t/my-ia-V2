@@ -45,7 +45,7 @@ PASSWORD="$2"
 if [[ -f "$PROJECT_ROOT/.env" ]]; then
     SANITIZED_PREFIX=$(grep "^SANITIZED_PREFIX=" "$PROJECT_ROOT/.env" | cut -d'=' -f2 | tr -d '"' | tr -d "'")
 fi
-CONTAINER_NAME="${SANITIZED_PREFIX:-my_ia}_app"
+CONTAINER_NAME="${SANITIZED_PREFIX:-my_ia_v2}_app"
 
 # Vérifier que le container existe
 if ! docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then

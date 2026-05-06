@@ -109,7 +109,7 @@ load_instance_id() {
 
     # Source 3: Labels Docker
     if command -v docker &> /dev/null && docker info &> /dev/null; then
-        local prefix="${APP_NAME_PREFIX:-my_ia}"
+        local prefix="${APP_NAME_PREFIX:-my_ia_v2}"
         local sanitized_prefix
         sanitized_prefix=$(sanitize "$prefix" false)
 
