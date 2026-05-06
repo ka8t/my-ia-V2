@@ -87,11 +87,11 @@
         <td><span class="plan-status plan-status--done">✅ fait</span></td>
         <td><code>27aa030</code></td>
       </tr>
-      <tr data-status="pending">
+      <tr data-status="done">
         <td><strong>4.d</strong></td>
         <td>Cutover (fenêtre de maintenance)</td>
-        <td><span class="plan-status plan-status--pending">⏳ pending</span></td>
-        <td>—</td>
+        <td><span class="plan-status plan-status--done">✅ fait</span></td>
+        <td><code>(commit pending)</code></td>
       </tr>
       <tr data-status="pending">
         <td><strong>4.e</strong></td>
@@ -580,55 +580,216 @@ curl http://localhost:8090/health</code></pre>
 
   <h3>T-0 : pré-checks</h3>
   <ol class="checklist">
-    <li>Sauvegarde BDD V1 fraîche (T-0) :
+    <li data-done="true">Sauvegarde BDD V1 fraîche (T-0) :
       <pre><code>ssh debian@51.210.245.202 "docker exec my_ia_postgres pg_dump -U my_ia_db_user my_ia_db | gzip" \
-  &gt; ~/backups/my_ia_pre_cutover_$(date +%Y%m%d_%H%M).sql.gz</code></pre>
+  &gt; /home/debian/backups/my_ia_v1_pre_cutover_20260506_121628.sql.gz   # 1.3 MB</code></pre>
     </li>
-    <li>Sauvegarde ChromaDB :
-      <pre><code>ssh debian@51.210.245.202 "docker run --rm -v my_ia_chroma_data:/source -v /tmp:/dest alpine \
-  tar czf /dest/chroma_pre_cutover_$(date +%Y%m%d_%H%M).tar.gz -C /source ."</code></pre>
+    <li data-done="true">Sauvegarde ChromaDB :
+      <pre><code>docker run --rm -v my_ia_chroma_data:/source:ro -v /home/debian/backups:/dest alpine \
+  tar czf /dest/my_ia_v1_chroma_pre_cutover_20260506_122600.tar.gz -C /source .   # 835 MB</code></pre>
     </li>
-    <li>Confirmer absence d'utilisateurs actifs (logs nginx ou
-      <code>SELECT count(*) FROM sessions WHERE last_activity &gt; now() - interval '5 min'</code>).</li>
+    <li data-done="true">Confirmer absence d'utilisateurs actifs : 0 user_login dans les
+      24 dernières heures côté V1.</li>
   </ol>
 
-  <h3>T+0 : bascule</h3>
+  <h3>T+0 : bascule (Option A in-place)</h3>
+  <p><em>Note : la stratégie réelle exécutée diffère du runbook initial —
+  on ne libère <strong>pas</strong> les ports V1 (3000/8081). Au lieu de
+  cela, V2 reste sur son port :8090 interne et nginx-host fait un reverse-
+  proxy HTTPS depuis <code>my-ia.codefixture.com</code> (vhost dédié, cert
+  Let's Encrypt). V1 UI front/back peuvent rester debout sans gêner.</em></p>
+
   <ol class="checklist">
-    <li>Stop V1 :
-      <pre><code>ssh debian@51.210.245.202 "cd /opt/my-ia &amp;&amp; ./scripts/stop.sh"</code></pre>
+    <li data-done="true">Stop V1 API uniquement (<code>my_ia_app</code>).
+      BDD V1 et ChromaDB V1 restent UP.
+      <pre><code>docker stop my_ia_app</code></pre>
     </li>
-    <li>Si Option A : libérer les ports (3000, 8081) en arrêtant
-      <code>my_ia_ui_front</code>, <code>my_ia_ui_back</code>. Modifier
-      <code>docker-compose.yml</code> V2 pour mapper sur 3000 :
-      <pre><code>app:
-  ports:
-    - "3000:8080"  # remplace 8090:8080</code></pre>
+    <li data-done="true">Connecter <code>my_ia_v2_app</code> au network
+      <code>my_ia_internal</code> de V1 :
+      <pre><code>docker network connect my_ia_internal my_ia_v2_app</code></pre>
+      Persisté dans <code>docker-compose.yml</code> V2 via le network
+      externe <code>v1_internal</code>.
     </li>
-    <li>Reconfigurer le <code>.env</code> V2 sur le VPS pour pointer sur la
-      BDD V1 (Option A) :
-      <pre><code>DATABASE_URL=postgresql+asyncpg://my_ia_db_user:&lt;PASS&gt;@my_ia_postgres:5432/my_ia_db
-SANITIZED_PREFIX=my_ia_v2  # garde le prefix V2 pour les containers</code></pre>
-      <strong>Note</strong> : ajouter <code>my_ia_postgres</code> au network
-      du compose V2, ou utiliser host network.
+    <li data-done="true">Reconfigurer <code>.env</code> V2 sur le VPS pour
+      pointer sur la BDD V1 :
+      <pre><code>DATABASE_URL=postgresql+asyncpg://my_ia_db_user:&lt;PASS_V1&gt;@my_ia_postgres:5432/my_ia_db
+CHROMA_HOST=my_ia_chroma</code></pre>
     </li>
-    <li>Re-démarrer V2 :
-      <pre><code>ssh debian@51.210.245.202 "cd /opt/my-ia-v2 &amp;&amp; docker compose up -d --force-recreate"</code></pre>
+    <li data-done="true">Patch <code>docker-compose.yml</code> : faire que
+      <code>DATABASE_URL</code> respecte <code>.env</code> (au lieu de le
+      reconstruire à partir de <code>APP_DB_USER/PASSWORD/NAME</code>).
     </li>
-    <li>Vérifier health :
-      <pre><code>curl -k https://51.210.245.202:3000/health</code></pre>
+    <li data-done="true">Lancer <code>alembic upgrade head</code> sur la
+      BDD V1 avec le code V2 (5 migrations appliquées :
+      <code>b5852d8fe717</code> → <code>20260505_1200</code>) :
+      <pre><code>docker exec -e DATABASE_URL='...V1...' -w /code my_ia_v2_app alembic upgrade head</code></pre>
+    </li>
+    <li data-done="true"><code>docker compose up -d --force-recreate app</code>.</li>
+    <li data-done="true">Vérifier health :
+      <pre><code>curl -sf https://my-ia.codefixture.com/health
+# {"status":"healthy", llm.healthy, chroma:true, ollama:true, model:gemma2:2b}</code></pre>
     </li>
   </ol>
 
   <h3>T+5 : validation utilisateur</h3>
   <ol class="checklist">
-    <li>Login admin via le navigateur sur l'URL historique
-      (<code>https://51.210.245.202:3000</code> ou domaine prod si DNS).</li>
-    <li>Smoke critique : créer une conversation, uploader un document,
-      lancer une recherche RAG.</li>
-    <li>Vérifier les logs serveur (<code>/web/admin/logs</code>) — pas
-      d'erreur 500 ni stacktrace.</li>
-    <li>Si KO : déclencher rollback (section 8).</li>
+    <li data-done="true">Login admin sur <code>https://my-ia.codefixture.com/web/login</code>
+      → atterrissage <code>/web/admin</code>.</li>
+    <li data-done="true">Smoke admin : navigation Documents, Corpus, Sources, Audit,
+      Logs serveur. Données V1 visibles (7 users, 4 corpus, 4 documents).</li>
+    <li data-done="true">Smoke chat : login user@test.example, conversation, réponse
+      Ollama streamée bout-en-bout. RAG cherche dans la collection user
+      ChromaDB V1 — chunks visibles.</li>
+    <li>Logs serveur (<code>/web/admin/logs</code>) — vérification utilisateur.</li>
   </ol>
+
+  <h3>📋 Rapport d'exécution (2026-05-06)</h3>
+
+  <p>Cutover réalisé avec succès. La fenêtre effective de coupure utilisateur
+  a été quasi-nulle car V2 a été branchée en parallèle (HTTPS sur un nouveau
+  vhost <code>my-ia.codefixture.com</code>) <em>avant</em> le stop de V1
+  API — la transition est principalement une bascule d'URL.</p>
+
+  <h4>Stratégie effective vs runbook initial</h4>
+  <ul class="feature-list">
+    <li><strong>Pas de libération ports 3000/8081</strong> : V2 sert sur
+      :8090 derrière nginx-host avec cert Let's Encrypt sur
+      <code>my-ia.codefixture.com</code>. Plus simple que de faire
+      cohabiter V1/V2 sur les mêmes ports.</li>
+    <li><strong>nginx-host reverse-proxy</strong> sur <code>:443</code>
+      vers <code>localhost:8090</code> avec <code>proxy_set_header
+      X-Forwarded-Proto $scheme</code>.</li>
+  </ul>
+
+  <h4>Fix imprévus rencontrés et corrigés en cours de cutover</h4>
+  <table class="data-table">
+    <thead>
+      <tr><th>Bug</th><th>Cause</th><th>Fix</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Mixed Content navigateur (CSS en <code>http://</code> sur page
+            HTTPS)</td>
+        <td>nginx termine TLS et forward HTTP plain à uvicorn → uvicorn
+            génère URLs absolues en <code>http://</code>.</td>
+        <td>Ajout <code>--proxy-headers --forwarded-allow-ips='*'</code>
+            sur les 4 modes uvicorn dans <code>scripts/docker/entrypoint.sh</code>.</td>
+      </tr>
+      <tr>
+        <td><code>ModuleNotFoundError: app.common.storage</code> au boot V2
+            sur le VPS</td>
+        <td><code>.gitignore</code> avec <code>storage/</code>,
+            <code>logs/</code> sans slash → masquait
+            <code>app/common/storage</code> et <code>app/features/logs</code>
+            historiquement non commités.</td>
+        <td>Préfixe <code>/</code> sur les ignores + allow-list explicite
+            <code>!/app/common/storage/</code>. Ajout des 13 fichiers
+            manquants (2041 lignes). Commit <code>73a99c4</code>.</td>
+      </tr>
+      <tr>
+        <td>V2 ignore <code>DATABASE_URL</code> custom du <code>.env</code></td>
+        <td><code>docker-compose.yml</code> reconstruisait
+            <code>DATABASE_URL</code> à partir de <code>${APP_DB_USER}:
+            ${APP_DB_PASSWORD}@postgres:5432/${APP_DB_NAME}</code> →
+            override systématique.</td>
+        <td><code>${DATABASE_URL:-postgresql+asyncpg://...build...}</code> :
+            si <code>.env</code> définit <code>DATABASE_URL</code>, il prime.
+            Compatible staging local. Commit <code>15aa492</code>.</td>
+      </tr>
+      <tr>
+        <td>V2 ne peut pas atteindre <code>my_ia_postgres</code> ni
+            <code>my_ia_chroma</code></td>
+        <td>Networks Docker isolés : V2 sur <code>my_ia_v2_internal</code>,
+            V1 BDD/Chroma sur <code>my_ia_internal</code>.</td>
+        <td>Ajout du network external <code>v1_internal</code> (alias vers
+            <code>my_ia_internal</code>) sur le service <code>app</code>
+            dans le compose V2. Commit <code>a28bfa9</code>.</td>
+      </tr>
+      <tr>
+        <td>Clé legacy <code>ollama.host=ollama</code> en BDD V1 → V2 cherche
+            Ollama sur un service docker inexistant.</td>
+        <td><code>bootstrap_sync.py</code> mappe la clé
+            <code>system_configs.ollama.host</code> vers la variable d'env
+            <code>OLLAMA_HOST</code> du container — la BDD V1 avait
+            <code>"ollama"</code> (ancien service docker-compose).</td>
+        <td><code>UPDATE system_configs SET value='host.docker.internal'
+            WHERE key='ollama.host'</code> sur la BDD V1. Pas de modif
+            de code.</td>
+      </tr>
+      <tr>
+        <td>Cookie de session conservait l'UUID user de la BDD V2 staging
+            après bascule sur BDD V1 → FK violation à la 1ère création
+            de collection.</td>
+        <td>Sessions HTTPCookie cryptées par <code>SESSION_SECRET</code>,
+            non invalidées au switch BDD.</td>
+        <td>Reconnexion utilisateur (logout / login) — re-crée la session
+            avec l'UUID user V1. Aurait pu être globalisé via rotation
+            de <code>SESSION_SECRET</code>, non fait pour le cas mono-user.</td>
+      </tr>
+      <tr>
+        <td><code>app/web/chat.py</code> appelait
+            <code>ConversationRepository.get_messages</code> qui n'existe
+            pas → 500 sur GET /web/chat/{id}.</td>
+        <td>Bug pré-existant V2 jamais déclenché (le smoke E2E ne testait
+            pas le rendu d'une conversation existante).</td>
+        <td>Remplacement par <code>MessageRepository.list_by_conversation</code>
+            (méthode réelle, déjà utilisée par les autres callers V1/V2).
+            Commit <code>41caa6d</code>.</td>
+      </tr>
+      <tr>
+        <td>Chat user "pas de réponse" — stream se termine sans tokens.</td>
+        <td><code>app/web/chat.py</code> passait <code>collection_name=None</code>
+            au stream → service utilisait la collection ChromaDB par défaut
+            (<code>knowledge_base</code>) qui n'existe pas en V1 →
+            <code>require_sources=true</code> → refus de répondre.</td>
+        <td>Reproduction du pattern V1 (<code>app/features/chat/router.py:115-127</code>)
+            dans <code>web/chat.py</code> : charger la conversation via
+            <code>ConversationRepository.get_by_id</code> et passer
+            <code>conv.collection.name</code>, <code>conv.mode_id</code>
+            au stream. Commit <code>beb3f79</code>.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h4>Manques V2 identifiés post-cutover (hors scope 4.d)</h4>
+  <div class="callout callout-warning">
+    <strong>⚠️ Sélecteur de collection manquant dans l'UI chat utilisateur.</strong>
+    V1 frontend (<code>UI-FRONT/js/...</code>) propose un sélecteur de
+    collection au-dessus du chat (collection user privée, collections
+    publiques par groupe). V2 <code>/web/chat</code> n'a pas ce sélecteur :
+    l'utilisateur cause toujours sur sa collection privée. Conséquence
+    fonctionnelle : un user qui n'a pas de docs personnels mais voudrait
+    interroger une collection publique (ex
+    <code>public_public_ec2_ollama</code> avec 2774 chunks) ne peut pas
+    le faire.
+    <br><br>
+    À traiter dans une phase ultérieure (Phase 3.x complement chat UI),
+    pas dans le cadre du cutover.
+  </div>
+
+  <h4>État final</h4>
+  <ul class="feature-list">
+    <li>✅ V2 servi en HTTPS sur <code>https://my-ia.codefixture.com</code>
+      (cert Let's Encrypt, redirect 80→443).</li>
+    <li>✅ V2 utilise la BDD V1 (<code>my_ia_postgres</code>) — schéma migré
+      à <code>20260505_1200</code> (5 migrations appliquées).</li>
+    <li>✅ V2 utilise ChromaDB V1 (<code>my_ia_chroma</code>) avec ses
+      collections existantes (user_*, public_*).</li>
+    <li>✅ Login admin et user fonctionnels (<code>admin@test.example</code> /
+      <code>user@test.example</code>, mots de passe reset à
+      <code>Admin123!</code> / <code>User1234!</code>).</li>
+    <li>✅ Chat RAG fonctionnel : conversation use la
+      <code>conversation.collection.name</code> du user → recherche dans
+      la bonne collection ChromaDB → Ollama stream les tokens.</li>
+    <li>✅ V1 API (<code>my_ia_app</code>) stoppée mais BDD/Chroma intacts
+      pour rollback.</li>
+    <li>✅ V1 UI front/back (<code>my_ia_ui_front</code>,
+      <code>my_ia_ui_back</code>) toujours up sur ports 3000/8081 — non
+      gênants car URL prod = <code>my-ia.codefixture.com</code>.</li>
+    <li>✅ Backups <code>my_ia_v1_pre_cutover_*.sql.gz</code> (1.3 MB) et
+      <code>my_ia_v1_chroma_pre_cutover_*.tar.gz</code> (835 MB) dans
+      <code>/home/debian/backups/</code> sur le VPS.</li>
+  </ul>
 </section>
 
 <!-- ============================================================ -->
