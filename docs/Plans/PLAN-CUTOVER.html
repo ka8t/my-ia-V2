@@ -751,20 +751,27 @@ CHROMA_HOST=my_ia_chroma</code></pre>
     </tbody>
   </table>
 
-  <h4>Manques V2 identifiés post-cutover (hors scope 4.d)</h4>
-  <div class="callout callout-warning">
-    <strong>⚠️ Sélecteur de collection manquant dans l'UI chat utilisateur.</strong>
-    V1 frontend (<code>UI-FRONT/js/...</code>) propose un sélecteur de
-    collection au-dessus du chat (collection user privée, collections
-    publiques par groupe). V2 <code>/web/chat</code> n'a pas ce sélecteur :
-    l'utilisateur cause toujours sur sa collection privée. Conséquence
-    fonctionnelle : un user qui n'a pas de docs personnels mais voudrait
-    interroger une collection publique (ex
-    <code>public_public_ec2_ollama</code> avec 2774 chunks) ne peut pas
-    le faire.
+  <h4>Manques V2 identifiés post-cutover (résolus)</h4>
+  <div class="callout callout-info">
+    <strong>✅ Sélecteur de collection — livré 2026-05-06.</strong>
+    Parité V1 atteinte : sur <code>/web/chat</code> sans conversation active,
+    un fieldset radio (<code>chat-collection-picker</code>) liste la
+    collection privée du user + les collections publiques accessibles. Le
+    <code>collection_id</code> sélectionné est posté avec le message via
+    l'attribut HTML5 <code>form="chat-form"</code> (le sélecteur est
+    placé hors du <code>.chat-input</code> flex container pour éviter
+    qu'il soit aplati). Validation serveur : ownership privée
+    (<code>owner_id == user.id</code>) ou type public.
+    <em>Commits : 35314b2 (placement DOM), 49fae8a (handler
+    SSE sources), eab5ce9 (debug sources final).</em>
     <br><br>
-    À traiter dans une phase ultérieure (Phase 3.x complement chat UI),
-    pas dans le cadre du cutover.
+    <strong>✅ Affichage des sources sous la réponse — livré 2026-05-06.</strong>
+    Le partial <code>message-pair.html</code> émet un slot
+    <code>sse-swap="sources"</code> à côté du slot tokens : l'event SSE
+    <code>sources</code> émis par <code>_ndjson_to_sse</code> est routé par
+    htmx-ext-sse vers ce conteneur. Les clés affichées
+    (<code>source_name</code>/<code>source</code>) ont été alignées sur le
+    format V1 — le partial static (history reload) suit la même logique.
   </div>
 
   <h4>État final</h4>
@@ -776,8 +783,8 @@ CHROMA_HOST=my_ia_chroma</code></pre>
     <li>✅ V2 utilise ChromaDB V1 (<code>my_ia_chroma</code>) avec ses
       collections existantes (user_*, public_*).</li>
     <li>✅ Login admin et user fonctionnels (<code>admin@test.example</code> /
-      <code>user@test.example</code>, mots de passe reset à
-      <code>Admin123!</code> / <code>User1234!</code>).</li>
+      <code>user@test.example</code>, mots de passe harmonisés avec les
+      seeds V1 et le password manager natif activé sur la page login).</li>
     <li>✅ Chat RAG fonctionnel : conversation use la
       <code>conversation.collection.name</code> du user → recherche dans
       la bonne collection ChromaDB → Ollama stream les tokens.</li>
