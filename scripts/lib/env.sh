@@ -448,14 +448,14 @@ ADMIN_DASHBOARD_URL=${PUBLIC_PROTOCOL:-http}://${PUBLIC_HOST:-localhost}:${ADMIN
 # UTILISATEURS DE TEST (DEBUG=true uniquement)
 # =============================================================================
 TEST_ADMIN_EMAIL=${TEST_ADMIN_EMAIL:-admin@test.example}
-TEST_ADMIN_PASSWORD=${TEST_ADMIN_PASSWORD:-Admin123!}
+TEST_ADMIN_PASSWORD="${TEST_ADMIN_PASSWORD:-0vpFCb^8BYbM@%w^Q#75p6.1}"
 TEST_ADMIN_FIRST_NAME=${TEST_ADMIN_FIRST_NAME:-Admin}
 TEST_ADMIN_LAST_NAME=${TEST_ADMIN_LAST_NAME:-Testeur}
 TEST_ADMIN_PHONE=${TEST_ADMIN_PHONE:-+33612345001}
 TEST_ADMIN_ADDRESS="${TEST_ADMIN_ADDRESS:-1 Place de l Hotel de Ville}"
 
 TEST_USER_EMAIL=${TEST_USER_EMAIL:-user@test.example}
-TEST_USER_PASSWORD=${TEST_USER_PASSWORD:-User123!}
+TEST_USER_PASSWORD="${TEST_USER_PASSWORD:-5#d%o3x3^7%uOwrZw_UIRS60}"
 TEST_USER_FIRST_NAME=${TEST_USER_FIRST_NAME:-Pierre}
 TEST_USER_LAST_NAME=${TEST_USER_LAST_NAME:-Dupont}
 TEST_USER_PHONE=${TEST_USER_PHONE:-+33612345002}
@@ -1629,8 +1629,8 @@ EOF
         cat >> "$filepath" << EOF
 
 ## UTILISATEURS DE TEST (DEBUG=true)
-- Admin:        ${TEST_ADMIN_EMAIL:-admin@test.local} / ${TEST_ADMIN_PASSWORD:-Admin123!}
-- User:         ${TEST_USER_EMAIL:-user@test.local} / ${TEST_USER_PASSWORD:-User123!}
+- Admin:        ${TEST_ADMIN_EMAIL:-admin@test.example} / ${TEST_ADMIN_PASSWORD:-0vpFCb^8BYbM@%w^Q#75p6.1}
+- User:         ${TEST_USER_EMAIL:-user@test.example} / ${TEST_USER_PASSWORD:-5#d%o3x3^7%uOwrZw_UIRS60}
 - Contributor:  ${TEST_CONTRIBUTOR_EMAIL:-contributor@test.local} / ${TEST_CONTRIBUTOR_PASSWORD:-Contrib123!}
 - Validator:    ${TEST_VALIDATOR_EMAIL:-validator@test.local} / ${TEST_VALIDATOR_PASSWORD:-Valid123!}
 EOF

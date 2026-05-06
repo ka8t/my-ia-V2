@@ -21,13 +21,12 @@
     {% include 'partials/auth/login-error.html' ignore missing %}
   </div>
 
+  {# Submit natif (sans hx-post) → le navigateur déclenche son password
+     manager et propose d'enregistrer/auto-remplir les identifiants. En cas
+     d'erreur, le serveur re-render la page complète avec le bandeau. #}
   <form class="auth-card__form"
         method="post"
         action="/web/login"
-        hx-post="/web/login"
-        hx-target="#login-error"
-        hx-swap="innerHTML"
-        hx-disabled-elt="button[type=submit]"
         autocomplete="on">
 
     {% if csrf_token %}

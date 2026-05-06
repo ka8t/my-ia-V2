@@ -7,7 +7,7 @@
 #
 # Usage:
 #   ./scripts/reset-password.sh <email> <new_password>
-#   ./scripts/reset-password.sh admin@test.example Admin123!
+#   ./scripts/reset-password.sh admin@test.example '0vpFCb^8BYbM@%w^Q#75p6.1'
 #
 # Note: Ce script utilise PasswordHelper de FastAPI Users (pwdlib/argon2)
 #       pour garantir la compatibilité avec le système d'authentification.
@@ -33,8 +33,8 @@ if [[ $# -lt 2 ]]; then
     echo "Usage: $0 <email> <new_password>"
     echo ""
     echo "Exemples:"
-    echo "  $0 admin@test.example Admin123!"
-    echo "  $0 user@test.example User123!"
+    echo "  $0 admin@test.example '0vpFCb^8BYbM@%w^Q#75p6.1'"
+    echo "  $0 user@test.example '5#d%o3x3^7%uOwrZw_UIRS60'"
     exit 1
 fi
 

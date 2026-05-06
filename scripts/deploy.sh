@@ -1240,8 +1240,8 @@ show_final_summary() {
 
     if [[ "$DEPLOY_ENV" != "prod" ]]; then
         echo "  IDENTIFIANTS DE TEST:"
-        echo "    - Admin:       ${TEST_ADMIN_EMAIL:-admin@test.example} / ${TEST_ADMIN_PASSWORD:-Admin123!}"
-        echo "    - Utilisateur: ${TEST_USER_EMAIL:-user@test.example} / ${TEST_USER_PASSWORD:-User123!}"
+        echo "    - Admin:       ${TEST_ADMIN_EMAIL:-admin@test.example} / ${TEST_ADMIN_PASSWORD:-0vpFCb^8BYbM@%w^Q#75p6.1}"
+        echo "    - Utilisateur: ${TEST_USER_EMAIL:-user@test.example} / ${TEST_USER_PASSWORD:-5#d%o3x3^7%uOwrZw_UIRS60}"
         echo ""
     fi
 
