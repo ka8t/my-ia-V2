@@ -1,0 +1,131 @@
+{
+  "brand": {
+    "tool_name": "StaticCodeAudit",
+    "company_name": "CodeFixture",
+    "prefix": "SCA",
+    "logo": null,
+    "primary_color": "#1e3a5f",
+    "accent_color": "#2c5282",
+    "website_url": null
+  },
+  "project": {
+    "id": "63081c0f-848b-4abb-82a2-62f01df73521",
+    "name": "my-ia-V2",
+    "version": "1.0.0",
+    "description": ""
+  },
+  "languages": [
+    "html",
+    "javascript",
+    "python",
+    "yaml"
+  ],
+  "versions": {},
+  "paths": {
+    "include": [
+      "app/",
+      "docs/",
+      "scripts/"
+    ],
+    "exclude": [
+      "**/node_modules/**",
+      "**/__pycache__/**",
+      "**/.venv/**",
+      "**/venv/**",
+      "**/vendor/**",
+      "**/.git/**",
+      "**/dist/**",
+      "**/build/**"
+    ]
+  },
+  "reports": {
+    "output_dir": "docs/audit-reports",
+    "history_dir": "docs/audit-reports/audit-datas",
+    "max_history": 10,
+    "language": "en"
+  },
+  "categories": {
+    "security": {
+      "enabled": true,
+      "weight": 3
+    },
+    "architecture": {
+      "enabled": true,
+      "weight": 2
+    },
+    "ui": {
+      "enabled": true,
+      "weight": 1
+    },
+    "ux": {
+      "enabled": true,
+      "weight": 1
+    },
+    "maintenance": {
+      "enabled": true,
+      "weight": 1
+    },
+    "dependencies": {
+      "enabled": false,
+      "weight": 2
+    },
+    "cicd": {
+      "enabled": false,
+      "weight": 2
+    }
+  },
+  "rules": {
+    "disabled": [],
+    "custom_patterns": {}
+  },
+  "tests": {
+    "enabled": true,
+    "tests_dir": "tests/",
+    "command": "python -m pytest {tests_dir} -v --tb=short"
+  },
+  "fixtures": {
+    "include_generic": true,
+    "parallel": true,
+    "parallel_workers": 4,
+    "fixture_timeout": 30
+  },
+  "thresholds": {
+    "max_high": 0,
+    "max_medium": 10,
+    "min_health": 80,
+    "health_good": 90,
+    "health_warning": 70
+  },
+  "retention": {
+    "mode": null,
+    "max_count": 10,
+    "max_days": 90
+  },
+  "database": {
+    "enabled": false,
+    "host": "localhost",
+    "port": "5432",
+    "database": "",
+    "user": "",
+    "password_env_file": ".env",
+    "password_env_var": "DB_PASSWORD",
+    "track": {
+      "tables": true,
+      "columns": true,
+      "constraints": true,
+      "indexes": true,
+      "enums": true
+    },
+    "severity": {
+      "column_dropped": "HIGH",
+      "table_dropped": "HIGH",
+      "type_changed": "MEDIUM",
+      "column_added": "LOW",
+      "index_added": "INFO"
+    },
+    "code_analysis": {
+      "enabled": true,
+      "escalate_severity": true
+    }
+  }
+}

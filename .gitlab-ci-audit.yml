@@ -1,0 +1,14 @@
+audit:
+  stage: test
+  image: python:3.12-slim
+  script:
+    - python3 /Users/mac/Documents/Code/Audit/run_audit.py . --skip-tests --fail-on-high
+  artifacts:
+    when: always
+    paths:
+      - docs/audit-reports/SCA-REPORT-*.html
+    expire_in: 30 days
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_PIPELINE_SOURCE == "schedule"

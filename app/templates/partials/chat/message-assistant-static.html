@@ -20,9 +20,8 @@
         {% set kind = 'document' if s.get('type') == 'document' else 'source' %}
         <li class="chat-source chat-source--{{ kind }}">
           <span class="chat-source__kind">{{ 'Document' if kind == 'document' else 'Source' }}</span>
-          <span class="chat-source__name" title="{{ s.get('display_name') or s.get('technical_name') or '—' }}">
-            {{ s.get('display_name') or s.get('technical_name') or '—' }}
-          </span>
+          {% set display = s.get('display_name') or s.get('source_name') or s.get('source') or s.get('technical_name') or '—' %}
+          <span class="chat-source__name" title="{{ display }}">{{ display }}</span>
         </li>
         {% endfor %}
       </ul>

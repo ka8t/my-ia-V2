@@ -1,0 +1,31 @@
+name: StaticCodeAudit
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 6 * * 1'  # Weekly Monday 6am UTC
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run StaticCodeAudit
+        run: |
+          python3 /Users/mac/Documents/Code/Audit/run_audit.py . --skip-tests --fail-on-high
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-report
+          path: docs/audit-reports/SCA-REPORT-*.html

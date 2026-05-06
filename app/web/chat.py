@@ -378,7 +378,13 @@ def _render_sources_html(sources: list) -> str:
     )
     parts.append('<ul class="chat-sources__list">')
     for s in sources:
-        display = _html.escape(str(s.get("display_name") or s.get("technical_name") or "—"))
+        display = _html.escape(str(
+            s.get("display_name")
+            or s.get("source_name")
+            or s.get("source")
+            or s.get("technical_name")
+            or "—"
+        ))
         kind = "document" if s.get("type") == "document" else "source"
         kind_label = "Document" if kind == "document" else "Source"
         parts.append(
@@ -418,9 +424,7 @@ async def _ndjson_to_sse(
                 await asyncio.sleep(0)  # flush
 
             elif "sources" in payload:
-                src_list = payload["sources"] or []
-                logger.info(f"[SSE] sources event: {len(src_list)} items, sample={src_list[:1]}")
-                html_fragment = _render_sources_html(src_list)
+                html_fragment = _render_sources_html(payload["sources"] or [])
                 if html_fragment:
                     yield _sse("sources", html_fragment)
                     await asyncio.sleep(0)
