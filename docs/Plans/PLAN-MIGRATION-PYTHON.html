@@ -14,7 +14,7 @@
     <p class="subtitle">Refonte complète : abandon de la stack JS (UI-FRONT/UI-BACK/UI-SHARED) au profit d'une stack 100% Python (FastAPI + Jinja2 + HTMX).</p>
     <div class="meta">
       <span class="badge badge-primary">Plan</span>
-      <span class="badge badge-warning">En préparation</span>
+      <span class="badge badge-warning">Phase 3 en cours · 4.d livrée</span>
       <span class="meta-item">Auteur : KL</span>
       <span class="meta-item">Date : 2026-05-04</span>
       <span class="meta-item">Origine : tag v1.0.0-js-final</span>
@@ -35,6 +35,13 @@
     <a href="#architecture">3. Architecture cible</a>
     <a href="#templates">4. Nouveau système de templates</a>
     <a href="#phases">5. Phases du plan</a>
+    <a href="#phase-3-1" style="padding-left:var(--space-5)">5.3.1 — Auth</a>
+    <a href="#phase-3-2" style="padding-left:var(--space-5)">5.3.2 — User front (home, profile, documents)</a>
+    <a href="#phase-3-3" style="padding-left:var(--space-5)">5.3.3 — Chat</a>
+    <a href="#phase-3-4" style="padding-left:var(--space-5)">5.3.4 — Admin core</a>
+    <a href="#phase-3-5" style="padding-left:var(--space-5)">5.3.5 — Admin system/*</a>
+    <a href="#phase-3-6" style="padding-left:var(--space-5)">5.3.6 — Admin avancé</a>
+    <a href="#phase-3-7" style="padding-left:var(--space-5)">5.3.7 — Transversaux</a>
     <a href="#risques">6. Risques & mitigations</a>
     <a href="#kpi">7. KPI / critères de succès</a>
     <a href="#decisions">8. Décisions à valider</a>
@@ -281,19 +288,43 @@
     <h2>Phases du plan</h2>
   </div>
 
+  <h3>Statut global</h3>
+  <table class="plan-status-table data-table">
+    <thead>
+      <tr><th>Phase</th><th>Description</th><th>Statut</th></tr>
+    </thead>
+    <tbody>
+      <tr data-status="done"><td>Phase 0</td><td>Décisions & squelette</td><td>✅ Terminée</td></tr>
+      <tr data-status="done"><td>Phase 1</td><td>Backend consolidé (API v1, tests, OpenAPI)</td><td>✅ Terminée</td></tr>
+      <tr data-status="done"><td>Phase 2</td><td>Squelette frontend Jinja</td><td>✅ Terminée</td></tr>
+      <tr data-status="in-progress"><td>Phase 3</td><td>Migration page par page (parité V1)</td><td>🟡 En cours — voir audit ci-dessous</td></tr>
+      <tr data-status="in-progress"><td>Phase 4</td><td>Décommissionnement / cutover production</td><td>🟡 4.a-4.d ✅ · 4.e (cleanup VPS) à J+30</td></tr>
+      <tr data-status="todo"><td>Phase 5</td><td>Cleanup & docs (tag v2.0.0)</td><td>⏳ Après Phase 3 + 4.e</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-info">
+    <strong>📋 Audit de parité V1 ↔ V2 (2026-05-06)</strong> : 167 écarts identifiés
+    sur la couche présentation (47 user · 120 admin). La <strong>Phase 3</strong>
+    ci-dessous a été expansée en sous-phases checklist <code>data-done</code>.
+    Règle : V2 doit être <strong>identique fonctionnellement</strong> à V1 avant
+    toute amélioration. Les transversaux (i18n, thème, toasts, modal confirm…)
+    sont regroupés en <strong>Phase 3.7</strong>.
+  </div>
+
   <div class="vflow">
 
     <div class="vflow-step">
       <div class="vflow-marker">0</div>
       <div class="vflow-content">
-        <h3>Phase 0 — Décisions & squelette <span class="badge badge-info">1-2j</span></h3>
+        <h3>Phase 0 — Décisions & squelette <span class="badge badge-success">✅ Terminée</span></h3>
         <ul class="checklist">
-          <li>Valider stack (Jinja2+HTMX confirmé ou alternative)</li>
-          <li>Décider UI unifiée vs séparée (front/admin)</li>
-          <li>Stratégie : progressive vs big bang</li>
-          <li>Initialiser repo my-ia-V2 (✅ fait)</li>
-          <li>Bootstrap projet : <code>app/main.py</code>, <code>requirements.txt</code>, Dockerfile, docker-compose</li>
-          <li>CLAUDE.md adapté à la nouvelle stack</li>
+          <li data-done="true">Stack validée (Jinja2 + HTMX + Alpine.js)</li>
+          <li data-done="true">UI unifiée (un seul container app sert HTML + API)</li>
+          <li data-done="true">Stratégie progressive validée</li>
+          <li data-done="true">Repo <code>my-ia-V2</code> initialisé</li>
+          <li data-done="true">Bootstrap projet : <code>app/main.py</code>, <code>requirements.txt</code>, Dockerfile, docker-compose</li>
+          <li data-done="true">CLAUDE.md adapté à la nouvelle stack</li>
         </ul>
       </div>
     </div>
@@ -301,14 +332,14 @@
     <div class="vflow-step">
       <div class="vflow-marker">1</div>
       <div class="vflow-content">
-        <h3>Phase 1 — Backend consolidé <span class="badge badge-info">3-5j</span></h3>
+        <h3>Phase 1 — Backend consolidé <span class="badge badge-success">✅ Terminée</span></h3>
         <ul class="checklist">
-          <li>Reprendre <code>app/</code> de my-ia (features, models, alembic)</li>
-          <li>Versionner toutes les routes API sous <code>/api/v1/</code></li>
-          <li>OpenAPI complet (descriptions, exemples)</li>
-          <li>Séparer routes JSON (<code>app/api/v1/</code>) des futures routes HTML (<code>app/web/</code>)</li>
-          <li>Tests d'intégration sur endpoints critiques (auth, chat, upload, RAG)</li>
-          <li>Brancher i18n Babel</li>
+          <li data-done="true"><code>app/</code> repris depuis <code>my-ia</code> (features, models, alembic)</li>
+          <li data-done="true">Routes API versionnées sous <code>/api/v1/</code></li>
+          <li data-done="true">OpenAPI complet (descriptions, exemples)</li>
+          <li data-done="true">Routes JSON (<code>app/api/v1/</code>) séparées des routes HTML (<code>app/web/</code>)</li>
+          <li data-done="true">Tests d'intégration sur endpoints critiques</li>
+          <li data-done="true">i18n FastAPI/Jinja branché (fonction <code>t()</code> dans contexte)</li>
         </ul>
       </div>
     </div>
@@ -316,14 +347,14 @@
     <div class="vflow-step">
       <div class="vflow-marker">2</div>
       <div class="vflow-content">
-        <h3>Phase 2 — Squelette frontend Jinja <span class="badge badge-info">3-4j</span></h3>
+        <h3>Phase 2 — Squelette frontend Jinja <span class="badge badge-success">✅ Terminée</span></h3>
         <ul class="checklist">
-          <li>Créer <code>app/templates/layouts/{base,auth,user,admin}.html</code></li>
-          <li>Créer macros : card, form, table, icon, badge, toast</li>
-          <li>Créer <code>app/static/css/</code> (port de UI-SHARED/css adapté)</li>
-          <li>Intégrer HTMX + Alpine.js (CDN ou bundle local)</li>
-          <li>Page pilote : <strong>login</strong> (la plus simple, isolée)</li>
-          <li>Auth web : cookies session HttpOnly + CSRF</li>
+          <li data-done="true"><code>app/templates/layouts/{base,auth,user,admin}.html</code></li>
+          <li data-done="true">Macros : card, form, table, icon, badge, button, field</li>
+          <li data-done="true"><code>app/static/css/</code> (variables, components, utilities)</li>
+          <li data-done="true">HTMX 2.0 + Alpine.js + htmx-ext-sse intégrés</li>
+          <li data-done="true">Page pilote login fonctionnelle</li>
+          <li data-done="true">Auth web : cookies session HttpOnly + CSRF</li>
         </ul>
       </div>
     </div>
@@ -331,29 +362,303 @@
     <div class="vflow-step">
       <div class="vflow-marker">3</div>
       <div class="vflow-content">
-        <h3>Phase 3 — Migration page par page <span class="badge badge-warning">3-4 semaines</span></h3>
-        <p>Ordre recommandé (du plus simple au plus complexe) :</p>
-        <ol>
-          <li><strong>Auth</strong> — login, register, reset password, profile</li>
-          <li><strong>User front</strong> — home, conversations list, settings, upload</li>
-          <li><strong>Chat</strong> — streaming via HTMX SSE (ou WebSocket)</li>
-          <li><strong>Admin core</strong> — users, documents, sources, collections</li>
-          <li><strong>Admin system/*</strong> — 14 sous-modules (LLM, RAG, storage, etc.)</li>
-          <li><strong>Admin avancé</strong> — audit, logs, validation, dashboard</li>
-        </ol>
-        <p>À chaque page : tests E2E Playwright + suppression du module JS équivalent côté <code>my-ia</code> (référence).</p>
+        <h3>Phase 3 — Migration page par page (parité V1) <span class="badge badge-warning">En cours</span></h3>
+        <p>Détail des écarts V1 ↔ V2 par page, dans l'ordre du plan master
+        (du plus simple au plus complexe). Chaque ligne est une checklist
+        trackable (<code>data-done="true"</code> à la complétion).</p>
+
+        <h4 id="phase-3-1">3.1 — Auth (login, register, reset password)</h4>
+        <ul class="checklist">
+          <li data-done="false"><strong>OAuth Google/GitHub</strong> sur login (boutons + <code>loadOAuthProviders()</code>) — V1 <code>UI-FRONT/js/app.js</code> → V2 <code>app/templates/pages/auth/login.html</code> + <code>app/web/auth.py</code></li>
+          <li data-done="false"><strong>Panneau debug login</strong> (auto-fill credentials, register debug rapide avec rôle) — V1 <code>app.js:initDebugLoginPanel()</code> → V2 <code>pages/auth/login.html</code></li>
+          <li data-done="false"><strong>Vérification email</strong> écran <code>/verify?token=...</code> avec success/error/redirect 2s — V1 <code>app.js:handleEmailVerification()</code> → nouvelle route + <code>pages/auth/verify.html</code></li>
+          <li data-done="false"><strong>Écran "approval rejected"</strong> dédié (V2 a uniquement pending) — V1 <code>app.js:showApprovalRejectedScreen()</code> → <code>pages/auth/register-rejected.html</code></li>
+          <li data-done="false"><strong>i18n</strong> : tous les textes auth hardcodés FR à passer via <code>t()</code> (locale fr/en) — V1 <code>UI-SHARED/templates/auth/*.html</code> avec <code>data-i18n</code> → tous <code>pages/auth/*.html</code></li>
+        </ul>
+
+        <h4 id="phase-3-2">3.2 — User front (home, profile/preferences, documents)</h4>
+        <p><em>Documents (upload + listing)</em></p>
+        <ul class="checklist">
+          <li data-done="false"><strong>Barre de quota storage</strong> (used / quota + progress) — V1 <code>documents.js:loadStorageStats</code> → <code>pages/documents/list.html</code></li>
+          <li data-done="false"><strong>Recherche fulltext</strong> sur nom/contenu — V1 <code>documents.js:searchDocuments</code></li>
+          <li data-done="false"><strong>Filtres</strong> (collection, public/private, indexé) — V1 <code>documents.js:filterByVisibility,filterByCollection</code></li>
+          <li data-done="false"><strong>Tri</strong> par colonnes (nom, date, taille, chunks)</li>
+          <li data-done="false"><strong>Pagination</strong> — V1 <code>documents.js:renderPagination</code></li>
+          <li data-done="false"><strong>Groupement par collection</strong> avec headers collapsibles — V1 <code>documents.js:toggleDocsCollectionGroup</code></li>
+          <li data-done="false"><strong>Sélection multiple + bulk delete</strong> — V1 <code>documents.js:bulkDeleteDocuments</code></li>
+          <li data-done="false"><strong>Download document</strong> — V1 <code>documents.js:downloadDocument</code> <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="false"><strong>Toggle visibilité</strong> public/privé — V1 <code>documents.js:toggleVisibility</code></li>
+          <li data-done="false"><strong>Remplacer fichier</strong> (replace) — V1 <code>documents.js:showReplaceDialog</code></li>
+          <li data-done="false"><strong>Modal détails document</strong> (chunks, métadonnées, statuts indexation détaillés) — V1 <code>documents.js:showDocumentDetails</code></li>
+          <li data-done="false"><strong>Choix collection cible à l'upload</strong> (V2 = collection privée forcée) — V1 <code>upload.js:loadUploadCollections</code> <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="false"><strong>Drag &amp; drop multi-fichiers</strong> (V2 = single file) — V1 <code>UI-SHARED/js/components/upload.js</code></li>
+          <li data-done="false"><strong>Barre de progression upload + polling réindexation</strong> — V1 <code>UI-SHARED/js/components/progress.js</code> + <code>mixins/reindex-polling.js</code></li>
+        </ul>
+
+        <p><em>Profile / Preferences</em></p>
+        <ul class="checklist">
+          <li data-done="false"><strong>Badge "vérifié"</strong> (email verified) dans profil — V1 <code>#profileVerifiedBadge</code></li>
+          <li data-done="false"><strong>"Membre depuis" / created_at</strong> — V1 <code>#profileCreatedAt</code></li>
+          <li data-done="false"><strong>Préférences vocales</strong> (voiceToText, voiceAutoSend, TTS enabled, TTS auto-play, TTS rate slider) — V1 <code>#voiceToTextGroup,...</code></li>
+          <li data-done="false"><strong>Mode par défaut</strong> (chatbot vs assistant) pour nouvelles conversations — V1 <code>#defaultMode</code></li>
+          <li data-done="false"><strong>Username éditable</strong> (V2 = read-only) — V1 <code>profile.js:UserForm.render</code></li>
+          <li data-done="false"><strong>Règles password affichées</strong> reflétant les vraies règles backend — V1 <code>password_requirements</code></li>
+          <li data-done="false"><strong>Sélecteur de langue dynamique</strong> (changement à chaud) — V1 <code>I18n.renderLanguageSelector</code></li>
+        </ul>
+
+        <h4 id="phase-3-3">3.3 — Chat (page la plus dégradée)</h4>
+        <ul class="checklist">
+          <li data-done="false"><strong>Streaming Markdown progressif</strong> rendu live (V2 = HTML-escape append, render à la fin) — V1 <code>UI-SHARED/js/modules/streaming.js</code></li>
+          <li data-done="false"><strong>Bouton stop / abortController</strong> pour annuler la génération — V1 <code>streaming.js:stopGeneration()</code></li>
+          <li data-done="false"><strong>Actions sur message</strong> : copier message, éditer message user, régénérer réponse, supprimer paire — V1 <code>UI-SHARED/js/modules/messages.js</code></li>
+          <li data-done="false"><strong>Édition du titre de conversation</strong> (double-clic ou bouton) — V1 <code>app.js:initTitleEditing()</code></li>
+          <li data-done="false"><strong>Copier toute la conversation</strong> — V1 <code>app.js:copyConversation</code></li>
+          <li data-done="false"><strong>Exporter conversation</strong> (Markdown / JSON) — V1 <code>app.js:exportConversation</code></li>
+          <li data-done="false"><strong>Archiver / désarchiver conversation</strong> + modale archives (filtres date/messages/collection) — V1 <code>conversations.js:archive/unarchive</code> + <code>#archivesModal</code></li>
+          <li data-done="false"><strong>Suppression de conversation</strong> depuis sidebar — V1 <code>conversations.js:createConversationItem</code></li>
+          <li data-done="false"><strong>Sélecteur mode RAG runtime</strong> (auto/fast/full) dans la zone chat (V2 = forcé "auto") — V1 <code>app.js:initRagModeSelector()</code></li>
+          <li data-done="false"><strong>Toggle "Mode Assistant" vs "Chatbot"</strong> + tooltip d'aide modes (V2 = forcé mode_id=1) — V1 <code>#modeToggle,#modeHelpBtn,#modeHelpTooltip</code></li>
+          <li data-done="true"><strong>Sélecteur de collection</strong> au-dessus du chat (collection user privée + publiques) — livré 2026-05-06 (commit <code>35314b2</code>)</li>
+          <li data-done="false"><strong>Sélecteur de sources externes</strong> (multi-select, badge count, dropdown) — V1 <code>UI-SHARED/js/modules/sources-selector.js</code></li>
+          <li data-done="false"><strong>Dictée vocale Whisper</strong> (mic button + silence detection + auto-send) — V1 <code>UI-SHARED/js/modules/speech.js</code></li>
+          <li data-done="false"><strong>TTS (lecture vocale)</strong> réponse + auto-play + rate — V1 <code>UI-SHARED/js/modules/tts.js</code></li>
+          <li data-done="false"><strong>Suggestions cliquables auto-envoyées</strong> (V2 = pré-remplit textarea seulement) — V1 <code>app.js:initializeEventListeners</code></li>
+          <li data-done="false"><strong>Compteur de caractères</strong> <code>#charCount</code></li>
+          <li data-done="false"><strong>Bandeau debug</strong> (provider/modèle/GPU/CPU warning) — V1 <code>app.js:loadModelInfo,updateGpuStatus,showCpuWarning</code></li>
+          <li data-done="true"><strong>Sources affichées sous la réponse</strong> — livré 2026-05-06 (commit <code>49fae8a</code>)</li>
+          <li data-done="false"><strong>Sources : icône type + lien cliquable vers le doc</strong> — V1 <code>messages.js:getSourceIcon</code></li>
+          <li data-done="false"><strong>Sidebar collapsible</strong> + groupement par collection avec collapse — V1 <code>#toggleSidebar</code> + <code>conversations.js:saveCollapsedState</code></li>
+          <li data-done="false"><strong>Sidebar : tri / recherche conversations</strong></li>
+        </ul>
+
+        <h4 id="phase-3-4">3.4 — Admin core (users, documents, sources, corpus, collections, conversations)</h4>
+        <p><em>admin/users</em></p>
+        <ul class="checklist">
+          <li data-done="false"><strong>Filtres</strong> rôle / actif / vérifié / approbation (V2 = status pending/approved/rejected uniquement)</li>
+          <li data-done="false"><strong>Sélection multiple + bulk actions</strong> (activate/deactivate/changeRole/delete)</li>
+          <li data-done="false"><strong>Recherche fulltext</strong> (email/username) avec debounce</li>
+          <li data-done="false"><strong>Pagination</strong> (limite hard-codée backend)</li>
+          <li data-done="false"><strong>Modal création utilisateur</strong> <span class="badge badge-danger">BLOQUANT</span> — V1 <code>users.js:UserForm</code></li>
+          <li data-done="false"><strong>Modal édition complète</strong> (email, username, nom, prénom, téléphone, adresse, reset password admin) <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="false"><strong>Toggle voice-to-text</strong> par utilisateur</li>
+          <li data-done="false"><strong>Bouton "créer collection"</strong> pour user sans collection (récup orphelins)</li>
+          <li data-done="false"><strong>Colonnes manquantes</strong> : Vérifié, Voix, Collection, Approbation (V1 = 11 cols, V2 = 6)</li>
+          <li data-done="false"><strong>Tri par colonnes</strong> (<code>TableSort.init</code>)</li>
+        </ul>
+
+        <p><em>admin/documents</em></p>
+        <ul class="checklist">
+          <li data-done="false"><strong>Upload depuis l'admin</strong> <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="false"><strong>Filtres visibility</strong> (public/private/shared) + <code>is_indexed</code></li>
+          <li data-done="false"><strong>Recherche fulltext</strong> nom/contenu</li>
+          <li data-done="false"><strong>Bulk actions</strong> (changeVisibility, toggleIndex, reindex, delete) <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="false"><strong>Réindexation par doc avec progression live</strong> <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="false"><strong>Toggle visibility + clearDocIndex</strong> par doc</li>
+          <li data-done="false"><strong>Modal vue détail</strong> (corpus liés, versions, collection)</li>
+          <li data-done="false"><strong>Pagination</strong> (limite 200 hard-codée)</li>
+          <li data-done="false"><strong>Colonne provider d'embedding</strong> + détection mismatch</li>
+          <li data-done="false"><strong>Colonne corpus / chunks</strong> séparée</li>
+        </ul>
+
+        <p><em>admin/sources</em></p>
+        <ul class="checklist">
+          <li data-done="false"><strong>Forms dédiés par type</strong> (V2 = JSON brut textarea) <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="false"><strong>Bulk actions</strong> (enable/disable/reindex/delete)</li>
+          <li data-done="false"><strong>Bouton "tester source"</strong> (<code>testSource</code>) <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="false"><strong>Health check + badge santé live</strong></li>
+          <li data-done="false"><strong>Modal stats d'indexation</strong> (<code>showIndexStats</code>)</li>
+          <li data-done="false"><strong>Modal historique d'indexation</strong> (<code>showHistoryModal</code>)</li>
+          <li data-done="false"><strong>Réindexation live + cancel</strong> <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="false"><strong>Badge "fraîcheur"</strong> + alertes stale</li>
+          <li data-done="false"><strong>Popup type de source</strong> à la création (V2 = simple select)</li>
+          <li data-done="false"><strong>Bouton clearSourceIndex</strong></li>
+          <li data-done="false"><strong>Pagination + search input</strong></li>
+        </ul>
+
+        <p><em>admin/corpus</em></p>
+        <ul class="checklist">
+          <li data-done="false"><strong>Édition du corpus</strong> (display_name, description, is_active) après création</li>
+          <li data-done="false"><strong>Bulk reindex / delete</strong> corpus</li>
+          <li data-done="false"><strong>Réindexation cascade</strong> avec progression item-par-item visible</li>
+          <li data-done="false"><strong>Cancel réindexation</strong> depuis l'UI</li>
+          <li data-done="false"><strong>clearCorpusIndex</strong> (vider l'index sans toucher fichiers)</li>
+          <li data-done="false"><strong>Tableau corpus</strong> avec filtres / pagination / search</li>
+          <li data-done="false"><strong>Toggle source enabled/disabled</strong> au sein du corpus</li>
+          <li data-done="false"><strong>Bulk add/remove</strong> documents/sources/collections dans la modal de gestion</li>
+        </ul>
+
+        <p><em>admin/collections</em> <span class="badge badge-danger">PAGE ENTIÈRE ABSENTE EN V2 (1024 lignes V1)</span></p>
+        <ul class="checklist">
+          <li data-done="false"><strong>Page admin collections</strong> (gestion privée/publique cross-user) <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="false"><strong>Création / édition / suppression</strong> de collections <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="false"><strong>Sync compteurs</strong> (per collection + sync all) <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="false"><strong>Peek / preview chunks indexés</strong></li>
+          <li data-done="false"><strong>Gestion sources rattachées</strong> (priorité, enable/disable) <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="false"><strong>Vue statut indexation per provider</strong> + reindex per provider <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="false"><strong>clearCollection</strong> (wipe ChromaDB) <span class="badge badge-danger">BLOQUANT</span></li>
+        </ul>
+
+        <p><em>admin/conversations</em> <span class="badge badge-danger">PAGE ENTIÈRE ABSENTE EN V2 (612 lignes V1)</span></p>
+        <ul class="checklist">
+          <li data-done="false"><strong>Page admin de modération</strong> conversations cross-utilisateur <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="false"><strong>Visualisation des messages</strong> d'une conversation <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="false"><strong>Suppression / export</strong> conversation <span class="badge badge-danger">BLOQUANT</span></li>
+        </ul>
+
+        <h4 id="phase-3-5">3.5 — Admin system/* (sous-modules à parité V1)</h4>
+        <p><em>admin/config</em> · <em>admin/system/perf</em> · <em>admin/system/logging</em> · <em>admin/system/chat</em> · <em>admin/system/password-policy</em> : <span class="badge badge-success">✅ déjà à parité ou supérieur</span> · <em>admin/system/debug</em> : ✅ parité fonctionnelle (1 cosmétique : badge log level effectif).</p>
+
+        <p><em>admin/system/llm-* (Ollama + llamacpp)</em></p>
+        <ul class="checklist">
+          <li data-done="false"><strong>Health check live providers</strong> (Ollama/llamacpp) avec badge statut</li>
+          <li data-done="false"><strong>Liste des modèles installés Ollama</strong> + bulk-delete <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="false"><strong>Download de modèles Ollama</strong> via UI <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="false"><strong>Start/stop/restart serveur llamacpp</strong> <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="false"><strong>Download GGUF</strong> (catalog HuggingFace + URL libre) <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="false"><strong>Métriques live llamacpp</strong> (tokens/s, RAM, contexte)</li>
+          <li data-done="false"><strong>Modal "params avancés" llamacpp</strong></li>
+          <li data-done="false"><strong>Status sync llamacpp</strong> (<code>checkLlamacppSyncStatus</code>)</li>
+          <li data-done="false"><strong>Auto-detection système</strong> (preset GPU / CPU / Apple Silicon)</li>
+          <li data-done="false"><strong>Test RAG search interactif</strong> (<code>testRagSearch</code>) <span class="badge badge-danger">BLOQUANT</span></li>
+        </ul>
+
+        <p><em>admin/system/rag-*</em></p>
+        <ul class="checklist">
+          <li data-done="false"><strong>Accordéon "RAG stats"</strong> (chunks indexés, derniers indexés…)</li>
+          <li data-done="false"><strong>rag-overrides</strong> : aide contextuelle (V2 = inputs bruts)</li>
+          <li data-done="false"><strong>Aperçu effet recherche</strong> après modification (test RAG)</li>
+        </ul>
+
+        <p><em>admin/system/geo</em></p>
+        <ul class="checklist">
+          <li data-done="false"><strong>Liste pays</strong> avec activation/désactivation par code ISO <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="false"><strong>Import countries</strong> depuis fichier JSON <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="false"><strong>Export countries</strong> CSV/JSON <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="false"><strong>Import/export villes</strong> par pays <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="false"><strong>Stats geo</strong> (countries_total, cities_by_country)</li>
+          <li data-done="false"><strong>Reset countries</strong> (réinitialiser depuis seed)</li>
+        </ul>
+
+        <p><em>admin/system/storage</em></p>
+        <ul class="checklist">
+          <li data-done="false"><strong>Gestion fine file_types</strong> par catégorie (documents/images/data) avec activation par parser <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="false"><strong>Select all par catégorie</strong> + toggle parser</li>
+          <li data-done="false"><strong>Granularité MIME / extensions</strong> (V2 = listes globales)</li>
+        </ul>
+
+        <p><em>admin/system/smtp</em></p>
+        <ul class="checklist">
+          <li data-done="false"><strong>Bouton "test connexion SMTP"</strong> + résultat last_test <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="false"><strong>Support provider Sendgrid</strong></li>
+          <li data-done="false"><strong>Affichage last_test_at / last_test_success</strong></li>
+        </ul>
+
+        <p><em>admin/system/notifications</em></p>
+        <ul class="checklist">
+          <li data-done="false"><strong>Bouton "tester" par canal</strong> (email / Slack / webhook) <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="false"><strong>Historique des notifications</strong> envoyées</li>
+        </ul>
+
+        <p><em>admin/system/speech</em></p>
+        <ul class="checklist">
+          <li data-done="false"><strong>Affichage modèle Whisper chargé</strong> vs configuré (warning mismatch)</li>
+          <li data-done="false"><strong>Status / health Whisper server</strong></li>
+        </ul>
+
+        <p><em>admin/system/modes</em></p>
+        <ul class="checklist">
+          <li data-done="false"><strong>Édition d'un mode existant</strong> (V2 = create + delete uniquement) <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="false"><strong>Toggle is_active</strong> + ordre + réordonnancement</li>
+        </ul>
+
+        <p><em>admin/system/appearance</em></p>
+        <ul class="checklist">
+          <li data-done="false"><strong>Sélecteur de thèmes</strong> (cards preview light/dark/custom) — <code>ThemesConfig</code> V1 <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="false"><strong>Upload logo / favicon</strong></li>
+          <li data-done="false"><strong>Éditeur couleurs</strong> primaires / accent / background</li>
+        </ul>
+
+        <p><em>admin/system/debug</em></p>
+        <ul class="checklist">
+          <li data-done="false"><strong>Affichage log level effectif courant</strong> avec badge</li>
+        </ul>
+
+        <p><em>admin/system/indexation</em> <span class="badge badge-danger">PAGE ENTIÈRE ABSENTE EN V2</span></p>
+        <ul class="checklist">
+          <li data-done="false"><strong>Page configuration scheduler</strong> d'indexation des sources <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="false"><strong>Status scheduler</strong> (running/jobs/next_run) <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="false"><strong>Seuils freshness</strong> (warning/expired) + intervalles cleanup <span class="badge badge-danger">BLOQUANT</span></li>
+        </ul>
+
+        <h4 id="phase-3-6">3.6 — Admin avancé (audit, logs, validation, dashboard)</h4>
+        <p><em>admin/dashboard</em></p>
+        <ul class="checklist">
+          <li data-done="false"><strong>Timing stats</strong> (P50/P95/P99 par opération) + bouton reset</li>
+          <li data-done="false"><strong>Recent actions</strong> (mini-flux audit)</li>
+          <li data-done="false"><strong>Graphes complets</strong> + toggle 7j/30j/90j (V2 = sparkline)</li>
+        </ul>
+
+        <p><em>admin/audit</em></p>
+        <ul class="checklist">
+          <li data-done="false"><strong>Sous-onglets</strong> Logs / Exports / Purge (V1 = 3 sous-tabs)</li>
+          <li data-done="false"><strong>Bulk export</strong> logs sélectionnés</li>
+          <li data-done="false"><strong>Modal détails de log</strong> (vue conversation liée…)</li>
+          <li data-done="false"><strong>Onglet Exports</strong> (CSV users/conversations/documents/audit) <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="false"><strong>Modal Purge</strong> (purgeAuditLogs après N jours) <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="false"><strong>Filtre par sévérité</strong> (badge)</li>
+        </ul>
+
+        <p><em>admin/logs</em></p>
+        <ul class="checklist">
+          <li data-done="false"><strong>Stats logs</strong> (counts par level/category)</li>
+          <li data-done="false"><strong>Cleanup logs</strong> (expire) + purge totale <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="false"><strong>Configuration retention/levels</strong> depuis cette page</li>
+          <li data-done="false"><strong>Bulk delete / bulk export</strong> logs</li>
+          <li data-done="false"><strong>Polling alertes</strong> + badge alertes</li>
+          <li data-done="false"><strong>Modal détail log</strong> (stack trace, contexte enrichi)</li>
+        </ul>
+
+        <p><em>admin/validation</em></p>
+        <ul class="checklist">
+          <li data-done="false"><strong>Modal individuel</strong> d'approbation/rejet par user (V2 = bulk seul)</li>
+          <li data-done="false"><strong>Polling badge "pending"</strong> sidebar (<code>updatePendingBadge</code>)</li>
+        </ul>
+
+        <h4 id="phase-3-7">3.7 — Transversaux (i18n, thème, toasts, modal confirm…)</h4>
+        <div class="callout callout-warning">
+          Ces items affectent toutes les pages. Idéalement traités <strong>en
+          amont</strong> de chaque sous-phase concernée, mais listés ici pour
+          respecter l'ordre du master plan.
+        </div>
+        <ul class="checklist">
+          <li data-done="false"><strong>i18n complet</strong> tous templates user (auth, chat, documents, preferences, home) — <code>t()</code> existe (<code>app/web/jinja.py</code>) mais aucun template ne l'utilise. Locales <code>UI-SHARED/locales/{fr,en}.json</code> à porter.</li>
+          <li data-done="false"><strong>Thème dynamique</strong> (light/dark/auto) — V2 a tokens CSS mais ne lit pas <code>prefs.theme</code>. <code>layouts/base.html</code> doit poser <code>data-theme</code> sur <code>&lt;html&gt;</code>.</li>
+          <li data-done="false"><strong>Système de toasts global</strong> (success/info/warn/err, persistants pour warn/err) — V1 <code>UI-SHARED/js/components/toast.js</code></li>
+          <li data-done="false"><strong>Modal de confirmation</strong> (V2 = <code>hx-confirm</code> natif laid) — V1 <code>UI-SHARED/js/components/confirm.js</code></li>
+          <li data-done="false"><strong>Bandeau debug</strong> (CPU warning, mode debug actif) — V1 <code>UI-SHARED/js/components/debug-banner.js</code></li>
+          <li data-done="false"><strong>Favicon set complet</strong> (favicon-32, apple-touch-icon, ico) — V2 = SVG inline figé</li>
+          <li data-done="false"><strong>Multi-worker streaming chat</strong> via Redis (V2 = <code>_PENDING_STREAMS</code> dict in-memory, non multi-worker) <span class="badge badge-danger">BLOQUANT en prod multi-worker</span></li>
+        </ul>
+
+        <p style="margin-top: var(--space-6)"><em>À chaque page :
+        tests E2E Playwright + suppression du module JS équivalent côté
+        <code>my-ia</code> (référence).</em></p>
       </div>
     </div>
 
     <div class="vflow-step">
       <div class="vflow-marker">4</div>
       <div class="vflow-content">
-        <h3>Phase 4 — Décommissionnement (sur my-ia) <span class="badge badge-info">2-3j</span></h3>
+        <h3>Phase 4 — Décommissionnement / cutover production <span class="badge badge-warning">4.a-4.d ✅ · 4.e ⏳</span></h3>
         <ul class="checklist">
-          <li>Geler my-ia (aucune nouvelle feature)</li>
-          <li>Décommissionner production VPS my-ia → bascule my-ia-V2</li>
-          <li>Migration BDD : aucune (même Postgres, même schéma)</li>
-          <li>Migration ChromaDB : aucune (même vector store)</li>
+          <li data-done="true"><strong>4.a</strong> — Audit pré-cutover (BDD, Chroma, deps)</li>
+          <li data-done="true"><strong>4.b</strong> — <code>scripts/deploy.sh</code> opérationnel pour V2</li>
+          <li data-done="true"><strong>4.c</strong> — Smoke staging (login, chat, RAG)</li>
+          <li data-done="true"><strong>4.d</strong> — Cutover production : nginx HTTPS sur <code>my-ia.codefixture.com</code>, V2 connectée à BDD/Chroma V1, V1 API gelée</li>
+          <li data-done="false"><strong>4.e</strong> — Cleanup VPS post-cutover (J+30) : rm V1 containers + images, archiver code V1, conservation BDD</li>
+          <li data-done="true">Geler my-ia (aucune nouvelle feature)</li>
+          <li data-done="true">Migration BDD : aucune (même Postgres, même schéma)</li>
+          <li data-done="true">Migration ChromaDB : aucune (même vector store)</li>
         </ul>
       </div>
     </div>
@@ -361,12 +666,12 @@
     <div class="vflow-step">
       <div class="vflow-marker">5</div>
       <div class="vflow-content">
-        <h3>Phase 5 — Cleanup & docs <span class="badge badge-info">1-2j</span></h3>
+        <h3>Phase 5 — Cleanup & docs <span class="badge badge-info">⏳ Après Phase 3 + 4.e</span></h3>
         <ul class="checklist">
-          <li>Doc HTML : <code>docs/MY-IA-Technique.html</code> (nouvelle archi)</li>
-          <li>Doc HTML : <code>docs/Plans/Closed/PLAN-MIGRATION-PYTHON.html</code></li>
-          <li>Mémoire MEMORY.md mise à jour</li>
-          <li>Tag release <code>v2.0.0</code> sur main</li>
+          <li data-done="false">Doc HTML : <code>docs/MY-IA-Technique.html</code> (refonte archi V2)</li>
+          <li data-done="false">Déplacer <code>docs/Plans/PLAN-MIGRATION-PYTHON.html</code> vers <code>Closed/</code> (à la complétion Phase 3)</li>
+          <li data-done="false">Mémoire <code>MEMORY.md</code> mise à jour (URLs, mots de passe, état des phases)</li>
+          <li data-done="false">Tag release <code>v2.0.0</code> sur main</li>
         </ul>
       </div>
     </div>
@@ -374,7 +679,10 @@
   </div>
 
   <div class="callout callout-info">
-    <strong>📅 Estimation totale :</strong> ~5-6 semaines en mode focus, selon profondeur des tests E2E et complexité des pages admin.
+    <strong>📅 Estimation totale Phase 3 (parité V1)</strong> : ~149 items checklist
+    encore à fixer (hors items déjà livrés). Difficulté variable par sous-phase :
+    3.5 admin/system/* est la plus volumineuse (~35 items) mais comporte
+    plusieurs pages déjà à parité.
   </div>
 </section>
 
