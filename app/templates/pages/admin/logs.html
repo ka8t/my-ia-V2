@@ -1,0 +1,120 @@
+{% extends "layouts/admin.html" %}
+{% from "macros/icon.html" import icon %}
+
+{% block title %}Logs serveur — Admin{% endblock %}
+
+{% block admin_content %}
+
+<header class="admin-page__head">
+  <div class="admin-page__eyebrow"><span>Console / 07</span></div>
+  <h1 class="admin-page__title">
+    Logs <em>serveur</em>.
+  </h1>
+  <p class="admin-page__lede">
+    {{ total }} entrée{{ 's' if total != 1 }} en BDD. Recherche fulltext sur le message + filtres.
+  </p>
+</header>
+
+<form method="get" action="/web/admin/logs" class="admin-filters-form">
+  <div class="admin-form__grid">
+    <label class="admin-form__field">
+      <span class="admin-form__label">Niveau</span>
+      <select name="level" class="admin-form__input">
+        <option value="">— tous —</option>
+        {% for lvl in log_levels %}
+        <option value="{{ lvl }}" {% if filter_level == lvl %}selected{% endif %}>{{ lvl }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label class="admin-form__field">
+      <span class="admin-form__label">Catégorie</span>
+      <select name="log_category" class="admin-form__input">
+        <option value="">— toutes —</option>
+        {% for cat in log_categories %}
+        <option value="{{ cat }}" {% if filter_category == cat %}selected{% endif %}>{{ cat }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label class="admin-form__field">
+      <span class="admin-form__label">Alertes</span>
+      <select name="is_alert" class="admin-form__input">
+        <option value="" {% if not filter_is_alert %}selected{% endif %}>— toutes entrées —</option>
+        <option value="yes" {% if filter_is_alert == 'yes' %}selected{% endif %}>Alertes seulement</option>
+        <option value="no" {% if filter_is_alert == 'no' %}selected{% endif %}>Hors alertes</option>
+      </select>
+    </label>
+    <label class="admin-form__field">
+      <span class="admin-form__label">Recherche (fulltext)</span>
+      <input type="text" name="search" value="{{ filter_search }}"
+             placeholder="ex: timeout, login failed" class="admin-form__input">
+    </label>
+    <label class="admin-form__field">
+      <span class="admin-form__label">Du</span>
+      <input type="date" name="date_from" value="{{ filter_date_from }}" class="admin-form__input">
+    </label>
+    <label class="admin-form__field">
+      <span class="admin-form__label">Au</span>
+      <input type="date" name="date_to" value="{{ filter_date_to }}" class="admin-form__input">
+    </label>
+  </div>
+  <div class="admin-form__actions">
+    <a href="/web/admin/logs" class="admin-btn admin-btn--ghost">Réinitialiser</a>
+    <button type="submit" class="admin-btn admin-btn--primary">{{ icon('sparkle', 12) }} Filtrer</button>
+  </div>
+</form>
+
+<div class="admin-table-wrap">
+  <div class="admin-table-head admin-logs-row">
+    <span>Date</span>
+    <span>Niveau</span>
+    <span>Catégorie</span>
+    <span>Message</span>
+    <span>Logger</span>
+    <span>Détails</span>
+  </div>
+  <div class="admin-table-body">
+    {% if items %}
+      {% for log in items %}
+      <div class="admin-logs-row admin-table-row">
+        <div class="admin-table-cell admin-table-cell__mono">
+          {{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') if log.timestamp else '—' }}
+        </div>
+        <div class="admin-table-cell">
+          <span class="admin-status admin-log-level admin-log-level--{{ log.level|lower }}">{{ log.level }}</span>
+          {% if log.is_alert %}<span class="admin-status admin-status--rejected">alert</span>{% endif %}
+        </div>
+        <div class="admin-table-cell">
+          <span class="admin-config__cat">{{ log.log_category or '—' }}</span>
+        </div>
+        <div class="admin-table-cell admin-logs__message">{{ log.message or '' }}</div>
+        <div class="admin-table-cell admin-table-cell__mono admin-config__hint">
+          {{ log.logger_name or '—' }}
+        </div>
+        <div class="admin-table-cell">
+          {% if log.context %}
+          <details class="admin-audit__details">
+            <summary>voir</summary>
+            <pre class="admin-audit__json">{{ log.context|tojson(indent=2) }}</pre>
+          </details>
+          {% else %}
+            <span class="admin-config__hint">—</span>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="admin-empty">Aucune entrée ne correspond à ces filtres.</div>
+    {% endif %}
+  </div>
+</div>
+
+{% if total_pages > 1 %}
+<nav class="admin-pagination">
+  {% set qs %}page_size={{ page_size }}{% if filter_level %}&level={{ filter_level }}{% endif %}{% if filter_category %}&log_category={{ filter_category }}{% endif %}{% if filter_search %}&search={{ filter_search }}{% endif %}{% if filter_is_alert %}&is_alert={{ filter_is_alert }}{% endif %}{% if filter_date_from %}&date_from={{ filter_date_from }}{% endif %}{% if filter_date_to %}&date_to={{ filter_date_to }}{% endif %}{% endset %}
+  {% if page > 1 %}<a href="?page={{ page - 1 }}&{{ qs }}" class="admin-btn admin-btn--ghost">← Précédent</a>{% endif %}
+  <span class="admin-config__hint">Page {{ page }} / {{ total_pages }}</span>
+  {% if page < total_pages %}<a href="?page={{ page + 1 }}&{{ qs }}" class="admin-btn admin-btn--ghost">Suivant →</a>{% endif %}
+</nav>
+{% endif %}
+
+{% endblock %}

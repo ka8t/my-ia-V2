@@ -101,6 +101,12 @@
             {{ icon('settings', 14) }}<span>Audit</span>
           </a>
         </li>
+        <li>
+          <a class="admin-nav__item{% if active_section == 'logs' %} admin-nav__item--active{% endif %}"
+             href="/web/admin/logs">
+            {{ icon('document', 14) }}<span>Logs serveur</span>
+          </a>
+        </li>
 
         {# ─── Système — groupe avec sous-menu déroulant Alpine ─── #}
         {% set is_system = active_section in (

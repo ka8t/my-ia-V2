@@ -435,3 +435,87 @@ async def admin_audit_get(
             filter_date_to=date_to or "",
         ),
     )
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  Phase 3.9.b — App logs viewer (table app_logs)
+# ═════════════════════════════════════════════════════════════════════════════
+_LOG_LEVELS_FILTER = ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL")
+_LOG_CATEGORIES = ("technical", "access", "audit", "security", "infra")
+
+
+@router.get("/logs", response_class=HTMLResponse)
+async def admin_logs_get(
+    request: Request,
+    page: int = 1,
+    page_size: int = 50,
+    level: str | None = None,
+    log_category: str | None = None,
+    search: str | None = None,
+    is_alert: str | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    from datetime import datetime
+    from app.features.logs.service import LogService
+
+    page = max(1, int(page))
+    page_size = max(10, min(int(page_size), 200))
+
+    parsed_from = parsed_to = None
+    if date_from:
+        try:
+            parsed_from = datetime.fromisoformat(date_from)
+        except ValueError:
+            parsed_from = None
+    if date_to:
+        try:
+            parsed_to = datetime.fromisoformat(date_to)
+        except ValueError:
+            parsed_to = None
+
+    is_alert_bool = None
+    if is_alert == "yes":
+        is_alert_bool = True
+    elif is_alert == "no":
+        is_alert_bool = False
+
+    response = await LogService.get_logs(
+        db=db,
+        page=page,
+        page_size=page_size,
+        log_category=log_category if log_category in _LOG_CATEGORIES else None,
+        level=level if level in _LOG_LEVELS_FILTER else None,
+        search=(search or "").strip() or None,
+        date_from=parsed_from,
+        date_to=parsed_to,
+        is_alert=is_alert_bool,
+    )
+
+    pending = await _pending_users_count(db)
+    return templates.TemplateResponse(
+        request,
+        "pages/admin/logs.html",
+        web_context(
+            request,
+            title="Logs serveur",
+            active_section="logs",
+            user=user,
+            pending_users_count=pending,
+            items=response.items,
+            total=response.total,
+            page=response.page,
+            page_size=response.page_size,
+            total_pages=response.total_pages,
+            log_levels=_LOG_LEVELS_FILTER,
+            log_categories=_LOG_CATEGORIES,
+            filter_level=level or "",
+            filter_category=log_category or "",
+            filter_search=search or "",
+            filter_is_alert=is_alert or "",
+            filter_date_from=date_from or "",
+            filter_date_to=date_to or "",
+        ),
+    )
