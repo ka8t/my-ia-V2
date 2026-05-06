@@ -20,8 +20,7 @@
 <article class="chat-message chat-message--assistant"
          hx-ext="sse"
          sse-connect="/web/chat/stream/{{ stream_id }}"
-         sse-close="done"
-         hx-on::sse-message="if (event.detail.type === 'sources') { var slot = this.querySelector('.chat-message__sources'); if (slot) slot.innerHTML = event.detail.data; }">
+         sse-close="done">
   <div class="chat-message__meta">
     <span class="chat-message__role">MY-IA</span>
     <span class="chat-message__status" aria-live="polite">
@@ -36,6 +35,8 @@
        hx-on::sse-close="this.removeAttribute('data-streaming'); var s=this.closest('.chat-message').querySelector('.chat-message__status'); if(s) s.remove(); window.renderChatMarkdown(this);"
        hx-on::sse-error="this.removeAttribute('data-streaming'); var s=this.closest('.chat-message').querySelector('.chat-message__status'); if(s){s.textContent='Erreur de streaming.'; s.style.color='var(--color-danger)';}"></div>
 
-  {# Slot for the sources event — populated by hx-on::sse-message handler above. #}
-  <div class="chat-message__sources"></div>
+  {# Slot pour l'event "sources" — sse-swap route l'event vers ce conteneur. #}
+  <div class="chat-message__sources"
+       sse-swap="sources"
+       hx-swap="innerHTML"></div>
 </article>
