@@ -179,14 +179,27 @@ class SystemConfigService:
             logger.info(f"Config created: {key} = {str(value)[:50]}...")
             return True
 
-        # Convertir la valeur en string pour stockage
-        str_value = self._to_string(value, config.value_type)
+        # Si l'appelant passe un value_type explicite et qu'il diffère du type
+        # stocké (typiquement : seed value mal typée → admin écrit un bool/int),
+        # on accepte le retypage. Le _infer_type sert de fallback automatique
+        # quand la valeur Python a un type plus spécifique que la string brute.
+        effective_type = value_type or self._infer_type(value)
+        if effective_type != config.value_type and (
+            value_type is not None or self._infer_type(value) != "string"
+        ):
+            target_type = effective_type
+        else:
+            target_type = config.value_type
+
+        str_value = self._to_string(value, target_type)
 
         # Mettre a jour
+        update_values = {"value": str_value, "updated_by": updated_by}
+        if target_type != config.value_type:
+            update_values["value_type"] = target_type
+
         await self.session.execute(
-            update(SystemConfig)
-            .where(SystemConfig.key == key)
-            .values(value=str_value, updated_by=updated_by)
+            update(SystemConfig).where(SystemConfig.key == key).values(**update_values)
         )
         await self.session.commit()
 

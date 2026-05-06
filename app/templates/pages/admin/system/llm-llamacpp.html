@@ -1,0 +1,69 @@
+{% extends "layouts/admin.html" %}
+{% from "macros/admin_form.html" import page_header, flash, field_text, field_int, field_bool, form_actions %}
+
+{% block title %}LLM · llama.cpp — Admin{% endblock %}
+
+{% block admin_content %}
+
+{{ page_header(
+  title="LLM · llama.cpp",
+  eyebrow="Système / LLM",
+  lede="Configuration du serveur llama.cpp et des modèles GGUF."
+) }}
+
+{{ flash(success=success, error=error) }}
+
+<form method="post" action="/web/admin/system/llm/llamacpp" class="admin-form admin-form--stacked">
+  {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+
+  <fieldset class="admin-fieldset">
+    <legend>Modèles</legend>
+    {{ field_text("llm_model", "Modèle de génération (llm.llamacpp.llm_model)",
+                  values["llm.llamacpp.llm_model"], placeholder="ex: llama-3.1-8B-instruct.Q4_K_M.gguf") }}
+    {{ field_text("embedding_model", "Modèle d'embedding (llm.llamacpp.embedding_model)",
+                  values["llm.llamacpp.embedding_model"], placeholder="ex: nomic-embed-text-v1.5.f16.gguf") }}
+  </fieldset>
+
+  <fieldset class="admin-fieldset">
+    <legend>Serveur</legend>
+    {{ field_text("server_path", "Binaire llama-server (llm.llamacpp.server_path)",
+                  values["llm.llamacpp.server_path"], placeholder="ex: /usr/local/bin/llama-server") }}
+    {{ field_text("models_dir", "Répertoire des modèles (llm.llamacpp.models_dir)",
+                  values["llm.llamacpp.models_dir"], placeholder="ex: /code/models") }}
+    {{ field_text("host", "Hôte (llm.llamacpp.host)", values["llm.llamacpp.host"],
+                  placeholder="ex: host.docker.internal") }}
+    {{ field_int("port", "Port (llm.llamacpp.port)", values["llm.llamacpp.port"],
+                 default=8081, min=1, max=65535) }}
+  </fieldset>
+
+  <fieldset class="admin-fieldset">
+    <legend>Performance</legend>
+    {{ field_int("ctx_size", "Taille de contexte (llm.llamacpp.ctx_size)",
+                 values["llm.llamacpp.ctx_size"], default=4096) }}
+    {{ field_int("batch_size", "Taille de batch (llm.llamacpp.batch_size)",
+                 values["llm.llamacpp.batch_size"], default=512) }}
+    {{ field_int("gpu_layers", "Couches GPU (llm.llamacpp.gpu_layers)",
+                 values["llm.llamacpp.gpu_layers"], default=0,
+                 hint="-1 = toutes les couches.") }}
+    {{ field_int("threads", "Threads CPU (llm.llamacpp.threads)",
+                 values["llm.llamacpp.threads"], default=4) }}
+    {{ field_int("parallel", "Slots parallèles (llm.llamacpp.parallel)",
+                 values["llm.llamacpp.parallel"], default=1, min=1, max=16) }}
+  </fieldset>
+
+  <fieldset class="admin-fieldset">
+    <legend>Options avancées</legend>
+    {{ field_bool("mlock", "Verrouiller la RAM (mlock)", values["llm.llamacpp.mlock"]) }}
+    {{ field_bool("mmap", "mmap activé", values["llm.llamacpp.mmap"]) }}
+    {{ field_bool("flash_attn", "Flash attention", values["llm.llamacpp.flash_attn"]) }}
+    {{ field_bool("embedding_mode", "Mode embedding (--embedding)",
+                  values["llm.llamacpp.embedding_mode"],
+                  hint="Obligatoire pour utiliser llama.cpp comme provider d'embeddings RAG.") }}
+    {{ field_bool("metrics_enabled", "Métriques activées",
+                  values["llm.llamacpp.metrics_enabled"]) }}
+  </fieldset>
+
+  {{ form_actions() }}
+</form>
+
+{% endblock %}

@@ -1,0 +1,54 @@
+{% extends "layouts/admin.html" %}
+{% from "macros/admin_form.html" import page_header, flash, field_text, field_int, field_bool, form_actions %}
+
+{% block title %}LLM · Ollama — Admin{% endblock %}
+
+{% block admin_content %}
+
+{{ page_header(
+  title="LLM · Ollama",
+  eyebrow="Système / LLM",
+  lede="Connexion au serveur Ollama et choix des modèles."
+) }}
+
+{{ flash(success=success, error=error) }}
+
+<form method="post" action="/web/admin/system/llm/ollama" class="admin-form admin-form--stacked">
+  {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+
+  <fieldset class="admin-fieldset">
+    <legend>Modèles</legend>
+    {{ field_text("llm_model", "Modèle de génération (llm.ollama.llm_model)",
+                  values["llm.ollama.llm_model"], placeholder="ex: gemma2:2b, llama3.1:8b") }}
+    {{ field_text("embedding_model", "Modèle d'embedding (llm.ollama.embedding_model)",
+                  values["llm.ollama.embedding_model"], placeholder="ex: nomic-embed-text:latest") }}
+  </fieldset>
+
+  <fieldset class="admin-fieldset">
+    <legend>Connexion</legend>
+    {{ field_text("host", "Hôte (llm.ollama_host)", values["llm.ollama_host"],
+                  placeholder="ex: host.docker.internal, ollama") }}
+    {{ field_int("port", "Port (llm.ollama_port)", values["llm.ollama_port"],
+                 default=11434, min=1, max=65535) }}
+  </fieldset>
+
+  <fieldset class="admin-fieldset">
+    <legend>Performance</legend>
+    {{ field_int("num_ctx", "Taille de contexte (llm.ollama.num_ctx)",
+                 values["llm.ollama.num_ctx"], default=2048,
+                 hint="Tokens conservés dans le contexte (1024-32768).") }}
+    {{ field_int("num_gpu", "Couches GPU (llm.ollama.num_gpu)",
+                 values["llm.ollama.num_gpu"], default=0,
+                 hint="0 = CPU uniquement, -1 = toutes les couches sur GPU.") }}
+    {{ field_int("num_parallel", "Requêtes parallèles (llm.ollama.num_parallel)",
+                 values["llm.ollama.num_parallel"], default=1, min=1, max=16) }}
+    {{ field_text("keep_alive", "Maintien en mémoire (llm.ollama.keep_alive)",
+                  values["llm.ollama.keep_alive"], placeholder="ex: 5m, 1h, -1 (toujours)") }}
+    {{ field_bool("auto_preload", "Pré-charger les modèles au démarrage",
+                  values["llm.ollama.auto_preload"]) }}
+  </fieldset>
+
+  {{ form_actions() }}
+</form>
+
+{% endblock %}

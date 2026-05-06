@@ -1,0 +1,38 @@
+{% extends "layouts/admin.html" %}
+{% from "macros/admin_form.html" import page_header, flash, field_radio, form_actions %}
+
+{% block title %}LLM · Provider — Admin{% endblock %}
+
+{% block admin_content %}
+
+{{ page_header(
+  title="LLM · Provider",
+  eyebrow="Système / LLM",
+  lede="Provider actif pour la génération de texte et pour les embeddings RAG."
+) }}
+
+{{ flash(success=success, error=error) }}
+
+<form method="post" action="/web/admin/system/llm/provider" class="admin-form admin-form--stacked">
+  {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+
+  {{ field_radio(
+    name="provider",
+    label="Provider de génération (llm.provider)",
+    value=values["llm.provider"] or "ollama",
+    options=[("ollama", "Ollama"), ("llamacpp", "llama.cpp")],
+    hint="Backend utilisé pour générer les réponses du chat."
+  ) }}
+
+  {{ field_radio(
+    name="embedding_provider",
+    label="Provider d'embeddings (llm.embedding_provider)",
+    value=values["llm.embedding_provider"] or "ollama",
+    options=[("ollama", "Ollama"), ("llamacpp", "llama.cpp")],
+    hint="Backend utilisé pour générer les vecteurs (indexation + recherche RAG)."
+  ) }}
+
+  {{ form_actions() }}
+</form>
+
+{% endblock %}

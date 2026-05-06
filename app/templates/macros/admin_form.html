@@ -1,0 +1,106 @@
+{# ─────────────────────────────────────────────────────────────────────
+ # macros/admin_form.html — composants de formulaire admin réutilisables.
+ #
+ # Mutualisés entre toutes les pages /web/admin/system/* (Phase 3.8).
+ # ────────────────────────────────────────────────────────────────────── #}
+
+{% macro page_header(title, eyebrow=None, lede=None, breadcrumb=None, breadcrumb_href=None) %}
+<header class="admin-page__head">
+  <div class="admin-page__eyebrow">
+    {% if breadcrumb and breadcrumb_href %}
+      <a href="{{ breadcrumb_href }}" class="admin-breadcrumb">← {{ breadcrumb }}</a>
+    {% elif eyebrow %}
+      <span>{{ eyebrow }}</span>
+    {% endif %}
+  </div>
+  <h1 class="admin-page__title">{{ title }}</h1>
+  {% if lede %}<p class="admin-page__lede">{{ lede }}</p>{% endif %}
+</header>
+{% endmacro %}
+
+
+{% macro flash(success=None, error=None) %}
+{% if success %}
+<div class="admin-callout admin-callout--success">
+  <p>{{ success }}</p>
+</div>
+{% endif %}
+{% if error %}
+<div class="admin-callout admin-callout--danger">
+  <p><strong>Erreur :</strong> {{ error }}</p>
+</div>
+{% endif %}
+{% endmacro %}
+
+
+{# ─── Field types ─── #}
+{% macro field_text(name, label, value, hint=None, placeholder=None, required=False) %}
+<label class="admin-form__field">
+  <span class="admin-form__label">{{ label }}{% if required %} *{% endif %}</span>
+  <input type="text" name="{{ name }}" class="admin-form__input"
+         value="{{ value if value is not none else '' }}"
+         {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+         {% if required %}required{% endif %}>
+  {% if hint %}<small class="admin-config__hint">{{ hint }}</small>{% endif %}
+</label>
+{% endmacro %}
+
+
+{% macro field_int(name, label, value, hint=None, min=None, max=None, default=0) %}
+<label class="admin-form__field">
+  <span class="admin-form__label">{{ label }}</span>
+  <input type="number" name="{{ name }}" class="admin-form__input admin-form__input--narrow"
+         value="{{ value if value is not none else default }}"
+         {% if min is not none %}min="{{ min }}"{% endif %}
+         {% if max is not none %}max="{{ max }}"{% endif %}>
+  {% if hint %}<small class="admin-config__hint">{{ hint }}</small>{% endif %}
+</label>
+{% endmacro %}
+
+
+{% macro field_float(name, label, value, hint=None, step=0.01, min=None, max=None, default=0.0) %}
+<label class="admin-form__field">
+  <span class="admin-form__label">{{ label }}</span>
+  <input type="number" name="{{ name }}" class="admin-form__input admin-form__input--narrow"
+         value="{{ value if value is not none else default }}"
+         step="{{ step }}"
+         {% if min is not none %}min="{{ min }}"{% endif %}
+         {% if max is not none %}max="{{ max }}"{% endif %}>
+  {% if hint %}<small class="admin-config__hint">{{ hint }}</small>{% endif %}
+</label>
+{% endmacro %}
+
+
+{% macro field_bool(name, label, value, hint=None) %}
+<label class="admin-config__bool">
+  <input type="checkbox" name="{{ name }}" value="true"
+         {% if value %}checked{% endif %}>
+  <span>{{ label }}</span>
+  {% if hint %}<small class="admin-config__hint">{{ hint }}</small>{% endif %}
+</label>
+{% endmacro %}
+
+
+{% macro field_radio(name, label, value, options, hint=None) %}
+<fieldset class="admin-form__field admin-form__radio-group">
+  <legend class="admin-form__label">{{ label }}</legend>
+  {% for opt_value, opt_label in options %}
+  <label class="admin-config__bool">
+    <input type="radio" name="{{ name }}" value="{{ opt_value }}"
+           {% if value == opt_value %}checked{% endif %}>
+    <span>{{ opt_label }}</span>
+  </label>
+  {% endfor %}
+  {% if hint %}<small class="admin-config__hint">{{ hint }}</small>{% endif %}
+</fieldset>
+{% endmacro %}
+
+
+{% macro form_actions(submit_label="Enregistrer", cancel_href=None) %}
+<div class="admin-form__actions">
+  {% if cancel_href %}
+  <a href="{{ cancel_href }}" class="admin-btn admin-btn--ghost">Annuler</a>
+  {% endif %}
+  <button type="submit" class="admin-btn admin-btn--primary">{{ submit_label }}</button>
+</div>
+{% endmacro %}
