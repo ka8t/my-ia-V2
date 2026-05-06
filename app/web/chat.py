@@ -418,7 +418,9 @@ async def _ndjson_to_sse(
                 await asyncio.sleep(0)  # flush
 
             elif "sources" in payload:
-                html_fragment = _render_sources_html(payload["sources"] or [])
+                src_list = payload["sources"] or []
+                logger.info(f"[SSE] sources event: {len(src_list)} items, sample={src_list[:1]}")
+                html_fragment = _render_sources_html(src_list)
                 if html_fragment:
                     yield _sse("sources", html_fragment)
                     await asyncio.sleep(0)
