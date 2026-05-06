@@ -944,3 +944,325 @@ async def notifications_post(
         error=" ; ".join(errors) if errors else None,
         extra={"has_secret": bool(refreshed.get("notification.webhook_secret"))},
     )
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  Phase 3.8.d — Debug
+# ═════════════════════════════════════════════════════════════════════════════
+DEBUG_KEYS = [
+    "debug.verbose_logging", "debug.timing_headers_enabled", "debug.endpoints_enabled",
+]
+
+
+@router.get("/debug", response_class=HTMLResponse)
+async def debug_get(
+    request: Request,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    return await _render_page(
+        request, "pages/admin/system/debug.html",
+        title="Debug", active_section="system_debug", user=user,
+        values=await _load_keys(db, DEBUG_KEYS),
+    )
+
+
+@router.post("/debug", response_class=HTMLResponse)
+async def debug_post(
+    request: Request,
+    verbose_logging: Annotated[str | None, Form()] = None,
+    timing_headers_enabled: Annotated[str | None, Form()] = None,
+    endpoints_enabled: Annotated[str | None, Form()] = None,
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    if (err := _csrf_or_400(request, csrf_token)):
+        return err
+    updates = {
+        "debug.verbose_logging": _to_bool(verbose_logging),
+        "debug.timing_headers_enabled": _to_bool(timing_headers_enabled),
+        "debug.endpoints_enabled": _to_bool(endpoints_enabled),
+    }
+    saved, errors = await _bulk_set(db, user, updates)
+    return await _render_page(
+        request, "pages/admin/system/debug.html",
+        title="Debug", active_section="system_debug", user=user,
+        values=await _load_keys(db, DEBUG_KEYS),
+        success=f"{saved} clé(s) enregistrée(s)." if not errors else None,
+        error=" ; ".join(errors) if errors else None,
+    )
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  Phase 3.8.d — Logging
+# ═════════════════════════════════════════════════════════════════════════════
+LOGGING_KEYS = [
+    "logging.level", "logging.format", "logging.db_enabled",
+    "logging.alert_cooldown_minutes",
+    "logging.level_access", "logging.level_audit", "logging.level_infra",
+    "logging.level_security", "logging.level_technical",
+    "logging.retention_access_days", "logging.retention_audit_days",
+    "logging.retention_infra_days", "logging.retention_security_days",
+    "logging.retention_technical_days",
+]
+_LOG_LEVELS = ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL")
+
+
+@router.get("/logging", response_class=HTMLResponse)
+async def logging_get(
+    request: Request,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    return await _render_page(
+        request, "pages/admin/system/logging.html",
+        title="Logging", active_section="system_logging", user=user,
+        values=await _load_keys(db, LOGGING_KEYS),
+    )
+
+
+@router.post("/logging", response_class=HTMLResponse)
+async def logging_post(
+    request: Request,
+    level: Annotated[str, Form()] = "INFO",
+    format: Annotated[str, Form()] = "",
+    db_enabled: Annotated[str | None, Form()] = None,
+    alert_cooldown_minutes: Annotated[int, Form()] = 15,
+    level_access: Annotated[str, Form()] = "INFO",
+    level_audit: Annotated[str, Form()] = "INFO",
+    level_infra: Annotated[str, Form()] = "INFO",
+    level_security: Annotated[str, Form()] = "INFO",
+    level_technical: Annotated[str, Form()] = "INFO",
+    retention_access_days: Annotated[int, Form()] = 30,
+    retention_audit_days: Annotated[int, Form()] = 365,
+    retention_infra_days: Annotated[int, Form()] = 14,
+    retention_security_days: Annotated[int, Form()] = 365,
+    retention_technical_days: Annotated[int, Form()] = 30,
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    if (err := _csrf_or_400(request, csrf_token)):
+        return err
+
+    levels = {
+        "level": level, "level_access": level_access, "level_audit": level_audit,
+        "level_infra": level_infra, "level_security": level_security,
+        "level_technical": level_technical,
+    }
+    for name, value in levels.items():
+        if value not in _LOG_LEVELS:
+            return await _render_page(
+                request, "pages/admin/system/logging.html",
+                title="Logging", active_section="system_logging", user=user,
+                values=await _load_keys(db, LOGGING_KEYS),
+                error=f"Niveau de log invalide pour {name} : {value}",
+            )
+
+    updates = {
+        "logging.level": level,
+        "logging.format": format.strip(),
+        "logging.db_enabled": _to_bool(db_enabled),
+        "logging.alert_cooldown_minutes": max(0, _to_int(alert_cooldown_minutes, 15)),
+        "logging.level_access": level_access,
+        "logging.level_audit": level_audit,
+        "logging.level_infra": level_infra,
+        "logging.level_security": level_security,
+        "logging.level_technical": level_technical,
+        "logging.retention_access_days": max(1, _to_int(retention_access_days, 30)),
+        "logging.retention_audit_days": max(1, _to_int(retention_audit_days, 365)),
+        "logging.retention_infra_days": max(1, _to_int(retention_infra_days, 14)),
+        "logging.retention_security_days": max(1, _to_int(retention_security_days, 365)),
+        "logging.retention_technical_days": max(1, _to_int(retention_technical_days, 30)),
+    }
+    saved, errors = await _bulk_set(db, user, updates)
+    return await _render_page(
+        request, "pages/admin/system/logging.html",
+        title="Logging", active_section="system_logging", user=user,
+        values=await _load_keys(db, LOGGING_KEYS),
+        success=f"{saved} clé(s) enregistrée(s)." if not errors else None,
+        error=" ; ".join(errors) if errors else None,
+    )
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  Phase 3.8.d — Perf
+# ═════════════════════════════════════════════════════════════════════════════
+PERF_KEYS = [
+    "perf.embedding_batch_size", "perf.embedding_cache_size",
+    "perf.embedding_max_concurrent",
+    "perf.metrics_window_size",
+    "perf.pin_access_threshold", "perf.pinned_cache_size",
+    "perf.query_cache_size", "perf.query_cache_ttl",
+    "perf.rag_config_cache_ttl",
+    "perf.rerank_timeout_ms", "perf.rerank_top_k",
+]
+
+
+@router.get("/perf", response_class=HTMLResponse)
+async def perf_get(
+    request: Request,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    return await _render_page(
+        request, "pages/admin/system/perf.html",
+        title="Performance", active_section="system_perf", user=user,
+        values=await _load_keys(db, PERF_KEYS),
+    )
+
+
+@router.post("/perf", response_class=HTMLResponse)
+async def perf_post(
+    request: Request,
+    embedding_batch_size: Annotated[int, Form()] = 100,
+    embedding_cache_size: Annotated[int, Form()] = 1000,
+    embedding_max_concurrent: Annotated[int, Form()] = 3,
+    metrics_window_size: Annotated[int, Form()] = 1000,
+    pin_access_threshold: Annotated[int, Form()] = 5,
+    pinned_cache_size: Annotated[int, Form()] = 100,
+    query_cache_size: Annotated[int, Form()] = 500,
+    query_cache_ttl: Annotated[float, Form()] = 300.0,
+    rag_config_cache_ttl: Annotated[float, Form()] = 30.0,
+    rerank_timeout_ms: Annotated[int, Form()] = 100,
+    rerank_top_k: Annotated[int, Form()] = 5,
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    if (err := _csrf_or_400(request, csrf_token)):
+        return err
+
+    updates = {
+        "perf.embedding_batch_size": max(1, _to_int(embedding_batch_size, 100)),
+        "perf.embedding_cache_size": max(0, _to_int(embedding_cache_size, 1000)),
+        "perf.embedding_max_concurrent": max(1, min(_to_int(embedding_max_concurrent, 3), 64)),
+        "perf.metrics_window_size": max(10, _to_int(metrics_window_size, 1000)),
+        "perf.pin_access_threshold": max(1, _to_int(pin_access_threshold, 5)),
+        "perf.pinned_cache_size": max(0, _to_int(pinned_cache_size, 100)),
+        "perf.query_cache_size": max(0, _to_int(query_cache_size, 500)),
+        "perf.query_cache_ttl": max(0.0, _to_float(query_cache_ttl, 300.0)),
+        "perf.rag_config_cache_ttl": max(0.0, _to_float(rag_config_cache_ttl, 30.0)),
+        "perf.rerank_timeout_ms": max(0, _to_int(rerank_timeout_ms, 100)),
+        "perf.rerank_top_k": max(1, _to_int(rerank_top_k, 5)),
+    }
+    saved, errors = await _bulk_set(db, user, updates)
+    return await _render_page(
+        request, "pages/admin/system/perf.html",
+        title="Performance", active_section="system_perf", user=user,
+        values=await _load_keys(db, PERF_KEYS),
+        success=f"{saved} clé(s) enregistrée(s)." if not errors else None,
+        error=" ; ".join(errors) if errors else None,
+    )
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  Phase 3.8.d — Password Policy (table dédiée, pas system_configs)
+# ═════════════════════════════════════════════════════════════════════════════
+async def _get_or_create_default_policy(db: AsyncSession):
+    """Charge la 1ère policy active, ou en crée une 'default' si aucune existe."""
+    from app.features.admin.password_policy.service import PasswordPolicyService
+    from sqlalchemy import select
+    from app.models import PasswordPolicy
+
+    result = await db.execute(
+        select(PasswordPolicy).where(PasswordPolicy.is_active == True).limit(1)
+    )
+    policy = result.scalar_one_or_none()
+    if policy is None:
+        policy = await PasswordPolicyService.create_policy(
+            db, name="default",
+            min_length=8, max_length=128,
+            require_uppercase=True, require_lowercase=True,
+            require_digit=True, require_special=True,
+        )
+    return policy
+
+
+@router.get("/password-policy", response_class=HTMLResponse)
+async def password_policy_get(
+    request: Request,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    policy = await _get_or_create_default_policy(db)
+    return templates.TemplateResponse(
+        request,
+        "pages/admin/system/password-policy.html",
+        web_context(
+            request,
+            title="Politique de mot de passe",
+            active_section="system_password",
+            user=user,
+            policy=policy,
+            success=None,
+            error=None,
+        ),
+    )
+
+
+@router.post("/password-policy", response_class=HTMLResponse)
+async def password_policy_post(
+    request: Request,
+    min_length: Annotated[int, Form()] = 8,
+    max_length: Annotated[int, Form()] = 128,
+    require_uppercase: Annotated[str | None, Form()] = None,
+    require_lowercase: Annotated[str | None, Form()] = None,
+    require_digit: Annotated[str | None, Form()] = None,
+    require_special: Annotated[str | None, Form()] = None,
+    special_characters: Annotated[str, Form()] = "!@#$%^&*()_+-=[]{}|;:,.<>?",
+    expire_days: Annotated[int, Form()] = 0,
+    history_count: Annotated[int, Form()] = 0,
+    max_failed_attempts: Annotated[int, Form()] = 5,
+    lockout_duration_minutes: Annotated[int, Form()] = 30,
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    if (err := _csrf_or_400(request, csrf_token)):
+        return err
+
+    policy = await _get_or_create_default_policy(db)
+
+    error: str | None = None
+    if min_length < 4:
+        error = "min_length doit être ≥ 4."
+    elif max_length > 256 or max_length < min_length:
+        error = "max_length doit être entre min_length et 256."
+    elif expire_days < 0 or history_count < 0 or max_failed_attempts < 0:
+        error = "Les durées et compteurs doivent être ≥ 0."
+
+    if error:
+        return templates.TemplateResponse(
+            request, "pages/admin/system/password-policy.html",
+            web_context(
+                request, title="Politique de mot de passe",
+                active_section="system_password", user=user,
+                policy=policy, success=None, error=error,
+            ),
+            status_code=400,
+        )
+
+    from app.features.admin.password_policy.service import PasswordPolicyService
+
+    updated = await PasswordPolicyService.update_policy(
+        db, policy.id,
+        min_length=int(min_length), max_length=int(max_length),
+        require_uppercase=_to_bool(require_uppercase),
+        require_lowercase=_to_bool(require_lowercase),
+        require_digit=_to_bool(require_digit),
+        require_special=_to_bool(require_special),
+        special_characters=special_characters,
+        expire_days=int(expire_days), history_count=int(history_count),
+        max_failed_attempts=int(max_failed_attempts),
+        lockout_duration_minutes=int(lockout_duration_minutes),
+    )
+    return templates.TemplateResponse(
+        request, "pages/admin/system/password-policy.html",
+        web_context(
+            request, title="Politique de mot de passe",
+            active_section="system_password", user=user,
+            policy=updated, success="Politique enregistrée.", error=None,
+        ),
+    )

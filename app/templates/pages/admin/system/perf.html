@@ -1,0 +1,72 @@
+{% extends "layouts/admin.html" %}
+{% from "macros/admin_form.html" import page_header, flash, field_int, field_float, form_actions %}
+
+{% block title %}Performance — Admin{% endblock %}
+
+{% block admin_content %}
+
+{{ page_header(
+  title="Performance",
+  eyebrow="Système",
+  lede="Tailles de cache, batchs embedding, timeouts re-rank."
+) }}
+
+{{ flash(success=success, error=error) }}
+
+<form method="post" action="/web/admin/system/perf" class="admin-form admin-form--stacked">
+  {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+
+  <fieldset class="admin-fieldset">
+    <legend>Embeddings</legend>
+    <div class="admin-form__grid">
+      {{ field_int("embedding_batch_size", "perf.embedding_batch_size",
+                   values["perf.embedding_batch_size"], default=100, min=1, max=10000,
+                   hint="Textes par appel au provider d'embeddings.") }}
+      {{ field_int("embedding_cache_size", "perf.embedding_cache_size",
+                   values["perf.embedding_cache_size"], default=1000, min=0, max=1000000) }}
+      {{ field_int("embedding_max_concurrent", "perf.embedding_max_concurrent",
+                   values["perf.embedding_max_concurrent"], default=3, min=1, max=64,
+                   hint="Requêtes embedding parallèles.") }}
+    </div>
+  </fieldset>
+
+  <fieldset class="admin-fieldset">
+    <legend>Cache des requêtes</legend>
+    <div class="admin-form__grid">
+      {{ field_int("query_cache_size", "perf.query_cache_size",
+                   values["perf.query_cache_size"], default=500, min=0) }}
+      {{ field_float("query_cache_ttl", "perf.query_cache_ttl (secondes)",
+                     values["perf.query_cache_ttl"], default=300.0, step=1.0, min=0.0) }}
+      {{ field_float("rag_config_cache_ttl", "perf.rag_config_cache_ttl (secondes)",
+                     values["perf.rag_config_cache_ttl"], default=30.0, step=1.0, min=0.0) }}
+    </div>
+  </fieldset>
+
+  <fieldset class="admin-fieldset">
+    <legend>Re-ranking</legend>
+    <div class="admin-form__grid">
+      {{ field_int("rerank_top_k", "perf.rerank_top_k",
+                   values["perf.rerank_top_k"], default=5, min=1, max=100,
+                   hint="Top K conservés après re-rank.") }}
+      {{ field_int("rerank_timeout_ms", "perf.rerank_timeout_ms",
+                   values["perf.rerank_timeout_ms"], default=100, min=0, max=60000) }}
+    </div>
+  </fieldset>
+
+  <fieldset class="admin-fieldset">
+    <legend>Pinning & métriques</legend>
+    <div class="admin-form__grid">
+      {{ field_int("pin_access_threshold", "perf.pin_access_threshold",
+                   values["perf.pin_access_threshold"], default=5, min=1,
+                   hint="Seuil d'accès pour épingler une entrée en cache chaud.") }}
+      {{ field_int("pinned_cache_size", "perf.pinned_cache_size",
+                   values["perf.pinned_cache_size"], default=100, min=0) }}
+      {{ field_int("metrics_window_size", "perf.metrics_window_size",
+                   values["perf.metrics_window_size"], default=1000, min=10) }}
+    </div>
+  </fieldset>
+
+  {{ form_actions() }}
+</form>
+
+{% endblock %}

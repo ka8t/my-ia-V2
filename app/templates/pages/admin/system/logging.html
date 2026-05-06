@@ -1,0 +1,63 @@
+{% extends "layouts/admin.html" %}
+{% from "macros/admin_form.html" import page_header, flash, field_text, field_int, field_bool, field_select, form_actions %}
+
+{% block title %}Logging — Admin{% endblock %}
+
+{% block admin_content %}
+
+{{ page_header(
+  title="Logging",
+  eyebrow="Système",
+  lede="Niveaux de log par catégorie + rétention en BDD."
+) }}
+
+{{ flash(success=success, error=error) }}
+
+{% set level_options = [
+  ("DEBUG","DEBUG"),("INFO","INFO"),("WARNING","WARNING"),
+  ("ERROR","ERROR"),("CRITICAL","CRITICAL")
+] %}
+
+<form method="post" action="/web/admin/system/logging" class="admin-form admin-form--stacked">
+  {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+
+  <fieldset class="admin-fieldset">
+    <legend>Configuration globale</legend>
+    {{ field_select("level", "Niveau global (logging.level)",
+                    values["logging.level"] or "INFO", level_options) }}
+    {{ field_text("format", "Format des messages (logging.format)",
+                  values["logging.format"], placeholder="%(asctime)s - %(name)s - %(levelname)s - %(message)s") }}
+    {{ field_bool("db_enabled", "Persister les logs en BDD (logging.db_enabled)",
+                  values["logging.db_enabled"],
+                  hint="Table app_logs (rétention configurable par catégorie ci-dessous).") }}
+    {{ field_int("alert_cooldown_minutes", "Cooldown alertes en min (logging.alert_cooldown_minutes)",
+                 values["logging.alert_cooldown_minutes"], default=15, min=0, max=1440,
+                 hint="Délai min entre 2 alertes pour le même pattern.") }}
+  </fieldset>
+
+  <fieldset class="admin-fieldset">
+    <legend>Niveaux par catégorie</legend>
+    <div class="admin-form__grid">
+      {{ field_select("level_access", "logging.level_access", values["logging.level_access"] or "INFO", level_options) }}
+      {{ field_select("level_audit", "logging.level_audit", values["logging.level_audit"] or "INFO", level_options) }}
+      {{ field_select("level_infra", "logging.level_infra", values["logging.level_infra"] or "INFO", level_options) }}
+      {{ field_select("level_security", "logging.level_security", values["logging.level_security"] or "INFO", level_options) }}
+      {{ field_select("level_technical", "logging.level_technical", values["logging.level_technical"] or "INFO", level_options) }}
+    </div>
+  </fieldset>
+
+  <fieldset class="admin-fieldset">
+    <legend>Rétention BDD (en jours)</legend>
+    <div class="admin-form__grid">
+      {{ field_int("retention_access_days", "access", values["logging.retention_access_days"], default=30, min=1, max=3650) }}
+      {{ field_int("retention_audit_days", "audit", values["logging.retention_audit_days"], default=365, min=1, max=3650) }}
+      {{ field_int("retention_infra_days", "infra", values["logging.retention_infra_days"], default=14, min=1, max=3650) }}
+      {{ field_int("retention_security_days", "security", values["logging.retention_security_days"], default=365, min=1, max=3650) }}
+      {{ field_int("retention_technical_days", "technical", values["logging.retention_technical_days"], default=30, min=1, max=3650) }}
+    </div>
+  </fieldset>
+
+  {{ form_actions() }}
+</form>
+
+{% endblock %}

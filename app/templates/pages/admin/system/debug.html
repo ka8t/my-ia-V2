@@ -1,0 +1,35 @@
+{% extends "layouts/admin.html" %}
+{% from "macros/admin_form.html" import page_header, flash, field_bool, form_actions %}
+
+{% block title %}Debug — Admin{% endblock %}
+
+{% block admin_content %}
+
+{{ page_header(
+  title="Debug",
+  eyebrow="Système",
+  lede="Flags de debug serveur. À désactiver en production."
+) }}
+
+{{ flash(success=success, error=error) }}
+
+<form method="post" action="/web/admin/system/debug" class="admin-form admin-form--stacked">
+  {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+
+  <fieldset class="admin-fieldset">
+    <legend>Flags de debug</legend>
+    {{ field_bool("verbose_logging", "Verbose logging (debug.verbose_logging)",
+                  values["debug.verbose_logging"],
+                  hint="Active les logs DEBUG sur tous les modules concernés.") }}
+    {{ field_bool("timing_headers_enabled", "Timing headers (debug.timing_headers_enabled)",
+                  values["debug.timing_headers_enabled"],
+                  hint="Ajoute X-Process-Time et X-DB-Time aux réponses HTTP.") }}
+    {{ field_bool("endpoints_enabled", "Endpoints debug exposés (debug.endpoints_enabled)",
+                  values["debug.endpoints_enabled"],
+                  hint="Active les routes /debug/* (cache stats, métriques internes).") }}
+  </fieldset>
+
+  {{ form_actions() }}
+</form>
+
+{% endblock %}
