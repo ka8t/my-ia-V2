@@ -1,0 +1,60 @@
+{% extends "layouts/admin.html" %}
+{% from "macros/admin_form.html" import page_header, flash, field_int, field_float, field_bool, form_actions %}
+
+{% block title %}Chat — Admin{% endblock %}
+
+{% block admin_content %}
+
+{{ page_header(
+  title="Chat",
+  eyebrow="Système",
+  lede="Historique conversationnel, résumé, détection de changement de sujet."
+) }}
+
+{{ flash(success=success, error=error) }}
+
+<form method="post" action="/web/admin/system/chat" class="admin-form admin-form--stacked">
+  {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+
+  <fieldset class="admin-fieldset">
+    <legend>Historique conversationnel</legend>
+    {{ field_bool("history_enabled", "Activer l'historique (chat.history_enabled)",
+                  values["chat.history_enabled"],
+                  hint="Si désactivé, chaque message est traité indépendamment.") }}
+    <div class="admin-form__grid">
+      {{ field_int("history_max_tokens", "Tokens max d'historique (chat.history_max_tokens)",
+                   values["chat.history_max_tokens"], default=4096, min=0, max=131072) }}
+      {{ field_int("history_max_turns", "Tours max conservés (chat.history_max_turns)",
+                   values["chat.history_max_turns"], default=5, min=0, max=100) }}
+    </div>
+    {{ field_bool("rag_reinjection_enabled", "Réinjecter le contexte RAG des tours précédents (chat.rag_reinjection_enabled)",
+                  values["chat.rag_reinjection_enabled"]) }}
+  </fieldset>
+
+  <fieldset class="admin-fieldset">
+    <legend>Résumé automatique</legend>
+    {{ field_bool("summary_enabled", "Activer le résumé (chat.summary_enabled)",
+                  values["chat.summary_enabled"],
+                  hint="Compacte l'historique au-delà du seuil pour libérer du contexte.") }}
+    <div class="admin-form__grid">
+      {{ field_int("summary_max_tokens", "Tokens max du résumé (chat.summary_max_tokens)",
+                   values["chat.summary_max_tokens"], default=500, min=0, max=4096) }}
+      {{ field_int("summary_trigger_messages", "Déclencher après N messages (chat.summary_trigger_messages)",
+                   values["chat.summary_trigger_messages"], default=10, min=1, max=200) }}
+    </div>
+  </fieldset>
+
+  <fieldset class="admin-fieldset">
+    <legend>Détection de changement de sujet</legend>
+    {{ field_bool("topic_detection_enabled", "Activer (chat.topic_detection_enabled)",
+                  values["chat.topic_detection_enabled"],
+                  hint="Détecte un changement de sujet et reset le contexte si pertinent.") }}
+    {{ field_float("topic_similarity_threshold", "Seuil de similarité (chat.topic_similarity_threshold)",
+                   values["chat.topic_similarity_threshold"], default=0.3, step=0.05, min=0.0, max=1.0,
+                   hint="Sous ce seuil → nouveau sujet détecté.") }}
+  </fieldset>
+
+  {{ form_actions() }}
+</form>
+
+{% endblock %}

@@ -13,7 +13,7 @@ import logging
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Form, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_async_session
@@ -1266,3 +1266,323 @@ async def password_policy_post(
             policy=updated, success="Politique enregistrée.", error=None,
         ),
     )
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  Phase 3.8.e — Geo
+# ═════════════════════════════════════════════════════════════════════════════
+GEO_KEYS = ["geo.default_country", "geo.allow_change", "geo.require_city", "geo.auto_import"]
+
+
+@router.get("/geo", response_class=HTMLResponse)
+async def geo_get(
+    request: Request,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    return await _render_page(
+        request, "pages/admin/system/geo.html",
+        title="Géolocalisation", active_section="system_geo", user=user,
+        values=await _load_keys(db, GEO_KEYS),
+    )
+
+
+@router.post("/geo", response_class=HTMLResponse)
+async def geo_post(
+    request: Request,
+    default_country: Annotated[str, Form()] = "FR",
+    allow_change: Annotated[str | None, Form()] = None,
+    require_city: Annotated[str | None, Form()] = None,
+    auto_import: Annotated[str | None, Form()] = None,
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    if (err := _csrf_or_400(request, csrf_token)):
+        return err
+
+    code = default_country.strip().upper()
+    if not (2 <= len(code) <= 3) or not code.isalpha():
+        return await _render_page(
+            request, "pages/admin/system/geo.html",
+            title="Géolocalisation", active_section="system_geo", user=user,
+            values=await _load_keys(db, GEO_KEYS),
+            error="Code pays invalide (attendu : 2 ou 3 lettres ISO, ex FR, USA).",
+        )
+
+    updates = {
+        "geo.default_country": code,
+        "geo.allow_change": _to_bool(allow_change),
+        "geo.require_city": _to_bool(require_city),
+        "geo.auto_import": _to_bool(auto_import),
+    }
+    saved, errors = await _bulk_set(db, user, updates)
+    return await _render_page(
+        request, "pages/admin/system/geo.html",
+        title="Géolocalisation", active_section="system_geo", user=user,
+        values=await _load_keys(db, GEO_KEYS),
+        success=f"{saved} clé(s) enregistrée(s)." if not errors else None,
+        error=" ; ".join(errors) if errors else None,
+    )
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  Phase 3.8.e — Chat
+# ═════════════════════════════════════════════════════════════════════════════
+CHAT_KEYS = [
+    "chat.history_enabled", "chat.history_max_tokens", "chat.history_max_turns",
+    "chat.rag_reinjection_enabled",
+    "chat.summary_enabled", "chat.summary_max_tokens", "chat.summary_trigger_messages",
+    "chat.topic_detection_enabled", "chat.topic_similarity_threshold",
+]
+
+
+@router.get("/chat", response_class=HTMLResponse)
+async def chat_get(
+    request: Request,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    return await _render_page(
+        request, "pages/admin/system/chat.html",
+        title="Chat", active_section="system_chat", user=user,
+        values=await _load_keys(db, CHAT_KEYS),
+    )
+
+
+@router.post("/chat", response_class=HTMLResponse)
+async def chat_post(
+    request: Request,
+    history_enabled: Annotated[str | None, Form()] = None,
+    history_max_tokens: Annotated[int, Form()] = 4096,
+    history_max_turns: Annotated[int, Form()] = 5,
+    rag_reinjection_enabled: Annotated[str | None, Form()] = None,
+    summary_enabled: Annotated[str | None, Form()] = None,
+    summary_max_tokens: Annotated[int, Form()] = 500,
+    summary_trigger_messages: Annotated[int, Form()] = 10,
+    topic_detection_enabled: Annotated[str | None, Form()] = None,
+    topic_similarity_threshold: Annotated[float, Form()] = 0.3,
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    if (err := _csrf_or_400(request, csrf_token)):
+        return err
+
+    if not (0.0 <= topic_similarity_threshold <= 1.0):
+        return await _render_page(
+            request, "pages/admin/system/chat.html",
+            title="Chat", active_section="system_chat", user=user,
+            values=await _load_keys(db, CHAT_KEYS),
+            error="topic_similarity_threshold doit être entre 0.0 et 1.0.",
+        )
+
+    updates = {
+        "chat.history_enabled": _to_bool(history_enabled),
+        "chat.history_max_tokens": max(0, _to_int(history_max_tokens, 4096)),
+        "chat.history_max_turns": max(0, min(_to_int(history_max_turns, 5), 100)),
+        "chat.rag_reinjection_enabled": _to_bool(rag_reinjection_enabled),
+        "chat.summary_enabled": _to_bool(summary_enabled),
+        "chat.summary_max_tokens": max(0, _to_int(summary_max_tokens, 500)),
+        "chat.summary_trigger_messages": max(1, _to_int(summary_trigger_messages, 10)),
+        "chat.topic_detection_enabled": _to_bool(topic_detection_enabled),
+        "chat.topic_similarity_threshold": _to_float(topic_similarity_threshold, 0.3),
+    }
+    saved, errors = await _bulk_set(db, user, updates)
+    return await _render_page(
+        request, "pages/admin/system/chat.html",
+        title="Chat", active_section="system_chat", user=user,
+        values=await _load_keys(db, CHAT_KEYS),
+        success=f"{saved} clé(s) enregistrée(s)." if not errors else None,
+        error=" ; ".join(errors) if errors else None,
+    )
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  Phase 3.8.e — Appearance / Branding (sous app.*)
+# ═════════════════════════════════════════════════════════════════════════════
+APPEARANCE_KEYS = [
+    "app.name", "app.title", "app.description", "app.icon", "app.name_prefix",
+]
+
+
+@router.get("/appearance", response_class=HTMLResponse)
+async def appearance_get(
+    request: Request,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    return await _render_page(
+        request, "pages/admin/system/appearance.html",
+        title="Apparence / Branding", active_section="system_appearance", user=user,
+        values=await _load_keys(db, APPEARANCE_KEYS),
+    )
+
+
+@router.post("/appearance", response_class=HTMLResponse)
+async def appearance_post(
+    request: Request,
+    name: Annotated[str, Form()] = "MY-IA",
+    title: Annotated[str, Form()] = "MY-IA Assistant",
+    description: Annotated[str, Form()] = "",
+    icon: Annotated[str, Form()] = "🤖",
+    name_prefix: Annotated[str, Form()] = "MY-IA",
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    if (err := _csrf_or_400(request, csrf_token)):
+        return err
+
+    name_v = name.strip()
+    title_v = title.strip()
+    if not name_v:
+        return await _render_page(
+            request, "pages/admin/system/appearance.html",
+            title="Apparence / Branding", active_section="system_appearance", user=user,
+            values=await _load_keys(db, APPEARANCE_KEYS),
+            error="Le nom de l'application est requis.",
+        )
+
+    updates = {
+        "app.name": name_v,
+        "app.title": title_v or name_v,
+        "app.description": description.strip(),
+        "app.icon": icon.strip() or "🤖",
+        "app.name_prefix": name_prefix.strip() or name_v,
+    }
+    saved, errors = await _bulk_set(db, user, updates)
+    return await _render_page(
+        request, "pages/admin/system/appearance.html",
+        title="Apparence / Branding", active_section="system_appearance", user=user,
+        values=await _load_keys(db, APPEARANCE_KEYS),
+        success=f"{saved} clé(s) enregistrée(s)." if not errors else None,
+        error=" ; ".join(errors) if errors else None,
+    )
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  Phase 3.8.e — Conversation Modes (table dédiée, CRUD list+create+delete)
+# ═════════════════════════════════════════════════════════════════════════════
+@router.get("/modes", response_class=HTMLResponse)
+async def modes_get(
+    request: Request,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    from sqlalchemy import select
+    from app.models import ConversationMode
+
+    result = await db.execute(select(ConversationMode).order_by(ConversationMode.name))
+    modes = list(result.scalars().all())
+    return templates.TemplateResponse(
+        request, "pages/admin/system/modes.html",
+        web_context(
+            request, title="Modes de conversation",
+            active_section="system_modes", user=user,
+            modes=modes, success=None, error=None,
+        ),
+    )
+
+
+@router.post("/modes", response_class=HTMLResponse)
+async def modes_create(
+    request: Request,
+    name: Annotated[str, Form()],
+    display_name: Annotated[str, Form()],
+    description: Annotated[str, Form()] = "",
+    system_prompt: Annotated[str, Form()] = "",
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    if (err := _csrf_or_400(request, csrf_token)):
+        return err
+
+    from sqlalchemy import select
+    from app.models import ConversationMode
+
+    name_v = name.strip().lower()
+    display = display_name.strip()
+    if not name_v or not display:
+        existing = (
+            await db.execute(select(ConversationMode).order_by(ConversationMode.name))
+        ).scalars().all()
+        return templates.TemplateResponse(
+            request, "pages/admin/system/modes.html",
+            web_context(
+                request, title="Modes de conversation",
+                active_section="system_modes", user=user,
+                modes=list(existing),
+                error="Nom et libellé sont requis.", success=None,
+            ),
+            status_code=400,
+        )
+
+    duplicate = await db.execute(
+        select(ConversationMode).where(ConversationMode.name == name_v)
+    )
+    if duplicate.scalar_one_or_none() is not None:
+        existing = (
+            await db.execute(select(ConversationMode).order_by(ConversationMode.name))
+        ).scalars().all()
+        return templates.TemplateResponse(
+            request, "pages/admin/system/modes.html",
+            web_context(
+                request, title="Modes de conversation",
+                active_section="system_modes", user=user,
+                modes=list(existing),
+                error=f"Le mode '{name_v}' existe déjà.", success=None,
+            ),
+            status_code=409,
+        )
+
+    new_mode = ConversationMode(
+        name=name_v, display_name=display,
+        description=description.strip() or None,
+        system_prompt=system_prompt.strip() or None,
+    )
+    db.add(new_mode)
+    await db.commit()
+    logger.info("Admin %s created conversation mode '%s'", user.get("email"), name_v)
+
+    refreshed = (
+        await db.execute(select(ConversationMode).order_by(ConversationMode.name))
+    ).scalars().all()
+    return templates.TemplateResponse(
+        request, "pages/admin/system/modes.html",
+        web_context(
+            request, title="Modes de conversation",
+            active_section="system_modes", user=user,
+            modes=list(refreshed),
+            success=f"Mode '{name_v}' créé.", error=None,
+        ),
+    )
+
+
+@router.delete("/modes/{mode_id}", response_class=Response)
+async def modes_delete(
+    request: Request,
+    mode_id: int,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> Response:
+    from sqlalchemy import select
+    from app.models import ConversationMode
+
+    mode = (
+        await db.execute(select(ConversationMode).where(ConversationMode.id == mode_id))
+    ).scalar_one_or_none()
+    if mode is None:
+        return Response(status_code=404)
+    try:
+        await db.delete(mode)
+        await db.commit()
+        logger.info("Admin %s deleted conversation mode '%s'", user.get("email"), mode.name)
+    except Exception as e:
+        await db.rollback()
+        logger.error("Erreur suppression mode %s: %s", mode_id, e)
+        return HTMLResponse(
+            "<div class='toast toast--error'>Suppression impossible.</div>", status_code=500
+        )
+    return Response(status_code=200, content="")

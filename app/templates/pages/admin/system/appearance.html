@@ -1,0 +1,37 @@
+{% extends "layouts/admin.html" %}
+{% from "macros/admin_form.html" import page_header, flash, field_text, form_actions %}
+
+{% block title %}Apparence / Branding — Admin{% endblock %}
+
+{% block admin_content %}
+
+{{ page_header(
+  title="Apparence / Branding",
+  eyebrow="Système",
+  lede="Identité de l'application affichée aux utilisateurs (nom, titre, icône)."
+) }}
+
+{{ flash(success=success, error=error) }}
+
+<form method="post" action="/web/admin/system/appearance" class="admin-form admin-form--stacked">
+  {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+
+  {{ field_text("name", "Nom de l'application (app.name)",
+                values["app.name"], placeholder="MY-IA", required=True,
+                hint="Nom affiché dans la topbar.") }}
+  {{ field_text("title", "Titre HTML (app.title)",
+                values["app.title"], placeholder="MY-IA Assistant",
+                hint="Titre des onglets navigateur.") }}
+  {{ field_text("description", "Description (app.description)",
+                values["app.description"], placeholder="Chatbot RAG avec gestion documentaire") }}
+  {{ field_text("icon", "Icône (app.icon)",
+                values["app.icon"], placeholder="🤖",
+                hint="Emoji ou caractère unique. Affiché à côté du nom.") }}
+  {{ field_text("name_prefix", "Préfixe technique (app.name_prefix)",
+                values["app.name_prefix"], placeholder="MY-IA",
+                hint="Préfixe pour collections, namespaces, etc. Sans espaces idéalement.") }}
+
+  {{ form_actions() }}
+</form>
+
+{% endblock %}

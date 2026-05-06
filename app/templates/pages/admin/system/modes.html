@@ -1,0 +1,85 @@
+{% extends "layouts/admin.html" %}
+{% from "macros/admin_form.html" import page_header, flash, field_text %}
+{% from "macros/icon.html" import icon %}
+
+{% block title %}Modes de conversation — Admin{% endblock %}
+
+{% block admin_content %}
+
+{{ page_header(
+  title="Modes de conversation",
+  eyebrow="Système",
+  lede="Modes proposés à l'utilisateur dans le chat (chatbot, assistant, expert, …). Le system_prompt est injecté en tête de chaque conversation."
+) }}
+
+{{ flash(success=success, error=error) }}
+
+{# ─── Liste des modes existants ─── #}
+<section class="admin-section">
+  <h2 class="admin-section__title">{{ icon('settings', 16) }} Modes existants ({{ modes|length }})</h2>
+  {% if modes %}
+  <ul class="admin-bare-list">
+    {% for m in modes %}
+    <li class="admin-bare-list__item" id="mode-{{ m.id }}">
+      <span class="admin-bare-list__main">
+        {{ m.display_name }}
+        <span class="admin-corpus__slug">{{ m.name }}</span>
+      </span>
+      <span class="admin-bare-list__meta">
+        {% if m.description %}{{ m.description }}{% else %}—{% endif %}
+      </span>
+      <span class="admin-bare-list__actions">
+        <button type="button"
+                class="admin-action admin-action--danger"
+                hx-delete="/web/admin/system/modes/{{ m.id }}"
+                hx-confirm="Supprimer le mode « {{ m.display_name }} » ?"
+                hx-target="#mode-{{ m.id }}"
+                hx-swap="outerHTML"
+                title="Supprimer">
+          {{ icon('alert-circle', 14) }}
+        </button>
+      </span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="admin-empty admin-empty--small">Aucun mode défini.</p>
+  {% endif %}
+</section>
+
+{# ─── Formulaire de création ─── #}
+<section class="admin-section">
+  <h2 class="admin-section__title">{{ icon('sparkle', 16) }} Nouveau mode</h2>
+  <form method="post" action="/web/admin/system/modes" class="admin-form admin-form--stacked">
+    {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+
+    <div class="admin-form__grid">
+      {{ field_text("name", "Identifiant technique (slug)", "",
+                    placeholder="ex: chatbot, expert", required=True,
+                    hint="Lettres minuscules, chiffres et _. Unique.") }}
+      {{ field_text("display_name", "Libellé affiché", "",
+                    placeholder="ex: Chatbot", required=True) }}
+    </div>
+    {{ field_text("description", "Description courte", "",
+                  placeholder="ex: Mode conversationnel standard") }}
+
+    <label class="admin-form__field">
+      <span class="admin-form__label">System prompt</span>
+      <textarea name="system_prompt" rows="6"
+                class="admin-form__textarea admin-form__textarea--code"
+                spellcheck="false"
+                placeholder="Tu es un assistant IA serviable et précis…"></textarea>
+      <small class="admin-config__hint">
+        Préfixé à chaque conversation utilisant ce mode. Markdown autorisé.
+      </small>
+    </label>
+
+    <div class="admin-form__actions">
+      <button type="submit" class="admin-btn admin-btn--primary">
+        {{ icon('check-circle', 12) }} Créer
+      </button>
+    </div>
+  </form>
+</section>
+
+{% endblock %}

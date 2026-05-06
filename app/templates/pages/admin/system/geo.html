@@ -1,0 +1,33 @@
+{% extends "layouts/admin.html" %}
+{% from "macros/admin_form.html" import page_header, flash, field_text, field_bool, form_actions %}
+
+{% block title %}Géolocalisation — Admin{% endblock %}
+
+{% block admin_content %}
+
+{{ page_header(
+  title="Géolocalisation",
+  eyebrow="Système",
+  lede="Pays par défaut, contraintes ville/département, import auto."
+) }}
+
+{{ flash(success=success, error=error) }}
+
+<form method="post" action="/web/admin/system/geo" class="admin-form admin-form--stacked">
+  {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+
+  {{ field_text("default_country", "Pays par défaut (geo.default_country)",
+                values["geo.default_country"], placeholder="FR, US, DE",
+                hint="Code ISO 2 ou 3 lettres. Sera mis en majuscules.") }}
+  {{ field_bool("allow_change", "Autoriser le changement par l'utilisateur (geo.allow_change)",
+                values["geo.allow_change"]) }}
+  {{ field_bool("require_city", "Ville requise à l'inscription (geo.require_city)",
+                values["geo.require_city"]) }}
+  {{ field_bool("auto_import", "Import auto des pays/villes (geo.auto_import)",
+                values["geo.auto_import"],
+                hint="Active le seed automatique au démarrage si la table est vide.") }}
+
+  {{ form_actions() }}
+</form>
+
+{% endblock %}
