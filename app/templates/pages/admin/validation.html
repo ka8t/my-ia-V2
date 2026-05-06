@@ -1,0 +1,126 @@
+{% extends "layouts/admin.html" %}
+{% from "macros/icon.html" import icon %}
+
+{% block title %}Validation — Admin{% endblock %}
+
+{% block admin_content %}
+
+<header class="admin-page__head">
+  <div class="admin-page__eyebrow"><span>Console / 08</span></div>
+  <h1 class="admin-page__title">
+    Validation <em>des inscriptions</em>.
+  </h1>
+  <p class="admin-page__lede">
+    {{ total }} utilisateur{{ 's' if total != 1 }} en attente de validation.
+  </p>
+</header>
+
+<section class="admin-stats">
+  <div class="admin-stat admin-stat--readonly">
+    <div class="admin-stat__num">{{ stats.pending or 0 }}</div>
+    <div class="admin-stat__label">En attente</div>
+  </div>
+  <div class="admin-stat admin-stat--readonly">
+    <div class="admin-stat__num">{{ stats.approved or 0 }}</div>
+    <div class="admin-stat__label">Approuvés</div>
+  </div>
+  <div class="admin-stat admin-stat--readonly">
+    <div class="admin-stat__num">{{ stats.rejected or 0 }}</div>
+    <div class="admin-stat__label">Rejetés</div>
+  </div>
+</section>
+
+{% if pending_users %}
+<form method="post" id="validation-form" class="admin-form admin-form--stacked"
+      x-data="{ allChecked: false, hasSelection: false, mode: 'approve', reason: '' }"
+      @change="hasSelection = !!$el.querySelector('input[name=user_ids]:checked')">
+  {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+
+  <div class="admin-table-wrap">
+    <div class="admin-table-head admin-validation-row">
+      <span>
+        <input type="checkbox"
+               @change="$el.closest('.admin-table-wrap').querySelectorAll('input[name=user_ids]').forEach(c => c.checked = $event.target.checked); hasSelection = $event.target.checked">
+      </span>
+      <span>Email</span>
+      <span>Nom d'utilisateur</span>
+      <span>Inscription</span>
+    </div>
+    <div class="admin-table-body">
+      {% for u in pending_users %}
+      <div class="admin-validation-row admin-table-row">
+        <div class="admin-table-cell">
+          <input type="checkbox" name="user_ids" value="{{ u.id }}">
+        </div>
+        <div class="admin-table-cell">{{ u.email }}</div>
+        <div class="admin-table-cell">
+          {{ u.username or '—' }}
+          {% if u.full_name %}<span class="admin-corpus__slug">{{ u.full_name }}</span>{% endif %}
+        </div>
+        <div class="admin-table-cell admin-table-cell__mono">
+          {{ u.created_at.strftime('%Y-%m-%d %H:%M') if u.created_at else '—' }}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <fieldset class="admin-fieldset">
+    <legend>Action sur la sélection</legend>
+    <div class="admin-form__actions" style="justify-content: flex-start;">
+      <button type="submit"
+              formaction="/web/admin/validation/bulk-approve"
+              class="admin-btn admin-btn--primary"
+              :disabled="!hasSelection">
+        {{ icon('check-circle', 12) }} Approuver la sélection
+      </button>
+
+      <button type="button"
+              class="admin-btn admin-btn--ghost"
+              :disabled="!hasSelection"
+              @click="mode = (mode === 'reject' ? 'approve' : 'reject')">
+        {{ icon('alert-circle', 12) }} Rejeter…
+      </button>
+    </div>
+
+    <div x-show="mode === 'reject'" x-cloak style="margin-top: var(--space-3);">
+      <label class="admin-form__field">
+        <span class="admin-form__label">Raison du rejet (envoyée par email)</span>
+        <textarea name="reason" rows="2"
+                  class="admin-form__textarea"
+                  placeholder="Ex : domaine email non autorisé, doublon détecté…"
+                  x-model="reason"></textarea>
+      </label>
+      <div class="admin-form__actions" style="justify-content: flex-start;">
+        <button type="submit"
+                formaction="/web/admin/validation/bulk-reject"
+                class="admin-btn admin-btn--primary"
+                :disabled="!hasSelection || !reason.trim()">
+          {{ icon('alert-circle', 12) }} Confirmer le rejet
+        </button>
+      </div>
+    </div>
+  </fieldset>
+</form>
+
+{% if total_pages > 1 %}
+<nav class="admin-pagination">
+  {% if page > 1 %}<a href="?page={{ page - 1 }}&page_size={{ page_size }}" class="admin-btn admin-btn--ghost">← Précédent</a>{% endif %}
+  <span class="admin-config__hint">Page {{ page }} / {{ total_pages }}</span>
+  {% if page < total_pages %}<a href="?page={{ page + 1 }}&page_size={{ page_size }}" class="admin-btn admin-btn--ghost">Suivant →</a>{% endif %}
+</nav>
+{% endif %}
+
+{% else %}
+<div class="admin-callout">
+  <div class="admin-callout__head">
+    <span class="admin-callout__eyebrow">Tout est à jour</span>
+    <h2 class="admin-callout__title">Aucune inscription en attente.</h2>
+  </div>
+  <p class="admin-callout__body">
+    Les nouvelles inscriptions apparaîtront ici dès qu'elles arriveront.
+  </p>
+</div>
+{% endif %}
+
+{% endblock %}

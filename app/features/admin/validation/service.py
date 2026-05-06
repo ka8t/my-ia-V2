@@ -322,7 +322,7 @@ class ValidationService:
         # Charger tous les utilisateurs en une seule requête
         query = select(User).where(User.id.in_(user_ids))
         result = await db.execute(query)
-        users_by_id = {user.id: user for user in result.scalars().all()}
+        users_by_id = {user.id: user for user in result.unique().scalars().all()}
 
         now = datetime.now(timezone.utc)
 
@@ -402,7 +402,7 @@ class ValidationService:
         # Charger tous les utilisateurs en une seule requête
         query = select(User).where(User.id.in_(user_ids))
         result = await db.execute(query)
-        users_by_id = {user.id: user for user in result.scalars().all()}
+        users_by_id = {user.id: user for user in result.unique().scalars().all()}
 
         now = datetime.now(timezone.utc)
 

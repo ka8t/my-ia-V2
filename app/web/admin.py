@@ -23,7 +23,7 @@ import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Form, Request
-from fastapi.responses import HTMLResponse, Response
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -519,3 +519,123 @@ async def admin_logs_get(
             filter_date_to=date_to or "",
         ),
     )
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  Phase 3.9.c — Validation workflow (pending users + bulk actions)
+# ═════════════════════════════════════════════════════════════════════════════
+@router.get("/validation", response_class=HTMLResponse)
+async def admin_validation_get(
+    request: Request,
+    page: int = 1,
+    page_size: int = 50,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    from app.features.admin.validation.service import ValidationService
+
+    page = max(1, int(page))
+    page_size = max(10, min(int(page_size), 200))
+
+    pending_list, total = await ValidationService.get_pending_users(
+        db, limit=page_size, offset=(page - 1) * page_size,
+    )
+    stats = await ValidationService.get_validation_stats(db)
+    pending = await _pending_users_count(db)
+
+    total_pages = max(1, (total + page_size - 1) // page_size)
+    return templates.TemplateResponse(
+        request,
+        "pages/admin/validation.html",
+        web_context(
+            request,
+            title="Validation des inscriptions",
+            active_section="validation",
+            user=user,
+            pending_users_count=pending,
+            pending_users=pending_list,
+            total=total,
+            page=page,
+            page_size=page_size,
+            total_pages=total_pages,
+            stats=stats,
+        ),
+    )
+
+
+@router.post("/validation/bulk-approve", response_class=HTMLResponse)
+async def admin_validation_bulk_approve(
+    request: Request,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    from app.features.admin.validation.service import ValidationService
+
+    form = await request.form()
+    if not verify_csrf_token(request, form.get("csrf_token")):
+        return HTMLResponse(
+            "<div class='toast toast--error'>Session expirée.</div>", status_code=400
+        )
+
+    selected = [v for k, v in form.multi_items() if k == "user_ids"]
+    user_ids: list[uuid.UUID] = []
+    for raw in selected:
+        try:
+            user_ids.append(uuid.UUID(raw))
+        except (ValueError, TypeError):
+            continue
+    if not user_ids:
+        return HTMLResponse(
+            "<div class='toast toast--error'>Aucun utilisateur sélectionné.</div>",
+            status_code=400,
+        )
+
+    result = await ValidationService.bulk_approve_users(
+        db, user_ids=user_ids, approver_id=uuid.UUID(user["id"])
+    )
+    logger.info(
+        "Admin %s bulk-approve : %d ok, %d errs",
+        user.get("email"), result.get("success_count", 0), result.get("failed_count", 0),
+    )
+    return RedirectResponse(url="/web/admin/validation", status_code=303)
+
+
+@router.post("/validation/bulk-reject", response_class=HTMLResponse)
+async def admin_validation_bulk_reject(
+    request: Request,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    from app.features.admin.validation.service import ValidationService
+
+    form = await request.form()
+    if not verify_csrf_token(request, form.get("csrf_token")):
+        return HTMLResponse(
+            "<div class='toast toast--error'>Session expirée.</div>", status_code=400
+        )
+
+    selected = [v for k, v in form.multi_items() if k == "user_ids"]
+    user_ids: list[uuid.UUID] = []
+    for raw in selected:
+        try:
+            user_ids.append(uuid.UUID(raw))
+        except (ValueError, TypeError):
+            continue
+    reason = (form.get("reason") or "").strip() or None
+
+    if not user_ids:
+        return HTMLResponse(
+            "<div class='toast toast--error'>Aucun utilisateur sélectionné.</div>",
+            status_code=400,
+        )
+
+    result = await ValidationService.bulk_reject_users(
+        db, user_ids=user_ids, approver_id=uuid.UUID(user["id"]),
+        reason=reason or "Inscription rejetée.",
+    )
+    logger.info(
+        "Admin %s bulk-reject : %d ok, %d errs, reason=%r",
+        user.get("email"), result.get("success_count", 0),
+        result.get("failed_count", 0), reason,
+    )
+    return RedirectResponse(url="/web/admin/validation", status_code=303)

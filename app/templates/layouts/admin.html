@@ -107,6 +107,15 @@
             {{ icon('document', 14) }}<span>Logs serveur</span>
           </a>
         </li>
+        <li>
+          <a class="admin-nav__item{% if active_section == 'validation' %} admin-nav__item--active{% endif %}"
+             href="/web/admin/validation">
+            {{ icon('check-circle', 14) }}<span>Validation</span>
+            {% if pending_users_count and pending_users_count > 0 %}
+            <span class="admin-nav__badge">{{ pending_users_count }}</span>
+            {% endif %}
+          </a>
+        </li>
 
         {# ─── Système — groupe avec sous-menu déroulant Alpine ─── #}
         {% set is_system = active_section in (
