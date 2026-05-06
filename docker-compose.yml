@@ -137,6 +137,9 @@ services:
       - ./tests:/code/tests
       - ./pytest.ini:/code/pytest.ini:ro
       - ./requirements-test.txt:/code/requirements-test.txt:ro
+      # Cache Playwright (chromium) — volume nommé persistant. Populé au
+      # 1er run via scripts/test/run.sh.
+      - playwright_browsers:/opt/ms-playwright
     ports:
       - "${APP_PORT:-8090}:8080"
     restart: unless-stopped
@@ -189,3 +192,7 @@ volumes:
     name: ${SANITIZED_PREFIX}_whisper_models
   pgadmin_data:
     name: ${SANITIZED_PREFIX}_pgadmin_data
+  # Cache Playwright (chromium binaries) — populé au 1er run via
+  # scripts/test/run.sh. Persiste entre recreate du container app.
+  playwright_browsers:
+    name: ${SANITIZED_PREFIX}_playwright_browsers

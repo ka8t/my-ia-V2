@@ -33,5 +33,32 @@ echo "→ Installation deps de test (idempotent)"
 docker exec -u root "${CONTAINER}" pip install --quiet --root-user-action=ignore \
   -r /code/requirements-test.txt
 
+# Si l'on cible des tests E2E, s'assurer que (1) les system libs Linux dont
+# Chromium dépend sont présentes, et (2) les binaires Chromium sont en cache.
+# Le volume nommé playwright_browsers (docker-compose.yml) persiste les
+# binaires entre recreate. Les libs apt sont reinstallées si le container
+# est recréé from scratch (apt n'est pas dans un volume).
+if [[ "$TARGET" == *"e2e"* ]] || [[ "$TARGET" == "tests/" ]] || [[ "$TARGET" == "/code/tests" ]]; then
+  # (1) System deps — détectées via ldconfig (libdbus présente ⇒ toutes le sont)
+  if ! docker exec "${CONTAINER}" sh -c 'ldconfig -p | grep -q libdbus-1.so.3'; then
+    echo "→ Installation system deps Chromium (libnss, libdbus, libatspi, ...)"
+    docker exec -u root "${CONTAINER}" sh -c "apt-get update -qq && apt-get install -y --no-install-recommends \
+      libnss3 libnspr4 libatk1.0-0 libatk-bridge2.0-0 libcups2 libxcomposite1 \
+      libxdamage1 libxfixes3 libxrandr2 libgbm1 libxkbcommon0 libpango-1.0-0 \
+      libcairo2 libasound2 libatspi2.0-0 libdbus-1-3 libdrm2 libxext6 libx11-6 \
+      libxcb1 libfontconfig1 fonts-liberation > /dev/null"
+  fi
+  # (2) Binaires Chromium — détectés via présence du dossier versionné
+  if ! docker exec "${CONTAINER}" test -d /opt/ms-playwright/chromium_headless_shell-1148; then
+    echo "→ Téléchargement Chromium dans /opt/ms-playwright (~100 MB, persistant via volume)"
+    docker exec -u root -e PLAYWRIGHT_BROWSERS_PATH=/opt/ms-playwright \
+      "${CONTAINER}" playwright install chromium
+    docker exec -u root "${CONTAINER}" chmod -R a+rx /opt/ms-playwright
+  fi
+fi
+
 echo "→ Exécution : pytest ${TARGET}"
-docker exec -w /code "${CONTAINER}" python -m pytest "${TARGET}" --no-cov "$@"
+# PLAYWRIGHT_BROWSERS_PATH pointe vers le volume nommé playwright_browsers
+# monté sur /opt/ms-playwright (cf docker-compose.yml).
+docker exec -e PLAYWRIGHT_BROWSERS_PATH=/opt/ms-playwright \
+  -w /code "${CONTAINER}" python -m pytest "${TARGET}" --no-cov "$@"
