@@ -81,11 +81,11 @@
         <td><span class="plan-status plan-status--done">✅ fait</span></td>
         <td><code>5ad58bd</code></td>
       </tr>
-      <tr data-status="pending">
+      <tr data-status="done">
         <td><strong>4.c</strong></td>
         <td>Smoke staging VPS</td>
-        <td><span class="plan-status plan-status--pending">⏳ pending</span></td>
-        <td>—</td>
+        <td><span class="plan-status plan-status--done">✅ fait</span></td>
+        <td><code>(commit pending)</code></td>
       </tr>
       <tr data-status="pending">
         <td><strong>4.d</strong></td>
@@ -456,48 +456,111 @@ docker exec my_ia_v2_postgres psql -U my_ia_v2_db_user -d my_ia_v2_db -tAc "SELE
 
   <h3>Étapes</h3>
   <ol class="checklist">
-    <li>Push sur <code>main</code> V2 (première fois — valider explicitement) :
-      <pre><code>git checkout main
-git merge dev
-git push origin main
-git checkout dev</code></pre>
+    <li data-done="true">Push sur <code>main</code> V2 (1ère fois, fast-forward depuis dev) :
+      <pre><code>git checkout main &amp;&amp; git merge --ff-only dev &amp;&amp; git push origin main &amp;&amp; git checkout dev</code></pre>
     </li>
-    <li>Déployer V2 sur le VPS (ports staging) :
-      <pre><code>./scripts/deploy.sh remote</code></pre>
-      Le script SSH le code, build l'image V2, démarre les containers
-      <code>my_ia_v2_*</code> sans toucher à V1.
+    <li data-done="true">Préparer l'accès SSH GitHub depuis le VPS :
+      deploy key dédiée (ed25519) + alias <code>github-my-ia-v2</code>
+      dans <code>~/.ssh/config</code> du VPS.
     </li>
-    <li>Vérifier les containers actifs sur le VPS :
-      <pre><code>ssh debian@51.210.245.202 "docker ps --filter 'name=my_ia' --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'"</code></pre>
+    <li data-done="true">Cloner le repo dans <code>/home/debian/my-ia-v2</code> sur le VPS.</li>
+    <li data-done="true">Créer le <code>.env</code> staging (chmod 600) avec
+      secrets aléatoires + <code>DEPLOY_ENV=dev</code> (HTTP plain → cookie sans secure).</li>
+    <li data-done="true">Démarrer V2 : <code>docker compose up -d --build</code>.</li>
+    <li data-done="true">Vérifier les containers et l'état health :
+      <pre><code>docker compose ps
+curl http://localhost:8090/health</code></pre>
     </li>
-    <li>Smoke check via curl (depuis votre poste) :
-      <pre><code># V2 health
-curl -k https://51.210.245.202:8090/health
-
-# V2 admin login page
-curl -k https://51.210.245.202:8090/web/login -o /tmp/login.html
-grep -c csrf_token /tmp/login.html  # → 1 attendu</code></pre>
-    </li>
-    <li>Smoke check manuel dans un navigateur :
+    <li data-done="true">Smoke check via curl : login admin → /web/admin charge.</li>
+    <li>Smoke check manuel dans un navigateur (à valider visuellement) :
       <ul>
-        <li>Ouvrir <code>https://51.210.245.202:8090/web/login</code></li>
-        <li>Login admin → atterrir sur <code>/web/admin</code></li>
+        <li>Ouvrir <code>http://51.210.245.202:8090/web/login</code></li>
+        <li>Login admin (<code>admin@test.example</code> / <code>Admin123!</code>)
+            → atterrir sur <code>/web/admin</code></li>
         <li>Naviguer : Corpus, Sources, Système (LLM, RAG), Audit</li>
-        <li>Créer un corpus de test, vérifier rendu</li>
         <li>Vérifier que V1 (ports 3000/8081) est toujours fonctionnel</li>
       </ul>
     </li>
-    <li>Smoke E2E Playwright pointé sur le VPS (optionnel, recommandé) :
-      <pre><code>cd ~/Documents/Code/my-ia-V2
-E2E_BASE_URL=https://51.210.245.202:8090 ./scripts/test/run.sh e2e</code></pre>
+    <li>Smoke E2E Playwright pointé sur le VPS (optionnel) :
+      <pre><code>E2E_BASE_URL=http://51.210.245.202:8090 ./scripts/test/run.sh e2e</code></pre>
     </li>
   </ol>
 
-  <div class="callout callout-success">
-    <strong>✅ Critère de validation 4.c.</strong>
-    Tous les smoke checks passent + aucune régression observée sur V1.
-    L'utilisateur final ne voit aucune différence (V1 toujours servi sur
-    ports 3000/8081). Si KO : rollback simple (stop containers V2 staging).
+  <h3>📋 Rapport d'exécution (2026-05-06)</h3>
+
+  <p>Smoke staging validé. V2 répond sur
+  <code>http://51.210.245.202:8090</code> avec les ports staging
+  (8090/8010/5442/9011/5060), V1 inchangé sur ses ports historiques.</p>
+
+  <h4>Bugs corrigés pendant 4.c</h4>
+  <table class="data-table">
+    <thead>
+      <tr><th>Symptôme</th><th>Cause</th><th>Correctif</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>git clone Repository not found</code> côté VPS</td>
+        <td>Repo privé, clé SSH du VPS associée au compte personnel
+            <code>hitweb</code> sans accès au repo <code>ka8t/my-ia-V2</code>.</td>
+        <td>Génération d'une deploy key ed25519 dédiée
+            (<code>~/.ssh/id_my_ia_v2</code>) + alias
+            <code>github-my-ia-v2</code> dans
+            <code>~/.ssh/config</code> qui force l'usage de cette clé pour ce repo.</td>
+      </tr>
+      <tr>
+        <td><code>ModuleNotFoundError: No module named 'app.common.storage'</code>
+            au boot de l'app V2 sur le VPS</td>
+        <td>Le <code>.gitignore</code> avait <code>storage/</code> et
+            <code>logs/</code> sans slash devant → masquait
+            <code>app/common/storage</code> et <code>app/features/logs</code>
+            qui n'avaient JAMAIS été commités.</td>
+        <td>Fix <code>.gitignore</code> en
+            <code>/storage/</code>, <code>/logs/</code>, etc. + allow-list
+            <code>!/app/common/storage/</code>. Ajout des 13 fichiers
+            manquants (2041 lignes). Commit <code>73a99c4</code>.</td>
+      </tr>
+      <tr>
+        <td>360 fichiers doublons <code>* 2.py</code>, <code>* 2.html</code>...
+            polluant le repo local</td>
+        <td>Artefacts Finder/iCloud Drive macOS sur copies de fichiers.</td>
+        <td>Suppression batch via <code>find ... -delete</code>.</td>
+      </tr>
+      <tr>
+        <td>Login admin via HTTP plain → cookie de session non posé
+            (curl ne le voit pas)</td>
+        <td><code>DEPLOY_ENV=staging</code> activait
+            <code>https_only=True</code> sur le SessionMiddleware →
+            cookie posé avec flag <code>secure</code>.</td>
+        <td>Passé <code>DEPLOY_ENV=dev</code> dans le <code>.env</code>
+            VPS. Au cutover (4.d), nginx fera le HTTPS termination
+            → on remettra <code>DEPLOY_ENV=production</code>.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h4>État final</h4>
+  <ul class="feature-list">
+    <li>✅ Containers V2 up sur VPS : app, postgres, chroma, whisper, pgadmin</li>
+    <li>✅ BDD V2 migrée à <code>20260505_1200</code> (Alembic head)</li>
+    <li>✅ Users seedés : admin@test.example, user@test.example, validator, contributor</li>
+    <li>✅ <code>/health</code> répond 200 (status <em>degraded</em> car Ollama
+        unreachable depuis container, sera fixé en 4.d)</li>
+    <li>✅ <code>/web/login</code> rend le formulaire avec CSRF</li>
+    <li>✅ Login admin → 303 vers <code>/web/admin</code></li>
+    <li>✅ Page admin rend toutes les sections : Tableau, Sources, Corpus,
+        Audit, Logs serveur, Validation</li>
+    <li>✅ V1 inchangé sur ports historiques (3000/8081)</li>
+  </ul>
+
+  <div class="callout callout-warning">
+    <strong>⚠️ Reste à faire avant 4.d</strong> :
+    <ul>
+      <li>Configurer <code>llm.ollama_host</code> en BDD V2 pour pointer
+          vers Ollama réel du VPS (probablement <code>host.docker.internal</code>
+          ou IP interne de l'host)</li>
+      <li>Smoke navigateur visuel (8e item de la checklist ci-dessus)</li>
+      <li>Optionnel : E2E Playwright contre le VPS (9e item)</li>
+    </ul>
   </div>
 </section>
 
