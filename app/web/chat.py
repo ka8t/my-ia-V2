@@ -420,18 +420,37 @@ async def chat_stream(
             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
         )
 
+    # Reproduit le pattern V1 (app/features/chat/router.py /chat/stream) :
+    # si la conversation a une collection associée, l'utiliser pour le RAG.
+    # Sinon, le service utilise sa collection par défaut.
+    collection_name = None
+    collection_display_name = None
+    mode_id = None
+    try:
+        conv_id = uuid.UUID(pending["conversation_id"])
+    except (ValueError, TypeError):
+        conv_id = None
+    if conv_id is not None:
+        conv = await ConversationRepository.get_by_id(
+            db, conv_id, uuid.UUID(user["id"])
+        )
+        if conv is not None:
+            if conv.collection:
+                collection_name = conv.collection.name
+                collection_display_name = conv.collection.display_name
+            mode_id = conv.mode_id
+
     # ChatService.chat_stream handles message persistence (user + assistant).
-    # We let it set the conversation_id so it knows where to save.
     ndjson_iter = ChatService.chat_stream(
         pending["query"],
         user_id=pending["user_id"],
         db=db,
-        collection_name=None,
-        collection_display_name=None,
+        collection_name=collection_name,
+        collection_display_name=collection_display_name,
         source_ids=None,
         conversation_id=pending["conversation_id"],
         language="fr",
-        mode_id=None,
+        mode_id=mode_id,
         rag_mode="auto",
     )
 
