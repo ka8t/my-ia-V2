@@ -152,6 +152,11 @@ services:
     networks:
       - internal
       - external
+      # Phase 4.d cutover : permet à V2 d'atteindre la BDD/Chroma V1
+      # via les noms d'hôtes my_ia_postgres / my_ia_chroma. Le network
+      # "my_ia_internal" est créé par my-ia v1 (docker-compose). Si V1
+      # n'est pas présent localement, commenter cette ligne.
+      - v1_internal
 
   # ---------- pgAdmin (dev/admin DB) ----------
   pgadmin:
@@ -182,6 +187,13 @@ networks:
     driver: bridge
   external:
     driver: bridge
+  # Network externe partagé avec my-ia v1 (Phase 4.d cutover, Option A
+  # in-place : V2 utilise la BDD V1 my_ia_postgres et la ChromaDB V1
+  # my_ia_chroma, qui vivent sur le network my_ia_internal créé par
+  # le docker-compose v1).
+  v1_internal:
+    external: true
+    name: my_ia_internal
 
 volumes:
   postgres_data:
