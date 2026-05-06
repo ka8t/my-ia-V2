@@ -102,7 +102,47 @@
 
     </div>
 
-    <form class="chat-input"
+    {# Sélecteur de bibliothèque (avant le form pour ne pas casser le flex
+       layout de .chat-input). Les radios utilisent form="chat-form" pour
+       être soumis avec le form, parité V1 createNewConversation(collectionId). #}
+    {% if not conversation and available_collections %}
+    <fieldset class="chat-collection-picker">
+      <legend class="chat-collection-picker__legend">Bibliothèque pour cette conversation</legend>
+      {% set my = available_collections.my_collection %}
+      <div class="chat-collection-picker__options">
+        {% if my %}
+        <label class="chat-collection-option">
+          <input type="radio" form="chat-form" name="collection_id"
+                 value="{{ my.id }}" checked>
+          <span class="chat-collection-option__main">
+            <span class="collection-badge collection-badge--private">
+              {{ icon('sparkle', 12) }}
+              <span>{{ my.display_name }}</span>
+            </span>
+            <small>{{ my.document_count }} doc{{ 's' if my.document_count != 1 }} · {{ my.chunk_count }} chunks</small>
+          </span>
+        </label>
+        {% endif %}
+        {% for c in available_collections.public_collections %}
+        <label class="chat-collection-option">
+          <input type="radio" form="chat-form" name="collection_id"
+                 value="{{ c.id }}"
+                 {% if not my and loop.first %}checked{% endif %}>
+          <span class="chat-collection-option__main">
+            <span class="collection-badge collection-badge--public">
+              {{ icon('arrow-up-right', 12) }}
+              <span>{{ c.display_name }}</span>
+            </span>
+            <small>{{ c.document_count }} doc{{ 's' if c.document_count != 1 }} · {{ c.chunk_count }} chunks</small>
+          </span>
+        </label>
+        {% endfor %}
+      </div>
+    </fieldset>
+    {% endif %}
+
+    <form id="chat-form"
+          class="chat-input"
           hx-post="/web/chat/messages"
           hx-target="#chat-thread"
           hx-swap="beforeend"
@@ -116,42 +156,6 @@
       {% endif %}
       {% if conversation %}
       <input type="hidden" name="conversation_id" value="{{ conversation.id }}">
-      {% else %}
-        {# Sélecteur de bibliothèque avant de démarrer une conversation
-           (parité V1 modal "Nouvelle conversation"). #}
-        {% if available_collections %}
-        <fieldset class="chat-collection-picker">
-          <legend class="chat-collection-picker__legend">Bibliothèque pour cette conversation</legend>
-          {% set my = available_collections.my_collection %}
-          <div class="chat-collection-picker__options">
-            {% if my %}
-            <label class="chat-collection-option">
-              <input type="radio" name="collection_id" value="{{ my.id }}" checked>
-              <span class="chat-collection-option__main">
-                <span class="collection-badge collection-badge--private">
-                  {{ icon('sparkle', 12) }}
-                  <span>{{ my.display_name }}</span>
-                </span>
-                <small>{{ my.document_count }} doc{{ 's' if my.document_count != 1 }} · {{ my.chunk_count }} chunks</small>
-              </span>
-            </label>
-            {% endif %}
-            {% for c in available_collections.public_collections %}
-            <label class="chat-collection-option">
-              <input type="radio" name="collection_id" value="{{ c.id }}"
-                     {% if not my and loop.first %}checked{% endif %}>
-              <span class="chat-collection-option__main">
-                <span class="collection-badge collection-badge--public">
-                  {{ icon('arrow-up-right', 12) }}
-                  <span>{{ c.display_name }}</span>
-                </span>
-                <small>{{ c.document_count }} doc{{ 's' if c.document_count != 1 }} · {{ c.chunk_count }} chunks</small>
-              </span>
-            </label>
-            {% endfor %}
-          </div>
-        </fieldset>
-        {% endif %}
       {% endif %}
 
       <label for="chat-query" class="sr-only">Votre message</label>
