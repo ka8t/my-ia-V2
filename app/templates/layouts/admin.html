@@ -95,6 +95,12 @@
             <span class="admin-nav__soon">Bientôt</span>
           </a>
         </li>
+        <li>
+          <a class="admin-nav__item{% if active_section == 'audit' %} admin-nav__item--active{% endif %}"
+             href="/web/admin/audit">
+            {{ icon('settings', 14) }}<span>Audit</span>
+          </a>
+        </li>
 
         {# ─── Système — groupe avec sous-menu déroulant Alpine ─── #}
         {% set is_system = active_section in (

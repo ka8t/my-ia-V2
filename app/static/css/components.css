@@ -3125,3 +3125,51 @@ select.field__input {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: var(--space-3);
 }
+
+
+/* Phase 3.9.a — Audit log viewer */
+.admin-audit-row {
+  display: grid;
+  grid-template-columns: 170px 180px 1fr 1fr 130px 80px;
+  gap: var(--space-2);
+  align-items: center;
+}
+.admin-audit__details summary {
+  cursor: pointer;
+  color: var(--color-fg-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+.admin-audit__details summary:hover { color: var(--color-fg); }
+.admin-audit__json {
+  margin: var(--space-2) 0 0 0;
+  padding: var(--space-2);
+  background: var(--color-bg-raised);
+  border-radius: var(--radius-sm);
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  white-space: pre-wrap;
+  max-height: 300px;
+  overflow: auto;
+}
+
+/* Filtres en haut de page (audit, logs) */
+.admin-filters-form {
+  margin-bottom: var(--space-4);
+  padding: var(--space-4);
+  background: var(--color-bg-raised);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* Pagination */
+.admin-pagination {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  justify-content: center;
+}

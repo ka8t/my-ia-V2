@@ -354,3 +354,84 @@ async def admin_document_delete(
             status_code=500,
         )
     return Response(status_code=200, content="")
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  Phase 3.9.a — Audit log viewer
+# ═════════════════════════════════════════════════════════════════════════════
+@router.get("/audit", response_class=HTMLResponse)
+async def admin_audit_get(
+    request: Request,
+    page: int = 1,
+    page_size: int = 50,
+    action: str | None = None,
+    user_email: str | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    """Vue paginée des audit_logs avec filtres simples."""
+    from datetime import datetime
+    from app.features.audit.repository import AuditRepository
+
+    page = max(1, int(page))
+    page_size = max(10, min(int(page_size), 200))
+
+    # Filtres date — format ISO YYYY-MM-DD attendu
+    parsed_from = parsed_to = None
+    if date_from:
+        try:
+            parsed_from = datetime.fromisoformat(date_from)
+        except ValueError:
+            parsed_from = None
+    if date_to:
+        try:
+            parsed_to = datetime.fromisoformat(date_to)
+        except ValueError:
+            parsed_to = None
+
+    # Résolution user_email → user_id (recherche partielle)
+    user_id = None
+    if user_email:
+        result = await db.execute(
+            select(User.id).where(User.email.ilike(f"%{user_email.strip()}%")).limit(1)
+        )
+        user_id = result.scalar_one_or_none()
+
+    logs, total = await AuditRepository.get_logs(
+        db=db,
+        skip=(page - 1) * page_size,
+        limit=page_size,
+        user_id=user_id,
+        action_name=action.strip() if action else None,
+        date_from=parsed_from,
+        date_to=parsed_to,
+    )
+
+    # Liste des actions distinctes pour le select
+    all_actions = await AuditRepository.get_all_actions(db)
+    pending = await _pending_users_count(db)
+
+    total_pages = max(1, (total + page_size - 1) // page_size)
+    return templates.TemplateResponse(
+        request,
+        "pages/admin/audit.html",
+        web_context(
+            request,
+            title="Journal d'audit",
+            active_section="audit",
+            user=user,
+            pending_users_count=pending,
+            logs=logs,
+            total=total,
+            page=page,
+            page_size=page_size,
+            total_pages=total_pages,
+            all_actions=all_actions,
+            filter_action=action or "",
+            filter_user_email=user_email or "",
+            filter_date_from=date_from or "",
+            filter_date_to=date_to or "",
+        ),
+    )
