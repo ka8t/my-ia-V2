@@ -37,7 +37,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_async_session
 from app.features.chat.service import ChatService
-from app.features.conversations.repository import ConversationRepository
+from app.features.conversations.repository import ConversationRepository, MessageRepository
 from app.features.conversations.service import ConversationService
 from app.models import Collection, Conversation, Message, User
 from app.web.deps import require_web_auth
@@ -112,9 +112,7 @@ async def _load_conversation(
     conv = await ConversationRepository.get_by_id(db, conversation_id, user_id)
     if conv is None:
         return None, []
-    messages = await ConversationRepository.get_recent_messages(
-        db, conversation_id, limit=200
-    )
+    messages = await MessageRepository.list_by_conversation(db, conversation_id)
     return conv, messages
 
 
