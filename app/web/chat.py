@@ -112,7 +112,9 @@ async def _load_conversation(
     conv = await ConversationRepository.get_by_id(db, conversation_id, user_id)
     if conv is None:
         return None, []
-    messages = await ConversationRepository.get_messages(db, conversation_id)
+    messages = await ConversationRepository.get_recent_messages(
+        db, conversation_id, limit=200
+    )
     return conv, messages
 
 
