@@ -118,7 +118,10 @@ services:
       - OLLAMA_PORT=${OLLAMA_PORT:-11434}
       - CHROMA_HOST=${CHROMA_HOST:-chroma}
       - ANONYMIZED_TELEMETRY=FALSE
-      - DATABASE_URL=postgresql+asyncpg://${APP_DB_USER}:${APP_DB_PASSWORD}@postgres:5432/${APP_DB_NAME}
+      # DATABASE_URL : prend la valeur du .env si définie, sinon
+      # construit à partir des credentials V2 vers le service postgres
+      # local. Permet à 4.d cutover (Option A) de pointer vers la BDD V1.
+      - DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://${APP_DB_USER}:${APP_DB_PASSWORD}@postgres:5432/${APP_DB_NAME}}
       - SESSION_SECRET=${SESSION_SECRET}
       - DEPLOY_ENV=${DEPLOY_ENV:-dev}
       - UVICORN_WORKERS=${UVICORN_WORKERS:-1}
