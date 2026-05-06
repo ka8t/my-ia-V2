@@ -35,13 +35,16 @@ coverage.xml
 *.pem
 *.key
 
-# Docker / data
-data/
-logs/
-storage/
-chroma_data/
-postgres_data/
-models/
+# Docker / data — uniquement à la racine, pas les sous-modules code
+/data/
+/logs/
+/storage/
+/chroma_data/
+/postgres_data/
+/models/
+
+# Conserver le module app/common/storage qui contient du code Python
+!/app/common/storage/
 
 # IDE
 .idea/
