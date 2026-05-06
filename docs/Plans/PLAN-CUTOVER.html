@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Plan de cutover — MY-IA V1 → V2 (Phase 4)</title>
+<link rel="stylesheet" href="../assets/doc-style.css">
+</head>
+<body>
+
+<header class="header">
+  <div class="page">
+    <div class="header-icon">🚀</div>
+    <h1>Cutover MY-IA V1 → V2</h1>
+    <p class="subtitle">
+      Runbook détaillé pour décommissionner la stack JS V1 et basculer la
+      production sur la stack 100% Python V2. Aucune migration BDD/ChromaDB
+      n'est nécessaire (mêmes containers persistés).
+    </p>
+    <div class="meta">
+      <span class="badge badge-primary">Phase 4</span>
+      <span class="badge badge-warning">Production</span>
+      <span class="meta-item">Auteur : KL</span>
+      <span class="meta-item">Date : 2026-05-06</span>
+      <span class="meta-item">Estimation : 4-6h focus</span>
+    </div>
+  </div>
+</header>
+
+<main class="page">
+
+<!-- ============================================================ -->
+<!-- TOC                                                            -->
+<!-- ============================================================ -->
+<nav class="toc">
+  <h2>Table des matières</h2>
+  <div class="toc-grid">
+    <a href="#statut">📊 Statut d'avancement</a>
+    <a href="#contexte">1. Contexte & pré-requis</a>
+    <a href="#topologie">2. Topologie cible</a>
+    <a href="#phase-4a">3. 4.a — Audit de parité BDD</a>
+    <a href="#phase-4b">4. 4.b — Adaptation deploy.sh V2</a>
+    <a href="#phase-4c">5. 4.c — Smoke staging VPS</a>
+    <a href="#phase-4d">6. 4.d — Cutover</a>
+    <a href="#phase-4e">7. 4.e — Cleanup post-cutover</a>
+    <a href="#rollback">8. Rollback global</a>
+    <a href="#critères">9. Critères de succès</a>
+  </div>
+</nav>
+
+<!-- ============================================================ -->
+<!-- Table de statut globale (mise à jour à chaque commit)          -->
+<!-- ============================================================ -->
+<section class="section" id="statut">
+  <div class="section-header">
+    <span class="section-num">📊</span>
+    <h2>Statut d'avancement</h2>
+  </div>
+
+  <p>Chaque sous-vague est marquée à la validation du commit correspondant.
+  Le hash court permet de retrouver le commit dans <code>git log</code>.</p>
+
+  <table class="plan-status-table data-table">
+    <thead>
+      <tr>
+        <th>Sous-vague</th>
+        <th>Sujet</th>
+        <th>Status</th>
+        <th>Commit</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr data-status="pending">
+        <td><strong>4.a</strong></td>
+        <td>Audit de parité BDD V1 vs V2</td>
+        <td><span class="plan-status plan-status--pending">⏳ pending</span></td>
+        <td>—</td>
+      </tr>
+      <tr data-status="pending">
+        <td><strong>4.b</strong></td>
+        <td>Adaptation deploy.sh V2</td>
+        <td><span class="plan-status plan-status--pending">⏳ pending</span></td>
+        <td>—</td>
+      </tr>
+      <tr data-status="pending">
+        <td><strong>4.c</strong></td>
+        <td>Smoke staging VPS</td>
+        <td><span class="plan-status plan-status--pending">⏳ pending</span></td>
+        <td>—</td>
+      </tr>
+      <tr data-status="pending">
+        <td><strong>4.d</strong></td>
+        <td>Cutover (fenêtre de maintenance)</td>
+        <td><span class="plan-status plan-status--pending">⏳ pending</span></td>
+        <td>—</td>
+      </tr>
+      <tr data-status="pending">
+        <td><strong>4.e</strong></td>
+        <td>Cleanup post-cutover (J+30)</td>
+        <td><span class="plan-status plan-status--pending">⏳ pending</span></td>
+        <td>—</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-info">
+    <strong>📋 Légende.</strong>
+    <span class="plan-status plan-status--pending">⏳ pending</span> à faire ·
+    <span class="plan-status plan-status--in-progress">🟡 en cours</span> démarré ·
+    <span class="plan-status plan-status--done">✅ fait</span> validé et commité.
+    Les items des checklists ci-dessous sont également marqués via
+    <code>data-done="true"</code> au fur et à mesure.
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 1. Contexte                                                    -->
+<!-- ============================================================ -->
+<section class="section" id="contexte">
+  <div class="section-header">
+    <span class="section-num">1</span>
+    <h2>Contexte & pré-requis</h2>
+  </div>
+
+  <div class="cards">
+    <div class="card">
+      <h3 class="card-title">État de départ</h3>
+      <p class="card-text">
+        V1 (`my-ia`) tourne en production sur le VPS 51.210.245.202, ports
+        3000 (UI front) et 8081 (UI back). V2 (`my-ia-V2`) est livrée
+        complète localement (Phase 3.7-3.9), 209 tests verts, push sur
+        <code>origin/dev</code>.
+      </p>
+    </div>
+    <div class="card">
+      <h3 class="card-title">État cible</h3>
+      <p class="card-text">
+        V2 est la production active sur le VPS, accessible aux mêmes
+        credentials. V1 est arrêté (containers stoppés) mais code/BDD/ChromaDB
+        conservés ≥ 30 jours pour rollback. Tag <code>v2.0.0</code> sur
+        <code>main</code> du repo V2.
+      </p>
+    </div>
+    <div class="card">
+      <h3 class="card-title">Hors scope</h3>
+      <p class="card-text">
+        Pas de migration de schéma BDD (V2 utilise les mêmes tables que V1
+        — les modèles SQLAlchemy ont été repris à l'identique depuis le tag
+        <code>v1.0.0-js-final</code>). Pas de migration ChromaDB
+        (mêmes collections, même vector store).
+      </p>
+    </div>
+    <div class="card">
+      <h3 class="card-title">Pré-requis exécution</h3>
+      <ul class="feature-list">
+        <li>Accès SSH au VPS : <code>ssh debian@51.210.245.202</code></li>
+        <li>Accès en écriture au repo <code>ka8t/my-ia-V2</code></li>
+        <li>Branche <code>dev</code> verte (CI/local) avec tous les tests passants</li>
+        <li>Sauvegarde BDD V1 récente (≤ 24h)</li>
+        <li>Fenêtre de maintenance annoncée aux utilisateurs (recommandé)</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout callout-warning">
+    <strong>⚠️ Lecture obligatoire avant 4.d.</strong>
+    Le cutover (4.d) coupe l'accès utilisateur ~5-10 minutes. Toute
+    modification BDD pendant cette fenêtre est perdue (V1 stoppé, V2 pas
+    encore en ligne). Annoncer aux utilisateurs et privilégier une fenêtre
+    creuse (nuit / week-end).
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 2. Topologie cible                                             -->
+<!-- ============================================================ -->
+<section class="section" id="topologie">
+  <div class="section-header">
+    <span class="section-num">2</span>
+    <h2>Topologie cible</h2>
+  </div>
+
+  <h3>Avant cutover (V1 + V2 en parallèle)</h3>
+  <pre><code>VPS 51.210.245.202
+├── my_ia_postgres        :5432  ← V1 (production)
+├── my_ia_chroma          :8000  ← V1 (production)
+├── my_ia_app (FastAPI)   :8080  ← V1 (production, interne)
+├── my_ia_ui_front        :3000  ← V1 (entry user)
+├── my_ia_ui_back         :8081  ← V1 (entry admin)
+│
+├── my_ia_v2_postgres     :5442  ← V2 (staging) — instance distincte
+├── my_ia_v2_chroma       :8010  ← V2 (staging)
+└── my_ia_v2_app          :8090  ← V2 (staging, sert HTML + API)</code></pre>
+
+  <h3>Option A — Bascule "in-place" (recommandée si V1=V2 schéma identique)</h3>
+  <pre><code>VPS 51.210.245.202
+├── my_ia_postgres        :5432  ← partagé avec V2 (V1 stoppé)
+├── my_ia_chroma          :8000  ← partagé avec V2 (V1 stoppé)
+└── my_ia_v2_app          :3000  ← V2 sur l'entry-point V1 historique
+                                   (port 3000 disponible après V1 stop)</code></pre>
+
+  <h3>Option B — Cohabitation (rollback ultra-rapide possible)</h3>
+  <pre><code>VPS 51.210.245.202
+├── my_ia_postgres        :5432  ← V1 stoppé, BDD intacte
+├── my_ia_chroma          :8000  ← V1 stoppé, vector store intact
+├── my_ia_v2_postgres     :5442  ← V2 actif, BDD répliquée (pg_dump | restore)
+├── my_ia_v2_chroma       :8010  ← V2 actif, ChromaDB répliquée
+└── my_ia_v2_app          :3000  ← V2 sur entry-point user historique</code></pre>
+
+  <div class="callout callout-info">
+    <strong>💡 Choix Option A vs B.</strong>
+    Option A (in-place) est simple et garantit zéro risque de désync entre
+    V1 et V2 BDD. Option B isole physiquement V1, rollback instantané sans
+    perte de données. <strong>Recommandation : Option A</strong> car les
+    schémas sont identiques (les tables sont créées par les mêmes modèles
+    SQLAlchemy reprise à l'identique). Si doute après audit 4.a, basculer
+    sur Option B.
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 3. Phase 4.a — Audit de parité BDD                              -->
+<!-- ============================================================ -->
+<section class="section" id="phase-4a">
+  <div class="section-header">
+    <span class="section-num">4.a</span>
+    <h2>Audit de parité BDD V1 vs V2</h2>
+  </div>
+
+  <p>Vérifier que les schémas SQL produits par V1 et V2 sont strictement
+  identiques. Si différence, créer une migration Alembic V2 ou trancher
+  pour Option B.</p>
+
+  <h3>Étapes locales</h3>
+  <ol class="checklist">
+    <li>Démarrer V1 en local (port 5432) si pas déjà fait :
+      <pre><code>cd ~/Documents/Code/my-ia
+./scripts/start.sh</code></pre>
+    </li>
+    <li>Démarrer V2 en local (port 5442) si pas déjà fait :
+      <pre><code>cd ~/Documents/Code/my-ia-V2
+./scripts/start.sh</code></pre>
+    </li>
+    <li>Dump des schemas (DDL only, pas de données) :
+      <pre><code>docker exec my_ia_postgres pg_dump -U my_ia_db_user --schema-only --no-owner --no-acl my_ia_db &gt; /tmp/schema_v1.sql
+docker exec my_ia_v2_postgres pg_dump -U my_ia_v2_db_user --schema-only --no-owner --no-acl my_ia_v2_db &gt; /tmp/schema_v2.sql</code></pre>
+    </li>
+    <li>Diff (filtre sur les noms de DB qui diffèrent) :
+      <pre><code>diff &lt;(sed 's/my_ia_db/X/g; s/my_ia_db_user/Y/g' /tmp/schema_v1.sql) \
+     &lt;(sed 's/my_ia_v2_db/X/g; s/my_ia_v2_db_user/Y/g' /tmp/schema_v2.sql)</code></pre>
+    </li>
+    <li>Comparer les versions Alembic :
+      <pre><code>docker exec my_ia_postgres psql -U my_ia_db_user -d my_ia_db -tAc "SELECT version_num FROM alembic_version"
+docker exec my_ia_v2_postgres psql -U my_ia_v2_db_user -d my_ia_v2_db -tAc "SELECT version_num FROM alembic_version"</code></pre>
+    </li>
+  </ol>
+
+  <h3>Décisions selon résultat</h3>
+  <table class="data-table">
+    <thead>
+      <tr><th>Résultat diff</th><th>Action</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Identique</td>
+        <td>Option A — bascule in-place possible. Continuer 4.b.</td>
+      </tr>
+      <tr>
+        <td>Différences mineures (colonnes ajoutées en V2)</td>
+        <td>Créer une migration Alembic <code>app/alembic/versions/4xxx_v2_diff.py</code>
+            qui ajoute les colonnes manquantes. La tester en local sur la BDD V1.</td>
+      </tr>
+      <tr>
+        <td>Différences majeures (renames, tables manquantes)</td>
+        <td>Stop. Re-évaluer : porter manuellement les modèles V2 manquants ou
+            choisir Option B (BDD séparée + script de migration de données).</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-info">
+    <strong>📋 Livrable 4.a.</strong>
+    Rapport bref : « schemas identiques OK » ou « N migrations à créer »
+    avec liste précise. Va dans le commentaire du commit 4.b.
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 4. Phase 4.b — Adaptation deploy.sh                            -->
+<!-- ============================================================ -->
+<section class="section" id="phase-4b">
+  <div class="section-header">
+    <span class="section-num">4.b</span>
+    <h2>Adaptation deploy.sh V2</h2>
+  </div>
+
+  <p>Le repo V2 hérite déjà d'un <code>scripts/deploy.sh</code> repris du V1.
+  Vérifier qu'il pointe sur les bons containers <code>my_ia_v2_*</code> et
+  ports VPS, puis le tester en local.</p>
+
+  <h3>Étapes</h3>
+  <ol class="checklist">
+    <li>Vérifier le contenu de <code>scripts/deploy.sh</code> et
+      <code>scripts/lib/*.sh</code> :
+      <pre><code>grep -rn "my_ia\|SANITIZED_PREFIX" scripts/</code></pre>
+    </li>
+    <li>S'assurer que <code>SANITIZED_PREFIX=my_ia_v2</code> est utilisé
+      partout, pas <code>my_ia</code>.</li>
+    <li>Vérifier que les ports cible sont les ports V1 historiques (3000,
+      8081) si Option A, ou les ports V2 (8090) si Option B.</li>
+    <li>Test à blanc en local (mode docker local) :
+      <pre><code>./scripts/deploy.sh docker local</code></pre>
+    </li>
+    <li>Si OK, commit + push sur <code>dev</code> :
+      <pre><code>git add scripts/
+git commit -m "Phase 4.b — Adapter deploy.sh pour V2"
+git push origin dev</code></pre>
+    </li>
+  </ol>
+
+  <div class="callout callout-warning">
+    <strong>⚠️ Variables d'environnement.</strong>
+    Le <code>.env</code> distant sur le VPS doit contenir
+    <code>SANITIZED_PREFIX=my_ia_v2</code> et les credentials Postgres
+    spécifiques V2. Si Option A (BDD partagée), il doit pointer vers la
+    BDD V1 existante avec ses credentials (modifier <code>DATABASE_URL</code>).
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 5. Phase 4.c — Smoke staging VPS                               -->
+<!-- ============================================================ -->
+<section class="section" id="phase-4c">
+  <div class="section-header">
+    <span class="section-num">4.c</span>
+    <h2>Smoke staging sur VPS</h2>
+  </div>
+
+  <p>Déployer V2 sur le VPS en parallèle de V1 (ports staging 8090/8010/5442)
+  et vérifier que tout fonctionne bout-en-bout sans toucher à V1.</p>
+
+  <h3>Étapes</h3>
+  <ol class="checklist">
+    <li>Push sur <code>main</code> V2 (première fois — valider explicitement) :
+      <pre><code>git checkout main
+git merge dev
+git push origin main
+git checkout dev</code></pre>
+    </li>
+    <li>Déployer V2 sur le VPS (ports staging) :
+      <pre><code>./scripts/deploy.sh remote</code></pre>
+      Le script SSH le code, build l'image V2, démarre les containers
+      <code>my_ia_v2_*</code> sans toucher à V1.
+    </li>
+    <li>Vérifier les containers actifs sur le VPS :
+      <pre><code>ssh debian@51.210.245.202 "docker ps --filter 'name=my_ia' --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'"</code></pre>
+    </li>
+    <li>Smoke check via curl (depuis votre poste) :
+      <pre><code># V2 health
+curl -k https://51.210.245.202:8090/health
+
+# V2 admin login page
+curl -k https://51.210.245.202:8090/web/login -o /tmp/login.html
+grep -c csrf_token /tmp/login.html  # → 1 attendu</code></pre>
+    </li>
+    <li>Smoke check manuel dans un navigateur :
+      <ul>
+        <li>Ouvrir <code>https://51.210.245.202:8090/web/login</code></li>
+        <li>Login admin → atterrir sur <code>/web/admin</code></li>
+        <li>Naviguer : Corpus, Sources, Système (LLM, RAG), Audit</li>
+        <li>Créer un corpus de test, vérifier rendu</li>
+        <li>Vérifier que V1 (ports 3000/8081) est toujours fonctionnel</li>
+      </ul>
+    </li>
+    <li>Smoke E2E Playwright pointé sur le VPS (optionnel, recommandé) :
+      <pre><code>cd ~/Documents/Code/my-ia-V2
+E2E_BASE_URL=https://51.210.245.202:8090 ./scripts/test/run.sh e2e</code></pre>
+    </li>
+  </ol>
+
+  <div class="callout callout-success">
+    <strong>✅ Critère de validation 4.c.</strong>
+    Tous les smoke checks passent + aucune régression observée sur V1.
+    L'utilisateur final ne voit aucune différence (V1 toujours servi sur
+    ports 3000/8081). Si KO : rollback simple (stop containers V2 staging).
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 6. Phase 4.d — Cutover                                         -->
+<!-- ============================================================ -->
+<section class="section" id="phase-4d">
+  <div class="section-header">
+    <span class="section-num">4.d</span>
+    <h2>Cutover (fenêtre de maintenance)</h2>
+  </div>
+
+  <div class="callout callout-danger">
+    <strong>🚨 Étape critique.</strong> Coupe l'accès utilisateur 5-10 min.
+    Annoncer la fenêtre. Avoir un terminal SSH ouvert prêt au rollback.
+  </div>
+
+  <h3>T-0 : pré-checks</h3>
+  <ol class="checklist">
+    <li>Sauvegarde BDD V1 fraîche (T-0) :
+      <pre><code>ssh debian@51.210.245.202 "docker exec my_ia_postgres pg_dump -U my_ia_db_user my_ia_db | gzip" \
+  &gt; ~/backups/my_ia_pre_cutover_$(date +%Y%m%d_%H%M).sql.gz</code></pre>
+    </li>
+    <li>Sauvegarde ChromaDB :
+      <pre><code>ssh debian@51.210.245.202 "docker run --rm -v my_ia_chroma_data:/source -v /tmp:/dest alpine \
+  tar czf /dest/chroma_pre_cutover_$(date +%Y%m%d_%H%M).tar.gz -C /source ."</code></pre>
+    </li>
+    <li>Confirmer absence d'utilisateurs actifs (logs nginx ou
+      <code>SELECT count(*) FROM sessions WHERE last_activity &gt; now() - interval '5 min'</code>).</li>
+  </ol>
+
+  <h3>T+0 : bascule</h3>
+  <ol class="checklist">
+    <li>Stop V1 :
+      <pre><code>ssh debian@51.210.245.202 "cd /opt/my-ia &amp;&amp; ./scripts/stop.sh"</code></pre>
+    </li>
+    <li>Si Option A : libérer les ports (3000, 8081) en arrêtant
+      <code>my_ia_ui_front</code>, <code>my_ia_ui_back</code>. Modifier
+      <code>docker-compose.yml</code> V2 pour mapper sur 3000 :
+      <pre><code>app:
+  ports:
+    - "3000:8080"  # remplace 8090:8080</code></pre>
+    </li>
+    <li>Reconfigurer le <code>.env</code> V2 sur le VPS pour pointer sur la
+      BDD V1 (Option A) :
+      <pre><code>DATABASE_URL=postgresql+asyncpg://my_ia_db_user:&lt;PASS&gt;@my_ia_postgres:5432/my_ia_db
+SANITIZED_PREFIX=my_ia_v2  # garde le prefix V2 pour les containers</code></pre>
+      <strong>Note</strong> : ajouter <code>my_ia_postgres</code> au network
+      du compose V2, ou utiliser host network.
+    </li>
+    <li>Re-démarrer V2 :
+      <pre><code>ssh debian@51.210.245.202 "cd /opt/my-ia-v2 &amp;&amp; docker compose up -d --force-recreate"</code></pre>
+    </li>
+    <li>Vérifier health :
+      <pre><code>curl -k https://51.210.245.202:3000/health</code></pre>
+    </li>
+  </ol>
+
+  <h3>T+5 : validation utilisateur</h3>
+  <ol class="checklist">
+    <li>Login admin via le navigateur sur l'URL historique
+      (<code>https://51.210.245.202:3000</code> ou domaine prod si DNS).</li>
+    <li>Smoke critique : créer une conversation, uploader un document,
+      lancer une recherche RAG.</li>
+    <li>Vérifier les logs serveur (<code>/web/admin/logs</code>) — pas
+      d'erreur 500 ni stacktrace.</li>
+    <li>Si KO : déclencher rollback (section 8).</li>
+  </ol>
+</section>
+
+<!-- ============================================================ -->
+<!-- 7. Phase 4.e — Cleanup post-cutover                            -->
+<!-- ============================================================ -->
+<section class="section" id="phase-4e">
+  <div class="section-header">
+    <span class="section-num">4.e</span>
+    <h2>Cleanup post-cutover (après J+30)</h2>
+  </div>
+
+  <p>Une fois la stabilité confirmée (≥ 30 jours sans rollback nécessaire),
+  nettoyer les artefacts V1.</p>
+
+  <ol class="checklist">
+    <li>Supprimer les containers V1 stoppés :
+      <pre><code>ssh debian@51.210.245.202 "docker rm my_ia_app my_ia_ui_front my_ia_ui_back"</code></pre>
+    </li>
+    <li>Conserver les images V1 et le code <code>/opt/my-ia</code>
+      (rollback ultra-tardif possible).</li>
+    <li>Tag <code>v2.0.0</code> sur <code>main</code> V2 :
+      <pre><code>cd ~/Documents/Code/my-ia-V2
+git checkout main
+git tag -a v2.0.0 -m "MY-IA V2.0.0 — première mise en production"
+git push origin v2.0.0</code></pre>
+    </li>
+    <li>Mettre à jour <code>MEMORY.md</code> : V1 décommissionné, URL prod
+      = celle de V2.</li>
+    <li>Archiver le repo V1 sur GitHub (read-only).</li>
+    <li>Déplacer <code>PLAN-CUTOVER.html</code> vers
+      <code>docs/Plans/Closed/</code>.</li>
+  </ol>
+</section>
+
+<!-- ============================================================ -->
+<!-- 8. Rollback                                                    -->
+<!-- ============================================================ -->
+<section class="section" id="rollback">
+  <div class="section-header">
+    <span class="section-num">8</span>
+    <h2>Rollback global</h2>
+  </div>
+
+  <p>Procédure d'urgence si V2 dysfonctionne en production. Cible :
+  retour à V1 en moins de 5 minutes.</p>
+
+  <h3>Rollback rapide (cohérence BDD préservée — Option A)</h3>
+  <ol class="checklist">
+    <li>Stop V2 :
+      <pre><code>ssh debian@51.210.245.202 "cd /opt/my-ia-v2 &amp;&amp; docker compose down"</code></pre>
+    </li>
+    <li>Re-démarrer V1 :
+      <pre><code>ssh debian@51.210.245.202 "cd /opt/my-ia &amp;&amp; ./scripts/start.sh"</code></pre>
+    </li>
+    <li>Vérifier health V1 :
+      <pre><code>curl -k https://51.210.245.202:3000/health</code></pre>
+    </li>
+    <li>Si la BDD a été modifiée par V2 et qu'une corruption est suspectée,
+      restaurer depuis la sauvegarde T-0 :
+      <pre><code>gunzip -c ~/backups/my_ia_pre_cutover_*.sql.gz | \
+  ssh debian@51.210.245.202 "docker exec -i my_ia_postgres psql -U my_ia_db_user my_ia_db"</code></pre>
+    </li>
+  </ol>
+
+  <div class="callout callout-warning">
+    <strong>⚠️ Décision de rollback.</strong>
+    Documenter immédiatement la raison du rollback (logs, captures écran,
+    requêtes erreur) AVANT de stop V2 — pour analyse post-mortem.
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 9. Critères de succès                                          -->
+<!-- ============================================================ -->
+<section class="section" id="critères">
+  <div class="section-header">
+    <span class="section-num">9</span>
+    <h2>Critères de succès</h2>
+  </div>
+
+  <table class="data-table">
+    <thead>
+      <tr><th>Critère</th><th>Mesure</th><th>Cible</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Fenêtre de coupure</td>
+        <td>Temps entre stop V1 et health 200 sur V2</td>
+        <td>≤ 10 min</td>
+      </tr>
+      <tr>
+        <td>Disponibilité post-cutover</td>
+        <td>Uptime V2 sur 7j</td>
+        <td>≥ 99,5%</td>
+      </tr>
+      <tr>
+        <td>Régression utilisateur</td>
+        <td>Tickets / messages d'incident remontés en J+1</td>
+        <td>0</td>
+      </tr>
+      <tr>
+        <td>Latence chat (premier token)</td>
+        <td>p95 sur 100 conversations post-cutover</td>
+        <td>≤ 800ms (parité V1)</td>
+      </tr>
+      <tr>
+        <td>Erreurs serveur</td>
+        <td>Logs 5xx sur 24h post-cutover</td>
+        <td>≤ 5 sur 24h</td>
+      </tr>
+      <tr>
+        <td>Bundle client</td>
+        <td>Taille totale JS chargé</td>
+        <td>≤ 50 Ko (KPI plan migration)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-success">
+    <strong>🏁 Phase 4 terminée quand :</strong>
+    tous les critères sont verts à J+7 ET aucun rollback n'a été nécessaire
+    pendant la période. Tag <code>v2.0.0</code> posé, MEMORY.md à jour,
+    Plan déplacé en <code>Closed/</code>.
+  </div>
+</section>
+
+</main>
+
+<footer class="footer">
+  <p>MY-IA V2 — Plan de cutover · Document opérationnel, à exécuter étape par étape sous validation explicite.</p>
+</footer>
+
+</body>
+</html>

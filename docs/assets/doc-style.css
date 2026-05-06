@@ -596,3 +596,54 @@ pre code {
   .toc { break-after: page; }
   .card:hover { box-shadow: none; }
 }
+
+
+/* ============================================================================
+   Système de marquage de progression pour les plans (PLAN-*.html)
+   - Table de statut globale (.plan-status-table)
+   - Pastilles colorées (.plan-status--pending/in-progress/done)
+   - Items checklist marqués (.checklist li[data-done="true"])
+   ============================================================================ */
+
+.plan-status-table {
+  margin-bottom: 16px;
+}
+.plan-status-table th,
+.plan-status-table td {
+  vertical-align: middle;
+}
+.plan-status-table tbody tr[data-status="done"] td:first-child {
+  color: var(--gray-500);
+  text-decoration: line-through;
+}
+
+.plan-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.plan-status--pending     { background: #f3f4f6; color: #6b7280; }
+.plan-status--in-progress { background: #fef3c7; color: #92400e; }
+.plan-status--done        { background: #dcfce7; color: #15803d; }
+
+/* Items checklist marqués comme effectués */
+.checklist li[data-done="true"] {
+  color: var(--gray-500);
+  text-decoration: line-through;
+}
+.checklist li[data-done="true"] code,
+.checklist li[data-done="true"] strong {
+  color: inherit;
+}
+.checklist li[data-done="true"]::before {
+  content: "✅ ";
+  margin-right: 4px;
+  text-decoration: none;
+  display: inline-block;
+}
