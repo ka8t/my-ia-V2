@@ -1011,12 +1011,10 @@ async def admin_corpus_reindex(
             request, corpus_id, flash="Aucun élément rattaché à réindexer."
         )
 
-    # Réutiliser les BG tasks privés du router API V1 — évite la duplication
-    # de logique d'indexation. À factoriser dans un module dédié à terme.
     from app.common.utils.reindex import ReindexManager
-    from app.features.admin.corpus.router import (
-        _run_doc_reindex_in_background,
-        _run_source_reindex_in_background,
+    from app.features.admin.corpus.reindex_tasks import (
+        run_doc_reindex_in_background,
+        run_source_reindex_in_background,
     )
     from app.features.sources.history import IndexationHistoryService
 
@@ -1026,7 +1024,7 @@ async def admin_corpus_reindex(
         if existing.get("status") == "running":
             continue
         background_tasks.add_task(
-            _run_doc_reindex_in_background, document_id=doc_id, corpus_id=corpus_id
+            run_doc_reindex_in_background, document_id=doc_id, corpus_id=corpus_id
         )
         queued_docs += 1
 
@@ -1047,7 +1045,7 @@ async def admin_corpus_reindex(
             continue
 
         background_tasks.add_task(
-            _run_source_reindex_in_background,
+            run_source_reindex_in_background,
             source_id=source_id,
             triggered_by=admin_id,
             log_id=str(log_entry.id),

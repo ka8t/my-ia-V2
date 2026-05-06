@@ -44,6 +44,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.deps import get_db, get_current_admin_user, get_chroma_client, get_storage_service
 from app.models import User
 from app.features.admin.corpus.service import AdminCorpusService
+from app.features.admin.corpus.reindex_tasks import (
+    run_doc_reindex_in_background,
+    run_source_reindex_in_background,
+)
 from app.features.system.service import SystemConfigService
 from app.features.audit.service import AuditService
 from app.features.admin.corpus.schemas import (
@@ -372,7 +376,7 @@ async def bulk_reindex_corpus(
                 if progress.get("status") == "running":
                     continue
                 background_tasks.add_task(
-                    _run_doc_reindex_in_background,
+                    run_doc_reindex_in_background,
                     document_id=doc_id,
                     corpus_id=corpus_id,
                 )
@@ -387,7 +391,7 @@ async def bulk_reindex_corpus(
                     triggered_by=str(admin.id)
                 )
                 background_tasks.add_task(
-                    _run_source_reindex_in_background,
+                    run_source_reindex_in_background,
                     source_id=source_id,
                     triggered_by=str(admin.id),
                     log_id=str(log_entry.id),
@@ -1026,7 +1030,7 @@ async def reindex_corpus(
 
         # Ajouter à la queue
         background_tasks.add_task(
-            _run_doc_reindex_in_background,
+            run_doc_reindex_in_background,
             document_id=doc_id,
             corpus_id=corpus_id,
         )
@@ -1056,7 +1060,7 @@ async def reindex_corpus(
     # Lancer les tâches de fond après le commit
     for source_id, log_id in source_log_ids:
         background_tasks.add_task(
-            _run_source_reindex_in_background,
+            run_source_reindex_in_background,
             source_id=source_id,
             triggered_by=str(admin.id),
             log_id=log_id,
@@ -1145,212 +1149,3 @@ async def cancel_corpus_reindex(
     }
 
 
-async def _run_doc_reindex_in_background(
-    document_id: UUID,
-    corpus_id: Optional[UUID] = None,
-) -> None:
-    """
-    Tâche de fond pour la réindexation d'un document (via corpus).
-
-    Réutilise la logique de admin/documents/router.py avec suivi de progression
-    et support de l'annulation en cascade via corpus.
-    """
-    from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
-    from sqlalchemy.orm import selectinload
-    from sqlalchemy import select
-    from app.core.config import settings
-    from app.core.deps import get_chroma_client as _get_chroma, get_storage_service as _get_storage
-    from app.features.admin.documents.service import AdminDocumentService
-    from app.common.utils.reindex import (
-        set_doc_reindex_progress,
-        is_doc_cancel_requested,
-        clear_doc_cancel_flag,
-        ReindexManager,
-    )
-    from app.models import Document
-
-    doc_id_str = str(document_id)
-    corpus_id_str = str(corpus_id) if corpus_id else None
-
-    # Enregistrer l'association avec le corpus pour l'annulation en cascade
-    if corpus_id_str:
-        ReindexManager.register_corpus_item(corpus_id_str, ReindexManager.doc_id(doc_id_str))
-
-    def _check_cancelled() -> bool:
-        """Vérifie si l'annulation a été demandée."""
-        if is_doc_cancel_requested(doc_id_str):
-            set_doc_reindex_progress(
-                doc_id_str, 0, "cancelled",
-                status="cancelled",
-                error_message="Annulé par l'utilisateur",
-                corpus_id=corpus_id_str,
-            )
-            clear_doc_cancel_flag(doc_id_str)
-            return True
-        return False
-
-    set_doc_reindex_progress(doc_id_str, 0, "starting", corpus_id=corpus_id_str)
-
-    engine = create_async_engine(settings.database_url, pool_pre_ping=True)
-    bg_session_maker = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-
-    try:
-        # Vérifier annulation avant de commencer
-        if _check_cancelled():
-            return
-
-        async with bg_session_maker() as db:
-            # Récupérer le document
-            set_doc_reindex_progress(doc_id_str, 5, "loading_document", corpus_id=corpus_id_str)
-
-            if _check_cancelled():
-                return
-
-            result = await db.execute(
-                select(Document)
-                .options(selectinload(Document.collection))
-                .where(Document.id == document_id)
-            )
-            document = result.scalar_one_or_none()
-
-            if not document:
-                set_doc_reindex_progress(
-                    doc_id_str, 0, "not_found",
-                    status="failed", error_message="Document introuvable",
-                    corpus_id=corpus_id_str,
-                )
-                return
-
-            # Mettre à jour avec le nom du document
-            set_doc_reindex_progress(
-                doc_id_str, 10, "preparing",
-                document_name=document.filename,
-                corpus_id=corpus_id_str,
-            )
-
-            if _check_cancelled():
-                return
-
-            # Créer un service avec la session de fond
-            chroma_client = _get_chroma()
-            storage_service = _get_storage()
-            service = AdminDocumentService(
-                session=db,
-                storage_service=storage_service,
-                chroma_client=chroma_client,
-            )
-
-            # Lancer la réindexation avec suivi de progression et callback d'annulation
-            reindex_result = await service._reindex_document_internal(
-                document,
-                track_progress=True,
-                cancel_check=lambda: is_doc_cancel_requested(doc_id_str),
-            )
-
-            # Vérifier si annulé pendant le traitement
-            if is_doc_cancel_requested(doc_id_str):
-                _check_cancelled()
-                return
-
-            await db.commit()
-
-            if reindex_result["success"]:
-                set_doc_reindex_progress(
-                    doc_id_str, 100, "complete",
-                    status="success",
-                    documents_count=reindex_result["new_chunk_count"],
-                    corpus_id=corpus_id_str,
-                )
-            elif reindex_result.get("cancelled"):
-                set_doc_reindex_progress(
-                    doc_id_str, 0, "cancelled",
-                    status="cancelled",
-                    error_message="Annulé par l'utilisateur",
-                    corpus_id=corpus_id_str,
-                )
-            else:
-                set_doc_reindex_progress(
-                    doc_id_str, 0, "failed",
-                    status="failed",
-                    error_message=reindex_result["message"],
-                    corpus_id=corpus_id_str,
-                )
-
-    except Exception as e:
-        logger.error(f"Background reindex failed for document {document_id}: {e}")
-        set_doc_reindex_progress(
-            doc_id_str, 0, "error",
-            status="failed",
-            error_message=str(e),
-            corpus_id=corpus_id_str,
-        )
-    finally:
-        clear_doc_cancel_flag(doc_id_str)
-        # Nettoyer l'association corpus
-        if corpus_id_str:
-            ReindexManager.unregister_corpus_item(corpus_id_str, ReindexManager.doc_id(doc_id_str))
-        await engine.dispose()
-
-
-async def _run_source_reindex_in_background(
-    source_id: UUID,
-    triggered_by: Optional[str] = None,
-    log_id: Optional[str] = None,
-    corpus_id: Optional[UUID] = None,
-) -> None:
-    """
-    Tâche de fond pour la réindexation d'une source (via corpus).
-
-    Utilise le système d'historique existant (IndexationHistoryService).
-    Le log_id est passé si l'entrée a été créée en amont pour le polling.
-    Supporte l'annulation en cascade via corpus.
-    """
-    from sqlalchemy import select
-    from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
-    from app.core.config import settings
-    from app.features.sources.scheduler import reindex_source
-    from app.models import ContextSource
-    from app.common.utils.reindex import ReindexManager
-
-    source_id_str = str(source_id)
-    corpus_id_str = str(corpus_id) if corpus_id else None
-
-    # Enregistrer l'association avec le corpus pour l'annulation en cascade
-    if corpus_id_str:
-        ReindexManager.register_corpus_item(corpus_id_str, ReindexManager.source_id(source_id_str))
-
-    logger.info(f"Démarrage réindexation source {source_id} (trigger: corpus_reindex, log_id: {log_id})")
-
-    engine = create_async_engine(settings.database_url, pool_pre_ping=True)
-    async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-
-    try:
-        async with async_session() as db:
-            # Récupérer la source
-            result = await db.execute(
-                select(ContextSource).where(ContextSource.id == source_id)
-            )
-            source = result.scalar_one_or_none()
-
-            if not source:
-                logger.warning(f"Source {source_id} non trouvée")
-                return
-
-            # Lancer la réindexation avec historique (utilise le log_id existant si fourni)
-            # L'annulation est gérée dans reindex_source via is_source_cancel_requested
-            await reindex_source(
-                db=db,
-                source=source,
-                trigger_type="corpus_reindex",
-                triggered_by=triggered_by,
-                log_id=log_id,
-            )
-            logger.info(f"Source {source_id} réindexée avec succès")
-
-    except Exception as e:
-        logger.error(f"Erreur réindexation source {source_id}: {e}")
-    finally:
-        # Nettoyer l'association corpus
-        if corpus_id_str:
-            ReindexManager.unregister_corpus_item(corpus_id_str, ReindexManager.source_id(source_id_str))
-        await engine.dispose()
