@@ -3012,3 +3012,116 @@ select.field__input {
   color: var(--color-accent);
 }
 .app-topbar__admin-link svg { color: var(--color-accent); }
+
+
+/* ============================================================================
+   Phase 3.8.a — Sidebar admin : sous-menu déroulant pour Système
+   ============================================================================ */
+
+.admin-nav__group { position: relative; }
+
+.admin-nav__item--toggle {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.admin-nav__chevron {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--color-fg-subtle);
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+.admin-nav__chevron--open { transform: rotate(90deg); color: var(--color-accent); }
+
+.admin-nav__sublist {
+  list-style: none;
+  margin: var(--space-1) 0 0 0;
+  padding: 0 0 0 var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.admin-nav__sublabel {
+  display: block;
+  margin-top: var(--space-3);
+  margin-bottom: var(--space-1);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-fg-subtle);
+}
+.admin-nav__subitem {
+  display: block;
+  padding: var(--space-1) var(--space-2);
+  border-left: 1px solid var(--color-line);
+  border-radius: 0;
+  font-size: var(--text-sm);
+  color: var(--color-fg-muted);
+  text-decoration: none;
+  transition: color var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out);
+}
+.admin-nav__subitem:hover {
+  color: var(--color-fg);
+  border-left-color: var(--color-fg-muted);
+}
+.admin-nav__subitem--active {
+  color: var(--color-accent);
+  border-left-color: var(--color-accent);
+  background: var(--color-bg-raised);
+}
+
+
+/* ============================================================================
+   Phase 3.8 — Pages admin/system (formulaires structurés multi-section)
+   ============================================================================ */
+
+.admin-fieldset {
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  padding: var(--space-4) var(--space-5);
+  margin: 0 0 var(--space-5) 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.admin-fieldset > legend {
+  padding: 0 var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.admin-form__radio-group {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.admin-form__radio-group > legend {
+  padding: 0;
+  margin-bottom: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-fg-muted);
+}
+
+
+/* Phase 3.8.a — grille pour les overrides RAG */
+.admin-form__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-3);
+}

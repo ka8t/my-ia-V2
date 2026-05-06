@@ -95,11 +95,59 @@
             <span class="admin-nav__soon">Bientôt</span>
           </a>
         </li>
-        <li>
-          <a class="admin-nav__item{% if active_section == 'config' %} admin-nav__item--active{% endif %}"
-             href="/web/admin/config">
+
+        {# ─── Système — groupe avec sous-menu déroulant Alpine ─── #}
+        {% set is_system = active_section in (
+          'config', 'system_llm_provider', 'system_llm_ollama', 'system_llm_llamacpp',
+          'system_rag_chunking', 'system_rag_search', 'system_rag_behavior',
+          'system_rag_overrides', 'system_storage', 'system_speech', 'system_smtp',
+          'system_notifications', 'system_password', 'system_debug', 'system_logging',
+          'system_perf', 'system_geo', 'system_modes', 'system_chat', 'system_appearance'
+        ) %}
+        <li class="admin-nav__group" x-data="{{ '{ open: ' ~ ('true' if is_system else 'false') ~ ' }' }}">
+          <button type="button"
+                  class="admin-nav__item admin-nav__item--toggle{% if is_system %} admin-nav__item--active{% endif %}"
+                  @click="open = !open"
+                  :aria-expanded="open">
             {{ icon('settings', 14) }}<span>Système</span>
-          </a>
+            <span class="admin-nav__chevron" :class="{ 'admin-nav__chevron--open': open }">▸</span>
+          </button>
+          <ul class="admin-nav__sublist" x-show="open" x-cloak>
+            <li>
+              <a class="admin-nav__subitem{% if active_section == 'config' %} admin-nav__subitem--active{% endif %}"
+                 href="/web/admin/config">Configuration générique</a>
+            </li>
+            <li><span class="admin-nav__sublabel">LLM</span></li>
+            <li>
+              <a class="admin-nav__subitem{% if active_section == 'system_llm_provider' %} admin-nav__subitem--active{% endif %}"
+                 href="/web/admin/system/llm/provider">Provider</a>
+            </li>
+            <li>
+              <a class="admin-nav__subitem{% if active_section == 'system_llm_ollama' %} admin-nav__subitem--active{% endif %}"
+                 href="/web/admin/system/llm/ollama">Ollama</a>
+            </li>
+            <li>
+              <a class="admin-nav__subitem{% if active_section == 'system_llm_llamacpp' %} admin-nav__subitem--active{% endif %}"
+                 href="/web/admin/system/llm/llamacpp">llama.cpp</a>
+            </li>
+            <li><span class="admin-nav__sublabel">RAG / Indexation</span></li>
+            <li>
+              <a class="admin-nav__subitem{% if active_section == 'system_rag_chunking' %} admin-nav__subitem--active{% endif %}"
+                 href="/web/admin/system/rag/chunking">Chunking</a>
+            </li>
+            <li>
+              <a class="admin-nav__subitem{% if active_section == 'system_rag_search' %} admin-nav__subitem--active{% endif %}"
+                 href="/web/admin/system/rag/search">Recherche</a>
+            </li>
+            <li>
+              <a class="admin-nav__subitem{% if active_section == 'system_rag_behavior' %} admin-nav__subitem--active{% endif %}"
+                 href="/web/admin/system/rag/behavior">Comportement</a>
+            </li>
+            <li>
+              <a class="admin-nav__subitem{% if active_section == 'system_rag_overrides' %} admin-nav__subitem--active{% endif %}"
+                 href="/web/admin/system/rag/overrides">Overrides (avancé)</a>
+            </li>
+          </ul>
         </li>
       </ul>
     </aside>
