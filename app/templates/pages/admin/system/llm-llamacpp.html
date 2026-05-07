@@ -66,4 +66,40 @@
   {{ form_actions() }}
 </form>
 
+{# ─── Contrôle du serveur (parité V1 startLlamacpp/stopLlamacpp/restart) ─── #}
+<section class="admin-fieldset">
+  <legend>Contrôle serveur</legend>
+  <div style="display:flex; gap:var(--space-2)">
+    <form hx-post="/web/admin/system/llm/llamacpp/start" hx-target="#llamacpp-control" hx-swap="innerHTML" style="display:inline">
+      {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+      <button type="submit" class="btn btn--primary btn--sm">▶ Start</button>
+    </form>
+    <form hx-post="/web/admin/system/llm/llamacpp/stop" hx-target="#llamacpp-control" hx-swap="innerHTML" style="display:inline">
+      {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+      <button type="submit" class="btn btn--ghost btn--sm">⏹ Stop</button>
+    </form>
+    <form hx-post="/web/admin/system/llm/llamacpp/restart" hx-target="#llamacpp-control" hx-swap="innerHTML" style="display:inline">
+      {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+      <button type="submit" class="btn btn--ghost btn--sm">⟳ Restart</button>
+    </form>
+  </div>
+  <div id="llamacpp-control" aria-live="polite" style="margin-top:var(--space-2)"></div>
+</section>
+
+{# ─── Modèles GGUF locaux (parité V1 listLocalGGUF) ─── #}
+<section class="admin-fieldset" hx-on:llamacpp-models-refresh="htmx.ajax('GET', '/web/admin/system/llm/llamacpp/models', {target: '#llamacpp-models', swap: 'outerHTML'})">
+  <legend>Modèles GGUF locaux</legend>
+  <button type="button" class="btn btn--ghost btn--sm"
+          hx-get="/web/admin/system/llm/llamacpp/models" hx-target="#llamacpp-models" hx-swap="outerHTML"
+          style="margin-bottom:var(--space-2)">⟳ Actualiser</button>
+  <div id="llamacpp-models"
+       hx-get="/web/admin/system/llm/llamacpp/models" hx-trigger="load" hx-swap="outerHTML">
+    Chargement…
+  </div>
+  <p style="font-size:var(--text-xs); color:var(--color-fg-muted); margin-top:var(--space-2)">
+    Les modèles GGUF sont à déposer manuellement dans <code>/code/models</code>.
+    Le download via UI HuggingFace n'est pas livré dans cette passe (item cosmétique 3.5.a).
+  </p>
+</section>
+
 {% endblock %}

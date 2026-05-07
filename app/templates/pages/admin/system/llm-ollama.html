@@ -51,4 +51,36 @@
   {{ form_actions() }}
 </form>
 
+{# ─── Modèles installés (parité V1) ─── #}
+<section class="admin-fieldset" hx-on:ollama-models-refresh="htmx.ajax('GET', '/web/admin/system/llm/ollama/models', {target: '#ollama-models', swap: 'outerHTML'})">
+  <legend>Modèles installés</legend>
+  <div style="display:flex; gap:var(--space-2); margin-bottom:var(--space-2)">
+    <button type="button" class="btn btn--ghost btn--sm"
+            hx-get="/web/admin/system/llm/ollama/models" hx-target="#ollama-models" hx-swap="outerHTML">
+      ⟳ Actualiser
+    </button>
+    <form hx-post="/web/admin/system/llm/ollama/models/pull" hx-target="#pull-result" hx-swap="innerHTML"
+          style="display:flex; gap:var(--space-2); flex:1">
+      {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+      <input type="text" name="model" placeholder="ex: gemma2:2b, llama3.1:8b" class="admin-toolbar__search">
+      <button type="submit" class="btn btn--primary btn--sm">⬇ Télécharger</button>
+    </form>
+  </div>
+  <div id="pull-result" aria-live="polite"></div>
+  <div id="ollama-models"
+       hx-get="/web/admin/system/llm/ollama/models" hx-trigger="load" hx-swap="outerHTML">
+    Chargement…
+  </div>
+</section>
+
+{# ─── Health check (parité V1) ─── #}
+<section class="admin-fieldset">
+  <legend>Health check</legend>
+  <button type="button" class="btn btn--ghost btn--sm"
+          hx-get="/web/admin/system/llm/health" hx-target="#llm-health" hx-swap="innerHTML">
+    Vérifier providers
+  </button>
+  <div id="llm-health" aria-live="polite" style="margin-top:var(--space-2)"></div>
+</section>
+
 {% endblock %}

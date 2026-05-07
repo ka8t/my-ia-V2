@@ -1586,3 +1586,289 @@ async def modes_delete(
             "<div class='toast toast--error'>Suppression impossible.</div>", status_code=500
         )
     return Response(status_code=200, content="")
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  Phase 3.5.a — LLM admin actions (modèles, start/stop, health, RAG test)
+# ═════════════════════════════════════════════════════════════════════════════
+import httpx as _httpx
+
+# --- Health check live ---
+
+@router.get("/llm/health", response_class=HTMLResponse)
+async def llm_health(
+    request: Request,
+    user: dict = Depends(require_web_admin),
+    db=Depends(get_async_session),
+) -> HTMLResponse:
+    """Health check live des providers (parité V1 system/llm.js healthCheck)."""
+    out = []
+    # Ollama
+    try:
+        from app.features.admin.config.service import _runtime_overrides
+        host = _runtime_overrides.get("llm.ollama_host", "host.docker.internal")
+        port = _runtime_overrides.get("llm.ollama_port", 11434)
+        async with _httpx.AsyncClient(timeout=3.0) as c:
+            r = await c.get(f"http://{host}:{port}/api/tags")
+        ok = r.status_code == 200
+        nb = len(r.json().get("models", [])) if ok else 0
+        out.append({"name": "Ollama", "ok": ok, "info": f"{nb} modèle(s)" if ok else f"HTTP {r.status_code}"})
+    except Exception as exc:
+        out.append({"name": "Ollama", "ok": False, "info": str(exc)[:60]})
+    # llamacpp (port défaut 8081)
+    try:
+        from app.features.admin.config.service import _runtime_overrides
+        host = _runtime_overrides.get("llm.llamacpp_host", "host.docker.internal")
+        port = _runtime_overrides.get("llm.llamacpp_port", 8081)
+        async with _httpx.AsyncClient(timeout=3.0) as c:
+            r = await c.get(f"http://{host}:{port}/health")
+        ok = r.status_code == 200
+        out.append({"name": "llamacpp", "ok": ok, "info": "OK" if ok else f"HTTP {r.status_code}"})
+    except Exception as exc:
+        out.append({"name": "llamacpp", "ok": False, "info": str(exc)[:60]})
+    # Render
+    parts = ["<div class='llm-health'>"]
+    for p in out:
+        cls = "ok" if p["ok"] else "error"
+        icon = "✓" if p["ok"] else "✗"
+        parts.append(
+            f"<div class='llm-health__row llm-health__row--{cls}'>"
+            f"<strong>{icon} {p['name']}</strong> <small>{p['info']}</small></div>"
+        )
+    parts.append("</div>")
+    return HTMLResponse("".join(parts))
+
+
+# --- Ollama models ---
+
+@router.get("/llm/ollama/models", response_class=HTMLResponse)
+async def ollama_models_list(
+    request: Request,
+    user: dict = Depends(require_web_admin),
+    db=Depends(get_async_session),
+) -> HTMLResponse:
+    """Liste modèles Ollama installés (parité V1)."""
+    try:
+        from app.features.admin.config.service import _runtime_overrides
+        host = _runtime_overrides.get("llm.ollama_host", "host.docker.internal")
+        port = _runtime_overrides.get("llm.ollama_port", 11434)
+        async with _httpx.AsyncClient(timeout=10.0) as c:
+            r = await c.get(f"http://{host}:{port}/api/tags")
+            r.raise_for_status()
+        models = r.json().get("models", [])
+    except Exception as exc:
+        return HTMLResponse(
+            f"<div class='toast toast--error'>Erreur Ollama : {exc}</div>", status_code=200
+        )
+    if not models:
+        return HTMLResponse("<p style='color:var(--color-fg-muted)'>Aucun modèle installé.</p>")
+    parts = ["<table class='admin-mini-table'><thead><tr><th>Nom</th><th>Taille</th><th>Modifié</th><th></th></tr></thead><tbody>"]
+    for m in models:
+        name = m.get("name", "")
+        size_mb = round(m.get("size", 0) / 1024 / 1024, 1)
+        modified = m.get("modified_at", "")[:10]
+        parts.append(
+            f"<tr><td><code>{name}</code></td><td>{size_mb} Mo</td><td>{modified}</td>"
+            f"<td><button type='button' class='admin-action admin-action--danger' "
+            f"hx-delete='/web/admin/system/llm/ollama/models/{name}' "
+            f"hx-confirm='Supprimer le modèle {name} ?' "
+            f"hx-target='#ollama-models' hx-swap='outerHTML'>×</button></td></tr>"
+        )
+    parts.append("</tbody></table>")
+    return HTMLResponse(f"<div id='ollama-models'>{''.join(parts)}</div>")
+
+
+@router.post("/llm/ollama/models/pull", response_class=HTMLResponse)
+async def ollama_pull_model(
+    request: Request,
+    model: Annotated[str, Form()],
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db=Depends(get_async_session),
+) -> HTMLResponse:
+    if not verify_csrf_token(request, csrf_token):
+        return HTMLResponse("<div class='toast toast--error'>Session expirée.</div>", status_code=400)
+    name = (model or "").strip()
+    if not name:
+        return HTMLResponse("<div class='toast toast--error'>Nom requis.</div>", status_code=400)
+    try:
+        from app.features.admin.config.service import _runtime_overrides
+        host = _runtime_overrides.get("llm.ollama_host", "host.docker.internal")
+        port = _runtime_overrides.get("llm.ollama_port", 11434)
+        # Pull synchrone (bloquant — Ollama API stream)
+        async with _httpx.AsyncClient(timeout=600.0) as c:
+            r = await c.post(f"http://{host}:{port}/api/pull", json={"name": name})
+            r.raise_for_status()
+    except Exception as exc:
+        return HTMLResponse(f"<div class='toast toast--error'>Pull échoué : {exc}</div>", status_code=500)
+    return HTMLResponse(
+        f"<div class='toast toast--success'>Modèle {name} téléchargé.</div>",
+        headers={"HX-Trigger": "ollama-models-refresh"},
+    )
+
+
+@router.delete("/llm/ollama/models/{model_name:path}", response_class=HTMLResponse)
+async def ollama_delete_model(
+    request: Request,
+    model_name: str,
+    user: dict = Depends(require_web_admin),
+    db=Depends(get_async_session),
+) -> HTMLResponse:
+    try:
+        from app.features.admin.config.service import _runtime_overrides
+        host = _runtime_overrides.get("llm.ollama_host", "host.docker.internal")
+        port = _runtime_overrides.get("llm.ollama_port", 11434)
+        async with _httpx.AsyncClient(timeout=30.0) as c:
+            r = await c.request("DELETE", f"http://{host}:{port}/api/delete", json={"name": model_name})
+            r.raise_for_status()
+    except Exception as exc:
+        return HTMLResponse(f"<div class='toast toast--error'>Échec : {exc}</div>", status_code=500)
+    return HTMLResponse(
+        f"<div class='toast toast--success'>Modèle {model_name} supprimé.</div>",
+        headers={"HX-Trigger": "ollama-models-refresh"},
+    )
+
+
+# --- llamacpp control + models ---
+
+@router.post("/llm/llamacpp/start", response_class=HTMLResponse)
+async def llamacpp_start(
+    request: Request,
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db=Depends(get_async_session),
+) -> HTMLResponse:
+    if not verify_csrf_token(request, csrf_token):
+        return HTMLResponse("<div class='toast toast--error'>Session expirée.</div>", status_code=400)
+    try:
+        from app.features.admin.llm_control.service import LLMControlService
+        await LLMControlService.start_llamacpp()
+    except Exception as exc:
+        return HTMLResponse(f"<div class='toast toast--error'>Start échoué : {exc}</div>", status_code=500)
+    return HTMLResponse("<div class='toast toast--success'>llamacpp démarré.</div>")
+
+
+@router.post("/llm/llamacpp/stop", response_class=HTMLResponse)
+async def llamacpp_stop(
+    request: Request,
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db=Depends(get_async_session),
+) -> HTMLResponse:
+    if not verify_csrf_token(request, csrf_token):
+        return HTMLResponse("<div class='toast toast--error'>Session expirée.</div>", status_code=400)
+    try:
+        from app.features.admin.llm_control.service import LLMControlService
+        await LLMControlService.stop_llamacpp()
+    except Exception as exc:
+        return HTMLResponse(f"<div class='toast toast--error'>Stop échoué : {exc}</div>", status_code=500)
+    return HTMLResponse("<div class='toast toast--success'>llamacpp arrêté.</div>")
+
+
+@router.post("/llm/llamacpp/restart", response_class=HTMLResponse)
+async def llamacpp_restart(
+    request: Request,
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db=Depends(get_async_session),
+) -> HTMLResponse:
+    if not verify_csrf_token(request, csrf_token):
+        return HTMLResponse("<div class='toast toast--error'>Session expirée.</div>", status_code=400)
+    try:
+        from app.features.admin.llm_control.service import LLMControlService
+        await LLMControlService.restart_llamacpp()
+    except Exception as exc:
+        return HTMLResponse(f"<div class='toast toast--error'>Restart échoué : {exc}</div>", status_code=500)
+    return HTMLResponse("<div class='toast toast--success'>llamacpp redémarré.</div>")
+
+
+@router.get("/llm/llamacpp/models", response_class=HTMLResponse)
+async def llamacpp_models_list(
+    request: Request,
+    user: dict = Depends(require_web_admin),
+    db=Depends(get_async_session),
+) -> HTMLResponse:
+    """Liste modèles GGUF locaux (parité V1)."""
+    import os
+    models_dir = "/code/models"
+    rows = []
+    try:
+        if os.path.isdir(models_dir):
+            for fn in sorted(os.listdir(models_dir)):
+                if fn.endswith(".gguf"):
+                    full = os.path.join(models_dir, fn)
+                    size_mb = round(os.path.getsize(full) / 1024 / 1024, 1)
+                    rows.append({"name": fn, "size": size_mb})
+    except Exception:
+        pass
+    if not rows:
+        return HTMLResponse("<p style='color:var(--color-fg-muted)'>Aucun modèle GGUF dans /code/models.</p>")
+    parts = ["<table class='admin-mini-table'><thead><tr><th>Fichier</th><th>Taille</th><th></th></tr></thead><tbody>"]
+    for r in rows:
+        parts.append(
+            f"<tr><td><code>{r['name']}</code></td><td>{r['size']} Mo</td>"
+            f"<td><button type='button' class='admin-action admin-action--danger' "
+            f"hx-delete='/web/admin/system/llm/llamacpp/models/{r['name']}' "
+            f"hx-confirm='Supprimer {r['name']} ?' "
+            f"hx-target='#llamacpp-models' hx-swap='outerHTML'>×</button></td></tr>"
+        )
+    parts.append("</tbody></table>")
+    return HTMLResponse(f"<div id='llamacpp-models'>{''.join(parts)}</div>")
+
+
+@router.delete("/llm/llamacpp/models/{filename:path}", response_class=HTMLResponse)
+async def llamacpp_delete_model(
+    request: Request,
+    filename: str,
+    user: dict = Depends(require_web_admin),
+    db=Depends(get_async_session),
+) -> HTMLResponse:
+    import os
+    if "/" in filename or ".." in filename:
+        return HTMLResponse("<div class='toast toast--error'>Nom invalide.</div>", status_code=400)
+    full = f"/code/models/{filename}"
+    try:
+        if os.path.isfile(full):
+            os.remove(full)
+    except Exception as exc:
+        return HTMLResponse(f"<div class='toast toast--error'>Échec : {exc}</div>", status_code=500)
+    return HTMLResponse(
+        f"<div class='toast toast--success'>{filename} supprimé.</div>",
+        headers={"HX-Trigger": "llamacpp-models-refresh"},
+    )
+
+
+# --- RAG search test ---
+
+@router.post("/rag/test", response_class=HTMLResponse)
+async def rag_test_search(
+    request: Request,
+    query: Annotated[str, Form()],
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db=Depends(get_async_session),
+) -> HTMLResponse:
+    """Test interactif RAG (parité V1 testRagSearch)."""
+    if not verify_csrf_token(request, csrf_token):
+        return HTMLResponse("<div class='toast toast--error'>Session expirée.</div>", status_code=400)
+    q = (query or "").strip()
+    if not q:
+        return HTMLResponse("<div class='toast toast--error'>Question vide.</div>", status_code=400)
+    try:
+        from app.features.sources.context import get_smart_context
+        from app.models import User as _U
+        admin_user = (await db.execute(__import__("sqlalchemy").select(_U).where(_U.id == __import__("uuid").UUID(user["id"])))).unique().scalar_one_or_none()
+        ctx = await get_smart_context(
+            db=db, user=admin_user, query=q, top_k=5,
+        )
+    except Exception as exc:
+        return HTMLResponse(f"<div class='toast toast--error'>Erreur : {exc}</div>", status_code=500)
+    if not ctx or not getattr(ctx, "chunks", None):
+        return HTMLResponse("<div class='toast'>Aucun chunk trouvé.</div>")
+    parts = [f"<div><strong>{len(ctx.chunks)} chunk(s) trouvé(s)</strong></div><ul>"]
+    for c in ctx.chunks[:10]:
+        text = (c.get("content", "") if isinstance(c, dict) else getattr(c, "content", ""))[:300]
+        score = c.get("score", 0) if isinstance(c, dict) else getattr(c, "score", 0)
+        parts.append(f"<li><small>score={score:.3f}</small><br>{text}…</li>")
+    parts.append("</ul>")
+    return HTMLResponse("".join(parts))

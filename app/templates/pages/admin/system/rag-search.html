@@ -34,4 +34,17 @@
   {{ form_actions() }}
 </form>
 
+{# ─── Test RAG search interactif (parité V1 testRagSearch) ─── #}
+<section class="admin-fieldset">
+  <legend>Test interactif</legend>
+  <form hx-post="/web/admin/system/rag/test" hx-target="#rag-test-result" hx-swap="innerHTML"
+        style="display:flex; gap:var(--space-2)">
+    {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+    <input type="text" name="query" placeholder="Question de test…" required
+           class="admin-toolbar__search">
+    <button type="submit" class="btn btn--primary btn--sm">Tester</button>
+  </form>
+  <div id="rag-test-result" aria-live="polite" style="margin-top:var(--space-2)"></div>
+</section>
+
 {% endblock %}

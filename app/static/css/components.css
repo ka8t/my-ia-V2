@@ -3976,3 +3976,25 @@ select.field__input {
   border-bottom: 1px solid var(--color-border);
   font-size: var(--text-xs);
 }
+
+/* Phase 3.5.a — admin LLM mini-table + health */
+.admin-mini-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-xs);
+}
+.admin-mini-table th,
+.admin-mini-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+}
+.admin-mini-table th { font-weight: 600; color: var(--color-fg-muted); }
+.llm-health { display: flex; flex-direction: column; gap: var(--space-2); }
+.llm-health__row {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid;
+}
+.llm-health__row--ok { background: rgba(34, 197, 94, 0.08); border-color: #16a34a; }
+.llm-health__row--error { background: rgba(239, 68, 68, 0.08); border-color: #ef4444; }
