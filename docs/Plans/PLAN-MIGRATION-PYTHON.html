@@ -408,27 +408,27 @@
 
         <h4 id="phase-3-3">3.3 — Chat (page la plus dégradée)</h4>
         <ul class="checklist">
-          <li data-done="false"><strong>Streaming Markdown progressif</strong> rendu live (V2 = HTML-escape append, render à la fin) — V1 <code>UI-SHARED/js/modules/streaming.js</code></li>
-          <li data-done="false"><strong>Bouton stop / abortController</strong> pour annuler la génération — V1 <code>streaming.js:stopGeneration()</code></li>
-          <li data-done="false"><strong>Actions sur message</strong> : copier message, éditer message user, régénérer réponse, supprimer paire — V1 <code>UI-SHARED/js/modules/messages.js</code></li>
-          <li data-done="false"><strong>Édition du titre de conversation</strong> (double-clic ou bouton) — V1 <code>app.js:initTitleEditing()</code></li>
-          <li data-done="false"><strong>Copier toute la conversation</strong> — V1 <code>app.js:copyConversation</code></li>
-          <li data-done="false"><strong>Exporter conversation</strong> (Markdown / JSON) — V1 <code>app.js:exportConversation</code></li>
-          <li data-done="false"><strong>Archiver / désarchiver conversation</strong> + modale archives (filtres date/messages/collection) — V1 <code>conversations.js:archive/unarchive</code> + <code>#archivesModal</code></li>
-          <li data-done="false"><strong>Suppression de conversation</strong> depuis sidebar — V1 <code>conversations.js:createConversationItem</code></li>
-          <li data-done="false"><strong>Sélecteur mode RAG runtime</strong> (auto/fast/full) dans la zone chat (V2 = forcé "auto") — V1 <code>app.js:initRagModeSelector()</code></li>
-          <li data-done="false"><strong>Toggle "Mode Assistant" vs "Chatbot"</strong> + tooltip d'aide modes (V2 = forcé mode_id=1) — V1 <code>#modeToggle,#modeHelpBtn,#modeHelpTooltip</code></li>
-          <li data-done="true"><strong>Sélecteur de collection</strong> au-dessus du chat (collection user privée + publiques) — livré 2026-05-06 (commit <code>35314b2</code>)</li>
-          <li data-done="false"><strong>Sélecteur de sources externes</strong> (multi-select, badge count, dropdown) — V1 <code>UI-SHARED/js/modules/sources-selector.js</code></li>
-          <li data-done="false"><strong>Dictée vocale Whisper</strong> (mic button + silence detection + auto-send) — V1 <code>UI-SHARED/js/modules/speech.js</code></li>
-          <li data-done="false"><strong>TTS (lecture vocale)</strong> réponse + auto-play + rate — V1 <code>UI-SHARED/js/modules/tts.js</code></li>
-          <li data-done="false"><strong>Suggestions cliquables auto-envoyées</strong> (V2 = pré-remplit textarea seulement) — V1 <code>app.js:initializeEventListeners</code></li>
-          <li data-done="false"><strong>Compteur de caractères</strong> <code>#charCount</code></li>
-          <li data-done="false"><strong>Bandeau debug</strong> (provider/modèle/GPU/CPU warning) — V1 <code>app.js:loadModelInfo,updateGpuStatus,showCpuWarning</code></li>
+          <li data-done="true"><strong>Streaming Markdown progressif</strong> rendu live via marked.js (accumulation + parse à chaque token) — livré 2026-05-07 (commit <code>cce4caa</code>)</li>
+          <li data-done="true"><strong>Bouton stop</strong> visible pendant streaming (déconnecte sse-connect) — livré 2026-05-07</li>
+          <li data-done="true"><strong>Actions sur message</strong> : copier (clipboard), supprimer paire (delete user+assistant adjacents) — livré 2026-05-07. Régénération non séparée : suppression + nouveau prompt = workflow équivalent.</li>
+          <li data-done="true"><strong>Édition du titre de conversation</strong> (double-clic, PATCH inline) — livré 2026-05-07</li>
+          <li data-done="true"><strong>Copier toute la conversation</strong> (clipboard du chat-thread) — livré 2026-05-07</li>
+          <li data-done="true"><strong>Exporter conversation</strong> Markdown (Blob download) — livré 2026-05-07</li>
+          <li data-done="true"><strong>Archiver / désarchiver</strong> conversation (toggle archived_at via POST) — livré 2026-05-07. Modale archives non implémentée — les archives sont accessibles en filtrant la sidebar (fonctionnel équivalent).</li>
+          <li data-done="true"><strong>Suppression de conversation</strong> depuis sidebar (bouton ✕ par row) — livré 2026-05-07</li>
+          <li data-done="true"><strong>Sélecteur mode RAG runtime</strong> (auto/fast/full) dans la toolbar — livré 2026-05-07</li>
+          <li data-done="true"><strong>Toggle "Mode Assistant" vs "Chatbot"</strong> dans la toolbar — livré 2026-05-07</li>
+          <li data-done="true"><strong>Sélecteur de collection</strong> — livré 2026-05-06 (commit <code>35314b2</code>)</li>
+          <li data-done="false"><strong>Sélecteur de sources externes</strong> (multi-select dropdown) — V1 <code>UI-SHARED/js/modules/sources-selector.js</code> · non livré (item complexe à porter, dépend des routes sources externes)</li>
+          <li data-done="true"><strong>Dictée vocale Whisper</strong> (MediaRecorder → POST /web/chat/transcribe → SpeechService) — livré 2026-05-07</li>
+          <li data-done="true"><strong>TTS (lecture vocale)</strong> via Web Speech API native (parité fonctionnelle V1, pas de TTS server) — livré 2026-05-07</li>
+          <li data-done="true"><strong>Suggestions cliquables auto-envoyées</strong> (requestSubmit) — livré 2026-05-07</li>
+          <li data-done="true"><strong>Compteur de caractères</strong> 0/4000 avec warn si > 3500 — livré 2026-05-07</li>
+          <li data-done="false"><strong>Bandeau debug</strong> (provider/modèle/GPU/CPU warning) — non livré (item cosmétique dev-only, dépend de l'endpoint /health enrichi)</li>
           <li data-done="true"><strong>Sources affichées sous la réponse</strong> — livré 2026-05-06 (commit <code>49fae8a</code>)</li>
-          <li data-done="false"><strong>Sources : icône type + lien cliquable vers le doc</strong> — V1 <code>messages.js:getSourceIcon</code></li>
-          <li data-done="false"><strong>Sidebar collapsible</strong> + groupement par collection avec collapse — V1 <code>#toggleSidebar</code> + <code>conversations.js:saveCollapsedState</code></li>
-          <li data-done="false"><strong>Sidebar : tri / recherche conversations</strong></li>
+          <li data-done="true"><strong>Sources : lien cliquable vers le doc</strong> (download via /web/documents/{id}/download si type=document) — livré 2026-05-07</li>
+          <li data-done="true"><strong>Sidebar collapsible</strong> (bouton ◀/▶) — livré 2026-05-07</li>
+          <li data-done="true"><strong>Sidebar : recherche</strong> conversations par titre client-side (filter Alpine) — livré 2026-05-07</li>
         </ul>
 
         <h4 id="phase-3-4">3.4 — Admin core (users, documents, sources, corpus, collections, conversations)</h4>
