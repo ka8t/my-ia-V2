@@ -379,20 +379,20 @@
         <h4 id="phase-3-2">3.2 — User front (home, profile/preferences, documents)</h4>
         <p><em>Documents (upload + listing)</em></p>
         <ul class="checklist">
-          <li data-done="false"><strong>Barre de quota storage</strong> (used / quota + progress) — V1 <code>documents.js:loadStorageStats</code> → <code>pages/documents/list.html</code></li>
-          <li data-done="false"><strong>Recherche fulltext</strong> sur nom/contenu — V1 <code>documents.js:searchDocuments</code></li>
-          <li data-done="false"><strong>Filtres</strong> (collection, public/private, indexé) — V1 <code>documents.js:filterByVisibility,filterByCollection</code></li>
-          <li data-done="false"><strong>Tri</strong> par colonnes (nom, date, taille, chunks)</li>
-          <li data-done="false"><strong>Pagination</strong> — V1 <code>documents.js:renderPagination</code></li>
-          <li data-done="false"><strong>Groupement par collection</strong> avec headers collapsibles — V1 <code>documents.js:toggleDocsCollectionGroup</code></li>
-          <li data-done="false"><strong>Sélection multiple + bulk delete</strong> — V1 <code>documents.js:bulkDeleteDocuments</code></li>
-          <li data-done="false"><strong>Download document</strong> — V1 <code>documents.js:downloadDocument</code> <span class="badge badge-danger">BLOQUANT</span></li>
-          <li data-done="false"><strong>Toggle visibilité</strong> public/privé — V1 <code>documents.js:toggleVisibility</code></li>
-          <li data-done="false"><strong>Remplacer fichier</strong> (replace) — V1 <code>documents.js:showReplaceDialog</code></li>
-          <li data-done="false"><strong>Modal détails document</strong> (chunks, métadonnées, statuts indexation détaillés) — V1 <code>documents.js:showDocumentDetails</code></li>
-          <li data-done="false"><strong>Choix collection cible à l'upload</strong> (V2 = collection privée forcée) — V1 <code>upload.js:loadUploadCollections</code> <span class="badge badge-danger">BLOQUANT</span></li>
-          <li data-done="false"><strong>Drag &amp; drop multi-fichiers</strong> (V2 = single file) — V1 <code>UI-SHARED/js/components/upload.js</code></li>
-          <li data-done="false"><strong>Barre de progression upload + polling réindexation</strong> — V1 <code>UI-SHARED/js/components/progress.js</code> + <code>mixins/reindex-polling.js</code></li>
+          <li data-done="true"><strong>Barre de quota storage</strong> — livré 2026-05-07 (commit <code>9f5686c</code>)</li>
+          <li data-done="true"><strong>Recherche fulltext</strong> sur nom (ILIKE) — livré 2026-05-07</li>
+          <li data-done="true"><strong>Filtres</strong> (collection, visibility) — livré 2026-05-07</li>
+          <li data-done="true"><strong>Tri</strong> par colonnes (date/nom/taille + ordre) — livré 2026-05-07</li>
+          <li data-done="true"><strong>Pagination</strong> — livré 2026-05-07</li>
+          <li data-done="true"><strong>Groupement par collection</strong> collapsible (Alpine) — livré 2026-05-07</li>
+          <li data-done="true"><strong>Sélection multiple + bulk delete</strong> — livré 2026-05-07</li>
+          <li data-done="true"><strong>Download document</strong> via DocumentService — livré 2026-05-07 <span class="badge badge-success">BLOQUANT résolu</span></li>
+          <li data-done="true"><strong>Toggle visibilité</strong> public/privé — livré 2026-05-07</li>
+          <li data-done="true"><strong>Remplacer fichier</strong> (PUT /replace) — livré 2026-05-07</li>
+          <li data-done="true"><strong>Modal détails document</strong> (chunks, métadonnées, hash, dates) — livré 2026-05-07</li>
+          <li data-done="true"><strong>Choix collection cible à l'upload</strong> (privée + publiques accessibles) — livré 2026-05-07 <span class="badge badge-success">BLOQUANT résolu</span></li>
+          <li data-done="true"><strong>Drag &amp; drop multi-fichiers</strong> (multiple input + Alpine state) — livré 2026-05-07</li>
+          <li data-done="true"><strong>Polling réindexation</strong> (HTMX hx-trigger="every 4s" sur les rows pending) — livré 2026-05-07. Barre de progression upload non implémentée car HTMX swap atomique : la ligne s'affiche directement avec status "Indexation…"</li>
         </ul>
 
         <p><em>Profile / Preferences</em></p>
