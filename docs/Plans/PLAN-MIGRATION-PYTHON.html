@@ -297,8 +297,8 @@
       <tr data-status="done"><td>Phase 0</td><td>Décisions & squelette</td><td>✅ Terminée</td></tr>
       <tr data-status="done"><td>Phase 1</td><td>Backend consolidé (API v1, tests, OpenAPI)</td><td>✅ Terminée</td></tr>
       <tr data-status="done"><td>Phase 2</td><td>Squelette frontend Jinja</td><td>✅ Terminée</td></tr>
-      <tr data-status="in-progress"><td>Phase 3</td><td>Migration page par page (parité V1)</td><td>🟡 En cours — voir audit ci-dessous</td></tr>
-      <tr data-status="in-progress"><td>Phase 4</td><td>Décommissionnement / cutover production</td><td>🟡 4.a-4.d ✅ · 4.e (cleanup VPS) à J+30</td></tr>
+      <tr data-status="done"><td>Phase 3</td><td>Migration page par page (parité V1)</td><td>✅ Terminée (152/156 items, 4 OAuth/sources externes/bandeau debug skipped)</td></tr>
+      <tr data-status="done"><td>Phase 4</td><td>Décommissionnement / cutover production</td><td>✅ Terminée (4.a-4.e)</td></tr>
       <tr data-status="todo"><td>Phase 5</td><td>Cleanup & docs (tag v2.0.0)</td><td>⏳ Après Phase 3 + 4.e</td></tr>
     </tbody>
   </table>
@@ -668,13 +668,13 @@
         </p>
           <div class="vflow-marker">4</div>
       <div class="vflow-content">
-        <h3>Phase 4 — Décommissionnement / cutover production <span class="badge badge-warning">4.a-4.d ✅ · 4.e ⏳</span></h3>
+        <h3>Phase 4 — Décommissionnement / cutover production <span class="badge badge-success">✅ Terminée</span></h3>
         <ul class="checklist">
           <li data-done="true"><strong>4.a</strong> — Audit pré-cutover (BDD, Chroma, deps)</li>
           <li data-done="true"><strong>4.b</strong> — <code>scripts/deploy.sh</code> opérationnel pour V2</li>
           <li data-done="true"><strong>4.c</strong> — Smoke staging (login, chat, RAG)</li>
           <li data-done="true"><strong>4.d</strong> — Cutover production : nginx HTTPS sur <code>my-ia.codefixture.com</code>, V2 connectée à BDD/Chroma V1, V1 API gelée</li>
-          <li data-done="false"><strong>4.e</strong> — Cleanup VPS post-cutover (J+30) : rm V1 containers + images, archiver code V1, conservation BDD</li>
+          <li data-done="true"><strong>4.e</strong> — Cleanup VPS post-cutover (livré à J+3 sur demande, 2026-05-07) : rm 7 containers V1 (my_ia_app, ui_back, ui_front, n8n×3, pgadmin), rm 5 images V1 (~2.3 GB libérés). Conservés : my_ia_postgres, my_ia_chroma, my_ia_whisper + volumes data + networks my_ia_internal/external. Code V1 git intact (tag <code>v1.0.0-js-final</code> sur ka8t/my-ia).</li>
           <li data-done="true">Geler my-ia (aucune nouvelle feature)</li>
           <li data-done="true">Migration BDD : aucune (même Postgres, même schéma)</li>
           <li data-done="true">Migration ChromaDB : aucune (même vector store)</li>
