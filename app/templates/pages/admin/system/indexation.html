@@ -1,0 +1,50 @@
+{% extends "layouts/admin.html" %}
+{% from "macros/admin_form.html" import page_header, flash, field_int, field_bool, form_actions %}
+
+{% block title %}Indexation — Admin{% endblock %}
+
+{% block admin_content %}
+
+{{ page_header(
+  title="Scheduler · Indexation",
+  eyebrow="Système",
+  lede="Configuration du scheduler d'indexation des sources et seuils de fraîcheur."
+) }}
+
+{{ flash(success=success, error=error) }}
+
+<form method="post" action="/web/admin/system/indexation" class="admin-form admin-form--stacked">
+  {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+
+  <fieldset class="admin-fieldset">
+    <legend>Scheduler</legend>
+    {{ field_bool("scheduler_enabled", "Scheduler activé (sources.scheduler_enabled)",
+                  values["sources.scheduler_enabled"]) }}
+    {{ field_int("check_interval", "Intervalle de check (minutes)",
+                 values["sources.scheduler_check_interval_minutes"], default=15, min=1, max=1440,
+                 hint="Fréquence de vérification des sources à réindexer.") }}
+  </fieldset>
+
+  <fieldset class="admin-fieldset">
+    <legend>Cleanup</legend>
+    {{ field_int("cleanup_docs_hours", "Cleanup docs (heures)",
+                 values["sources.scheduler_cleanup_docs_interval_hours"], default=1, min=1, max=720,
+                 hint="Intervalle de nettoyage des documents orphelins.") }}
+    {{ field_int("cleanup_logs_days", "Cleanup logs (jours)",
+                 values["sources.scheduler_cleanup_logs_interval_days"], default=1, min=1, max=365) }}
+  </fieldset>
+
+  <fieldset class="admin-fieldset">
+    <legend>Seuils fraîcheur</legend>
+    {{ field_int("freshness_warning", "Avertissement (heures)",
+                 values["sources.freshness_warning_hours"], default=12, min=1, max=720,
+                 hint="Au-delà : badge warning. Source considérée stale.") }}
+    {{ field_int("freshness_expired", "Expiré (heures)",
+                 values["sources.freshness_expired_hours"], default=24, min=1, max=8760,
+                 hint="Au-delà : badge danger. Source nécessite réindexation urgente.") }}
+  </fieldset>
+
+  {{ form_actions() }}
+</form>
+
+{% endblock %}

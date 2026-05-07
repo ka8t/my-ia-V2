@@ -30,4 +30,35 @@
   {{ form_actions() }}
 </form>
 
+{# ─── Stats live (parité V1 geo.js stats) ─── #}
+<section class="admin-fieldset" hx-on:geo-stats-refresh="htmx.ajax('GET', '/web/admin/system/geo/stats', {target: '#geo-stats', swap: 'innerHTML'})">
+  <legend>Statistiques</legend>
+  <button type="button" class="btn btn--ghost btn--sm"
+          hx-get="/web/admin/system/geo/stats" hx-target="#geo-stats" hx-swap="innerHTML">⟳ Actualiser</button>
+  <div id="geo-stats"
+       hx-get="/web/admin/system/geo/stats" hx-trigger="load" hx-swap="innerHTML"
+       style="margin-top:var(--space-2)">Chargement…</div>
+</section>
+
+{# ─── Import / Export (parité V1 geo.js) ─── #}
+<section class="admin-fieldset">
+  <legend>Données</legend>
+  <div style="display:flex; gap:var(--space-2); flex-wrap:wrap">
+    <form hx-post="/web/admin/system/geo/import/countries" hx-target="#geo-actions-result" hx-swap="innerHTML" style="display:inline">
+      {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+      <button type="submit" class="btn btn--primary btn--sm">⬇ Importer pays</button>
+    </form>
+    <form hx-post="/web/admin/system/geo/export/countries" hx-target="#geo-actions-result" hx-swap="innerHTML" style="display:inline">
+      {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+      <button type="submit" class="btn btn--ghost btn--sm">⬆ Exporter pays</button>
+    </form>
+  </div>
+  <div id="geo-actions-result" aria-live="polite" style="margin-top:var(--space-2)"></div>
+  <p style="font-size:var(--text-xs); color:var(--color-fg-muted); margin-top:var(--space-2)">
+    Import/export villes par pays code, et toggle activation par pays : voir API
+    <code>/api/admin/geo/countries/{code}/toggle-active</code> et
+    <code>/api/admin/geo/import/cities/{country_code}</code>.
+  </p>
+</section>
+
 {% endblock %}

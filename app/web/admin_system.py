@@ -1872,3 +1872,159 @@ async def rag_test_search(
         parts.append(f"<li><small>score={score:.3f}</small><br>{text}…</li>")
     parts.append("</ul>")
     return HTMLResponse("".join(parts))
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  Phase 3.5.b — Geo + Indexation
+# ═════════════════════════════════════════════════════════════════════════════
+
+@router.get("/geo/stats", response_class=HTMLResponse)
+async def geo_stats(
+    request: Request,
+    user: dict = Depends(require_web_admin),
+    db=Depends(get_async_session),
+) -> HTMLResponse:
+    try:
+        from app.features.admin.geo.service import GeoAdminService
+        stats = await GeoAdminService.get_stats(db)
+        cd = stats.cities_by_country if hasattr(stats, "cities_by_country") else {}
+        items = []
+        for code, n in (cd.items() if isinstance(cd, dict) else []):
+            items.append(f"<li><code>{code}</code> · {n} ville(s)</li>")
+        countries_total = getattr(stats, "countries_total", 0)
+        countries_active = getattr(stats, "countries_active", 0)
+        cities_total = getattr(stats, "cities_total", 0)
+    except Exception as exc:
+        return HTMLResponse(f"<div class='toast toast--error'>Erreur stats : {exc}</div>")
+    return HTMLResponse(
+        f"""<dl class='docs-modal__meta'>
+        <dt>Pays total</dt><dd>{countries_total}</dd>
+        <dt>Pays actifs</dt><dd>{countries_active}</dd>
+        <dt>Villes total</dt><dd>{cities_total}</dd>
+        </dl>
+        <ul style='font-size:var(--text-xs); columns:2'>{''.join(items)}</ul>"""
+    )
+
+
+@router.post("/geo/import/countries", response_class=HTMLResponse)
+async def geo_import_countries(
+    request: Request,
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db=Depends(get_async_session),
+) -> HTMLResponse:
+    if not verify_csrf_token(request, csrf_token):
+        return HTMLResponse("<div class='toast toast--error'>Session expirée.</div>", status_code=400)
+    try:
+        from app.features.admin.geo.service import GeoAdminService
+        result = await GeoAdminService.import_countries(db)
+        n = getattr(result, "imported", 0)
+    except Exception as exc:
+        return HTMLResponse(f"<div class='toast toast--error'>Échec : {exc}</div>", status_code=500)
+    return HTMLResponse(f"<div class='toast toast--success'>{n} pays importés.</div>")
+
+
+@router.post("/geo/export/countries", response_class=HTMLResponse)
+async def geo_export_countries(
+    request: Request,
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db=Depends(get_async_session),
+) -> HTMLResponse:
+    if not verify_csrf_token(request, csrf_token):
+        return HTMLResponse("<div class='toast toast--error'>Session expirée.</div>", status_code=400)
+    try:
+        from app.features.admin.geo.service import GeoAdminService
+        result = await GeoAdminService.export_countries(db)
+        n = getattr(result, "exported", 0)
+        path = getattr(result, "file_path", "")
+    except Exception as exc:
+        return HTMLResponse(f"<div class='toast toast--error'>Échec : {exc}</div>", status_code=500)
+    return HTMLResponse(f"<div class='toast toast--success'>{n} pays exportés vers <code>{path}</code>.</div>")
+
+
+@router.post("/geo/countries/{code}/toggle", response_class=HTMLResponse)
+async def geo_toggle_country(
+    request: Request,
+    code: str,
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db=Depends(get_async_session),
+) -> HTMLResponse:
+    if not verify_csrf_token(request, csrf_token):
+        return HTMLResponse("<div class='toast toast--error'>Session expirée.</div>", status_code=400)
+    try:
+        from app.features.admin.geo.service import GeoAdminService
+        await GeoAdminService.toggle_country_active(db, code.upper())
+    except Exception as exc:
+        return HTMLResponse(f"<div class='toast toast--error'>Échec : {exc}</div>", status_code=500)
+    return HTMLResponse(
+        f"<div class='toast toast--success'>{code.upper()} basculé.</div>",
+        headers={"HX-Trigger": "geo-stats-refresh"},
+    )
+
+
+# --- Indexation page (nouvelle, BLOQUANT V1 absent) ---
+
+_INDEXATION_KEYS = [
+    "sources.scheduler_enabled",
+    "sources.scheduler_check_interval_minutes",
+    "sources.scheduler_cleanup_docs_interval_hours",
+    "sources.scheduler_cleanup_logs_interval_days",
+    "sources.freshness_warning_hours",
+    "sources.freshness_expired_hours",
+]
+
+
+@router.get("/indexation", response_class=HTMLResponse)
+async def indexation_get(
+    request: Request,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    """Page configuration scheduler indexation (parité V1 system/indexation)."""
+    values = await _load_keys(db, _INDEXATION_KEYS)
+    return await _render_page(
+        request,
+        "pages/admin/system/indexation.html",
+        title="Scheduler Indexation",
+        active_section="system_indexation",
+        user=user,
+        values=values,
+    )
+
+
+@router.post("/indexation", response_class=HTMLResponse)
+async def indexation_post(
+    request: Request,
+    scheduler_enabled: Annotated[str | None, Form()] = None,
+    check_interval: Annotated[int, Form()] = 15,
+    cleanup_docs_hours: Annotated[int, Form()] = 1,
+    cleanup_logs_days: Annotated[int, Form()] = 1,
+    freshness_warning: Annotated[int, Form()] = 12,
+    freshness_expired: Annotated[int, Form()] = 24,
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    if (err := _csrf_or_400(request, csrf_token)):
+        return err
+    updates = {
+        "sources.scheduler_enabled": bool(scheduler_enabled),
+        "sources.scheduler_check_interval_minutes": _to_int(check_interval, 15),
+        "sources.scheduler_cleanup_docs_interval_hours": _to_int(cleanup_docs_hours, 1),
+        "sources.scheduler_cleanup_logs_interval_days": _to_int(cleanup_logs_days, 1),
+        "sources.freshness_warning_hours": _to_int(freshness_warning, 12),
+        "sources.freshness_expired_hours": _to_int(freshness_expired, 24),
+    }
+    saved, errors = await _bulk_set(db, user, updates)
+    return await _render_page(
+        request,
+        "pages/admin/system/indexation.html",
+        title="Scheduler Indexation",
+        active_section="system_indexation",
+        user=user,
+        values=updates,
+        success=f"{saved} clé(s) enregistrée(s)." if not errors else None,
+        error="; ".join(errors) if errors else None,
+    )
