@@ -21,7 +21,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_async_session
-from app.models import User, UserPreference
+from app.features.admin.password_policy.repository import PasswordPolicyRepository
+from app.models import ConversationMode, PasswordPolicy, User, UserPreference
 from app.web.deps import require_web_auth
 from app.web.jinja import TEMPLATES_DIR, make_templates, verify_csrf_token, web_context
 
@@ -79,6 +80,19 @@ async def preferences_index(
     db: AsyncSession = Depends(get_async_session),
 ) -> HTMLResponse:
     db_user, prefs = await _load_user_and_prefs(db, uuid.UUID(user["id"]))
+
+    # Charger les modes de conversation (chatbot/assistant) pour le select
+    # "Mode par défaut" — parité V1 #defaultMode.
+    modes_result = await db.execute(
+        select(ConversationMode).order_by(ConversationMode.id)
+    )
+    modes = list(modes_result.scalars().all())
+
+    # Charger la politique de mot de passe par défaut pour afficher
+    # les vraies règles dans le card "Mot de passe" (parité V1
+    # password_requirements).
+    policy = await PasswordPolicyRepository.get_default(db)
+
     return templates.TemplateResponse(
         request,
         "pages/preferences/index.html",
@@ -88,6 +102,8 @@ async def preferences_index(
             user=user,
             db_user=db_user,
             prefs=prefs,
+            modes=modes,
+            policy=policy,
         ),
     )
 
@@ -100,6 +116,7 @@ async def update_profile(
     request: Request,
     first_name: Annotated[str | None, Form()] = None,
     last_name: Annotated[str | None, Form()] = None,
+    username: Annotated[str | None, Form()] = None,
     csrf_token: Annotated[str | None, Form()] = None,
     user: dict = Depends(require_web_auth),
     db: AsyncSession = Depends(get_async_session),
@@ -114,6 +131,18 @@ async def update_profile(
     )
     if db_user is None:
         return _toast("error", "Utilisateur introuvable.", status_code=404)
+
+    # Username editable (parité V1 profile.js:UserForm.render).
+    new_username = (username or "").strip()
+    if new_username and new_username != db_user.username:
+        existing = (
+            (await db.execute(select(User).where(User.username == new_username, User.id != db_user.id)))
+            .unique()
+            .scalar_one_or_none()
+        )
+        if existing is not None:
+            return _toast("error", "Ce nom d'utilisateur est déjà pris.", status_code=400)
+        db_user.username = new_username
 
     db_user.first_name = (first_name or "").strip() or None
     db_user.last_name = (last_name or "").strip() or None
@@ -189,6 +218,12 @@ async def update_settings(
     theme: Annotated[str, Form()] = "auto",
     rag_mode: Annotated[str, Form()] = "auto",
     show_sources: Annotated[str | None, Form()] = None,
+    default_mode_id: Annotated[int | None, Form()] = None,
+    voice_to_text_enabled: Annotated[str | None, Form()] = None,
+    voice_auto_send: Annotated[str | None, Form()] = None,
+    voice_tts_enabled: Annotated[str | None, Form()] = None,
+    voice_tts_auto_play: Annotated[str | None, Form()] = None,
+    voice_tts_rate: Annotated[float | None, Form()] = None,
     csrf_token: Annotated[str | None, Form()] = None,
     user: dict = Depends(require_web_auth),
     db: AsyncSession = Depends(get_async_session),
@@ -212,6 +247,25 @@ async def update_settings(
     prefs.theme = theme
     prefs.rag_mode = rag_mode
     prefs.show_sources = bool(show_sources)
+
+    # Mode par défaut conversation (parité V1 #defaultMode).
+    if default_mode_id is not None:
+        # Vérifier que le mode existe avant de l'assigner.
+        mode = (
+            await db.execute(select(ConversationMode).where(ConversationMode.id == default_mode_id))
+        ).scalar_one_or_none()
+        if mode is None:
+            return _toast("error", "Mode par défaut invalide.", status_code=400)
+        prefs.default_mode_id = default_mode_id
+
+    # Préférences vocales (parité V1 #voiceToTextGroup, #voiceTtsGroup).
+    prefs.voice_to_text_enabled = bool(voice_to_text_enabled)
+    prefs.voice_auto_send = bool(voice_auto_send)
+    prefs.voice_tts_enabled = bool(voice_tts_enabled)
+    prefs.voice_tts_auto_play = bool(voice_tts_auto_play)
+    if voice_tts_rate is not None:
+        prefs.voice_tts_rate = max(0.5, min(2.0, voice_tts_rate))
+
     try:
         await db.commit()
     except Exception:
