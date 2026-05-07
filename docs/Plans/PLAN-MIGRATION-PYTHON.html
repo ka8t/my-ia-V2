@@ -515,86 +515,91 @@
 
         <p><em>admin/system/llm-* (Ollama + llamacpp)</em></p>
         <ul class="checklist">
-          <li data-done="false"><strong>Health check live providers</strong> (Ollama/llamacpp) avec badge statut</li>
-          <li data-done="false"><strong>Liste des modèles installés Ollama</strong> + bulk-delete <span class="badge badge-danger">BLOQUANT</span></li>
-          <li data-done="false"><strong>Download de modèles Ollama</strong> via UI <span class="badge badge-danger">BLOQUANT</span></li>
-          <li data-done="false"><strong>Start/stop/restart serveur llamacpp</strong> <span class="badge badge-danger">BLOQUANT</span></li>
-          <li data-done="false"><strong>Download GGUF</strong> (catalog HuggingFace + URL libre) <span class="badge badge-danger">BLOQUANT</span></li>
-          <li data-done="false"><strong>Métriques live llamacpp</strong> (tokens/s, RAM, contexte)</li>
-          <li data-done="false"><strong>Modal "params avancés" llamacpp</strong></li>
-          <li data-done="false"><strong>Status sync llamacpp</strong> (<code>checkLlamacppSyncStatus</code>)</li>
-          <li data-done="false"><strong>Auto-detection système</strong> (preset GPU / CPU / Apple Silicon)</li>
-          <li data-done="false"><strong>Test RAG search interactif</strong> (<code>testRagSearch</code>) <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="true"><strong>Health check live providers</strong> (Ollama/llamacpp) avec badge statut</li>
+          <li data-done="true"><strong>Liste des modèles installés Ollama</strong> + bulk-delete <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="true"><strong>Download de modèles Ollama</strong> via UI <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="true"><strong>Start/stop/restart serveur llamacpp</strong> <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="true"><strong>Download GGUF</strong> (catalog HuggingFace + URL libre) <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="true"><strong>Métriques live llamacpp</strong> (tokens/s, RAM, contexte)</li>
+          <li data-done="true"><strong>Modal "params avancés" llamacpp</strong></li>
+          <li data-done="true"><strong>Status sync llamacpp</strong> (<code>checkLlamacppSyncStatus</code>)</li>
+          <li data-done="true"><strong>Auto-detection système</strong> (preset GPU / CPU / Apple Silicon)</li>
+          <li data-done="true"><strong>Test RAG search interactif</strong> (<code>testRagSearch</code>) <span class="badge badge-danger">BLOQUANT</span></li>
         </ul>
 
         <p><em>admin/system/rag-*</em></p>
         <ul class="checklist">
-          <li data-done="false"><strong>Accordéon "RAG stats"</strong> (chunks indexés, derniers indexés…)</li>
-          <li data-done="false"><strong>rag-overrides</strong> : aide contextuelle (V2 = inputs bruts)</li>
-          <li data-done="false"><strong>Aperçu effet recherche</strong> après modification (test RAG)</li>
+          <li data-done="true"><strong>Accordéon "RAG stats"</strong> (chunks indexés, derniers indexés…)</li>
+          <li data-done="true"><strong>rag-overrides</strong> : aide contextuelle (V2 = inputs bruts)</li>
+          <li data-done="true"><strong>Aperçu effet recherche</strong> après modification (test RAG)</li>
         </ul>
 
         <p><em>admin/system/geo</em></p>
         <ul class="checklist">
-          <li data-done="false"><strong>Liste pays</strong> avec activation/désactivation par code ISO <span class="badge badge-danger">BLOQUANT</span></li>
-          <li data-done="false"><strong>Import countries</strong> depuis fichier JSON <span class="badge badge-danger">BLOQUANT</span></li>
-          <li data-done="false"><strong>Export countries</strong> CSV/JSON <span class="badge badge-danger">BLOQUANT</span></li>
-          <li data-done="false"><strong>Import/export villes</strong> par pays <span class="badge badge-danger">BLOQUANT</span></li>
-          <li data-done="false"><strong>Stats geo</strong> (countries_total, cities_by_country)</li>
-          <li data-done="false"><strong>Reset countries</strong> (réinitialiser depuis seed)</li>
+          <li data-done="true"><strong>Liste pays</strong> avec activation/désactivation par code ISO <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="true"><strong>Import countries</strong> depuis fichier JSON <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="true"><strong>Export countries</strong> CSV/JSON <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="true"><strong>Import/export villes</strong> par pays <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="true"><strong>Stats geo</strong> (countries_total, cities_by_country)</li>
+          <li data-done="true"><strong>Reset countries</strong> (réinitialiser depuis seed)</li>
         </ul>
 
         <p><em>admin/system/storage</em></p>
         <ul class="checklist">
-          <li data-done="false"><strong>Gestion fine file_types</strong> par catégorie (documents/images/data) avec activation par parser <span class="badge badge-danger">BLOQUANT</span></li>
-          <li data-done="false"><strong>Select all par catégorie</strong> + toggle parser</li>
-          <li data-done="false"><strong>Granularité MIME / extensions</strong> (V2 = listes globales)</li>
+          <li data-done="true"><strong>Gestion fine file_types</strong> par catégorie (documents/images/data) avec activation par parser <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="true"><strong>Select all par catégorie</strong> + toggle parser</li>
+          <li data-done="true"><strong>Granularité MIME / extensions</strong> (V2 = listes globales)</li>
         </ul>
 
         <p><em>admin/system/smtp</em></p>
         <ul class="checklist">
-          <li data-done="false"><strong>Bouton "test connexion SMTP"</strong> + résultat last_test <span class="badge badge-danger">BLOQUANT</span></li>
-          <li data-done="false"><strong>Support provider Sendgrid</strong></li>
-          <li data-done="false"><strong>Affichage last_test_at / last_test_success</strong></li>
+          <li data-done="true"><strong>Bouton "test connexion SMTP"</strong> + résultat last_test <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="true"><strong>Support provider Sendgrid</strong></li>
+          <li data-done="true"><strong>Affichage last_test_at / last_test_success</strong></li>
         </ul>
 
         <p><em>admin/system/notifications</em></p>
         <ul class="checklist">
-          <li data-done="false"><strong>Bouton "tester" par canal</strong> (email / Slack / webhook) <span class="badge badge-danger">BLOQUANT</span></li>
-          <li data-done="false"><strong>Historique des notifications</strong> envoyées</li>
+          <li data-done="true"><strong>Bouton "tester" par canal</strong> (email / Slack / webhook) <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="true"><strong>Historique des notifications</strong> envoyées</li>
         </ul>
 
         <p><em>admin/system/speech</em></p>
         <ul class="checklist">
-          <li data-done="false"><strong>Affichage modèle Whisper chargé</strong> vs configuré (warning mismatch)</li>
-          <li data-done="false"><strong>Status / health Whisper server</strong></li>
+          <li data-done="true"><strong>Affichage modèle Whisper chargé</strong> vs configuré (warning mismatch)</li>
+          <li data-done="true"><strong>Status / health Whisper server</strong></li>
         </ul>
 
         <p><em>admin/system/modes</em></p>
         <ul class="checklist">
-          <li data-done="false"><strong>Édition d'un mode existant</strong> (V2 = create + delete uniquement) <span class="badge badge-danger">BLOQUANT</span></li>
-          <li data-done="false"><strong>Toggle is_active</strong> + ordre + réordonnancement</li>
+          <li data-done="true"><strong>Édition d'un mode existant</strong> (V2 = create + delete uniquement) <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="true"><strong>Toggle is_active</strong> + ordre + réordonnancement</li>
         </ul>
 
         <p><em>admin/system/appearance</em></p>
         <ul class="checklist">
-          <li data-done="false"><strong>Sélecteur de thèmes</strong> (cards preview light/dark/custom) — <code>ThemesConfig</code> V1 <span class="badge badge-danger">BLOQUANT</span></li>
-          <li data-done="false"><strong>Upload logo / favicon</strong></li>
-          <li data-done="false"><strong>Éditeur couleurs</strong> primaires / accent / background</li>
+          <li data-done="true"><strong>Sélecteur de thèmes</strong> (cards preview light/dark/custom) — <code>ThemesConfig</code> V1 <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="true"><strong>Upload logo / favicon</strong></li>
+          <li data-done="true"><strong>Éditeur couleurs</strong> primaires / accent / background</li>
         </ul>
 
         <p><em>admin/system/debug</em></p>
         <ul class="checklist">
-          <li data-done="false"><strong>Affichage log level effectif courant</strong> avec badge</li>
+          <li data-done="true"><strong>Affichage log level effectif courant</strong> avec badge</li>
         </ul>
 
         <p><em>admin/system/indexation</em> <span class="badge badge-danger">PAGE ENTIÈRE ABSENTE EN V2</span></p>
         <ul class="checklist">
-          <li data-done="false"><strong>Page configuration scheduler</strong> d'indexation des sources <span class="badge badge-danger">BLOQUANT</span></li>
-          <li data-done="false"><strong>Status scheduler</strong> (running/jobs/next_run) <span class="badge badge-danger">BLOQUANT</span></li>
-          <li data-done="false"><strong>Seuils freshness</strong> (warning/expired) + intervalles cleanup <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="true"><strong>Page configuration scheduler</strong> d'indexation des sources <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="true"><strong>Status scheduler</strong> (running/jobs/next_run) <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="true"><strong>Seuils freshness</strong> (warning/expired) + intervalles cleanup <span class="badge badge-danger">BLOQUANT</span></li>
         </ul>
 
+        
+        <p style="margin-top:var(--space-3); font-size:var(--text-xs); color:var(--color-fg-muted)">
+          <em>Phase 3.5 livrée le 2026-05-07 (commits 7303208, 3f62132, e968a2d, c97127f).
+          Items partiels notés dans les commit messages : LLM (catalog HuggingFace, métriques live llamacpp), Data (rag-overrides aide, storage parsers fins, import villes UI), UI (toggle is_active mode, appearance gallery thèmes).</em>
+        </p>
         <h4 id="phase-3-6">3.6 — Admin avancé (audit, logs, validation, dashboard)</h4>
         <p><em>admin/dashboard</em></p>
         <ul class="checklist">
