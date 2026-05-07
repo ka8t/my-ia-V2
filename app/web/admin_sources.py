@@ -106,9 +106,12 @@ async def admin_sources_list(
     request: Request,
     source_type: str | None = None,
     enabled: str | None = None,
+    q: str | None = None,
+    page: int = 1,
     user: dict = Depends(require_web_admin),
     db: AsyncSession = Depends(get_async_session),
 ) -> HTMLResponse:
+    page_size = 25
     query = select(ContextSource).order_by(ContextSource.priority, ContextSource.display_name)
 
     valid_types = {t.value for t in SourceType}
@@ -116,9 +119,18 @@ async def admin_sources_list(
         query = query.where(ContextSource.source_type == source_type)
     if enabled in {"yes", "no"}:
         query = query.where(ContextSource.is_enabled == (enabled == "yes"))
+    if q:
+        like = f"%{q.strip()}%"
+        query = query.where(
+            (ContextSource.display_name.ilike(like)) | (ContextSource.name.ilike(like))
+        )
 
-    result = await db.execute(query)
+    total = (await db.execute(select(func.count()).select_from(query.subquery()))).scalar_one()
+    page = max(1, page)
+    offset = (page - 1) * page_size
+    result = await db.execute(query.offset(offset).limit(page_size))
     sources = list(result.scalars().all())
+    total_pages = max(1, (total + page_size - 1) // page_size)
 
     return templates.TemplateResponse(
         request,
@@ -133,6 +145,10 @@ async def admin_sources_list(
             source_types=sorted(valid_types),
             filter_type=source_type,
             filter_enabled=enabled,
+            q=q or "",
+            page=page,
+            total=total,
+            total_pages=total_pages,
         ),
     )
 
@@ -558,4 +574,139 @@ async def admin_sources_config_post(
             error=None,
             success="Configuration enregistrée.",
         ),
+    )
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  Phase 3.4.c — Test, reindex, clear-index, bulk (parité V1 sources.js)
+# ═════════════════════════════════════════════════════════════════════════════
+
+@router.post("/{source_id}/test", response_class=HTMLResponse)
+async def admin_source_test(
+    request: Request,
+    source_id: uuid.UUID,
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    """Teste une source (parité V1 sources.js:testSource)."""
+    if (err := _csrf_or_400(request, csrf_token)):
+        return err
+    s = await _get_source_or_404(db, source_id)
+    if s is None:
+        return HTMLResponse("", status_code=404)
+    try:
+        from app.features.sources.service import SourceService as _SrcService
+        result = await _SrcService.test_source(db, source_id, query="test")
+        ok = bool(getattr(result, "success", False))
+        msg = getattr(result, "error", None) or ("Test réussi." if ok else "Échec du test.")
+    except Exception as exc:
+        logger.exception("Test source failed")
+        ok = False
+        msg = f"Erreur : {exc}"
+    cls = "toast--success" if ok else "toast--error"
+    return HTMLResponse(
+        f"<div class='toast {cls}'>{msg}</div>", status_code=200 if ok else 500
+    )
+
+
+@router.post("/{source_id}/reindex", response_class=HTMLResponse)
+async def admin_source_reindex(
+    request: Request,
+    source_id: uuid.UUID,
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    """Trigger réindexation d'une source (parité V1 sources.js:reindexSource)."""
+    if (err := _csrf_or_400(request, csrf_token)):
+        return err
+    s = await _get_source_or_404(db, source_id)
+    if s is None:
+        return HTMLResponse("", status_code=404)
+    try:
+        from app.features.sources.service import SourceService as _SrcService
+        await _SrcService.trigger_initial_indexation(source_id)
+    except Exception as exc:
+        logger.exception("Reindex source failed")
+        return HTMLResponse(
+            f"<div class='toast toast--error'>Échec : {exc}</div>", status_code=500
+        )
+    return HTMLResponse(
+        f"<div class='toast toast--success'>Réindexation lancée pour « {s.display_name} ».</div>"
+    )
+
+
+@router.post("/{source_id}/clear-index", response_class=HTMLResponse)
+async def admin_source_clear_index(
+    request: Request,
+    source_id: uuid.UUID,
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    """Vide l'index d'une source sans la supprimer (parité V1 clearSourceIndex)."""
+    if (err := _csrf_or_400(request, csrf_token)):
+        return err
+    s = await _get_source_or_404(db, source_id)
+    if s is None:
+        return HTMLResponse("", status_code=404)
+    try:
+        from app.features.sources.service import SourceService as _SrcService
+        await _SrcService.clear_source_index(db, source_id)
+    except Exception as exc:
+        logger.exception("Clear index failed")
+        return HTMLResponse(
+            f"<div class='toast toast--error'>Échec : {exc}</div>", status_code=500
+        )
+    return HTMLResponse(
+        f"<div class='toast toast--success'>Index vidé pour « {s.display_name} ».</div>",
+        headers={"HX-Trigger": "sources-refresh"},
+    )
+
+
+@router.post("/bulk-action", response_class=HTMLResponse)
+async def admin_sources_bulk(
+    request: Request,
+    action: Annotated[str, Form()],
+    source_ids: Annotated[list[str], Form()],
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    """Bulk : enable / disable / reindex / clear-index / delete."""
+    if (err := _csrf_or_400(request, csrf_token)):
+        return err
+    if action not in {"enable", "disable", "reindex", "clear-index", "delete"}:
+        return HTMLResponse("<div class='toast toast--error'>Action invalide.</div>", status_code=400)
+    affected = 0
+    from app.features.sources.service import SourceService as _SrcService
+    for raw in source_ids:
+        try:
+            sid = uuid.UUID(raw)
+        except ValueError:
+            continue
+        s = await _get_source_or_404(db, sid)
+        if s is None:
+            continue
+        try:
+            if action == "enable":
+                s.is_enabled = True
+                await db.commit()
+            elif action == "disable":
+                s.is_enabled = False
+                await db.commit()
+            elif action == "reindex":
+                await _SrcService.trigger_initial_indexation(sid)
+            elif action == "clear-index":
+                await _SrcService.clear_source_index(db, sid)
+            elif action == "delete":
+                await db.delete(s)
+                await db.commit()
+            affected += 1
+        except Exception:
+            logger.exception("Bulk source action %s failed for %s", action, sid)
+    return HTMLResponse(
+        f"<div class='toast toast--success'>{affected} source(s) traitée(s).</div>",
+        headers={"HX-Trigger": "sources-refresh"},
     )

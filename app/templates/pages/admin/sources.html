@@ -4,18 +4,53 @@
 {% block title %}Sources — Admin{% endblock %}
 
 {% block admin_content %}
+<section x-data="{ selected: new Set() }" hx-on:sources-refresh="window.location.reload()">
 
 <header class="admin-page__head">
   <div class="admin-page__eyebrow"><span>Console / 05</span></div>
   <h1 class="admin-page__title">
-    Sources de <em>contexte</em>.
+    Sources de <em>contexte</em>
+    {% if total is defined %}<span class="admin-page__count">— {{ total }}</span>{% endif %}
   </h1>
   <p class="admin-page__lede">
     Sources externes (web, API, base de données) qui enrichissent le RAG.
-    La configuration technique (sélecteurs, paramètres API) reste à éditer
-    via l'admin V1 le temps de l'UX dédiée.
   </p>
 </header>
+
+{# Search + pagination #}
+<form class="admin-toolbar" method="get" action="/web/admin/sources">
+  {% if filter_type %}<input type="hidden" name="source_type" value="{{ filter_type }}">{% endif %}
+  {% if filter_enabled %}<input type="hidden" name="enabled" value="{{ filter_enabled }}">{% endif %}
+  <input type="search" name="q" value="{{ q or '' }}" placeholder="Nom de source…" class="admin-toolbar__search">
+  <button type="submit" class="btn btn--ghost btn--sm">Rechercher</button>
+  {% if q %}<a href="/web/admin/sources" class="btn btn--ghost btn--sm">Reset</a>{% endif %}
+</form>
+
+{# Bulk bar #}
+<form class="admin-bulkbar"
+      x-show="selected.size > 0" x-cloak
+      x-data="{ bulkAction: 'enable' }"
+      hx-post="/web/admin/sources/bulk-action"
+      hx-target="#bulk-result" hx-swap="innerHTML"
+      hx-on::config-request="
+        const params = event.detail.parameters;
+        params['source_ids'] = Array.from(selected);
+        params['csrf_token'] = '{{ csrf_token }}';
+        params['action'] = bulkAction;
+      ">
+  <span><span x-text="selected.size"></span> sélectionnée(s)</span>
+  <select x-model="bulkAction" class="admin-toolbar__select">
+    <option value="enable">Activer</option>
+    <option value="disable">Désactiver</option>
+    <option value="reindex">Réindexer</option>
+    <option value="clear-index">Vider l'index</option>
+    <option value="delete">Supprimer</option>
+  </select>
+  <button type="submit" class="btn btn--primary btn--sm"
+          x-on:click="if (bulkAction === 'delete' && !confirm('Supprimer ' + selected.size + ' source(s) ?')) $event.preventDefault()">Appliquer</button>
+  <button type="button" class="btn btn--ghost btn--sm" x-on:click="selected = new Set()">Annuler</button>
+</form>
+<div id="bulk-result" aria-live="polite"></div>
 
 {# ─── Actions globales ─── #}
 <div class="admin-actions-bar" x-data="{ open: false }">
@@ -120,4 +155,19 @@
   </div>
 </div>
 
+{# Pagination #}
+{% if total_pages and total_pages > 1 %}
+<nav class="admin-pagination">
+  {% set qsb = '/web/admin/sources?' %}
+  {% if filter_type %}{% set qsb = qsb ~ 'source_type=' ~ filter_type ~ '&' %}{% endif %}
+  {% if filter_enabled %}{% set qsb = qsb ~ 'enabled=' ~ filter_enabled ~ '&' %}{% endif %}
+  {% if q %}{% set qsb = qsb ~ 'q=' ~ q ~ '&' %}{% endif %}
+  {% if page > 1 %}<a href="{{ qsb }}page={{ page - 1 }}" class="btn btn--ghost btn--sm">← Préc</a>{% endif %}
+  <span>Page {{ page }} / {{ total_pages }}</span>
+  {% if page < total_pages %}<a href="{{ qsb }}page={{ page + 1 }}" class="btn btn--ghost btn--sm">Suiv →</a>{% endif %}
+</nav>
+{% endif %}
+
+</section>
+<style>[x-cloak] { display: none !important; }</style>
 {% endblock %}
