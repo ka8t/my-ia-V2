@@ -1353,15 +1353,15 @@ async def admin_logs_stats(
         stats = await LogService.get_stats(db)
     except Exception as exc:
         return HTMLResponse(f"<div class='toast toast--error'>Stats indisponibles : {exc}</div>")
+    # LogStatsResponse : total, by_category: List[{category, count}],
+    # by_level: List[{level, count}], alerts_count.
     parts = ["<dl class='docs-modal__meta'>"]
-    by_level = stats.get("by_level", {}) if isinstance(stats, dict) else getattr(stats, "by_level", {}) or {}
-    by_cat = stats.get("by_category", {}) if isinstance(stats, dict) else getattr(stats, "by_category", {}) or {}
-    total = stats.get("total", 0) if isinstance(stats, dict) else getattr(stats, "total", 0)
-    parts.append(f"<dt>Total</dt><dd>{total}</dd>")
-    for k, v in by_level.items():
-        parts.append(f"<dt>Level <code>{k}</code></dt><dd>{v}</dd>")
-    for k, v in by_cat.items():
-        parts.append(f"<dt>Cat <code>{k}</code></dt><dd>{v}</dd>")
+    parts.append(f"<dt>Total</dt><dd>{stats.total}</dd>")
+    parts.append(f"<dt>Alertes</dt><dd>{stats.alerts_count}</dd>")
+    for lvl in stats.by_level:
+        parts.append(f"<dt>Level <code>{lvl.level}</code></dt><dd>{lvl.count}</dd>")
+    for cat in stats.by_category:
+        parts.append(f"<dt>Cat <code>{cat.category}</code></dt><dd>{cat.count}</dd>")
     parts.append("</dl>")
     return HTMLResponse("".join(parts))
 
@@ -1417,7 +1417,7 @@ async def admin_logs_details(
         <dt>Category</dt><dd>{getattr(log, 'log_category', '—')}</dd>
         <dt>Service</dt><dd>{getattr(log, 'service', '—')}</dd>
         <dt>Logger</dt><dd><code>{getattr(log, 'logger_name', '—')}</code></dd>
-        <dt>Date</dt><dd>{log.created_at.strftime('%d/%m/%Y %H:%M:%S') if log.created_at else '—'}</dd>
+        <dt>Date</dt><dd>{log.timestamp.strftime('%d/%m/%Y %H:%M:%S') if log.timestamp else '—'}</dd>
         <dt>Message</dt><dd style='white-space:pre-wrap; word-break:break-word'>{log.message[:1000] if log.message else '—'}</dd>
         {rows}
         </dl>

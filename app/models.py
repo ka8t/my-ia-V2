@@ -259,7 +259,7 @@ class Document(Base):
     filename: Mapped[str] = mapped_column(String(500), nullable=False)
     file_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     file_size: Mapped[int] = mapped_column(Integer, nullable=False)
-    file_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    file_type: Mapped[str] = mapped_column(String(150), nullable=False)
     file_path: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)  # Chemin relatif dans le storage
     chunk_count: Mapped[int] = mapped_column(Integer, default=0)
     embedding_count: Mapped[int] = mapped_column(Integer, default=0)  # Nombre d'embeddings dans ChromaDB
