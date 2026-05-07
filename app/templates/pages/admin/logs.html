@@ -4,16 +4,37 @@
 {% block title %}Logs serveur — Admin{% endblock %}
 
 {% block admin_content %}
+<section x-data="{ logId: null, selected: new Set(), showCleanup: false }"
+         hx-on:logs-refresh="window.location.reload()">
 
 <header class="admin-page__head">
   <div class="admin-page__eyebrow"><span>Console / 07</span></div>
   <h1 class="admin-page__title">
-    Logs <em>serveur</em>.
+    Logs <em>serveur</em>
+    <span class="admin-page__count">— {{ total }}</span>
   </h1>
   <p class="admin-page__lede">
-    {{ total }} entrée{{ 's' if total != 1 }} en BDD. Recherche fulltext sur le message + filtres.
+    Recherche fulltext + filtres. Stats live, alertes, cleanup.
   </p>
 </header>
+
+{# Stats live + alertes (parité V1) #}
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-3); margin-bottom:var(--space-3)">
+  <section class="admin-fieldset">
+    <legend>Statistiques</legend>
+    <button type="button" class="btn btn--ghost btn--sm"
+            hx-get="/web/admin/logs/stats" hx-target="#logs-stats" hx-swap="innerHTML">⟳ Actualiser</button>
+    <div id="logs-stats" hx-get="/web/admin/logs/stats" hx-trigger="load" hx-swap="innerHTML"
+         style="margin-top:var(--space-2)">Chargement…</div>
+  </section>
+  <section class="admin-fieldset">
+    <legend>Alertes</legend>
+    <div id="logs-alerts" hx-get="/web/admin/logs/alerts" hx-trigger="load, every 60s" hx-swap="innerHTML">—</div>
+    <div style="margin-top:var(--space-3)">
+      <button type="button" class="btn btn--ghost btn--sm" x-on:click="showCleanup = true">🗑 Cleanup logs</button>
+    </div>
+  </section>
+</div>
 
 <form method="get" action="/web/admin/logs" class="admin-filters-form">
   <div class="admin-form__grid">
@@ -91,14 +112,7 @@
           {{ log.logger_name or '—' }}
         </div>
         <div class="admin-table-cell">
-          {% if log.context %}
-          <details class="admin-audit__details">
-            <summary>voir</summary>
-            <pre class="admin-audit__json">{{ log.context|tojson(indent=2) }}</pre>
-          </details>
-          {% else %}
-            <span class="admin-config__hint">—</span>
-          {% endif %}
+          <button type="button" class="admin-action" x-on:click="logId = '{{ log.id }}'" title="Détails">{{ icon('info-circle', 14) }}</button>
         </div>
       </div>
       {% endfor %}
@@ -117,4 +131,40 @@
 </nav>
 {% endif %}
 
+{# Modal détail #}
+<div class="admin-modal" x-show="logId !== null" x-cloak role="dialog"
+     x-on:click.self="logId = null" x-on:keydown.escape.window="logId = null">
+  <div class="admin-modal__panel"
+       x-init="$watch('logId', id => { if (id) htmx.ajax('GET', '/web/admin/logs/' + id + '/details', {target: $el, swap: 'innerHTML'}) })">
+    Chargement…
+  </div>
+</div>
+
+{# Modal cleanup #}
+<div class="admin-modal" x-show="showCleanup" x-cloak role="dialog"
+     x-on:click.self="showCleanup = false" x-on:keydown.escape.window="showCleanup = false">
+  <form class="admin-modal__panel"
+        hx-post="/web/admin/logs/cleanup" hx-target="#cleanup-result" hx-swap="innerHTML"
+        x-data="{ days: 30 }"
+        x-on:submit="if (!confirm('Supprimer définitivement les logs > ' + days + ' jours ?')) $event.preventDefault()">
+    {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+    <header class="admin-modal__head">
+      <h2>Cleanup des logs</h2>
+      <button type="button" x-on:click="showCleanup = false">✕</button>
+    </header>
+    <div class="admin-modal__body">
+      <label>Supprimer les logs plus anciens que (jours)
+        <input type="number" name="older_than_days" min="1" max="3650" value="30" x-model.number="days" required>
+      </label>
+      <div id="cleanup-result" aria-live="polite"></div>
+    </div>
+    <footer class="admin-modal__foot">
+      <button type="button" class="btn btn--ghost btn--sm" x-on:click="showCleanup = false">Annuler</button>
+      <button type="submit" class="btn btn--danger btn--sm">🗑 Cleanup</button>
+    </footer>
+  </form>
+</div>
+
+</section>
+<style>[x-cloak] { display: none !important; }</style>
 {% endblock %}

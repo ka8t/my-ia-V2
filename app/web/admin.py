@@ -1334,3 +1334,138 @@ async def admin_audit_purge(
     return HTMLResponse(
         f"<div class='toast toast--success'>{n} log(s) audit purgé(s) (>{older_than_days}j).</div>"
     )
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  Phase 3.6.b — admin/logs : stats, cleanup, modal détail, alertes
+# ═════════════════════════════════════════════════════════════════════════════
+
+@router.get("/logs/stats", response_class=HTMLResponse)
+async def admin_logs_stats(
+    request: Request,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    """Stats logs par level/category (parité V1 content-logs.js:loadStats)."""
+    try:
+        from app.features.logs.service import LogService
+        stats = await LogService.get_stats(db)
+    except Exception as exc:
+        return HTMLResponse(f"<div class='toast toast--error'>Stats indisponibles : {exc}</div>")
+    parts = ["<dl class='docs-modal__meta'>"]
+    by_level = stats.get("by_level", {}) if isinstance(stats, dict) else getattr(stats, "by_level", {}) or {}
+    by_cat = stats.get("by_category", {}) if isinstance(stats, dict) else getattr(stats, "by_category", {}) or {}
+    total = stats.get("total", 0) if isinstance(stats, dict) else getattr(stats, "total", 0)
+    parts.append(f"<dt>Total</dt><dd>{total}</dd>")
+    for k, v in by_level.items():
+        parts.append(f"<dt>Level <code>{k}</code></dt><dd>{v}</dd>")
+    for k, v in by_cat.items():
+        parts.append(f"<dt>Cat <code>{k}</code></dt><dd>{v}</dd>")
+    parts.append("</dl>")
+    return HTMLResponse("".join(parts))
+
+
+@router.post("/logs/cleanup", response_class=HTMLResponse)
+async def admin_logs_cleanup(
+    request: Request,
+    older_than_days: Annotated[int, Form()],
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    """Cleanup logs > N jours (parité V1 content-logs.js:cleanup)."""
+    if (err := _csrf_or_400(request, csrf_token)):
+        return err
+    if older_than_days < 1:
+        return HTMLResponse("<div class='toast toast--error'>Nombre de jours invalide.</div>", status_code=400)
+    try:
+        from app.features.logs.service import LogService
+        n = await LogService.cleanup(db, older_than_days=older_than_days)
+    except Exception as exc:
+        logger.exception("Logs cleanup failed")
+        return HTMLResponse(f"<div class='toast toast--error'>Échec : {exc}</div>", status_code=500)
+    return HTMLResponse(
+        f"<div class='toast toast--success'>{n} log(s) supprimé(s) (>{older_than_days}j).</div>"
+    )
+
+
+@router.get("/logs/{log_id}/details", response_class=HTMLResponse)
+async def admin_logs_details(
+    request: Request,
+    log_id: uuid.UUID,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    """Modal détails d'un log applicatif."""
+    from app.models import AppLog
+    log = (await db.execute(select(AppLog).where(AppLog.id == log_id))).unique().scalar_one_or_none()
+    if log is None:
+        return HTMLResponse("Log introuvable.", status_code=404)
+    ctx = log.context if isinstance(log.context, dict) else {}
+    rows = "".join(
+        f"<dt>{k}</dt><dd><code style='font-size:11px; word-break:break-all'>{str(v)[:500]}</code></dd>"
+        for k, v in ctx.items()
+    )
+    return HTMLResponse(
+        f"""<header class='admin-modal__head'>
+        <h2>Log #{str(log.id)[:8]}</h2>
+        <button type='button' x-on:click='logId = null'>✕</button>
+        </header>
+        <dl class='docs-modal__meta'>
+        <dt>Level</dt><dd>{log.level}</dd>
+        <dt>Category</dt><dd>{getattr(log, 'log_category', '—')}</dd>
+        <dt>Service</dt><dd>{getattr(log, 'service', '—')}</dd>
+        <dt>Logger</dt><dd><code>{getattr(log, 'logger_name', '—')}</code></dd>
+        <dt>Date</dt><dd>{log.created_at.strftime('%d/%m/%Y %H:%M:%S') if log.created_at else '—'}</dd>
+        <dt>Message</dt><dd style='white-space:pre-wrap; word-break:break-word'>{log.message[:1000] if log.message else '—'}</dd>
+        {rows}
+        </dl>
+        <footer class='admin-modal__foot'>
+          <button type='button' class='btn btn--ghost btn--sm' x-on:click='logId = null'>Fermer</button>
+        </footer>"""
+    )
+
+
+@router.get("/logs/alerts", response_class=HTMLResponse)
+async def admin_logs_alerts(
+    request: Request,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    """Polling alertes récentes (parité V1 startAlertPolling)."""
+    try:
+        from app.features.logs.service import LogService
+        alerts = await LogService.get_alerts(db, hours=24)
+    except Exception:
+        alerts = []
+    n = len(alerts) if alerts else 0
+    if n == 0:
+        return HTMLResponse("<small style='color:var(--color-fg-muted)'>Aucune alerte récente.</small>")
+    return HTMLResponse(
+        f"<span class='admin-pending-badge'>{n} alerte(s)</span>"
+    )
+
+
+@router.post("/logs/bulk-delete", response_class=HTMLResponse)
+async def admin_logs_bulk_delete(
+    request: Request,
+    log_ids: Annotated[list[str], Form()],
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    if (err := _csrf_or_400(request, csrf_token)):
+        return err
+    try:
+        ids = [uuid.UUID(s) for s in log_ids if s]
+        from app.features.logs.repository import LogRepository
+        repo = LogRepository(db)
+        n = await repo.delete_by_ids(ids)
+        await db.commit()
+    except Exception as exc:
+        logger.exception("Logs bulk delete failed")
+        return HTMLResponse(f"<div class='toast toast--error'>Échec : {exc}</div>", status_code=500)
+    return HTMLResponse(
+        f"<div class='toast toast--success'>{n} log(s) supprimé(s).</div>",
+        headers={"HX-Trigger": "logs-refresh"},
+    )
