@@ -47,7 +47,7 @@
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     {% endif %}
 
-    {{ field('email', 'Adresse e-mail',
+    {{ field('email', t('label_email'),
              type='email',
              autocomplete='email',
              autofocus=True,
@@ -55,7 +55,7 @@
              placeholder='vous@exemple.fr',
              value=form.email if form else '') }}
 
-    {{ field('password', 'Mot de passe',
+    {{ field('password', t('label_password'),
              type='password',
              autocomplete='new-password',
              required=True,
@@ -68,13 +68,13 @@
              placeholder='Retapez votre mot de passe') }}
 
     <div class="auth-card__actions">
-      {{ button('Créer mon compte', block=True, lg=True, arrow=True) }}
+      {{ button(t('create_account'), block=True, lg=True, arrow=True) }}
     </div>
   </form>
 
   <div class="auth-card__divider"><span>Déjà un compte ?</span></div>
 
-  {{ link_button('Se connecter', href='/web/login', block=True) }}
+  {{ link_button(t('login'), href='/web/login', block=True) }}
 
 </div>
 {% endblock %}

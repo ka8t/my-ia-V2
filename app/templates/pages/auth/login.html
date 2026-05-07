@@ -1,6 +1,7 @@
 {% extends "layouts/auth.html" %}
 {% from "macros/field.html" import field %}
 {% from "macros/button.html" import button, link_button %}
+{% from "macros/icon.html" import icon %}
 
 {% block title %}Connexion — MY-IA{% endblock %}
 
@@ -33,29 +34,107 @@
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     {% endif %}
 
-    {{ field('email', 'Adresse e-mail',
+    {{ field('email', t('label_email'),
              type='email',
              autocomplete='username',
              autofocus=True,
              required=True,
              placeholder='vous@exemple.fr') }}
 
-    {{ field('password', 'Mot de passe',
+    {{ field('password', t('label_password'),
              type='password',
              autocomplete='current-password',
              required=True,
              placeholder='••••••••',
-             aside='Oublié ?',
+             aside=t('forgot_password'),
              aside_href='/web/password-reset') }}
 
     <div class="auth-card__actions">
-      {{ button('Se connecter', block=True, lg=True, arrow=True) }}
+      {{ button(t('login'), block=True, lg=True, arrow=True) }}
     </div>
   </form>
 
   <div class="auth-card__divider"><span>Pas encore de compte ?</span></div>
 
-  {{ link_button('Créer un compte', href='/web/register', block=True) }}
+  {{ link_button(t('create_account'), href='/web/register', block=True) }}
+
+  {# Panneau debug login (parité V1 initDebugLoginPanel)
+     Visible uniquement si debug.endpoints_enabled = true en BDD. #}
+  {% if debug_enabled %}
+  <div class="debug-login-panel"
+       x-data="{ roleId: {{ debug_roles[0].id if debug_roles else 2 }}, overwrite: true, status: '', loading: false }">
+    <div class="debug-login-header">
+      {{ icon('alert-circle', 16) }}
+      <strong>{{ t('debug_banner_login_title') }}</strong>
+    </div>
+    <div class="debug-login-body">
+      <div class="debug-credentials-row">
+        <small>{{ t('debug_banner_login_credentials') }} :</small>
+        <div class="debug-credentials-info">
+          <span>{{ debug_test_email }}</span>
+          <span>{{ debug_test_password }}</span>
+        </div>
+        <button type="button"
+                class="btn-debug-fill"
+                @click="document.getElementById('email').value='{{ debug_test_email }}'; document.getElementById('password').value='{{ debug_test_password }}';">
+          {{ t('debug_banner_login_fill') }}
+        </button>
+      </div>
+
+      <div class="debug-login-register">
+        <div class="debug-role-selector">
+          <label for="debugRoleSelect">{{ t('debug_banner_login_role') }} :</label>
+          <select id="debugRoleSelect" x-model.number="roleId">
+            {% for r in debug_roles %}
+            <option value="{{ r.id }}">{{ r.display_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <label class="debug-overwrite-label">
+          <input type="checkbox" x-model="overwrite">
+          <span>{{ t('debug_banner_login_overwrite') }}</span>
+        </label>
+
+        <button type="button"
+                class="btn-debug-register"
+                :disabled="loading"
+                @click="
+                  loading = true;
+                  status = '';
+                  const url = overwrite
+                    ? `/api/v1/auth/register/debug?role_id=${roleId}`
+                    : `/api/v1/auth/register/`;
+                  const payload = {
+                    email: '{{ debug_test_email }}',
+                    username: '{{ debug_test_username }}',
+                    password: '{{ debug_test_password }}',
+                    first_name: 'Test',
+                    last_name: 'Debug'
+                  };
+                  try {
+                    const r = await fetch(url, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify(payload)
+                    });
+                    const data = await r.json().catch(() => ({}));
+                    status = r.ok
+                      ? 'OK : ' + (data.email || '{{ debug_test_email }}')
+                      : (data.detail || ('HTTP ' + r.status));
+                  } catch (e) {
+                    status = 'Erreur réseau : ' + e.message;
+                  } finally {
+                    loading = false;
+                  }
+                ">
+          <span x-show="!loading">{{ t('debug_banner_login_register') }}</span>
+          <span x-show="loading">…</span>
+        </button>
+        <div class="debug-register-result" x-text="status" aria-live="polite"></div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
 
 </div>
 {% endblock %}

@@ -1,0 +1,77 @@
+{% extends "layouts/auth.html" %}
+{% from "macros/icon.html" import icon %}
+{% from "macros/button.html" import link_button %}
+
+{% block title %}Vérification email — MY-IA{% endblock %}
+
+{% block head %}
+{# Parité V1 : redirection auto vers /web/login après 2s en cas de succès. #}
+{% if state == "success" %}
+<meta http-equiv="refresh" content="2;url=/web/login">
+{% endif %}
+{% endblock %}
+
+{% block brand_hero %}
+<div class="auth-shell__hero">
+  <div class="auth-shell__eyebrow"><span>Vérification</span></div>
+  <h1 class="auth-shell__title">
+    Vérification<br>
+    <em>de votre email</em>.
+  </h1>
+  <p class="auth-shell__lede">
+    Nous validons le lien de confirmation reçu sur votre boîte mail.
+  </p>
+</div>
+{% endblock %}
+
+{% block auth_form %}
+<div class="auth-card">
+
+  {% if state == "success" %}
+  <header class="auth-card__header">
+    <span class="auth-card__index"><span>04 / Vérifié</span></span>
+    <h2 class="auth-card__title">Email vérifié.</h2>
+    <p class="auth-card__subtitle">Redirection vers la connexion…</p>
+  </header>
+  <div class="toast toast--success" role="status">
+    <span class="toast__icon">{{ icon('check-circle', 16) }}</span>
+    <div class="toast__body">
+      <div class="toast__title">Succès</div>
+      <div>Email vérifié avec succès !</div>
+    </div>
+  </div>
+  {{ link_button(t('back_to_login'), href='/web/login', block=True) }}
+
+  {% elif state == "already" %}
+  <header class="auth-card__header">
+    <span class="auth-card__index"><span>04 / Déjà vérifié</span></span>
+    <h2 class="auth-card__title">Email déjà vérifié.</h2>
+    <p class="auth-card__subtitle">Vous pouvez vous connecter directement.</p>
+  </header>
+  <div class="toast" role="status">
+    <span class="toast__icon">{{ icon('info-circle', 16) }}</span>
+    <div class="toast__body">
+      <div class="toast__title">Statut</div>
+      <div>Cet email a déjà été vérifié.</div>
+    </div>
+  </div>
+  {{ link_button(t('back_to_login'), href='/web/login', block=True) }}
+
+  {% else %}
+  <header class="auth-card__header">
+    <span class="auth-card__index"><span>04 / Erreur</span></span>
+    <h2 class="auth-card__title">Erreur de vérification.</h2>
+    <p class="auth-card__subtitle">{{ error_message or 'Le lien est invalide ou a expiré.' }}</p>
+  </header>
+  <div class="toast toast--error" role="alert">
+    <span class="toast__icon">{{ icon('alert-circle', 16) }}</span>
+    <div class="toast__body">
+      <div class="toast__title">Vérification impossible</div>
+      <div>{{ error_message or 'Le lien est invalide ou a expiré.' }}</div>
+    </div>
+  </div>
+  {{ link_button(t('back_to_login'), href='/web/login', block=True) }}
+  {% endif %}
+
+</div>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends "layouts/auth.html" %}
+{% from "macros/icon.html" import icon %}
+{% from "macros/button.html" import link_button %}
+
+{% block title %}Inscription refusée — MY-IA{% endblock %}
+
+{% block brand_hero %}
+<div class="auth-shell__hero">
+  <div class="auth-shell__eyebrow"><span>Refus</span></div>
+  <h1 class="auth-shell__title">
+    Inscription<br>
+    <em>refusée</em>.
+  </h1>
+  <p class="auth-shell__lede">
+    Nous avons le regret de vous informer que votre demande
+    d'inscription n'a pas été acceptée.
+  </p>
+</div>
+{% endblock %}
+
+{% block auth_form %}
+<div class="auth-card">
+
+  <header class="auth-card__header">
+    <span class="auth-card__index"><span>03 / Refus</span></span>
+    <h2 class="auth-card__title">Demande non acceptée.</h2>
+    <p class="auth-card__subtitle">
+      Si vous pensez qu'il s'agit d'une erreur, vous pouvez nous
+      contacter.
+    </p>
+  </header>
+
+  <div class="toast toast--error" role="alert">
+    <span class="toast__icon">{{ icon('alert-circle', 16) }}</span>
+    <div class="toast__body">
+      <div class="toast__title">Statut</div>
+      <div>Inscription refusée par un administrateur.</div>
+    </div>
+  </div>
+
+  {{ link_button(t('back_to_login'), href='/web/login', block=True) }}
+
+</div>
+{% endblock %}

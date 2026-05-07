@@ -38,45 +38,67 @@
         <section id="overview" class="section">
             <h2><span class="section-number">1</span> Vue d'Ensemble</h2>
 
+            <p>MY-IA V2 est une stack <strong>100% Python</strong> : un seul
+            container <code>app</code> sert à la fois le HTML (Jinja2) et l'API
+            JSON (<code>/api/v1/*</code>). Les anciens containers
+            <code>UI-FRONT</code> / <code>UI-BACK</code> de la stack JS V1 ont
+            disparu.</p>
+
             <div class="pipeline">
 ┌─────────────────────────────────────────────────────────────────────┐
-│                         INFRASTRUCTURE MY-IA                        │
+│                       INFRASTRUCTURE MY-IA V2                       │
 ├─────────────────────────────────────────────────────────────────────┤
 │                                                                     │
-│  ┌──────────────┐  ┌──────────────┐                                │
-│  │   UI-FRONT   │  │   UI-BACK    │     Nginx (SSL/Proxy)          │
-│  │   Port 3000  │  │   Port 8081  │                                │
-│  └──────┬───────┘  └──────┬───────┘                                │
-│         │                 │                                         │
-│         └────────┬────────┘                                         │
-│                  ▼                                                  │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │                    FASTAPI BACKEND                          │   │
-│  │                       Port 8080                             │   │
-│  │  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐           │   │
-│  │  │  Auth   │ │  Chat   │ │  Docs   │ │  Admin  │           │   │
-│  │  │ (JWT)   │ │  (RAG)  │ │(Upload) │ │(Config) │           │   │
-│  │  └─────────┘ └─────────┘ └─────────┘ └─────────┘           │   │
-│  └──────────────────────┬──────────────────────────────────────┘   │
-│                         │                                           │
-│         ┌───────────────┼───────────────┐                          │
-│         ▼               ▼               ▼                          │
-│  ┌────────────┐  ┌────────────┐  ┌────────────┐                   │
-│  │ PostgreSQL │  │  ChromaDB  │  │   Ollama   │                   │
-│  │    :5432   │  │   :8000    │  │   :11434   │                   │
-│  │            │  │            │  │     ou     │                   │
-│  │  Metadata  │  │  Vectors   │  │ llama.cpp  │                   │
-│  │  Users     │  │  Embeddings│  │   :8081    │                   │
-│  │  Audit     │  │            │  │            │                   │
-│  └────────────┘  └────────────┘  └────────────┘                   │
+│   Internet (HTTPS:443)                                              │
+│         │                                                           │
+│         ▼                                                           │
+│   ┌──────────────────────┐                                          │
+│   │  Nginx système VPS   │  Let's Encrypt (my-ia.codefixture.com)   │
+│   │  reverse-proxy SSL   │  TLS termination + redirect 80→443       │
+│   └──────────┬───────────┘                                          │
+│              │ http://127.0.0.1:8090                                │
+│              ▼                                                      │
+│   ┌──────────────────────────────────────────────────────────────┐  │
+│   │                   FASTAPI / UVICORN (port 8080 interne)      │  │
+│   │                                                              │  │
+│   │  ┌─────────────────┐    ┌──────────────────────────────┐    │  │
+│   │  │  app/web/*      │    │  app/api/v1/*                │    │  │
+│   │  │  Jinja2 + HTMX  │    │  Routes JSON (clients tiers) │    │  │
+│   │  │  cookies session│    │  JWT bearer                  │    │  │
+│   │  └────────┬────────┘    └────────────┬─────────────────┘    │  │
+│   │           │                          │                      │  │
+│   │           └──────────┬───────────────┘                      │  │
+│   │                      ▼                                      │  │
+│   │  ┌──────────────────────────────────────────────────────┐   │  │
+│   │  │              app/features/*  (services métier)        │   │  │
+│   │  │   auth · chat · documents · sources · collections     │   │  │
+│   │  │   admin · ingestion · audit · llm · ...               │   │  │
+│   │  └──────────────────────┬───────────────────────────────┘   │  │
+│   └─────────────────────────┼───────────────────────────────────┘  │
+│                             │                                      │
+│         ┌───────────────────┼───────────────────┐                  │
+│         ▼                   ▼                   ▼                  │
+│  ┌────────────┐     ┌────────────┐      ┌────────────────┐         │
+│  │ PostgreSQL │     │  ChromaDB  │      │ Ollama (host)  │         │
+│  │   :5442    │     │   :8010    │      │ :11434         │         │
+│  │  metadata  │     │  vectors   │      │ ou llama.cpp   │         │
+│  │  audit     │     │ embeddings │      │ (multi-client) │         │
+│  └────────────┘     └────────────┘      └────────────────┘         │
 │                                                                     │
-│  ┌────────────┐  ┌────────────┐  ┌────────────┐                   │
-│  │   Whisper  │  │    N8N     │  │  pgAdmin   │                   │
-│  │   :9001    │  │   :5678    │  │   :5050    │                   │
-│  │   (STT)    │  │ (Workflow) │  │  (DB GUI)  │                   │
-│  └────────────┘  └────────────┘  └────────────┘                   │
+│  ┌──────────────┐   ┌──────────────┐                                │
+│  │   Whisper    │   │   pgAdmin    │                                │
+│  │ (STT, :9011) │   │ (DB, :5060)  │                                │
+│  └──────────────┘   └──────────────┘                                │
 │                                                                     │
 └─────────────────────────────────────────────────────────────────────┘
+            </div>
+
+            <div class="callout callout-info">
+              <strong>Cutover V1→V2 (Phase 4.d, 2026-05-04)</strong> : V2
+              utilise toujours la BDD V1 (<code>my_ia_postgres</code>) et la
+              ChromaDB V1 (<code>my_ia_chroma</code>) via le network Docker
+              <code>my_ia_internal</code> partagé. Les données existantes
+              (collections, embeddings, users) sont conservées sans migration.
             </div>
         </section>
 

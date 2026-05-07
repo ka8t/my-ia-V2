@@ -25,6 +25,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_async_session
+from app.features.user.dependencies import get_user_manager
 from app.models import ApprovalStatus, User
 from app.web.jinja import TEMPLATES_DIR, make_templates, verify_csrf_token, web_context
 
@@ -64,12 +65,47 @@ def _verify_reset_token(token: str) -> tuple[str | None, str | None]:
 #  GET /web/login
 # ─────────────────────────────────────────────────────────────────────────────
 @router.get("/login", response_class=HTMLResponse)
-async def login_get(request: Request) -> HTMLResponse:
-    """Render the login page. If already authenticated, redirect to home."""
+async def login_get(
+    request: Request,
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    """Render the login page. If already authenticated, redirect to home.
+
+    Si ``debug.endpoints_enabled`` est activé en BDD, charge aussi les rôles
+    et les credentials de test pour afficher le panneau debug login (parité
+    V1 ``app.js:initDebugLoginPanel()``).
+    """
     if request.session.get("user"):
         return RedirectResponse(url="/", status_code=303)
+
+    # Charger l'état debug (parité V1 ConfigService.isDebugEndpointsEnabled).
+    from app.features.admin.config.service import _runtime_overrides
+    debug_enabled = bool(_runtime_overrides.get("debug_endpoints_enabled", False))
+
+    debug_roles: list[dict] = []
+    if debug_enabled:
+        try:
+            from app.features.auth.service import AuthDBService
+            roles = await AuthDBService(session=db).list_roles()
+            debug_roles = [
+                {"id": r.id, "display_name": getattr(r, "display_name", None) or r.name}
+                for r in roles
+            ]
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.warning(f"[Debug] Failed to load debug roles: {exc}")
+
     return templates.TemplateResponse(
-        request, "pages/auth/login.html", web_context(request)
+        request,
+        "pages/auth/login.html",
+        web_context(
+            request,
+            debug_enabled=debug_enabled,
+            debug_roles=debug_roles,
+            # Parité V1 fallbacks (UI-FRONT/js/app.js:514-516).
+            debug_test_email="test@example.com",
+            debug_test_username="testuser",
+            debug_test_password="Test1234!",
+        ),
     )
 
 
@@ -77,11 +113,13 @@ async def login_get(request: Request) -> HTMLResponse:
 #  POST /web/login
 # ─────────────────────────────────────────────────────────────────────────────
 def _login_error(request: Request, message: str, status_code: int = 401) -> HTMLResponse:
-    """Render the error partial — used for every failure path so that
-    HTMX (hx-target=#login-error) gets a swap-friendly response."""
+    """Render the full login page with an error banner — submit natif
+    (sans hx-post), donc on rend toute la page pour que le navigateur
+    déclenche aussi son password manager. Le partial reste inclus dans
+    la page via `{% include 'partials/auth/login-error.html' ignore missing %}`."""
     return templates.TemplateResponse(
         request,
-        "partials/auth/login-error.html",
+        "pages/auth/login.html",
         web_context(request, error=message),
         status_code=status_code,
     )
@@ -121,17 +159,20 @@ async def login_post(
     if not verified:
         return _login_error(request, "Identifiants invalides.")
 
-    # 3.5) Approval gate — credentials OK but admin must have approved
+    # 3.5) Approval gate — credentials OK but admin must have approved.
+    # Parité V1 : écran dédié (pas de banner d'erreur sur la page login).
     if user.approval_status != ApprovalStatus.APPROVED:
         if user.approval_status == ApprovalStatus.REJECTED:
-            return _login_error(
+            return templates.TemplateResponse(
                 request,
-                "Votre inscription a été refusée. Contactez un administrateur.",
+                "pages/auth/register-rejected.html",
+                web_context(request),
                 status_code=403,
             )
-        return _login_error(
+        return templates.TemplateResponse(
             request,
-            "Votre compte est en attente de validation par un administrateur.",
+            "pages/auth/register-pending.html",
+            web_context(request, email=user.email),
             status_code=403,
         )
 
@@ -270,6 +311,52 @@ async def register_pending(request: Request, email: str = "") -> HTMLResponse:
         request,
         "pages/auth/register-pending.html",
         web_context(request, email=email),
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  GET /web/verify — Email verification (parité V1 handleEmailVerification)
+# ─────────────────────────────────────────────────────────────────────────────
+@router.get("/verify", response_class=HTMLResponse)
+async def verify_email(
+    request: Request,
+    token: str | None = None,
+    user_manager=Depends(get_user_manager),
+) -> HTMLResponse:
+    """Vérifie le token email reçu par l'utilisateur. Parité V1
+    `app.js:handleEmailVerification()` : 3 états (success / already / error).
+
+    Sur succès, la page redirige automatiquement vers /web/login après 2s
+    via une meta refresh (V1 utilisait setTimeout JS, parité fonctionnelle).
+    """
+    from fastapi_users.exceptions import (
+        InvalidVerifyToken,
+        UserAlreadyVerified,
+    )
+
+    state = "error"
+    error_message = "Le lien est invalide ou a expiré."
+
+    if token:
+        try:
+            await user_manager.verify(token)
+            state = "success"
+            error_message = ""
+        except UserAlreadyVerified:
+            state = "already"
+            error_message = ""
+        except InvalidVerifyToken:
+            state = "error"
+            error_message = "Le lien est invalide ou a expiré."
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.error(f"Verify email failed: {exc}")
+            state = "error"
+            error_message = "Une erreur est survenue lors de la vérification."
+
+    return templates.TemplateResponse(
+        request,
+        "pages/auth/verify.html",
+        web_context(request, state=state, error_message=error_message),
     )
 
 
