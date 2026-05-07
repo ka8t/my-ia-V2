@@ -32,6 +32,8 @@
     <div id="logs-alerts" hx-get="/web/admin/logs/alerts" hx-trigger="load, every 60s" hx-swap="innerHTML">—</div>
     <div style="margin-top:var(--space-3)">
       <button type="button" class="btn btn--ghost btn--sm" x-on:click="showCleanup = true">🗑 Cleanup logs</button>
+      <a href="/api/admin/logs/export?format=csv" class="btn btn--ghost btn--sm" target="_blank">⬇ Export CSV</a>
+      <a href="/api/admin/logs/export?format=json" class="btn btn--ghost btn--sm" target="_blank">⬇ Export JSON</a>
     </div>
   </section>
 </div>

@@ -184,4 +184,17 @@
   <div id="recent-actions" hx-get="/web/admin/dashboard/recent-actions" hx-trigger="load, every 60s" hx-swap="innerHTML">Chargement…</div>
 </section>
 
+{# ─── Graphes usage 7j/30j/90j toggle (parité V1) ─── #}
+<section class="admin-section" x-data="{ days: 30 }">
+  <div class="admin-section__header">
+    <h2 class="admin-section__title">{{ icon('settings', 16) }} Usage quotidien</h2>
+    <div style="display:flex; gap:var(--space-2)">
+      <button type="button" class="btn btn--ghost btn--sm" :class="days===7?'btn--primary':''" x-on:click="days=7; htmx.ajax('GET', '/web/admin/dashboard/usage?days=7', {target: '#usage-graph', swap: 'innerHTML'})">7j</button>
+      <button type="button" class="btn btn--ghost btn--sm" :class="days===30?'btn--primary':''" x-on:click="days=30; htmx.ajax('GET', '/web/admin/dashboard/usage?days=30', {target: '#usage-graph', swap: 'innerHTML'})">30j</button>
+      <button type="button" class="btn btn--ghost btn--sm" :class="days===90?'btn--primary':''" x-on:click="days=90; htmx.ajax('GET', '/web/admin/dashboard/usage?days=90', {target: '#usage-graph', swap: 'innerHTML'})">90j</button>
+    </div>
+  </div>
+  <div id="usage-graph" hx-get="/web/admin/dashboard/usage?days=30" hx-trigger="load" hx-swap="innerHTML">Chargement…</div>
+</section>
+
 {% endblock %}

@@ -1611,3 +1611,51 @@ async def admin_dashboard_recent_actions(
         )
     parts.append("</ul>")
     return HTMLResponse("".join(parts))
+
+
+@router.get("/dashboard/usage", response_class=HTMLResponse)
+async def admin_dashboard_usage(
+    request: Request,
+    days: int = 30,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    """Graphique usage quotidien sur N jours (parité V1 graphes 7/30/90j)."""
+    days = max(1, min(int(days), 365))
+    try:
+        from app.features.admin.dashboard.service import DashboardService
+        usage = await DashboardService.get_usage_daily(db, days=days)
+    except Exception as exc:
+        return HTMLResponse(f"<div class='toast toast--error'>Erreur : {exc}</div>")
+    if not usage:
+        return HTMLResponse("<p style='color:var(--color-fg-muted)'>Aucune donnée.</p>")
+    # SVG sparkline simple
+    rows = list(usage)
+    if not rows:
+        return HTMLResponse("<p style='color:var(--color-fg-muted)'>Aucune donnée.</p>")
+    # Extraction conv/msg counts par jour
+    counts = []
+    for r in rows:
+        c = getattr(r, "conversations_count", 0) or (r.get("conversations_count", 0) if isinstance(r, dict) else 0)
+        m = getattr(r, "messages_count", 0) or (r.get("messages_count", 0) if isinstance(r, dict) else 0)
+        d = getattr(r, "date", None) or (r.get("date") if isinstance(r, dict) else None)
+        counts.append({"date": d, "conv": c, "msg": m})
+    max_v = max((c["conv"] for c in counts), default=1) or 1
+    width = 600
+    height = 80
+    bar_w = max(1, width // max(1, len(counts)) - 2)
+    parts = [f'<svg viewBox="0 0 {width} {height}" style="width:100%; height:{height}px">']
+    for i, c in enumerate(counts):
+        h = int((c["conv"] / max_v) * (height - 10))
+        x = i * (bar_w + 2)
+        y = height - h
+        parts.append(
+            f'<rect x="{x}" y="{y}" width="{bar_w}" height="{h}" fill="var(--color-accent)" '
+            f'opacity="0.8"><title>{c["date"]} : {c["conv"]} conv / {c["msg"]} msg</title></rect>'
+        )
+    parts.append("</svg>")
+    parts.append(
+        f'<small style="color:var(--color-fg-muted); display:block; margin-top:4px">'
+        f'{len(counts)} jour(s) · max {max_v} conversations · barres = conversations/jour</small>'
+    )
+    return HTMLResponse("".join(parts))

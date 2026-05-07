@@ -388,6 +388,7 @@ async def submit_message(
     collection_id: Annotated[str | None, Form()] = None,
     mode_id: Annotated[int | None, Form()] = None,
     rag_mode: Annotated[str | None, Form()] = None,
+    source_ids: Annotated[list[str] | None, Form()] = None,
     csrf_token: Annotated[str | None, Form()] = None,
     user: dict = Depends(require_web_auth),
     db: AsyncSession = Depends(get_async_session),
@@ -465,6 +466,23 @@ async def submit_message(
         str(user_id),
         rag_mode=(rag_mode if rag_mode in {"auto", "fast", "full"} else "auto"),
     )
+    # Stocker source_ids dans le pending (pickle-safe)
+    if source_ids:
+        # Re-injecter dans le payload (refetch + update)
+        # Simple : on stocke une 2e clé séparée. Le store async utilise SET +
+        # GET atomique, mais on accepte ici une 2e écriture (best effort).
+        try:
+            r = _get_redis()
+            if r is not None:
+                cur = await r.get(_REDIS_KEY_PREFIX + stream_id)
+                if cur:
+                    payload = json.loads(cur)
+                    payload["source_ids"] = source_ids
+                    await r.set(_REDIS_KEY_PREFIX + stream_id, json.dumps(payload), ex=_PENDING_TTL_SECONDS)
+            elif stream_id in _PENDING_STREAMS:
+                _PENDING_STREAMS[stream_id]["source_ids"] = source_ids
+        except Exception as exc:
+            logger.warning("Failed to attach source_ids to pending: %s", exc)
 
     # 3) Render two bubbles back-to-back. The assistant bubble carries the
     #    sse-connect attribute that opens the stream.
@@ -636,7 +654,7 @@ async def chat_stream(
         db=db,
         collection_name=collection_name,
         collection_display_name=collection_display_name,
-        source_ids=None,
+        source_ids=pending.get("source_ids"),
         conversation_id=pending["conversation_id"],
         language="fr",
         mode_id=mode_id,
@@ -905,3 +923,29 @@ async def chat_health_info(
         f"<code>{provider}</code> · <code>{model}</code> "
         f"· <span class='chat-debug__{gpu_cls}'>{gpu_label}</span>"
     )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  GET /web/chat/sources-list — sources externes actives (parité V1)
+# ─────────────────────────────────────────────────────────────────────────────
+@router.get("/sources-list", response_class=HTMLResponse)
+async def chat_sources_list(
+    request: Request,
+    user: dict = Depends(require_web_auth),
+    db: AsyncSession = Depends(get_async_session),
+):
+    """Renvoie les options <option> pour le select sources externes."""
+    from app.models import ContextSource as _CS
+    rows = (
+        await db.execute(
+            select(_CS).where(_CS.is_enabled == True).order_by(_CS.display_name)
+        )
+    ).scalars().all()
+    if not rows:
+        return HTMLResponse('<option value="" disabled>Aucune source active</option>')
+    parts = []
+    for s in rows:
+        parts.append(
+            f'<option value="{s.id}">{_html.escape(s.display_name)} ({s.source_type})</option>'
+        )
+    return HTMLResponse("".join(parts))

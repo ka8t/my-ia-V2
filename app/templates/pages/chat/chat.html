@@ -261,6 +261,19 @@
         <option value="fast">RAG : rapide</option>
         <option value="full">RAG : complet</option>
       </select>
+      {# Sélecteur de sources externes (parité V1 sources-selector.js).
+         Multi-select chargé via HTMX au load. #}
+      <select form="chat-form"
+              name="source_ids"
+              class="chat-toolbar__select chat-toolbar__select--sources"
+              multiple
+              size="1"
+              title="Sources externes à interroger (Ctrl+clic pour multi-select)"
+              hx-get="/web/chat/sources-list"
+              hx-trigger="load"
+              hx-swap="innerHTML">
+        <option value="" disabled>Chargement…</option>
+      </select>
     </div>
 
     <form id="chat-form"
