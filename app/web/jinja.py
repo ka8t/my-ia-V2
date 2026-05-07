@@ -99,15 +99,26 @@ def get_current_user(request: Request) -> dict | None:
 def web_context(request: Request, **extra: Any) -> dict:
     """Build the standard Jinja context for any HTML route.
 
-    Always includes: ``csrf_token``, ``current_user``. The ``request`` is
-    injected by Starlette when ``TemplateResponse(request, name, context)``
-    is used (the new 3-arg signature).
-
-    Extra keys merged on top.
+    Always includes: ``csrf_token``, ``current_user``, ``user_theme``,
+    ``user_lang``, ``debug_mode``. Stocké en session pour éviter un
+    aller-retour DB à chaque render. La session est mise à jour à
+    /web/preferences/settings et au login.
     """
+    user = get_current_user(request)
+    theme = (user or {}).get("theme") or "auto"
+    lang = (user or {}).get("language") or "fr"
+    # Debug banner activé si debug_endpoints_enabled en BDD
+    try:
+        from app.features.admin.config.service import _runtime_overrides
+        debug_mode = bool(_runtime_overrides.get("debug_endpoints_enabled", False))
+    except Exception:
+        debug_mode = False
     return {
         "csrf_token": get_or_create_csrf_token(request),
-        "current_user": get_current_user(request),
+        "current_user": user,
+        "user_theme": theme,
+        "user_lang": lang,
+        "debug_mode": debug_mode,
         **extra,
     }
 

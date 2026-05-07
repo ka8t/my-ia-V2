@@ -273,4 +273,12 @@ async def update_settings(
         logger.exception("update_settings failed")
         return _toast("error", "Échec de l'enregistrement.", status_code=500)
 
+    # Sync session pour que web_context lise theme/lang à jour
+    # (parité 3.7.a thème dynamique).
+    sess_user = request.session.get("user")
+    if sess_user:
+        sess_user["theme"] = prefs.theme
+        sess_user["language"] = prefs.language
+        request.session["user"] = sess_user
+
     return _toast("success", "Préférences enregistrées.")

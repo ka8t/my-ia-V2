@@ -176,13 +176,30 @@ async def login_post(
             status_code=403,
         )
 
-    # 4) Persist minimal user dict in session
+    # 4) Persist minimal user dict in session.
+    # Charger les prefs theme/language pour les transversaux (3.7.a).
+    pref_theme = "auto"
+    pref_lang = "fr"
+    try:
+        from app.models import UserPreference
+        prefs = (
+            await db.execute(
+                select(UserPreference).where(UserPreference.user_id == user.id)
+            )
+        ).scalar_one_or_none()
+        if prefs:
+            pref_theme = prefs.theme or "auto"
+            pref_lang = prefs.language or "fr"
+    except Exception:
+        pass
     request.session["user"] = {
         "id": str(user.id),
         "email": user.email,
         "username": getattr(user, "username", None),
         "is_superuser": bool(user.is_superuser),
         "is_active": bool(user.is_active),
+        "theme": pref_theme,
+        "language": pref_lang,
     }
     # Rotate CSRF after auth so the old token can't be replayed
     request.session.pop("csrf_token", None)

@@ -1,13 +1,18 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="{{ user_lang|default('fr') }}" data-theme="{{ user_theme|default('auto') }}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="light dark">
   <title>{% block title %}{{ title|default('MY-IA') }}{% endblock %}</title>
 
-  {# Inline SVG favicon — diamond mark, accent rust #}
+  {# Favicon set complet (parité V1 favicon-32, apple-touch-icon, ico)
+     SVG inline en fallback, plus PNG/ICO pour les clients legacy. #}
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23B5482F' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 12 L12 3 L21 12 L12 21 Z'/%3E%3Cpath d='M7.5 12 L12 7.5 L16.5 12 L12 16.5 Z'/%3E%3C/svg%3E">
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', path='icons/apple-touch-icon.png') }}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', path='icons/favicon-32x32.png') }}">
+  <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', path='icons/favicon-16x16.png') }}">
+  <link rel="manifest" href="{{ url_for('static', path='icons/site.webmanifest') }}">
 
   {# Design system — order matters: tokens → base → components #}
   <link rel="stylesheet" href="{{ url_for('static', path='css/tokens.css') }}">
@@ -130,7 +135,82 @@
   {% block head %}{% endblock %}
 </head>
 <body>
+
+  {# Bandeau debug global (parité V1) — visible si debug.endpoints_enabled #}
+  {% if debug_mode %}
+  <div class="debug-banner" role="status">
+    {# x-data sans dépendance pour pouvoir fermer #}
+    <span>⚠ Mode <strong>DEBUG</strong> actif (endpoints sensibles activés)</span>
+  </div>
+  {% endif %}
+
   {% block content %}{% endblock %}
+
+  {# Conteneur toasts global — alimenté via custom event 'app-toast' #}
+  <div id="app-toasts" class="app-toasts" aria-live="polite"></div>
+
+  {# Modal confirm global (remplace hx-confirm natif laid).
+     Usage : data-confirm="message?" sur un élément. Le listener
+     intercepte au clic et demande confirmation via Alpine. #}
+  <div id="app-confirm"
+       x-data="{ open: false, msg: '', resolve: null }"
+       x-show="open"
+       x-cloak
+       class="app-confirm"
+       role="dialog"
+       aria-modal="true"
+       x-on:click.self="open = false; resolve && resolve(false)"
+       x-on:keydown.escape.window="open = false; resolve && resolve(false)">
+    <div class="app-confirm__panel">
+      <p x-text="msg"></p>
+      <div class="app-confirm__actions">
+        <button type="button" class="btn btn--ghost btn--sm"
+                x-on:click="open = false; resolve && resolve(false)">Annuler</button>
+        <button type="button" class="btn btn--danger btn--sm"
+                x-on:click="open = false; resolve && resolve(true)">Confirmer</button>
+      </div>
+    </div>
+  </div>
+
+  <script defer>
+    // ─── Toasts globaux (parité V1 toast.js) ─────────────────────────
+    // dispatch custom : window.dispatchEvent(new CustomEvent('app-toast', {detail:{level:'success', message:'...'}}))
+    // warn/error sont persistants (cf. CLAUDE.md), success/info auto-disparaissent en 4s.
+    window.appToast = function(level, message, persistent) {
+      var c = document.getElementById('app-toasts');
+      if (!c) return;
+      var d = document.createElement('div');
+      d.className = 'toast toast--' + (level || 'info');
+      d.setAttribute('role', level === 'error' ? 'alert' : 'status');
+      d.innerHTML = '<div class="toast__body"><div>' + (message || '') + '</div></div>'
+                  + '<button class="toast__close" aria-label="Fermer">×</button>';
+      d.querySelector('.toast__close').addEventListener('click', function(){ d.remove(); });
+      c.appendChild(d);
+      var pers = persistent === undefined ? (level === 'warning' || level === 'error') : persistent;
+      if (!pers) setTimeout(function(){ d.remove(); }, 4000);
+    };
+    window.addEventListener('app-toast', function(e){
+      window.appToast((e.detail || {}).level, (e.detail || {}).message, (e.detail || {}).persistent);
+    });
+
+    // ─── Modal confirm global (remplace hx-confirm natif) ─────────────
+    document.addEventListener('htmx:confirm', function(e){
+      // Si un élément utilise data-confirm="msg" ou hx-confirm,
+      // on interceptionne pour utiliser notre modal Alpine.
+      var msg = e.detail.question;
+      if (!msg) return;
+      e.preventDefault();
+      var ac = document.getElementById('app-confirm');
+      if (!ac || !ac._x_dataStack) {
+        // Fallback natif si Alpine pas prêt
+        if (window.confirm(msg)) e.detail.issueRequest(true);
+        return;
+      }
+      ac._x_dataStack[0].msg = msg;
+      ac._x_dataStack[0].resolve = function(ok){ if (ok) e.detail.issueRequest(true); };
+      ac._x_dataStack[0].open = true;
+    });
+  </script>
 
   {% block scripts %}{% endblock %}
 </body>
