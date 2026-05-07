@@ -56,62 +56,13 @@
     <aside class="admin-nav">
       <div class="admin-nav__heading">Console</div>
       <ul class="admin-nav__list">
+        {# Ordre menu : Tableau de bord, Validation, Utilisateurs, Documents,
+           Sources, Corpus, Conversations, Bibliothèques, Système, Audit,
+           Logs serveur. Badge pending sur Validation (sémantique). #}
         <li>
           <a class="admin-nav__item{% if active_section == 'dashboard' %} admin-nav__item--active{% endif %}"
              href="/web/admin">
             {{ icon('sparkle', 14) }}<span>Tableau de bord</span>
-          </a>
-        </li>
-        <li>
-          <a class="admin-nav__item{% if active_section == 'users' %} admin-nav__item--active{% endif %}"
-             href="/web/admin/users">
-            {{ icon('user-circle', 14) if false else icon('diamond', 14) }}<span>Utilisateurs</span>
-            <span class="admin-nav__badge-slot"
-                  hx-get="/web/admin/validation/pending-count"
-                  hx-trigger="load, every 30s"
-                  hx-swap="innerHTML">{% if pending_users_count and pending_users_count > 0 %}<span class="admin-nav__badge">{{ pending_users_count }}</span>{% endif %}</span>
-          </a>
-        </li>
-        <li>
-          <a class="admin-nav__item{% if active_section == 'documents' %} admin-nav__item--active{% endif %}"
-             href="/web/admin/documents">
-            {{ icon('document', 14) }}<span>Documents</span>
-          </a>
-        </li>
-        <li>
-          <a class="admin-nav__item{% if active_section == 'corpus' %} admin-nav__item--active{% endif %}"
-             href="/web/admin/corpus">
-            {{ icon('sparkle', 14) }}<span>Corpus</span>
-          </a>
-        </li>
-        <li>
-          <a class="admin-nav__item{% if active_section == 'sources' %} admin-nav__item--active{% endif %}"
-             href="/web/admin/sources">
-            {{ icon('arrow-up-right', 14) }}<span>Sources</span>
-          </a>
-        </li>
-        <li>
-          <a class="admin-nav__item{% if active_section == 'collections' %} admin-nav__item--active{% endif %}"
-             href="/web/admin/collections">
-            {{ icon('document', 14) }}<span>Bibliothèques</span>
-          </a>
-        </li>
-        <li>
-          <a class="admin-nav__item{% if active_section == 'conversations' %} admin-nav__item--active{% endif %}"
-             href="/web/admin/conversations">
-            {{ icon('chat', 14) }}<span>Conversations</span>
-          </a>
-        </li>
-        <li>
-          <a class="admin-nav__item{% if active_section == 'audit' %} admin-nav__item--active{% endif %}"
-             href="/web/admin/audit">
-            {{ icon('settings', 14) }}<span>Audit</span>
-          </a>
-        </li>
-        <li>
-          <a class="admin-nav__item{% if active_section == 'logs' %} admin-nav__item--active{% endif %}"
-             href="/web/admin/logs">
-            {{ icon('document', 14) }}<span>Logs serveur</span>
           </a>
         </li>
         <li>
@@ -122,6 +73,42 @@
                   hx-get="/web/admin/validation/pending-count"
                   hx-trigger="load, every 30s"
                   hx-swap="innerHTML">{% if pending_users_count and pending_users_count > 0 %}<span class="admin-nav__badge">{{ pending_users_count }}</span>{% endif %}</span>
+          </a>
+        </li>
+        <li>
+          <a class="admin-nav__item{% if active_section == 'users' %} admin-nav__item--active{% endif %}"
+             href="/web/admin/users">
+            {{ icon('diamond', 14) }}<span>Utilisateurs</span>
+          </a>
+        </li>
+        <li>
+          <a class="admin-nav__item{% if active_section == 'documents' %} admin-nav__item--active{% endif %}"
+             href="/web/admin/documents">
+            {{ icon('document', 14) }}<span>Documents</span>
+          </a>
+        </li>
+        <li>
+          <a class="admin-nav__item{% if active_section == 'sources' %} admin-nav__item--active{% endif %}"
+             href="/web/admin/sources">
+            {{ icon('arrow-up-right', 14) }}<span>Sources</span>
+          </a>
+        </li>
+        <li>
+          <a class="admin-nav__item{% if active_section == 'corpus' %} admin-nav__item--active{% endif %}"
+             href="/web/admin/corpus">
+            {{ icon('sparkle', 14) }}<span>Corpus</span>
+          </a>
+        </li>
+        <li>
+          <a class="admin-nav__item{% if active_section == 'conversations' %} admin-nav__item--active{% endif %}"
+             href="/web/admin/conversations">
+            {{ icon('chat', 14) }}<span>Conversations</span>
+          </a>
+        </li>
+        <li>
+          <a class="admin-nav__item{% if active_section == 'collections' %} admin-nav__item--active{% endif %}"
+             href="/web/admin/collections">
+            {{ icon('document', 14) }}<span>Bibliothèques</span>
           </a>
         </li>
 
@@ -229,6 +216,20 @@
                  href="/web/admin/system/geo">Géolocalisation</a>
             </li>
           </ul>
+        </li>
+
+        {# Audit & Logs serveur — placés après le groupe Système #}
+        <li>
+          <a class="admin-nav__item{% if active_section == 'audit' %} admin-nav__item--active{% endif %}"
+             href="/web/admin/audit">
+            {{ icon('settings', 14) }}<span>Audit</span>
+          </a>
+        </li>
+        <li>
+          <a class="admin-nav__item{% if active_section == 'logs' %} admin-nav__item--active{% endif %}"
+             href="/web/admin/logs">
+            {{ icon('document', 14) }}<span>Logs serveur</span>
+          </a>
         </li>
       </ul>
     </aside>
