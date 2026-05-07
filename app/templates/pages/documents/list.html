@@ -2,7 +2,7 @@
 {% from "macros/icon.html" import icon %}
 {% from "macros/button.html" import button %}
 
-{% block title %}Documents — MY-IA{% endblock %}
+{% block title %}{{ t('documents') }} — MY-IA{% endblock %}
 
 {% block app_content %}
 <section class="docs-shell"
@@ -11,19 +11,19 @@
 
   <header class="docs-header">
     <div>
-      <div class="docs-header__eyebrow"><span>Bibliothèque / 02</span></div>
+      <div class="docs-header__eyebrow"><span>{{ t('collection') }} / 02</span></div>
       <h1 class="docs-header__title">
-        Vos <em>documents</em>.
+        {# i18n-pending: pas de clé V1 équivalente pour titre hero "Vos documents" #}Vos <em>{{ t('documents') }}</em>.
       </h1>
       <p class="docs-header__lede">
-        Téléversez les fichiers à indexer pour vos conversations.
+        {# i18n-pending: pas de clé V1 équivalente pour la lede documents #}Téléversez les fichiers à indexer pour vos conversations.
         PDF, Office, Markdown, texte&nbsp;: ils sont chunkés et embeddés
         en arrière-plan.
       </p>
     </div>
     <div class="docs-header__count">
       <span class="docs-header__count-num">{{ total }}</span>
-      <span class="docs-header__count-label">document{{ 's' if total != 1 }}</span>
+      <span class="docs-header__count-label">{{ t('documents')|lower }}</span>
     </div>
   </header>
 
@@ -31,7 +31,7 @@
   <div class="docs-quota">
     <div class="docs-quota__head">
       <span><strong>{{ quota.used_human }}</strong> / {{ quota.quota_human }}</span>
-      <span class="docs-quota__count">{{ quota.file_count }} fichier{{ 's' if quota.file_count != 1 }}</span>
+      <span class="docs-quota__count">{# i18n-pending: pas de clé V1 équivalente pour libellé "fichier(s)" pluriel #}{{ quota.file_count }} fichier{{ 's' if quota.file_count != 1 }}</span>
     </div>
     <div class="docs-quota__bar" role="progressbar"
          aria-valuenow="{{ quota.percent|round|int }}"
@@ -61,11 +61,11 @@
     {# Sélecteur de collection cible (parité V1 upload.js:loadUploadCollections) #}
     {% if collections %}
     <div class="docs-upload__collection">
-      <label for="upload-collection">Collection cible :</label>
+      <label for="upload-collection">{{ t('target_collection') }} :</label>
       <select id="upload-collection" name="collection_id" x-model="targetCol">
         {% for c in collections %}
         <option value="{{ c.id }}">
-          {{ c.display_name }} ({{ 'privée' if c.type == 'private' else 'publique' }})
+          {{ c.display_name }} ({{ t('collection_type_private') if c.type == 'private' else t('collection_type_public') }})
         </option>
         {% endfor %}
       </select>
@@ -85,16 +85,19 @@
         required>
       <span class="docs-upload__icon">{{ icon('document', 26) }}</span>
       <span class="docs-upload__hint">
-        <strong x-show="!files.length">Glissez-déposez un ou plusieurs fichiers</strong>
+        <strong x-show="!files.length">{{ t('drop_files_here') }}</strong>
         <strong x-show="files.length === 1" x-text="files[0]?.name" x-cloak></strong>
-        <strong x-show="files.length > 1" x-text="files.length + ' fichiers sélectionnés'" x-cloak></strong>
-        <small x-show="!files.length">ou cliquez pour parcourir</small>
-        <small x-show="files.length" x-cloak>Cliquez sur Téléverser pour confirmer</small>
+        <strong x-show="files.length > 1"
+                x-text="files.length + ' ' + $el.dataset.filesSelected"
+                data-files-selected="{# i18n-pending: pas de clé V1 équivalente pour "fichiers sélectionnés" #}fichiers sélectionnés"
+                x-cloak></strong>
+        <small x-show="!files.length">{# i18n-pending: pas de clé V1 équivalente pour hint "ou cliquez pour parcourir" #}ou cliquez pour parcourir</small>
+        <small x-show="files.length" x-cloak>{# i18n-pending: pas de clé V1 équivalente pour "Cliquez sur Téléverser pour confirmer" #}Cliquez sur {{ t('upload') }} pour confirmer</small>
       </span>
     </label>
 
     <div class="docs-upload__actions">
-      {{ button('Téléverser', block=False, lg=False, arrow=True) }}
+      {{ button(t('upload'), block=False, lg=False, arrow=True) }}
     </div>
 
     <div id="upload-error" aria-live="polite" class="docs-upload__error"></div>
@@ -106,20 +109,20 @@
       <input type="search"
              name="q"
              value="{{ q }}"
-             placeholder="Rechercher par nom de fichier…"
+             placeholder="{{ t('search_placeholder') }}"
              class="docs-toolbar__search">
     </div>
 
     <div class="docs-toolbar__group">
       <select name="visibility" class="docs-toolbar__select">
-        <option value="">Visibilité : toutes</option>
-        <option value="private" {% if visibility == 'private' %}selected{% endif %}>Privée</option>
-        <option value="public"  {% if visibility == 'public'  %}selected{% endif %}>Publique</option>
+        <option value="">{{ t('visibility') }} : {{ t('all_fem') }}</option>
+        <option value="private" {% if visibility == 'private' %}selected{% endif %}>{{ t('collection_type_private')|capitalize }}</option>
+        <option value="public"  {% if visibility == 'public'  %}selected{% endif %}>{{ t('collection_type_public')|capitalize }}</option>
       </select>
 
       {% if collections %}
       <select name="collection_id" class="docs-toolbar__select">
-        <option value="">Collection : toutes</option>
+        <option value="">{{ t('collection') }} : {{ t('all_fem') }}</option>
         {% for c in collections %}
         <option value="{{ c.id }}" {% if collection_id == c.id|string %}selected{% endif %}>
           {{ c.display_name }}
@@ -129,19 +132,19 @@
       {% endif %}
 
       <select name="sort" class="docs-toolbar__select">
-        <option value="date" {% if sort == 'date' %}selected{% endif %}>Date</option>
-        <option value="name" {% if sort == 'name' %}selected{% endif %}>Nom</option>
-        <option value="size" {% if sort == 'size' %}selected{% endif %}>Taille</option>
+        <option value="date" {% if sort == 'date' %}selected{% endif %}>{{ t('date') }}</option>
+        <option value="name" {% if sort == 'name' %}selected{% endif %}>{{ t('name') }}</option>
+        <option value="size" {% if sort == 'size' %}selected{% endif %}>{{ t('size') }}</option>
       </select>
 
       <select name="order" class="docs-toolbar__select">
-        <option value="desc" {% if order == 'desc' %}selected{% endif %}>↓ desc.</option>
-        <option value="asc"  {% if order == 'asc'  %}selected{% endif %}>↑ asc.</option>
+        <option value="desc" {% if order == 'desc' %}selected{% endif %}>{# i18n-pending: pas de clé V1 équivalente pour "desc." court #}↓ desc.</option>
+        <option value="asc"  {% if order == 'asc'  %}selected{% endif %}>{# i18n-pending: pas de clé V1 équivalente pour "asc." court #}↑ asc.</option>
       </select>
 
-      <button type="submit" class="btn btn--ghost btn--sm">Appliquer</button>
+      <button type="submit" class="btn btn--ghost btn--sm">{{ t('apply') }}</button>
       {% if q or visibility or collection_id or sort != 'date' or order != 'desc' %}
-      <a href="/web/documents" class="btn btn--ghost btn--sm">Réinitialiser</a>
+      <a href="/web/documents" class="btn btn--ghost btn--sm">{{ t('reset') }}</a>
       {% endif %}
     </div>
   </form>
@@ -155,16 +158,17 @@
         hx-swap="innerHTML"
         hx-disabled-elt="button[type=submit]"
         hx-on::config-request="event.detail.parameters['ids'] = Array.from(selected); event.detail.parameters['csrf_token'] = '{{ csrf_token }}'">
-    <span><span x-text="selected.size"></span> sélectionné<span x-show="selected.size > 1">s</span></span>
+    <span><span x-text="selected.size"></span> {{ t('selected') }}</span>
     <button type="submit"
             class="btn btn--danger btn--sm"
-            x-on:click="if (!confirm('Supprimer définitivement ' + selected.size + ' document(s) ?')) $event.preventDefault()">
-      Supprimer en masse
+            x-on:click="if (!confirm($el.dataset.confirm.replace('{count}', selected.size))) $event.preventDefault()"
+            data-confirm="{{ t('confirm_delete_document_message') }}">
+      {{ t('delete') }}
     </button>
     <button type="button"
             class="btn btn--ghost btn--sm"
             x-on:click="selected = new Set()">
-      Tout désélectionner
+      {{ t('clear_selection') }}
     </button>
   </form>
   <div id="bulk-result" aria-live="polite"></div>
@@ -173,10 +177,10 @@
   {% if grouped %}
   <div class="docs-list-head">
     <span></span>
-    <span>Fichier</span>
-    <span>Type</span>
-    <span>Taille</span>
-    <span>Statut</span>
+    <span>{# i18n-pending: pas de clé V1 équivalente pour entête colonne "Fichier" #}Fichier</span>
+    <span>{{ t('type') }}</span>
+    <span>{{ t('size') }}</span>
+    <span>{{ t('th_status') }}</span>
     <span></span>
   </div>
 
@@ -204,19 +208,19 @@
   <nav class="docs-pagination">
     {% if page > 1 %}
       <a href="?{% if q %}q={{ q }}&{% endif %}{% if visibility %}visibility={{ visibility }}&{% endif %}{% if collection_id %}collection_id={{ collection_id }}&{% endif %}sort={{ sort }}&order={{ order }}&page={{ page - 1 }}"
-         class="btn btn--ghost btn--sm">← Précédent</a>
+         class="btn btn--ghost btn--sm">← {{ t('previous') }}</a>
     {% endif %}
-    <span>Page {{ page }} / {{ total_pages }}</span>
+    <span>{{ t('page') }} {{ page }} / {{ total_pages }}</span>
     {% if page < total_pages %}
       <a href="?{% if q %}q={{ q }}&{% endif %}{% if visibility %}visibility={{ visibility }}&{% endif %}{% if collection_id %}collection_id={{ collection_id }}&{% endif %}sort={{ sort }}&order={{ order }}&page={{ page + 1 }}"
-         class="btn btn--ghost btn--sm">Suivant →</a>
+         class="btn btn--ghost btn--sm">{{ t('next') }} →</a>
     {% endif %}
   </nav>
   {% endif %}
   {% else %}
   <div id="docs-list" class="docs-list">
     <div id="docs-empty" class="docs-empty">
-      <span>Aucun document. Téléversez votre premier fichier.</span>
+      <span>{{ t('no_documents') }}. {# i18n-pending: pas de clé V1 équivalente pour "Téléversez votre premier fichier" #}Téléversez votre premier fichier.</span>
     </div>
   </div>
   {% endif %}
@@ -231,7 +235,7 @@
        x-on:keydown.escape.window="modalDocId = null">
     <div class="docs-modal__panel"
          x-init="$watch('modalDocId', id => { if (id) htmx.ajax('GET', '/web/documents/' + id + '/details', {target: $el, swap: 'innerHTML'}) })">
-      Chargement…
+      {{ t('loading') }}
     </div>
   </div>
 

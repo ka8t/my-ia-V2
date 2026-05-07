@@ -25,18 +25,18 @@
         <button type="button"
                 class="chat-sidebar__delete"
                 hx-delete="/web/chat/conversations/{{ c.id }}"
-                hx-confirm="Supprimer définitivement « {{ c.title }} » ?"
+                hx-confirm="{{ t('confirm_delete_conversation_message') }}"
                 hx-target="closest li"
                 hx-swap="outerHTML"
-                title="Supprimer cette conversation"
-                aria-label="Supprimer">
+                title="{{ t('confirm_delete_conversation_title') }}"
+                aria-label="{{ t('delete') }}">
           ✕
         </button>
       </li>
     {% endfor %}
   {% else %}
     <li class="chat-sidebar__empty">
-      <span>Aucune conversation pour l'instant.</span>
+      <span>{{ t('conv_no_conversations') }}.</span>
     </li>
   {% endif %}
 </ul>

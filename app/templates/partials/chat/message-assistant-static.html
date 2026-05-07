@@ -7,7 +7,7 @@
       <button type="button"
               class="chat-message__action"
               x-on:click="navigator.clipboard.writeText($el.closest('article').querySelector('.chat-message__body').innerText)"
-              title="Copier" aria-label="Copier">📋</button>
+              title="{{ t('msg_copy') }}" aria-label="{{ t('msg_copy') }}">📋</button>
       {# TTS via Web Speech API native (parité V1 tts.js) #}
       <button type="button"
               class="chat-message__action"
@@ -18,15 +18,15 @@
                 u.lang = '{{ 'fr-FR' if (current_user and current_user.get('language', 'fr') == 'fr') else 'en-US' }}';
                 speechSynthesis.speak(u);
               "
-              title="Lire à voix haute (TTS)" aria-label="TTS">🔊</button>
+              title="{{ t('tooltip_tts_play') }}" aria-label="{{ t('tooltip_tts_play') }}">🔊</button>
       {# Supprimer la paire #}
       <button type="button"
               class="chat-message__action chat-message__action--danger"
               hx-delete="/web/chat/messages/{{ m.id }}/pair"
-              hx-confirm="Supprimer cette paire de messages ?"
+              hx-confirm="{{ t('msg_confirm_delete_pair') }}"
               hx-target="#msg-{{ m.id }}"
               hx-swap="outerHTML"
-              title="Supprimer la paire" aria-label="Supprimer">🗑</button>
+              title="{{ t('msg_delete_pair') }}" aria-label="{{ t('delete') }}">🗑</button>
     </div>
   </div>
   <div class="chat-message__body">{{ m.content }}</div>
@@ -37,15 +37,15 @@
     <div class="chat-sources" data-rendered="1">
       <div class="chat-sources__header">
         <span class="chat-sources__count">
-          {{ items|length }} source{{ 's' if items|length > 1 }}
+          {# i18n-pending: pas de clé V1 équivalente pour pluriel "source(s)" #}{{ items|length }} source{{ 's' if items|length > 1 }}
         </span>
-        <span class="chat-sources__label">RÉFÉRENCES UTILISÉES</span>
+        <span class="chat-sources__label">{{ t('msg_sources_used') }}</span>
       </div>
       <ul class="chat-sources__list">
         {% for s in items %}
         {% set kind = 'document' if s.get('type') == 'document' else 'source' %}
         <li class="chat-source chat-source--{{ kind }}">
-          <span class="chat-source__kind">{{ 'Document' if kind == 'document' else 'Source' }}</span>
+          <span class="chat-source__kind">{# i18n-pending: pas de clé V1 équivalente pour singulier "Document"/"Source" badge #}{{ 'Document' if kind == 'document' else 'Source' }}</span>
           {% set display = s.get('display_name') or s.get('source_name') or s.get('source') or s.get('technical_name') or '—' %}
           {% set href = '/web/documents/' + (s.get('id') or '') + '/download' if kind == 'document' and s.get('id') else (s.get('url') or '') %}
           {% if href %}

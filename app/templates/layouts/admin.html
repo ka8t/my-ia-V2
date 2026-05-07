@@ -60,13 +60,15 @@
            Sources, Corpus, Conversations, Bibliothèques, Système, Audit,
            Logs serveur. Badge pending sur Validation (sémantique). #}
         <li>
-          <a class="admin-nav__item{% if active_section == 'dashboard' %} admin-nav__item--active{% endif %}"
+          <a id="nav-dashboard"
+             class="admin-nav__item{% if active_section == 'dashboard' %} admin-nav__item--active{% endif %}"
              href="/web/admin">
             {{ icon('sparkle', 14) }}<span>Tableau de bord</span>
           </a>
         </li>
         <li>
-          <a class="admin-nav__item{% if active_section == 'validation' %} admin-nav__item--active{% endif %}"
+          <a id="nav-validation"
+             class="admin-nav__item{% if active_section == 'validation' %} admin-nav__item--active{% endif %}"
              href="/web/admin/validation">
             {{ icon('check-circle', 14) }}<span>Validation</span>
             <span class="admin-nav__badge-slot"
@@ -76,37 +78,43 @@
           </a>
         </li>
         <li>
-          <a class="admin-nav__item{% if active_section == 'users' %} admin-nav__item--active{% endif %}"
+          <a id="nav-users"
+             class="admin-nav__item{% if active_section == 'users' %} admin-nav__item--active{% endif %}"
              href="/web/admin/users">
             {{ icon('diamond', 14) }}<span>Utilisateurs</span>
           </a>
         </li>
         <li>
-          <a class="admin-nav__item{% if active_section == 'documents' %} admin-nav__item--active{% endif %}"
+          <a id="nav-documents"
+             class="admin-nav__item{% if active_section == 'documents' %} admin-nav__item--active{% endif %}"
              href="/web/admin/documents">
             {{ icon('document', 14) }}<span>Documents</span>
           </a>
         </li>
         <li>
-          <a class="admin-nav__item{% if active_section == 'sources' %} admin-nav__item--active{% endif %}"
+          <a id="nav-sources"
+             class="admin-nav__item{% if active_section == 'sources' %} admin-nav__item--active{% endif %}"
              href="/web/admin/sources">
             {{ icon('arrow-up-right', 14) }}<span>Sources</span>
           </a>
         </li>
         <li>
-          <a class="admin-nav__item{% if active_section == 'corpus' %} admin-nav__item--active{% endif %}"
+          <a id="nav-corpus"
+             class="admin-nav__item{% if active_section == 'corpus' %} admin-nav__item--active{% endif %}"
              href="/web/admin/corpus">
             {{ icon('sparkle', 14) }}<span>Corpus</span>
           </a>
         </li>
         <li>
-          <a class="admin-nav__item{% if active_section == 'conversations' %} admin-nav__item--active{% endif %}"
+          <a id="nav-conversations"
+             class="admin-nav__item{% if active_section == 'conversations' %} admin-nav__item--active{% endif %}"
              href="/web/admin/conversations">
             {{ icon('chat', 14) }}<span>Conversations</span>
           </a>
         </li>
         <li>
-          <a class="admin-nav__item{% if active_section == 'collections' %} admin-nav__item--active{% endif %}"
+          <a id="nav-collections"
+             class="admin-nav__item{% if active_section == 'collections' %} admin-nav__item--active{% endif %}"
              href="/web/admin/collections">
             {{ icon('document', 14) }}<span>Bibliothèques</span>
           </a>
@@ -121,7 +129,8 @@
           'system_perf', 'system_geo', 'system_modes', 'system_chat', 'system_appearance'
         ) %}
         <li class="admin-nav__group" x-data="{{ '{ open: ' ~ ('true' if is_system else 'false') ~ ' }' }}">
-          <button type="button"
+          <button id="nav-system"
+                  type="button"
                   class="admin-nav__item admin-nav__item--toggle{% if is_system %} admin-nav__item--active{% endif %}"
                   @click="open = !open"
                   :aria-expanded="open">
@@ -220,13 +229,15 @@
 
         {# Audit & Logs serveur — placés après le groupe Système #}
         <li>
-          <a class="admin-nav__item{% if active_section == 'audit' %} admin-nav__item--active{% endif %}"
+          <a id="nav-audit"
+             class="admin-nav__item{% if active_section == 'audit' %} admin-nav__item--active{% endif %}"
              href="/web/admin/audit">
             {{ icon('settings', 14) }}<span>Audit</span>
           </a>
         </li>
         <li>
-          <a class="admin-nav__item{% if active_section == 'logs' %} admin-nav__item--active{% endif %}"
+          <a id="nav-logs"
+             class="admin-nav__item{% if active_section == 'logs' %} admin-nav__item--active{% endif %}"
              href="/web/admin/logs">
             {{ icon('document', 14) }}<span>Logs serveur</span>
           </a>
@@ -241,5 +252,25 @@
   </div>
 
 </div>
+
+<script>
+  // Scroll de la sidebar vers l'item actif au load (utile menu long).
+  // Et support des ancres URL : /web/admin#nav-users → ouvre la page admin
+  // avec scroll sur cet item.
+  document.addEventListener('DOMContentLoaded', function () {
+    var nav = document.querySelector('.admin-nav');
+    if (!nav) return;
+    var target = null;
+    if (window.location.hash && window.location.hash.startsWith('#nav-')) {
+      target = document.getElementById(window.location.hash.slice(1));
+    }
+    if (!target) {
+      target = nav.querySelector('.admin-nav__item--active');
+    }
+    if (target) {
+      try { target.scrollIntoView({ block: 'center', behavior: 'instant' }); } catch (_) {}
+    }
+  });
+</script>
 <style>[x-cloak] { display: none !important; }</style>
 {% endblock %}

@@ -6,55 +6,55 @@
   <button type="button"
           class="docs-modal__close"
           x-on:click="modalDocId = null"
-          aria-label="Fermer">
+          aria-label="{{ t('close') }}">
     {{ icon('alert-circle', 18) }}
   </button>
 </header>
 
 <dl class="docs-modal__meta">
-  <dt>Type</dt>
+  <dt>{{ t('type') }}</dt>
   <dd>{{ doc.file_type or '—' }}</dd>
 
-  <dt>Taille</dt>
+  <dt>{{ t('size') }}</dt>
   <dd>{{ size }}</dd>
 
-  <dt>Visibilité</dt>
-  <dd>{{ 'Public' if doc.visibility == 'public' else 'Privé' }}</dd>
+  <dt>{{ t('visibility') }}</dt>
+  <dd>{{ t('visibility_public') if doc.visibility == 'public' else t('visibility_private') }}</dd>
 
-  <dt>Collection</dt>
+  <dt>{{ t('collection') }}</dt>
   <dd>{{ doc.collection.display_name if doc.collection else '—' }}</dd>
 
-  <dt>Chunks</dt>
+  <dt>{{ t('chunks') }}</dt>
   <dd>{{ doc.chunk_count or 0 }}</dd>
 
-  <dt>Embeddings</dt>
+  <dt>{{ t('embeddings') }}</dt>
   <dd>{{ doc.embedding_count or 0 }}</dd>
 
   {% if doc.indexed_provider %}
-  <dt>Provider</dt>
+  <dt>{{ t('provider') }}</dt>
   <dd><code>{{ doc.indexed_provider }}</code></dd>
   {% endif %}
 
   {% if doc.created_at %}
-  <dt>Créé le</dt>
+  <dt>{{ t('created_at') }}</dt>
   <dd>{{ doc.created_at.strftime('%d/%m/%Y %H:%M') }}</dd>
   {% endif %}
 
   {% if doc.updated_at %}
-  <dt>Mis à jour</dt>
+  <dt>{{ t('updated_at') }}</dt>
   <dd>{{ doc.updated_at.strftime('%d/%m/%Y %H:%M') }}</dd>
   {% endif %}
 
   {% if doc.file_hash %}
-  <dt>Empreinte</dt>
+  <dt>{# i18n-pending: pas de clé V1 équivalente pour "Empreinte" (file hash) #}Empreinte</dt>
   <dd><code class="docs-modal__hash">{{ doc.file_hash[:16] }}…</code></dd>
   {% endif %}
 </dl>
 
 <div class="docs-modal__actions">
   <a href="/web/documents/{{ doc.id }}/download"
-     class="btn btn--ghost btn--sm">Télécharger</a>
+     class="btn btn--ghost btn--sm">{{ t('download') }}</a>
   <button type="button"
           class="btn btn--ghost btn--sm"
-          x-on:click="modalDocId = null">Fermer</button>
+          x-on:click="modalDocId = null">{{ t('close') }}</button>
 </div>

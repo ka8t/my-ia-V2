@@ -1,7 +1,7 @@
 {% extends "layouts/user.html" %}
 {% from "macros/icon.html" import icon %}
 
-{% block title %}{{ title or "Chat" }} — MY-IA{% endblock %}
+{% block title %}{{ title or t('nav_chat') }} — MY-IA{% endblock %}
 
 {% block app_content %}
 <div class="chat-layout"
@@ -24,14 +24,14 @@
       <button type="button"
               class="chat-sidebar__collapse"
               x-on:click="sidebarOpen = !sidebarOpen"
-              aria-label="Replier la sidebar"
-              title="Replier / déplier">
+              aria-label="{# i18n-pending: pas de clé V1 équivalente #}Replier la sidebar"
+              title="{# i18n-pending: pas de clé V1 équivalente #}Replier / déplier">
         <span x-text="sidebarOpen ? '◀' : '▶'"></span>
       </button>
-      <span class="chat-sidebar__heading">Conversations</span>
-      <a class="chat-sidebar__new" href="/web/chat" title="Nouvelle conversation">
+      <span class="chat-sidebar__heading">{{ t('conversations') }}</span>
+      <a class="chat-sidebar__new" href="/web/chat" title="{{ t('new_conversation') }}">
         {{ icon('sparkle', 14) }}
-        <span>Nouvelle</span>
+        <span>{{ t('new_conversation') }}</span>
       </a>
     </header>
 
@@ -39,7 +39,7 @@
     <div class="chat-sidebar__searchbox" x-show="sidebarOpen" x-cloak>
       <input type="search"
              class="chat-sidebar__search"
-             placeholder="Rechercher…"
+             placeholder="{{ t('search_placeholder') }}"
              x-model="sidebarFilter">
     </div>
 
@@ -58,7 +58,7 @@
         <h1 class="chat-header__title"
             x-show="!editingTitle"
             x-on:dblclick="editingTitle = true"
-            title="Double-clic pour éditer">
+            title="{{ t('conv_click_to_rename') }}">
           {{ conversation.title }}
         </h1>
         <form class="chat-header__title-form"
@@ -75,8 +75,8 @@
                  x-init="$watch('editingTitle', open => open && setTimeout(() => $el.focus(), 50))"
                  x-on:keydown.escape="editingTitle = false"
                  maxlength="200">
-          <button type="submit" class="btn btn--ghost btn--sm">Enregistrer</button>
-          <button type="button" class="btn btn--ghost btn--sm" x-on:click="editingTitle = false">Annuler</button>
+          <button type="submit" class="btn btn--ghost btn--sm">{{ t('save') }}</button>
+          <button type="button" class="btn btn--ghost btn--sm" x-on:click="editingTitle = false">{{ t('cancel') }}</button>
         </form>
       </div>
 
@@ -87,7 +87,7 @@
         {% if conversation.collection %}
           <span class="chat-header__sep">·</span>
           <span class="collection-badge collection-badge--{{ conversation.collection.type }}"
-                title="Bibliothèque {{ 'publique' if conversation.collection.type == 'public' else 'privée' }}">
+                title="{{ t('collection') }} {{ t('collection_type_public') if conversation.collection.type == 'public' else t('collection_type_private') }}">
             {{ icon('sparkle', 12) }}
             <span>{{ conversation.collection.display_name }}</span>
           </span>
@@ -100,7 +100,7 @@
               hx-get="/web/chat/health-info"
               hx-trigger="load"
               hx-swap="innerHTML"
-              title="Provider · modèle · GPU">…</span>
+              title="{{ t('provider') }} · {{ t('mode') }} · GPU">…</span>
         {% endif %}
       </span>
 
@@ -108,9 +108,11 @@
       <div class="chat-header__actions">
         <button type="button"
                 class="chat-header__action"
-                x-on:click="navigator.clipboard.writeText(document.getElementById('chat-thread').innerText); $el.title='Copié !'; setTimeout(() => $el.title='Copier la conversation', 1500)"
-                title="Copier la conversation">
-          {{ icon('check-circle', 14) }}<span>Copier</span>
+                x-on:click="navigator.clipboard.writeText(document.getElementById('chat-thread').innerText); $el.title=this.dataset.copied; setTimeout(() => $el.title=this.dataset.copy, 1500)"
+                data-copy="{{ t('conv_copy') }}"
+                data-copied="{{ t('msg_copied') }}"
+                title="{{ t('conv_copy') }}">
+          {{ icon('check-circle', 14) }}<span>{{ t('conv_copy') }}</span>
         </button>
         <button type="button"
                 class="chat-header__action"
@@ -124,8 +126,8 @@
                   a.click();
                   URL.revokeObjectURL(a.href);
                 "
-                title="Exporter en Markdown">
-          {{ icon('arrow-up-right', 14) }}<span>Exporter</span>
+                title="{{ t('conv_export') }}">
+          {{ icon('arrow-up-right', 14) }}<span>{{ t('conv_export') }}</span>
         </button>
         <form class="chat-header__action-form"
               hx-post="/web/chat/conversations/{{ conversation.id }}/archive"
@@ -134,16 +136,16 @@
           {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
           <button type="submit"
                   class="chat-header__action"
-                  title="Archiver / désarchiver">
-            {{ icon('document', 14) }}<span>{% if conversation.archived_at %}Désarch.{% else %}Archiver{% endif %}</span>
+                  title="{{ t('conv_archive') }} / {{ t('conv_unarchive') }}">
+            {{ icon('document', 14) }}<span>{% if conversation.archived_at %}{{ t('conv_unarchive') }}{% else %}{{ t('conv_archive') }}{% endif %}</span>
           </button>
         </form>
         <button type="button"
                 class="chat-header__action chat-header__action--danger"
                 hx-delete="/web/chat/conversations/{{ conversation.id }}"
-                hx-confirm="Supprimer définitivement cette conversation ?"
-                title="Supprimer la conversation">
-          {{ icon('alert-circle', 14) }}<span>Supprimer</span>
+                hx-confirm="{{ t('confirm_delete_conversation_message') }}"
+                title="{{ t('confirm_delete_conversation_title') }}">
+          {{ icon('alert-circle', 14) }}<span>{{ t('delete') }}</span>
         </button>
       </div>
     </header>
@@ -159,13 +161,13 @@
       {% if not messages %}
         <div class="chat-empty">
           <div class="chat-empty__hero">
-            <div class="chat-empty__eyebrow"><span>Chat / 01</span></div>
+            <div class="chat-empty__eyebrow"><span>{# i18n-pending: pas de clé V1 équivalente pour eyebrow "Chat / 01" #}Chat / 01</span></div>
             <h2 class="chat-empty__title">
-              Que voulez-vous <em>savoir</em><br>
+              {# i18n-pending: pas de clé V1 équivalente pour le titre hero du chat vide #}Que voulez-vous <em>savoir</em><br>
               aujourd'hui ?
             </h2>
             <p class="chat-empty__lede">
-              Posez une question. Vos documents et sources connectées sont
+              {# i18n-pending: pas de clé V1 équivalente pour le lede du chat vide #}Posez une question. Vos documents et sources connectées sont
               interrogés pour fournir une réponse contextualisée.
             </p>
 
@@ -173,8 +175,8 @@
             <div class="toast toast--error" style="margin-top: var(--space-6)" role="alert">
               <span class="toast__icon">{{ icon('alert-circle', 16) }}</span>
               <div class="toast__body">
-                <div class="toast__title">Conversation introuvable</div>
-                <div>Cette conversation n'existe plus ou ne vous appartient pas.</div>
+                <div class="toast__title">{{ t('error_conversation_introuvable') }}</div>
+                <div>{# i18n-pending: pas de clé V1 équivalente pour le détail "n'existe plus ou ne vous appartient pas" #}Cette conversation n'existe plus ou ne vous appartient pas.</div>
               </div>
             </div>
             {% endif %}
@@ -212,7 +214,7 @@
     {# ─── Sélecteur de bibliothèque (avant le form) ─── #}
     {% if not conversation and available_collections %}
     <fieldset class="chat-collection-picker">
-      <legend class="chat-collection-picker__legend">Bibliothèque pour cette conversation</legend>
+      <legend class="chat-collection-picker__legend">{{ t('collection') }}</legend>
       {% set my = available_collections.my_collection %}
       <div class="chat-collection-picker__options">
         {% if my %}
@@ -249,17 +251,17 @@
       <select form="chat-form"
               name="mode_id"
               class="chat-toolbar__select"
-              title="Mode (Chatbot conversationnel ou Assistant strict RAG)">
-        <option value="1" {% if conversation and conversation.mode_id == 1 %}selected{% endif %}>💬 Chatbot</option>
-        <option value="2" {% if conversation and conversation.mode_id == 2 %}selected{% endif %}>🎯 Assistant</option>
+              title="{{ t('mode_help_title') }}">
+        <option value="1" {% if conversation and conversation.mode_id == 1 %}selected{% endif %}>💬 {{ t('mode_chatbot') }}</option>
+        <option value="2" {% if conversation and conversation.mode_id == 2 %}selected{% endif %}>🎯 {{ t('mode_assistant') }}</option>
       </select>
       <select form="chat-form"
               name="rag_mode"
               class="chat-toolbar__select"
-              title="Mode RAG : auto, fast (top-k réduit), full (top-k étendu)">
-        <option value="auto">RAG : auto</option>
-        <option value="fast">RAG : rapide</option>
-        <option value="full">RAG : complet</option>
+              title="{{ t('rag_mode_label') }}">
+        <option value="auto">{{ t('rag_mode_label') }} : {{ t('rag_mode_auto') }}</option>
+        <option value="fast">{{ t('rag_mode_label') }} : {{ t('rag_mode_fast') }}</option>
+        <option value="full">{{ t('rag_mode_label') }} : {{ t('rag_mode_full') }}</option>
       </select>
       {# Sélecteur de sources externes (parité V1 sources-selector.js).
          Multi-select chargé via HTMX au load. #}
@@ -268,11 +270,11 @@
               class="chat-toolbar__select chat-toolbar__select--sources"
               multiple
               size="1"
-              title="Sources externes à interroger (Ctrl+clic pour multi-select)"
+              title="{{ t('tooltip_select_sources') }}"
               hx-get="/web/chat/sources-list"
               hx-trigger="load"
               hx-swap="innerHTML">
-        <option value="" disabled>Chargement…</option>
+        <option value="" disabled>{{ t('loading') }}</option>
       </select>
     </div>
 
@@ -293,7 +295,7 @@
       <input type="hidden" name="conversation_id" value="{{ conversation.id }}">
       {% endif %}
 
-      <label for="chat-query" class="sr-only">Votre message</label>
+      <label for="chat-query" class="sr-only">{# i18n-pending: pas de clé V1 équivalente pour "Votre message" sr-only #}Votre message</label>
       <textarea
         id="chat-query"
         class="chat-input__field"
@@ -301,7 +303,7 @@
         rows="1"
         required
         maxlength="4000"
-        placeholder="Posez votre question…"
+        placeholder="{{ t('placeholder_message') }}"
         x-on:input="charCount = $el.value.length; $el.style.height='auto'; $el.style.height=$el.scrollHeight+'px'"
         x-on:keydown.enter.prevent="if (!$event.shiftKey) $el.closest('form').requestSubmit()"
       ></textarea>
@@ -350,14 +352,15 @@
                       this.recorder.start();
                       this.recording = true;
                     } catch (e) {
-                      alert('Micro indisponible : ' + e.message);
+                      alert($el.dataset.micErr + ' ' + e.message);
                     }
                   }
                 }"
+                data-mic-err="{{ t('speech_error_microphone') }}"
                 x-on:click="toggle()"
                 :class="{'chat-input__icon--active': recording}"
-                title="Dictée vocale (Whisper)"
-                aria-label="Dictée vocale">
+                title="{{ t('tooltip_mic') }}"
+                aria-label="{{ t('tooltip_mic') }}">
           <span x-text="recording ? '⏺' : '🎤'"></span>
         </button>
 
@@ -367,12 +370,12 @@
                 x-show="sending"
                 x-cloak
                 x-on:click="htmx.trigger(document.querySelector('[sse-connect]'), 'sse-close'); document.querySelectorAll('[sse-connect]').forEach(el => { try { el.removeAttribute('sse-connect'); } catch(e) {} }); sending=false"
-                title="Arrêter la génération"
-                aria-label="Stop">
+                title="{{ t('tooltip_mic_stop') }}"
+                aria-label="{{ t('tooltip_mic_stop') }}">
           ⏹
         </button>
 
-        <button type="submit" class="chat-input__send" aria-label="Envoyer">
+        <button type="submit" class="chat-input__send" aria-label="{{ t('send') }}">
           {{ icon('arrow-right', 16) }}
         </button>
       </div>

@@ -1,19 +1,19 @@
 {% extends "layouts/user.html" %}
 {% from "macros/icon.html" import icon %}
 
-{% block title %}Accueil — MY-IA{% endblock %}
+{% block title %}{# i18n-pending: pas de clé V1 équivalente pour titre onglet "Accueil" #}Accueil — MY-IA{% endblock %}
 
 {% block app_content %}
 
 {% set greeting_name = current_user.username or current_user.email.split('@')[0] %}
 
 <section class="home-hero">
-  <div class="home-hero__eyebrow"><span>Bienvenue</span></div>
+  <div class="home-hero__eyebrow"><span>{# i18n-pending: pas de clé V1 équivalente pour "Bienvenue" générique de hero #}Bienvenue</span></div>
   <h1 class="home-hero__title">
-    Bonjour <em>{{ greeting_name }}</em>.
+    {# i18n-pending: pas de clé V1 équivalente pour "Bonjour" #}Bonjour <em>{{ greeting_name }}</em>.
   </h1>
   <p class="home-hero__lede">
-    Votre espace de travail conversationnel. Posez une question,
+    {# i18n-pending: pas de clé V1 équivalente pour la lede du home hero #}Votre espace de travail conversationnel. Posez une question,
     explorez vos sources, ou ouvrez une conversation existante.
   </p>
 </section>
@@ -26,13 +26,13 @@
       <span class="action-card__icon">{{ icon('chat', 22) }}</span>
     </div>
     <div>
-      <h2 class="action-card__title">Nouvelle conversation</h2>
+      <h2 class="action-card__title">{{ t('new_conversation') }}</h2>
       <p class="action-card__desc">
-        Démarrer un échange à partir de vos documents et sources connectées.
+        {# i18n-pending: pas de clé V1 équivalente pour la description carte chat home #}Démarrer un échange à partir de vos documents et sources connectées.
       </p>
     </div>
     <span class="action-card__cta">
-      <span>Commencer</span>{{ icon('arrow-right', 12) }}
+      <span>{# i18n-pending: pas de clé V1 équivalente pour "Commencer" CTA #}Commencer</span>{{ icon('arrow-right', 12) }}
     </span>
   </a>
 
@@ -42,13 +42,13 @@
       <span class="action-card__icon">{{ icon('document', 22) }}</span>
     </div>
     <div>
-      <h2 class="action-card__title">Mes documents</h2>
+      <h2 class="action-card__title">{{ t('my_documents') }}</h2>
       <p class="action-card__desc">
-        Téléverser, indexer et organiser les sources qui alimentent vos conversations.
+        {# i18n-pending: pas de clé V1 équivalente pour la description carte documents home #}Téléverser, indexer et organiser les sources qui alimentent vos conversations.
       </p>
     </div>
     <span class="action-card__cta">
-      <span>Parcourir</span>{{ icon('arrow-right', 12) }}
+      <span>{# i18n-pending: pas de clé V1 équivalente pour "Parcourir" CTA #}Parcourir</span>{{ icon('arrow-right', 12) }}
     </span>
   </a>
 
@@ -58,13 +58,13 @@
       <span class="action-card__icon">{{ icon('settings', 22) }}</span>
     </div>
     <div>
-      <h2 class="action-card__title">Préférences</h2>
+      <h2 class="action-card__title">{{ t('preferences') }}</h2>
       <p class="action-card__desc">
-        Profil, langue, voix, modèles. Personnaliser votre expérience.
+        {# i18n-pending: pas de clé V1 équivalente pour la description carte préférences home #}Profil, langue, voix, modèles. Personnaliser votre expérience.
       </p>
     </div>
     <span class="action-card__cta">
-      <span>Configurer</span>{{ icon('arrow-right', 12) }}
+      <span>{# i18n-pending: pas de clé V1 équivalente pour "Configurer" CTA #}Configurer</span>{{ icon('arrow-right', 12) }}
     </span>
   </a>
 

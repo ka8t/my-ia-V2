@@ -1,21 +1,21 @@
 {# History rendering — user message avec actions (parité V1 messages.js) #}
 <article class="chat-message chat-message--user" id="msg-{{ m.id }}">
   <div class="chat-message__meta">
-    <span class="chat-message__role">vous</span>
+    <span class="chat-message__role">{{ t('msg_you')|lower }}</span>
     <div class="chat-message__actions">
       <button type="button"
               class="chat-message__action"
               x-on:click="navigator.clipboard.writeText($el.closest('article').querySelector('.chat-message__body').innerText)"
-              title="Copier"
-              aria-label="Copier">📋</button>
+              title="{{ t('msg_copy') }}"
+              aria-label="{{ t('msg_copy') }}">📋</button>
       <button type="button"
               class="chat-message__action chat-message__action--danger"
               hx-delete="/web/chat/messages/{{ m.id }}/pair"
-              hx-confirm="Supprimer ce message et la réponse associée ?"
+              hx-confirm="{{ t('msg_confirm_delete_pair') }}"
               hx-target="#msg-{{ m.id }}"
               hx-swap="outerHTML"
-              title="Supprimer la paire"
-              aria-label="Supprimer">🗑</button>
+              title="{{ t('msg_delete_pair') }}"
+              aria-label="{{ t('delete') }}">🗑</button>
     </div>
   </div>
   <div class="chat-message__body">{{ m.content }}</div>

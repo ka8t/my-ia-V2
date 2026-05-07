@@ -3,18 +3,18 @@
 {% from "macros/field.html" import field %}
 {% from "macros/button.html" import button %}
 
-{% block title %}Préférences — MY-IA{% endblock %}
+{% block title %}{{ t('preferences') }} — MY-IA{% endblock %}
 
 {% block app_content %}
 <section class="prefs-shell">
 
   <header class="prefs-header">
-    <div class="prefs-header__eyebrow"><span>Réglages / 03</span></div>
+    <div class="prefs-header__eyebrow"><span>{{ t('settings') }} / 03</span></div>
     <h1 class="prefs-header__title">
-      Vos <em>préférences</em>.
+      {# i18n-pending: pas de clé V1 équivalente pour titre hero "Vos préférences" #}Vos <em>{{ t('preferences')|lower }}</em>.
     </h1>
     <p class="prefs-header__lede">
-      Profil, mot de passe, langue, mode RAG. Tout est modifiable
+      {# i18n-pending: pas de clé V1 équivalente pour la lede préférences #}Profil, mot de passe, langue, mode RAG. Tout est modifiable
       sans rechargement.
     </p>
   </header>
@@ -24,9 +24,9 @@
     <header class="pref-card__head">
       <span class="pref-card__index">01</span>
       <div>
-        <h2 class="pref-card__title">Profil</h2>
+        <h2 class="pref-card__title">{{ t('my_profile') }}</h2>
         <p class="pref-card__desc">
-          Vos informations affichées dans l'application.
+          {# i18n-pending: pas de clé V1 équivalente pour la description carte profil #}Vos informations affichées dans l'application.
           L'adresse e-mail ne peut pas être changée ici.
         </p>
       </div>
@@ -41,36 +41,36 @@
       {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
 
       <div class="pref-grid">
-        {{ field('first_name', 'Prénom',
+        {{ field('first_name', t('uf_label_first_name'),
                  type='text',
                  value=db_user.first_name or '',
                  placeholder='—') }}
 
-        {{ field('last_name', 'Nom',
+        {{ field('last_name', t('uf_label_last_name'),
                  type='text',
                  value=db_user.last_name or '',
                  placeholder='—') }}
       </div>
 
       {# Username editable (parité V1 profile.js:UserForm.render). #}
-      {{ field('username', "Nom d'utilisateur",
+      {{ field('username', t('uf_label_username'),
                type='text',
                value=db_user.username or '',
                required=True,
-               placeholder='ex: jdupont') }}
+               placeholder=t('uf_placeholder_username')) }}
 
       <div class="pref-readonly">
-        <span class="pref-readonly__label">Adresse e-mail</span>
+        <span class="pref-readonly__label">{{ t('uf_label_email') }}</span>
         <span class="pref-readonly__value">
           {{ db_user.email }}
           {# Badge vérifié (parité V1 #profileVerifiedBadge). #}
           {% if db_user.is_verified %}
-          <span class="profile-verified-badge" title="Email vérifié">
-            {{ icon('check-circle', 14) }} Vérifié
+          <span class="profile-verified-badge" title="{{ t('verified') }}">
+            {{ icon('check-circle', 14) }} {{ t('verified') }}
           </span>
           {% else %}
-          <span class="profile-verified-badge profile-verified-badge--off" title="Email non vérifié">
-            Non vérifié
+          <span class="profile-verified-badge profile-verified-badge--off" title="{{ t('admin_users_email_not_verified') }}">
+            {{ t('admin_users_email_not_verified') }}
           </span>
           {% endif %}
         </span>
@@ -78,13 +78,13 @@
       {# Membre depuis (parité V1 #profileCreatedAt). #}
       {% if db_user.created_at %}
       <div class="pref-readonly">
-        <span class="pref-readonly__label">Membre depuis</span>
+        <span class="pref-readonly__label">{{ t('profile_member_since').replace('{date}', '').strip() }}</span>
         <span class="pref-readonly__value">{{ db_user.created_at.strftime('%d %B %Y') }}</span>
       </div>
       {% endif %}
 
       <div class="pref-card__actions">
-        {{ button('Enregistrer', block=False, lg=False, arrow=True) }}
+        {{ button(t('save'), block=False, lg=False, arrow=True) }}
       </div>
     </form>
     <div class="pref-status" aria-live="polite"></div>
@@ -96,20 +96,20 @@
     <header class="pref-card__head">
       <span class="pref-card__index">02</span>
       <div>
-        <h2 class="pref-card__title">Mot de passe</h2>
+        <h2 class="pref-card__title">{{ t('uf_label_password') }}</h2>
         <p class="pref-card__desc">
-          Choisissez un nouveau mot de passe respectant les règles
+          {# i18n-pending: pas de clé V1 équivalente pour la description carte mot de passe #}Choisissez un nouveau mot de passe respectant les règles
           ci-dessous. Vous restez connecté après le changement.
         </p>
         {# Règles password effectives (parité V1 password_requirements).
            Lit la PasswordPolicy "default" en BDD. #}
         {% if policy %}
         <ul class="password-rules">
-          <li>{{ policy.min_length }} caractères minimum</li>
-          {% if policy.require_uppercase %}<li>au moins une majuscule (A–Z)</li>{% endif %}
-          {% if policy.require_lowercase %}<li>au moins une minuscule (a–z)</li>{% endif %}
-          {% if policy.require_digit %}<li>au moins un chiffre (0–9)</li>{% endif %}
-          {% if policy.require_special %}<li>au moins un caractère spécial ({{ policy.special_characters }})</li>{% endif %}
+          <li>{# i18n-pending: pas de clé V1 équivalente pour règle "X caractères minimum" générique #}{{ policy.min_length }} caractères minimum</li>
+          {% if policy.require_uppercase %}<li>{# i18n-pending: pas de clé V1 équivalente #}au moins une majuscule (A–Z)</li>{% endif %}
+          {% if policy.require_lowercase %}<li>{# i18n-pending: pas de clé V1 équivalente #}au moins une minuscule (a–z)</li>{% endif %}
+          {% if policy.require_digit %}<li>{# i18n-pending: pas de clé V1 équivalente #}au moins un chiffre (0–9)</li>{% endif %}
+          {% if policy.require_special %}<li>{# i18n-pending: pas de clé V1 équivalente #}au moins un caractère spécial ({{ policy.special_characters }})</li>{% endif %}
         </ul>
         {% endif %}
       </div>
@@ -124,20 +124,20 @@
 
       {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
 
-      {{ field('current_password', 'Mot de passe actuel',
+      {{ field('current_password', t('label_current_password'),
                type='password', autocomplete='current-password', required=True) }}
 
       <div class="pref-grid">
-        {{ field('new_password', 'Nouveau mot de passe',
+        {{ field('new_password', t('label_new_password'),
                  type='password', autocomplete='new-password', required=True,
-                 placeholder='Min. 8 caractères') }}
+                 placeholder=t('uf_placeholder_password')) }}
 
-        {{ field('new_password_confirm', 'Confirmation',
+        {{ field('new_password_confirm', t('uf_label_confirm'),
                  type='password', autocomplete='new-password', required=True) }}
       </div>
 
       <div class="pref-card__actions">
-        {{ button('Modifier le mot de passe', block=False, lg=False, arrow=True) }}
+        {{ button(t('change_password'), block=False, lg=False, arrow=True) }}
       </div>
     </form>
     <div class="pref-status" aria-live="polite"></div>
@@ -149,9 +149,9 @@
     <header class="pref-card__head">
       <span class="pref-card__index">03</span>
       <div>
-        <h2 class="pref-card__title">Application</h2>
+        <h2 class="pref-card__title">{{ t('admin_system_group_app') }}</h2>
         <p class="pref-card__desc">
-          Langue, thème, mode RAG et affichage des sources dans le chat.
+          {# i18n-pending: pas de clé V1 équivalente pour la description carte application #}Langue, thème, mode RAG et affichage des sources dans le chat.
         </p>
       </div>
     </header>
@@ -169,7 +169,7 @@
            submit auto à chaque changement, puis recharge la page pour appliquer
            la langue immédiatement. #}
         <div class="field">
-          <label class="field__label" for="pref-lang"><span>Langue</span></label>
+          <label class="field__label" for="pref-lang"><span>{# i18n-pending: pas de clé V1 équivalente "Langue" générique #}Langue</span></label>
           <select class="field__input"
                   id="pref-lang"
                   name="language"
@@ -185,28 +185,28 @@
         </div>
 
         <div class="field">
-          <label class="field__label" for="pref-theme"><span>Thème</span></label>
+          <label class="field__label" for="pref-theme"><span>{{ t('settings_theme') }}</span></label>
           <select class="field__input" id="pref-theme" name="theme">
-            <option value="auto"  {% if prefs.theme == 'auto'  %}selected{% endif %}>Automatique (système)</option>
-            <option value="light" {% if prefs.theme == 'light' %}selected{% endif %}>Clair</option>
-            <option value="dark"  {% if prefs.theme == 'dark'  %}selected{% endif %}>Sombre</option>
+            <option value="auto"  {% if prefs.theme == 'auto'  %}selected{% endif %}>{# i18n-pending: pas de clé V1 équivalente pour "Automatique (système)" #}Automatique (système)</option>
+            <option value="light" {% if prefs.theme == 'light' %}selected{% endif %}>{{ t('admin_system_appearance_theme_light') }}</option>
+            <option value="dark"  {% if prefs.theme == 'dark'  %}selected{% endif %}>{{ t('theme_dark') }}</option>
           </select>
         </div>
       </div>
 
       <div class="pref-grid">
         <div class="field">
-          <label class="field__label" for="pref-rag"><span>Mode RAG</span></label>
+          <label class="field__label" for="pref-rag"><span>{{ t('rag_mode_label') }}</span></label>
           <select class="field__input" id="pref-rag" name="rag_mode">
-            <option value="auto" {% if prefs.rag_mode == 'auto' %}selected{% endif %}>Automatique</option>
-            <option value="fast" {% if prefs.rag_mode == 'fast' %}selected{% endif %}>Rapide</option>
-            <option value="full" {% if prefs.rag_mode == 'full' %}selected{% endif %}>Complet</option>
+            <option value="auto" {% if prefs.rag_mode == 'auto' %}selected{% endif %}>{{ t('rag_mode_auto') }}</option>
+            <option value="fast" {% if prefs.rag_mode == 'fast' %}selected{% endif %}>{{ t('rag_mode_fast') }}</option>
+            <option value="full" {% if prefs.rag_mode == 'full' %}selected{% endif %}>{{ t('rag_mode_full') }}</option>
           </select>
         </div>
 
         {# Mode par défaut nouvelles conversations (parité V1 #defaultMode). #}
         <div class="field">
-          <label class="field__label" for="pref-default-mode"><span>Mode par défaut</span></label>
+          <label class="field__label" for="pref-default-mode"><span>{{ t('settings_default_mode') }}</span></label>
           <select class="field__input" id="pref-default-mode" name="default_mode_id">
             {% for m in modes %}
             <option value="{{ m.id }}"
@@ -220,28 +220,28 @@
 
       <div class="pref-grid">
         <div class="field">
-          <label class="field__label" for="pref-sources"><span>Sources</span></label>
+          <label class="field__label" for="pref-sources"><span>{{ t('sources') }}</span></label>
           <label class="pref-toggle">
             <input type="checkbox"
                    id="pref-sources"
                    name="show_sources"
                    value="1"
                    {% if prefs.show_sources %}checked{% endif %}>
-            <span>Afficher les sources sous chaque réponse</span>
+            <span>{{ t('settings_show_sources') }}</span>
           </label>
         </div>
       </div>
 
       {# Préférences vocales (parité V1 #voiceToTextGroup, #voiceTtsGroup). #}
       <fieldset class="pref-fieldset">
-        <legend>Voix</legend>
+        <legend>{{ t('th_voice') }}</legend>
 
         <label class="pref-toggle">
           <input type="checkbox"
                  name="voice_to_text_enabled"
                  value="1"
                  {% if prefs.voice_to_text_enabled %}checked{% endif %}>
-          <span>Dictée vocale (Whisper) — micro pour saisir un message</span>
+          <span>{{ t('settings_voice_to_text') }}</span>
         </label>
 
         <label class="pref-toggle">
@@ -249,7 +249,7 @@
                  name="voice_auto_send"
                  value="1"
                  {% if prefs.voice_auto_send %}checked{% endif %}>
-          <span>Envoyer automatiquement après silence détecté</span>
+          <span>{{ t('speech_auto_send') }}</span>
         </label>
 
         <label class="pref-toggle">
@@ -257,7 +257,7 @@
                  name="voice_tts_enabled"
                  value="1"
                  {% if prefs.voice_tts_enabled %}checked{% endif %}>
-          <span>Lecture vocale des réponses (TTS)</span>
+          <span>{{ t('speech_tts_enabled') }}</span>
         </label>
 
         <label class="pref-toggle">
@@ -265,12 +265,12 @@
                  name="voice_tts_auto_play"
                  value="1"
                  {% if prefs.voice_tts_auto_play %}checked{% endif %}>
-          <span>Lecture automatique sans cliquer sur le bouton</span>
+          <span>{{ t('speech_tts_auto_play') }} — {{ t('speech_tts_auto_play_desc') }}</span>
         </label>
 
         <div class="field">
           <label class="field__label" for="pref-tts-rate">
-            <span>Vitesse de lecture (0.5 – 2.0)</span>
+            <span>{{ t('speech_tts_rate') }} (0.5 – 2.0)</span>
           </label>
           <input class="field__input"
                  id="pref-tts-rate"
@@ -284,7 +284,7 @@
       </fieldset>
 
       <div class="pref-card__actions">
-        {{ button('Enregistrer les préférences', block=False, lg=False, arrow=True) }}
+        {{ button(t('save'), block=False, lg=False, arrow=True) }}
       </div>
     </form>
     <div class="pref-status" aria-live="polite"></div>

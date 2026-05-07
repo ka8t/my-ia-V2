@@ -28,9 +28,9 @@
     <span class="docs-row__filename">{{ doc.filename }}</span>
     {# Badge visibilité (parité V1 documents.js) #}
     {% if doc.visibility == 'public' %}
-      <span class="docs-row__visibility docs-row__visibility--public" title="Document public">PUB</span>
+      <span class="docs-row__visibility docs-row__visibility--public" title="{{ t('visibility_public') }}">{# i18n-pending: pas de clé V1 équivalente pour badge court "PUB" #}PUB</span>
     {% else %}
-      <span class="docs-row__visibility docs-row__visibility--private" title="Document privé">PRIV</span>
+      <span class="docs-row__visibility docs-row__visibility--private" title="{{ t('visibility_private') }}">{# i18n-pending: pas de clé V1 équivalente pour badge court "PRIV" #}PRIV</span>
     {% endif %}
   </div>
 
@@ -55,16 +55,16 @@
     <button type="button"
             class="docs-row__action"
             x-on:click="modalDocId = '{{ doc.id }}'"
-            title="Détails"
-            aria-label="Détails">
+            title="{{ t('details') }}"
+            aria-label="{{ t('details') }}">
       {{ icon('info-circle', 14) }}
     </button>
 
     {# Download (parité V1 downloadDocument) #}
     <a class="docs-row__action"
        href="/web/documents/{{ doc.id }}/download"
-       title="Télécharger"
-       aria-label="Télécharger">
+       title="{{ t('download') }}"
+       aria-label="{{ t('download') }}">
       {{ icon('arrow-up-right', 14) }}
     </a>
 
@@ -73,12 +73,12 @@
           hx-post="/web/documents/{{ doc.id }}/visibility"
           hx-target="#doc-{{ doc.id }}"
           hx-swap="outerHTML"
-          hx-confirm="Basculer la visibilité de « {{ doc.filename }} » en {{ 'privé' if doc.visibility == 'public' else 'public' }} ?">
+          hx-confirm="{# i18n-pending: pas de clé V1 équivalente pour confirm "Basculer la visibilité de … en …" #}Basculer la visibilité de « {{ doc.filename }} » en {{ t('visibility_private')|lower if doc.visibility == 'public' else t('visibility_public')|lower }} ?">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <input type="hidden" name="visibility" value="{{ 'private' if doc.visibility == 'public' else 'public' }}">
       <button type="submit" class="docs-row__action"
-              title="{{ 'Rendre privé' if doc.visibility == 'public' else 'Rendre public' }}"
-              aria-label="Basculer visibilité">
+              title="{{ t('tooltip_make_private') if doc.visibility == 'public' else t('tooltip_make_public') }}"
+              aria-label="{{ t('visibility') }}">
         {{ icon('sparkle', 14) }}
       </button>
     </form>
@@ -99,8 +99,8 @@
       <button type="button"
               class="docs-row__action"
               x-on:click="$refs.replaceInput.click()"
-              title="Remplacer le fichier"
-              aria-label="Remplacer">
+              title="{{ t('tooltip_replace') }}"
+              aria-label="{{ t('tooltip_replace') }}">
         {{ icon('check-circle', 14) }}
       </button>
     </form>
@@ -109,11 +109,11 @@
     <button type="button"
             class="docs-row__action docs-row__action--danger"
             hx-delete="/web/documents/{{ doc.id }}"
-            hx-confirm="Supprimer définitivement « {{ doc.filename }} » ?"
+            hx-confirm="{{ t('confirm_delete_document_message') }}"
             hx-target="#doc-{{ doc.id }}"
             hx-swap="outerHTML"
-            title="Supprimer"
-            aria-label="Supprimer">
+            title="{{ t('delete') }}"
+            aria-label="{{ t('delete') }}">
       {{ icon('alert-circle', 14) }}
     </button>
   </div>
