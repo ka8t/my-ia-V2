@@ -97,15 +97,16 @@ class LocalStorageBackend(StorageBackend):
         version: int = 1,
     ) -> str:
         """Sauvegarde un fichier."""
+        # Préparer les chemins en dehors du try pour qu'ils soient définis
+        # dans les except handlers (sinon UnboundLocalError si mkdir échoue).
+        doc_path = self._get_document_path(user_id, document_id)
+        safe_filename = self._sanitize_filename(filename)
+        version_filename = self._get_version_filename(safe_filename, version)
+        file_path = doc_path / version_filename
+
         try:
             # Créer le dossier du document
-            doc_path = self._get_document_path(user_id, document_id)
             doc_path.mkdir(parents=True, exist_ok=True)
-
-            # Générer le nom de fichier versionné
-            safe_filename = self._sanitize_filename(filename)
-            version_filename = self._get_version_filename(safe_filename, version)
-            file_path = doc_path / version_filename
 
             # Écrire le fichier de manière asynchrone
             loop = asyncio.get_event_loop()
@@ -119,10 +120,10 @@ class LocalStorageBackend(StorageBackend):
             return relative_path
 
         except PermissionError as e:
-            logger.error(f"Permission refusée pour sauvegarder: {e}")
+            logger.error(f"Permission refusée pour sauvegarder {file_path}: {e}")
             raise StoragePermissionError(str(file_path), "write")
         except OSError as e:
-            logger.error(f"Erreur I/O lors de la sauvegarde: {e}")
+            logger.error(f"Erreur I/O lors de la sauvegarde {file_path}: {e}")
             raise StorageIOError(str(file_path), "write", str(e))
 
     async def get(self, file_path: str) -> bytes:
