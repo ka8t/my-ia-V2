@@ -1469,3 +1469,69 @@ async def admin_logs_bulk_delete(
         f"<div class='toast toast--success'>{n} log(s) supprimé(s).</div>",
         headers={"HX-Trigger": "logs-refresh"},
     )
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  Phase 3.6.c — admin/validation : modal individuel + polling badge
+# ═════════════════════════════════════════════════════════════════════════════
+
+@router.post("/validation/{user_id}/approve", response_class=HTMLResponse)
+async def admin_validation_approve_single(
+    request: Request,
+    user_id: uuid.UUID,
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    """Approve un user (parité V1 validation.js modal individuel)."""
+    if (err := _csrf_or_400(request, csrf_token)):
+        return err
+    target = await _get_user_or_404(db, user_id)
+    if target is None:
+        return HTMLResponse("", status_code=404)
+    target.approval_status = ApprovalStatus.APPROVED
+    target.approved_by = uuid.UUID(user["id"])
+    from datetime import datetime, timezone
+    target.approved_at = datetime.now(timezone.utc)
+    target.rejection_reason = None
+    await db.commit()
+    return HTMLResponse(
+        f"<div class='toast toast--success'>{target.email} approuvé.</div>",
+        headers={"HX-Trigger": "validation-refresh"},
+    )
+
+
+@router.post("/validation/{user_id}/reject", response_class=HTMLResponse)
+async def admin_validation_reject_single(
+    request: Request,
+    user_id: uuid.UUID,
+    reason: Annotated[str | None, Form()] = None,
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    if (err := _csrf_or_400(request, csrf_token)):
+        return err
+    target = await _get_user_or_404(db, user_id)
+    if target is None:
+        return HTMLResponse("", status_code=404)
+    target.approval_status = ApprovalStatus.REJECTED
+    target.rejection_reason = (reason or "").strip() or None
+    await db.commit()
+    return HTMLResponse(
+        f"<div class='toast toast--success'>{target.email} refusé.</div>",
+        headers={"HX-Trigger": "validation-refresh"},
+    )
+
+
+@router.get("/validation/pending-count", response_class=HTMLResponse)
+async def admin_validation_pending_count(
+    request: Request,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    """Polling badge sidebar (parité V1 updatePendingBadge)."""
+    n = await _pending_users_count(db)
+    if n == 0:
+        return HTMLResponse("")
+    return HTMLResponse(f"<span class='admin-nav__badge'>{n}</span>")

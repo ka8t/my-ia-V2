@@ -66,9 +66,10 @@
           <a class="admin-nav__item{% if active_section == 'users' %} admin-nav__item--active{% endif %}"
              href="/web/admin/users">
             {{ icon('user-circle', 14) if false else icon('diamond', 14) }}<span>Utilisateurs</span>
-            {% if pending_users_count and pending_users_count > 0 %}
-            <span class="admin-nav__badge">{{ pending_users_count }}</span>
-            {% endif %}
+            <span class="admin-nav__badge-slot"
+                  hx-get="/web/admin/validation/pending-count"
+                  hx-trigger="load, every 30s"
+                  hx-swap="innerHTML">{% if pending_users_count and pending_users_count > 0 %}<span class="admin-nav__badge">{{ pending_users_count }}</span>{% endif %}</span>
           </a>
         </li>
         <li>
@@ -111,9 +112,10 @@
           <a class="admin-nav__item{% if active_section == 'validation' %} admin-nav__item--active{% endif %}"
              href="/web/admin/validation">
             {{ icon('check-circle', 14) }}<span>Validation</span>
-            {% if pending_users_count and pending_users_count > 0 %}
-            <span class="admin-nav__badge">{{ pending_users_count }}</span>
-            {% endif %}
+            <span class="admin-nav__badge-slot"
+                  hx-get="/web/admin/validation/pending-count"
+                  hx-trigger="load, every 30s"
+                  hx-swap="innerHTML">{% if pending_users_count and pending_users_count > 0 %}<span class="admin-nav__badge">{{ pending_users_count }}</span>{% endif %}</span>
           </a>
         </li>
 

@@ -4,6 +4,7 @@
 {% block title %}Validation — Admin{% endblock %}
 
 {% block admin_content %}
+<section hx-on:validation-refresh="window.location.reload()">
 
 <header class="admin-page__head">
   <div class="admin-page__eyebrow"><span>Console / 08</span></div>
@@ -45,10 +46,11 @@
       <span>Email</span>
       <span>Nom d'utilisateur</span>
       <span>Inscription</span>
+      <span>Actions</span>
     </div>
     <div class="admin-table-body">
       {% for u in pending_users %}
-      <div class="admin-validation-row admin-table-row">
+      <div class="admin-validation-row admin-table-row" id="val-{{ u.id }}">
         <div class="admin-table-cell">
           <input type="checkbox" name="user_ids" value="{{ u.id }}">
         </div>
@@ -59,6 +61,25 @@
         </div>
         <div class="admin-table-cell admin-table-cell__mono">
           {{ u.created_at.strftime('%Y-%m-%d %H:%M') if u.created_at else '—' }}
+        </div>
+        {# Actions individuelles (parité V1) #}
+        <div class="admin-table-cell admin-table-cell--actions">
+          <button type="button"
+                  class="admin-action admin-action--accent"
+                  hx-post="/web/admin/validation/{{ u.id }}/approve"
+                  hx-vals='{"csrf_token": "{{ csrf_token }}"}'
+                  hx-target="#val-{{ u.id }}" hx-swap="outerHTML"
+                  title="Approuver">{{ icon('check-circle', 14) }}</button>
+          <button type="button"
+                  class="admin-action admin-action--danger"
+                  x-on:click="
+                    const reason = prompt('Raison du rejet (envoyée par email)');
+                    if (reason !== null) {
+                      htmx.ajax('POST', '/web/admin/validation/{{ u.id }}/reject',
+                        { values: { csrf_token: '{{ csrf_token }}', reason: reason },
+                          target: '#val-{{ u.id }}', swap: 'outerHTML' });
+                    }"
+                  title="Refuser">{{ icon('alert-circle', 14) }}</button>
         </div>
       </div>
       {% endfor %}
@@ -123,4 +144,5 @@
 </div>
 {% endif %}
 
+</section>
 {% endblock %}
