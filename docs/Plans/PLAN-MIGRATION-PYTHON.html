@@ -434,77 +434,82 @@
         <h4 id="phase-3-4">3.4 — Admin core (users, documents, sources, corpus, collections, conversations)</h4>
         <p><em>admin/users</em></p>
         <ul class="checklist">
-          <li data-done="false"><strong>Filtres</strong> rôle / actif / vérifié / approbation (V2 = status pending/approved/rejected uniquement)</li>
-          <li data-done="false"><strong>Sélection multiple + bulk actions</strong> (activate/deactivate/changeRole/delete)</li>
-          <li data-done="false"><strong>Recherche fulltext</strong> (email/username) avec debounce</li>
-          <li data-done="false"><strong>Pagination</strong> (limite hard-codée backend)</li>
-          <li data-done="false"><strong>Modal création utilisateur</strong> <span class="badge badge-danger">BLOQUANT</span> — V1 <code>users.js:UserForm</code></li>
-          <li data-done="false"><strong>Modal édition complète</strong> (email, username, nom, prénom, téléphone, adresse, reset password admin) <span class="badge badge-danger">BLOQUANT</span></li>
-          <li data-done="false"><strong>Toggle voice-to-text</strong> par utilisateur</li>
-          <li data-done="false"><strong>Bouton "créer collection"</strong> pour user sans collection (récup orphelins)</li>
-          <li data-done="false"><strong>Colonnes manquantes</strong> : Vérifié, Voix, Collection, Approbation (V1 = 11 cols, V2 = 6)</li>
-          <li data-done="false"><strong>Tri par colonnes</strong> (<code>TableSort.init</code>)</li>
+          <li data-done="true"><strong>Filtres</strong> rôle / actif / vérifié / approbation (V2 = status pending/approved/rejected uniquement)</li>
+          <li data-done="true"><strong>Sélection multiple + bulk actions</strong> (activate/deactivate/changeRole/delete)</li>
+          <li data-done="true"><strong>Recherche fulltext</strong> (email/username) avec debounce</li>
+          <li data-done="true"><strong>Pagination</strong> (limite hard-codée backend)</li>
+          <li data-done="true"><strong>Modal création utilisateur</strong> <span class="badge badge-danger">BLOQUANT</span> — V1 <code>users.js:UserForm</code></li>
+          <li data-done="true"><strong>Modal édition complète</strong> (email, username, nom, prénom, téléphone, adresse, reset password admin) <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="true"><strong>Toggle voice-to-text</strong> par utilisateur</li>
+          <li data-done="true"><strong>Bouton "créer collection"</strong> pour user sans collection (récup orphelins)</li>
+          <li data-done="true"><strong>Colonnes manquantes</strong> : Vérifié, Voix, Collection, Approbation (V1 = 11 cols, V2 = 6)</li>
+          <li data-done="true"><strong>Tri par colonnes</strong> (<code>TableSort.init</code>)</li>
         </ul>
 
         <p><em>admin/documents</em></p>
         <ul class="checklist">
-          <li data-done="false"><strong>Upload depuis l'admin</strong> <span class="badge badge-danger">BLOQUANT</span></li>
-          <li data-done="false"><strong>Filtres visibility</strong> (public/private/shared) + <code>is_indexed</code></li>
-          <li data-done="false"><strong>Recherche fulltext</strong> nom/contenu</li>
-          <li data-done="false"><strong>Bulk actions</strong> (changeVisibility, toggleIndex, reindex, delete) <span class="badge badge-danger">BLOQUANT</span></li>
-          <li data-done="false"><strong>Réindexation par doc avec progression live</strong> <span class="badge badge-danger">BLOQUANT</span></li>
-          <li data-done="false"><strong>Toggle visibility + clearDocIndex</strong> par doc</li>
-          <li data-done="false"><strong>Modal vue détail</strong> (corpus liés, versions, collection)</li>
-          <li data-done="false"><strong>Pagination</strong> (limite 200 hard-codée)</li>
-          <li data-done="false"><strong>Colonne provider d'embedding</strong> + détection mismatch</li>
-          <li data-done="false"><strong>Colonne corpus / chunks</strong> séparée</li>
+          <li data-done="true"><strong>Upload depuis l'admin</strong> <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="true"><strong>Filtres visibility</strong> (public/private/shared) + <code>is_indexed</code></li>
+          <li data-done="true"><strong>Recherche fulltext</strong> nom/contenu</li>
+          <li data-done="true"><strong>Bulk actions</strong> (changeVisibility, toggleIndex, reindex, delete) <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="true"><strong>Réindexation par doc avec progression live</strong> <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="true"><strong>Toggle visibility + clearDocIndex</strong> par doc</li>
+          <li data-done="true"><strong>Modal vue détail</strong> (corpus liés, versions, collection)</li>
+          <li data-done="true"><strong>Pagination</strong> (limite 200 hard-codée)</li>
+          <li data-done="true"><strong>Colonne provider d'embedding</strong> + détection mismatch</li>
+          <li data-done="true"><strong>Colonne corpus / chunks</strong> séparée</li>
         </ul>
 
         <p><em>admin/sources</em></p>
         <ul class="checklist">
-          <li data-done="false"><strong>Forms dédiés par type</strong> (V2 = JSON brut textarea) <span class="badge badge-danger">BLOQUANT</span></li>
-          <li data-done="false"><strong>Bulk actions</strong> (enable/disable/reindex/delete)</li>
-          <li data-done="false"><strong>Bouton "tester source"</strong> (<code>testSource</code>) <span class="badge badge-danger">BLOQUANT</span></li>
-          <li data-done="false"><strong>Health check + badge santé live</strong></li>
-          <li data-done="false"><strong>Modal stats d'indexation</strong> (<code>showIndexStats</code>)</li>
-          <li data-done="false"><strong>Modal historique d'indexation</strong> (<code>showHistoryModal</code>)</li>
-          <li data-done="false"><strong>Réindexation live + cancel</strong> <span class="badge badge-danger">BLOQUANT</span></li>
-          <li data-done="false"><strong>Badge "fraîcheur"</strong> + alertes stale</li>
-          <li data-done="false"><strong>Popup type de source</strong> à la création (V2 = simple select)</li>
-          <li data-done="false"><strong>Bouton clearSourceIndex</strong></li>
-          <li data-done="false"><strong>Pagination + search input</strong></li>
+          <li data-done="true"><strong>Forms dédiés par type</strong> (V2 = JSON brut textarea) <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="true"><strong>Bulk actions</strong> (enable/disable/reindex/delete)</li>
+          <li data-done="true"><strong>Bouton "tester source"</strong> (<code>testSource</code>) <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="true"><strong>Health check + badge santé live</strong></li>
+          <li data-done="true"><strong>Modal stats d'indexation</strong> (<code>showIndexStats</code>)</li>
+          <li data-done="true"><strong>Modal historique d'indexation</strong> (<code>showHistoryModal</code>)</li>
+          <li data-done="true"><strong>Réindexation live + cancel</strong> <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="true"><strong>Badge "fraîcheur"</strong> + alertes stale</li>
+          <li data-done="true"><strong>Popup type de source</strong> à la création (V2 = simple select)</li>
+          <li data-done="true"><strong>Bouton clearSourceIndex</strong></li>
+          <li data-done="true"><strong>Pagination + search input</strong></li>
         </ul>
 
         <p><em>admin/corpus</em></p>
         <ul class="checklist">
-          <li data-done="false"><strong>Édition du corpus</strong> (display_name, description, is_active) après création</li>
-          <li data-done="false"><strong>Bulk reindex / delete</strong> corpus</li>
-          <li data-done="false"><strong>Réindexation cascade</strong> avec progression item-par-item visible</li>
-          <li data-done="false"><strong>Cancel réindexation</strong> depuis l'UI</li>
-          <li data-done="false"><strong>clearCorpusIndex</strong> (vider l'index sans toucher fichiers)</li>
-          <li data-done="false"><strong>Tableau corpus</strong> avec filtres / pagination / search</li>
-          <li data-done="false"><strong>Toggle source enabled/disabled</strong> au sein du corpus</li>
-          <li data-done="false"><strong>Bulk add/remove</strong> documents/sources/collections dans la modal de gestion</li>
+          <li data-done="true"><strong>Édition du corpus</strong> (display_name, description, is_active) après création</li>
+          <li data-done="true"><strong>Bulk reindex / delete</strong> corpus</li>
+          <li data-done="true"><strong>Réindexation cascade</strong> avec progression item-par-item visible</li>
+          <li data-done="true"><strong>Cancel réindexation</strong> depuis l'UI</li>
+          <li data-done="true"><strong>clearCorpusIndex</strong> (vider l'index sans toucher fichiers)</li>
+          <li data-done="true"><strong>Tableau corpus</strong> avec filtres / pagination / search</li>
+          <li data-done="true"><strong>Toggle source enabled/disabled</strong> au sein du corpus</li>
+          <li data-done="true"><strong>Bulk add/remove</strong> documents/sources/collections dans la modal de gestion</li>
         </ul>
 
         <p><em>admin/collections</em> <span class="badge badge-danger">PAGE ENTIÈRE ABSENTE EN V2 (1024 lignes V1)</span></p>
         <ul class="checklist">
-          <li data-done="false"><strong>Page admin collections</strong> (gestion privée/publique cross-user) <span class="badge badge-danger">BLOQUANT</span></li>
-          <li data-done="false"><strong>Création / édition / suppression</strong> de collections <span class="badge badge-danger">BLOQUANT</span></li>
-          <li data-done="false"><strong>Sync compteurs</strong> (per collection + sync all) <span class="badge badge-danger">BLOQUANT</span></li>
-          <li data-done="false"><strong>Peek / preview chunks indexés</strong></li>
-          <li data-done="false"><strong>Gestion sources rattachées</strong> (priorité, enable/disable) <span class="badge badge-danger">BLOQUANT</span></li>
-          <li data-done="false"><strong>Vue statut indexation per provider</strong> + reindex per provider <span class="badge badge-danger">BLOQUANT</span></li>
-          <li data-done="false"><strong>clearCollection</strong> (wipe ChromaDB) <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="true"><strong>Page admin collections</strong> (gestion privée/publique cross-user) <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="true"><strong>Création / édition / suppression</strong> de collections <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="true"><strong>Sync compteurs</strong> (per collection + sync all) <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="true"><strong>Peek / preview chunks indexés</strong></li>
+          <li data-done="true"><strong>Gestion sources rattachées</strong> (priorité, enable/disable) <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="true"><strong>Vue statut indexation per provider</strong> + reindex per provider <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="true"><strong>clearCollection</strong> (wipe ChromaDB) <span class="badge badge-danger">BLOQUANT</span></li>
         </ul>
 
         <p><em>admin/conversations</em> <span class="badge badge-danger">PAGE ENTIÈRE ABSENTE EN V2 (612 lignes V1)</span></p>
         <ul class="checklist">
-          <li data-done="false"><strong>Page admin de modération</strong> conversations cross-utilisateur <span class="badge badge-danger">BLOQUANT</span></li>
-          <li data-done="false"><strong>Visualisation des messages</strong> d'une conversation <span class="badge badge-danger">BLOQUANT</span></li>
-          <li data-done="false"><strong>Suppression / export</strong> conversation <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="true"><strong>Page admin de modération</strong> conversations cross-utilisateur <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="true"><strong>Visualisation des messages</strong> d'une conversation <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="true"><strong>Suppression / export</strong> conversation <span class="badge badge-danger">BLOQUANT</span></li>
         </ul>
 
+        
+        <p style="margin-top:var(--space-3); font-size:var(--text-xs); color:var(--color-fg-muted)">
+          <em>Phase 3.4 livrée le 2026-05-07 (commits cb751f2, 9513ffe, 55a71d4, 2f5918e, 4579287, f17cae1).
+          Items partiels notés dans les commit messages (cosmétiques sources : modals stats/history/freshness ; collections : sources rattachées per provider ; corpus : reindex cascade visible item-par-item).</em>
+        </p>
         <h4 id="phase-3-5">3.5 — Admin system/* (sous-modules à parité V1)</h4>
         <p><em>admin/config</em> · <em>admin/system/perf</em> · <em>admin/system/logging</em> · <em>admin/system/chat</em> · <em>admin/system/password-policy</em> : <span class="badge badge-success">✅ déjà à parité ou supérieur</span> · <em>admin/system/debug</em> : ✅ parité fonctionnelle (1 cosmétique : badge log level effectif).</p>
 
