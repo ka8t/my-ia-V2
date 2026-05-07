@@ -63,13 +63,19 @@ def _gc_pending_streams() -> None:
         _PENDING_STREAMS.pop(sid, None)
 
 
-def _put_pending(query: str, conversation_id: str, user_id: str) -> str:
+def _put_pending(
+    query: str,
+    conversation_id: str,
+    user_id: str,
+    rag_mode: str = "auto",
+) -> str:
     _gc_pending_streams()
     sid = secrets.token_urlsafe(24)
     _PENDING_STREAMS[sid] = {
         "query": query,
         "conversation_id": conversation_id,
         "user_id": user_id,
+        "rag_mode": rag_mode,
         "created_at": time.time(),
     }
     return sid
@@ -264,6 +270,8 @@ async def submit_message(
     query: Annotated[str, Form()],
     conversation_id: Annotated[str | None, Form()] = None,
     collection_id: Annotated[str | None, Form()] = None,
+    mode_id: Annotated[int | None, Form()] = None,
+    rag_mode: Annotated[str | None, Form()] = None,
     csrf_token: Annotated[str | None, Form()] = None,
     user: dict = Depends(require_web_auth),
     db: AsyncSession = Depends(get_async_session),
@@ -327,11 +335,20 @@ async def submit_message(
             user_id=user_id,
             title=query[:80] or "Nouvelle conversation",
             collection_id=target_collection_id,
-            mode_id=1,
+            mode_id=mode_id or 1,
         )
+    elif mode_id is not None and conv.mode_id != mode_id:
+        # Override du mode runtime (parité V1 toggle Mode Assistant/Chatbot).
+        conv.mode_id = mode_id
+        await db.commit()
 
     # 2) Stash the query for the SSE GET that follows
-    stream_id = _put_pending(query, str(conv.id), str(user_id))
+    stream_id = _put_pending(
+        query,
+        str(conv.id),
+        str(user_id),
+        rag_mode=(rag_mode if rag_mode in {"auto", "fast", "full"} else "auto"),
+    )
 
     # 3) Render two bubbles back-to-back. The assistant bubble carries the
     #    sse-connect attribute that opens the stream.
@@ -507,7 +524,7 @@ async def chat_stream(
         conversation_id=pending["conversation_id"],
         language="fr",
         mode_id=mode_id,
-        rag_mode="auto",
+        rag_mode=pending.get("rag_mode", "auto"),
     )
 
     return StreamingResponse(
@@ -515,3 +532,212 @@ async def chat_stream(
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  Phase 3.3 — Routes additionnelles parité V1 (delete conv, edit title,
+#  archive, message actions, transcribe Whisper)
+# ═════════════════════════════════════════════════════════════════════════════
+
+@router.delete("/conversations/{conversation_id}", response_class=HTMLResponse)
+async def delete_conversation(
+    request: Request,
+    conversation_id: uuid.UUID,
+    user: dict = Depends(require_web_auth),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    """Suppression d'une conversation (parité V1 conversations.js:delete)."""
+    user_id = uuid.UUID(user["id"])
+    conv = await ConversationRepository.get_by_id(db, conversation_id, user_id)
+    if conv is None:
+        return HTMLResponse("", status_code=404)
+    try:
+        await db.delete(conv)
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        logger.exception("Delete conversation failed")
+        return HTMLResponse(
+            "<div class='toast toast--error'>Suppression impossible.</div>",
+            status_code=500,
+        )
+    # HX-Redirect vers / pour quitter la conversation supprimée
+    return HTMLResponse("", status_code=200, headers={"HX-Redirect": "/web/chat"})
+
+
+@router.patch("/conversations/{conversation_id}/title", response_class=HTMLResponse)
+async def update_conversation_title(
+    request: Request,
+    conversation_id: uuid.UUID,
+    title: Annotated[str, Form()],
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_auth),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    """Édition du titre (parité V1 app.js:initTitleEditing)."""
+    if not verify_csrf_token(request, csrf_token):
+        return HTMLResponse(
+            "<div class='toast toast--error'>Session expirée.</div>",
+            status_code=400,
+        )
+    new_title = (title or "").strip()
+    if not new_title:
+        return HTMLResponse(
+            "<div class='toast toast--error'>Titre vide.</div>",
+            status_code=400,
+        )
+    user_id = uuid.UUID(user["id"])
+    conv = await ConversationRepository.get_by_id(db, conversation_id, user_id)
+    if conv is None:
+        return HTMLResponse("", status_code=404)
+    conv.title = new_title[:200]
+    try:
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        logger.exception("Update title failed")
+        return HTMLResponse(
+            "<div class='toast toast--error'>Échec.</div>", status_code=500
+        )
+    return HTMLResponse(
+        f'<h1 class="chat-header__title">{_html.escape(conv.title)}</h1>',
+        status_code=200,
+    )
+
+
+@router.post("/conversations/{conversation_id}/archive", response_class=HTMLResponse)
+async def toggle_archive(
+    request: Request,
+    conversation_id: uuid.UUID,
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_auth),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    """Toggle archive/unarchive (parité V1 conversations.js:archive/unarchive)."""
+    if not verify_csrf_token(request, csrf_token):
+        return HTMLResponse(
+            "<div class='toast toast--error'>Session expirée.</div>",
+            status_code=400,
+        )
+    user_id = uuid.UUID(user["id"])
+    conv = await ConversationRepository.get_by_id(db, conversation_id, user_id)
+    if conv is None:
+        return HTMLResponse("", status_code=404)
+
+    from datetime import datetime, timezone
+    if conv.archived_at is None:
+        conv.archived_at = datetime.now(timezone.utc)
+        msg = "Conversation archivée."
+    else:
+        conv.archived_at = None
+        msg = "Conversation désarchivée."
+    try:
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        logger.exception("Toggle archive failed")
+        return HTMLResponse(
+            "<div class='toast toast--error'>Échec.</div>", status_code=500
+        )
+    return HTMLResponse(
+        f"<div class='toast toast--success'>{msg}</div>",
+        status_code=200,
+        headers={"HX-Trigger": "chat-sidebar-refresh"},
+    )
+
+
+@router.delete("/messages/{message_id}/pair", response_class=HTMLResponse)
+async def delete_message_pair(
+    request: Request,
+    message_id: uuid.UUID,
+    user: dict = Depends(require_web_auth),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    """Suppression d'une paire user→assistant (parité V1 messages.js:delete).
+
+    Si message_id est un message user, supprime aussi le message assistant
+    qui suit. Si c'est un assistant, supprime aussi le user qui précède.
+    """
+    user_id = uuid.UUID(user["id"])
+    msg = (
+        (await db.execute(select(Message).where(Message.id == message_id)))
+        .unique()
+        .scalar_one_or_none()
+    )
+    if msg is None:
+        return HTMLResponse("", status_code=404)
+    conv = await ConversationRepository.get_by_id(db, msg.conversation_id, user_id)
+    if conv is None:
+        return HTMLResponse("", status_code=403)
+
+    # Charger les messages adjacents pour identifier la paire
+    msgs = list(
+        (
+            await db.execute(
+                select(Message)
+                .where(Message.conversation_id == conv.id)
+                .order_by(Message.created_at)
+            )
+        )
+        .unique()
+        .scalars()
+        .all()
+    )
+    idx = next((i for i, m in enumerate(msgs) if m.id == msg.id), None)
+    if idx is None:
+        return HTMLResponse("", status_code=404)
+
+    to_delete = [msg.id]
+    if msg.sender_type == "user" and idx + 1 < len(msgs) and msgs[idx + 1].sender_type == "assistant":
+        to_delete.append(msgs[idx + 1].id)
+    elif msg.sender_type == "assistant" and idx > 0 and msgs[idx - 1].sender_type == "user":
+        to_delete.append(msgs[idx - 1].id)
+
+    try:
+        for mid in to_delete:
+            mref = (
+                (await db.execute(select(Message).where(Message.id == mid)))
+                .unique()
+                .scalar_one_or_none()
+            )
+            if mref is not None:
+                await db.delete(mref)
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        logger.exception("Delete message pair failed")
+        return HTMLResponse(
+            "<div class='toast toast--error'>Échec.</div>", status_code=500
+        )
+    return HTMLResponse("", status_code=200)
+
+
+@router.post("/transcribe", response_class=HTMLResponse)
+async def transcribe(
+    request: Request,
+    user: dict = Depends(require_web_auth),
+):
+    """Proxy vers Whisper (parité V1 speech.js)."""
+    try:
+        from app.features.speech.service import SpeechService
+    except Exception:
+        return HTMLResponse(
+            "<div class='toast toast--error'>Whisper indisponible.</div>",
+            status_code=503,
+        )
+    form = await request.form()
+    audio = form.get("audio")
+    if not audio:
+        return HTMLResponse(
+            "<div class='toast toast--error'>Audio absent.</div>",
+            status_code=400,
+        )
+    try:
+        text = await SpeechService.transcribe(audio)
+    except Exception as exc:
+        logger.exception("Transcribe failed: %s", exc)
+        return HTMLResponse(
+            "<div class='toast toast--error'>Transcription échouée.</div>",
+            status_code=500,
+        )
+    return HTMLResponse(text or "", status_code=200)

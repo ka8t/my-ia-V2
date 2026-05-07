@@ -1,12 +1,12 @@
 {# ─────────────────────────────────────────────────────────────────────
  # partials/chat/message-pair.html
  #
- # Returned by POST /web/chat/messages. Renders both bubbles back-to-back:
- #   - user   : the query that was just sent
- #   - assist : empty bubble subscribed to the SSE stream that fills it
+ # Returned by POST /web/chat/messages. Renders both bubbles back-to-back :
+ #   - user   : la question envoyée
+ #   - assist : bulle vide abonnée au stream SSE qui la remplit
  #
- # NOTE: sse-connect, sse-swap et hx-swap doivent être sur le MÊME élément
- # pour que l'extension applique le swap "beforeend" correctement.
+ # Streaming Markdown live (parité V1 streaming.js) : on parse le texte
+ # accumulé via marked.js à chaque event "token" pour le rendu live.
  # ────────────────────────────────────────────────────────────────────── #}
 {% from "macros/icon.html" import icon %}
 
@@ -28,14 +28,29 @@
     </span>
   </div>
 
+  {# Conteneur : data-streaming-text accumule le texte brut, on rerend via marked.js. #}
   <div class="chat-message__body"
        data-streaming="1"
-       sse-swap="token"
-       hx-swap="beforeend"
-       hx-on::sse-close="this.removeAttribute('data-streaming'); var s=this.closest('.chat-message').querySelector('.chat-message__status'); if(s) s.remove(); window.renderChatMarkdown(this);"
+       data-streaming-text=""
+       hx-on:htmx:sse-message="
+         if (event.detail.type === 'token') {
+           const decoded = new DOMParser().parseFromString(event.detail.data, 'text/html').documentElement.textContent;
+           this.dataset.streamingText = (this.dataset.streamingText || '') + decoded;
+           if (typeof marked !== 'undefined') {
+             this.innerHTML = marked.parse(this.dataset.streamingText, { breaks: true, gfm: true });
+             if (typeof hljs !== 'undefined') {
+               this.querySelectorAll('pre code').forEach(b => { try { hljs.highlightElement(b); } catch(e){} });
+             }
+           } else {
+             this.textContent = this.dataset.streamingText;
+           }
+           this.closest('.chat-thread').scrollTop = this.closest('.chat-thread').scrollHeight;
+         }
+       "
+       hx-on::sse-close="this.removeAttribute('data-streaming'); var s=this.closest('.chat-message').querySelector('.chat-message__status'); if(s) s.remove();"
        hx-on::sse-error="this.removeAttribute('data-streaming'); var s=this.closest('.chat-message').querySelector('.chat-message__status'); if(s){s.textContent='Erreur de streaming.'; s.style.color='var(--color-danger)';}"></div>
 
-  {# Slot pour l'event "sources" — sse-swap route l'event vers ce conteneur. #}
+  {# Slot pour l'event "sources" #}
   <div class="chat-message__sources"
        sse-swap="sources"
        hx-swap="innerHTML"></div>

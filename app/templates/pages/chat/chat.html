@@ -4,13 +4,30 @@
 {% block title %}{{ title or "Chat" }} — MY-IA{% endblock %}
 
 {% block app_content %}
-<div class="chat-layout">
+<div class="chat-layout"
+     x-data="{
+       sidebarOpen: true,
+       sidebarFilter: '',
+       editingTitle: false,
+       sending: false,
+       streamAbort: null,
+       charCount: 0
+     }"
+     hx-on:chat-sidebar-refresh="document.querySelector('.chat-sidebar').dispatchEvent(new CustomEvent('sidebar-refresh'))">
 
   {# ─── Sidebar conversations ─── #}
   <aside class="chat-sidebar"
+         :class="{'chat-sidebar--collapsed': !sidebarOpen}"
          hx-on::sidebar-refresh="htmx.ajax('GET', '/web/chat/sidebar' + (this.dataset.active ? '?active=' + this.dataset.active : ''), {target: this, select: '#chat-sidebar-list', swap: 'innerHTML'})"
          data-active="{{ conversation.id if conversation }}">
     <header class="chat-sidebar__header">
+      <button type="button"
+              class="chat-sidebar__collapse"
+              x-on:click="sidebarOpen = !sidebarOpen"
+              aria-label="Replier la sidebar"
+              title="Replier / déplier">
+        <span x-text="sidebarOpen ? '◀' : '▶'"></span>
+      </button>
       <span class="chat-sidebar__heading">Conversations</span>
       <a class="chat-sidebar__new" href="/web/chat" title="Nouvelle conversation">
         {{ icon('sparkle', 14) }}
@@ -18,7 +35,15 @@
       </a>
     </header>
 
-    <div class="chat-sidebar__listwrap">
+    {# Recherche conversations (parité V1 sidebar.searchConversations) #}
+    <div class="chat-sidebar__searchbox" x-show="sidebarOpen" x-cloak>
+      <input type="search"
+             class="chat-sidebar__search"
+             placeholder="Rechercher…"
+             x-model="sidebarFilter">
+    </div>
+
+    <div class="chat-sidebar__listwrap" x-show="sidebarOpen" x-cloak>
       {% include 'partials/chat/sidebar-list.html' %}
     </div>
   </aside>
@@ -28,7 +53,33 @@
 
     {% if conversation %}
     <header class="chat-header">
-      <h1 class="chat-header__title">{{ conversation.title }}</h1>
+      {# Titre éditable inline (parité V1 initTitleEditing) #}
+      <div class="chat-header__main" id="chat-title-wrap">
+        <h1 class="chat-header__title"
+            x-show="!editingTitle"
+            x-on:dblclick="editingTitle = true"
+            title="Double-clic pour éditer">
+          {{ conversation.title }}
+        </h1>
+        <form class="chat-header__title-form"
+              x-show="editingTitle"
+              x-cloak
+              hx-patch="/web/chat/conversations/{{ conversation.id }}/title"
+              hx-target="#chat-title-wrap"
+              hx-swap="innerHTML"
+              hx-on::after-request="editingTitle = false; document.querySelector('.chat-sidebar').dispatchEvent(new CustomEvent('sidebar-refresh'))">
+          {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+          <input type="text"
+                 name="title"
+                 value="{{ conversation.title }}"
+                 x-init="$watch('editingTitle', open => open && setTimeout(() => $el.focus(), 50))"
+                 x-on:keydown.escape="editingTitle = false"
+                 maxlength="200">
+          <button type="submit" class="btn btn--ghost btn--sm">Enregistrer</button>
+          <button type="button" class="btn btn--ghost btn--sm" x-on:click="editingTitle = false">Annuler</button>
+        </form>
+      </div>
+
       <span class="chat-header__meta">
         {% if conversation.created_at %}
           {{ conversation.created_at.strftime('%d %b %Y · %H:%M') }}
@@ -42,8 +93,52 @@
           </span>
         {% endif %}
       </span>
+
+      {# Actions header (parité V1 copyConversation/exportConversation/archive) #}
+      <div class="chat-header__actions">
+        <button type="button"
+                class="chat-header__action"
+                x-on:click="navigator.clipboard.writeText(document.getElementById('chat-thread').innerText); $el.title='Copié !'; setTimeout(() => $el.title='Copier la conversation', 1500)"
+                title="Copier la conversation">
+          {{ icon('check-circle', 14) }}<span>Copier</span>
+        </button>
+        <button type="button"
+                class="chat-header__action"
+                x-on:click="
+                  const text = document.getElementById('chat-thread').innerText;
+                  const blob = new Blob([text], {type:'text/markdown'});
+                  const a = document.createElement('a');
+                  a.href = URL.createObjectURL(blob);
+                  a.download = '{{ conversation.title }}.md';
+                  a.click();
+                  URL.revokeObjectURL(a.href);
+                "
+                title="Exporter en Markdown">
+          {{ icon('arrow-up-right', 14) }}<span>Exporter</span>
+        </button>
+        <form class="chat-header__action-form"
+              hx-post="/web/chat/conversations/{{ conversation.id }}/archive"
+              hx-target="#chat-toast"
+              hx-swap="innerHTML">
+          {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+          <button type="submit"
+                  class="chat-header__action"
+                  title="Archiver / désarchiver">
+            {{ icon('document', 14) }}<span>{% if conversation.archived_at %}Désarch.{% else %}Archiver{% endif %}</span>
+          </button>
+        </form>
+        <button type="button"
+                class="chat-header__action chat-header__action--danger"
+                hx-delete="/web/chat/conversations/{{ conversation.id }}"
+                hx-confirm="Supprimer définitivement cette conversation ?"
+                title="Supprimer la conversation">
+          {{ icon('alert-circle', 14) }}<span>Supprimer</span>
+        </button>
+      </div>
     </header>
     {% endif %}
+
+    <div id="chat-toast" aria-live="polite"></div>
 
     <div id="chat-thread"
          class="chat-thread"
@@ -73,13 +168,14 @@
             </div>
             {% endif %}
 
+            {# Suggestions auto-envoyées (parité V1 suggestion-btn → sendMessage) #}
             {% if suggestions %}
             <ul class="chat-suggestions">
               {% for s in suggestions %}
               <li>
                 <button type="button"
                         class="chat-suggestion"
-                        onclick="document.getElementById('chat-query').value=this.dataset.q; document.getElementById('chat-query').focus();"
+                        onclick="document.getElementById('chat-query').value=this.dataset.q; document.getElementById('chat-form').requestSubmit();"
                         data-q="{{ s }}">
                   <span>{{ s }}</span>
                   {{ icon('arrow-up-right', 12) }}
@@ -102,9 +198,7 @@
 
     </div>
 
-    {# Sélecteur de bibliothèque (avant le form pour ne pas casser le flex
-       layout de .chat-input). Les radios utilisent form="chat-form" pour
-       être soumis avec le form, parité V1 createNewConversation(collectionId). #}
+    {# ─── Sélecteur de bibliothèque (avant le form) ─── #}
     {% if not conversation and available_collections %}
     <fieldset class="chat-collection-picker">
       <legend class="chat-collection-picker__legend">Bibliothèque pour cette conversation</legend>
@@ -112,8 +206,7 @@
       <div class="chat-collection-picker__options">
         {% if my %}
         <label class="chat-collection-option">
-          <input type="radio" form="chat-form" name="collection_id"
-                 value="{{ my.id }}" checked>
+          <input type="radio" form="chat-form" name="collection_id" value="{{ my.id }}" checked>
           <span class="chat-collection-option__main">
             <span class="collection-badge collection-badge--private">
               {{ icon('sparkle', 12) }}
@@ -125,8 +218,7 @@
         {% endif %}
         {% for c in available_collections.public_collections %}
         <label class="chat-collection-option">
-          <input type="radio" form="chat-form" name="collection_id"
-                 value="{{ c.id }}"
+          <input type="radio" form="chat-form" name="collection_id" value="{{ c.id }}"
                  {% if not my and loop.first %}checked{% endif %}>
           <span class="chat-collection-option__main">
             <span class="collection-badge collection-badge--public">
@@ -141,14 +233,33 @@
     </fieldset>
     {% endif %}
 
+    {# Toolbar modes (parité V1 modeToggle + ragModeSelector) #}
+    <div class="chat-toolbar">
+      <select form="chat-form"
+              name="mode_id"
+              class="chat-toolbar__select"
+              title="Mode (Chatbot conversationnel ou Assistant strict RAG)">
+        <option value="1" {% if conversation and conversation.mode_id == 1 %}selected{% endif %}>💬 Chatbot</option>
+        <option value="2" {% if conversation and conversation.mode_id == 2 %}selected{% endif %}>🎯 Assistant</option>
+      </select>
+      <select form="chat-form"
+              name="rag_mode"
+              class="chat-toolbar__select"
+              title="Mode RAG : auto, fast (top-k réduit), full (top-k étendu)">
+        <option value="auto">RAG : auto</option>
+        <option value="fast">RAG : rapide</option>
+        <option value="full">RAG : complet</option>
+      </select>
+    </div>
+
     <form id="chat-form"
           class="chat-input"
           hx-post="/web/chat/messages"
           hx-target="#chat-thread"
           hx-swap="beforeend"
           hx-disabled-elt="button[type=submit]"
-          hx-on::before-request="document.getElementById('chat-thread').dataset.empty='0'"
-          hx-on::after-request="if (event.detail.successful) { this.querySelector('textarea').value=''; this.querySelector('textarea').focus(); document.querySelector('.chat-sidebar').dispatchEvent(new CustomEvent('sidebar-refresh')); }"
+          hx-on::before-request="document.getElementById('chat-thread').dataset.empty='0'; sending=true"
+          hx-on::after-request="if (event.detail.successful) { this.querySelector('textarea').value=''; this.querySelector('textarea').focus(); document.querySelector('.chat-sidebar').dispatchEvent(new CustomEvent('sidebar-refresh')); charCount=0; } sending=false"
           autocomplete="off">
 
       {% if csrf_token %}
@@ -165,17 +276,86 @@
         name="query"
         rows="1"
         required
+        maxlength="4000"
         placeholder="Posez votre question…"
-        x-data
-        x-on:input="$el.style.height='auto'; $el.style.height=$el.scrollHeight+'px'"
+        x-on:input="charCount = $el.value.length; $el.style.height='auto'; $el.style.height=$el.scrollHeight+'px'"
         x-on:keydown.enter.prevent="if (!$event.shiftKey) $el.closest('form').requestSubmit()"
       ></textarea>
 
-      <button type="submit" class="chat-input__send" aria-label="Envoyer">
-        {{ icon('arrow-right', 16) }}
-      </button>
+      {# Compteur caractères + bouton dictée + bouton stop + bouton submit #}
+      <div class="chat-input__rail">
+        <span class="chat-input__counter"
+              :class="{'chat-input__counter--warn': charCount > 3500}">
+          <span x-text="charCount"></span>/4000
+        </span>
+
+        {# Bouton dictée vocale (Whisper) #}
+        <button type="button"
+                class="chat-input__icon"
+                x-data="{
+                  recording: false,
+                  recorder: null,
+                  chunks: [],
+                  async toggle() {
+                    if (this.recording) {
+                      this.recorder.stop();
+                      return;
+                    }
+                    try {
+                      const stream = await navigator.mediaDevices.getUserMedia({audio: true});
+                      this.recorder = new MediaRecorder(stream);
+                      this.chunks = [];
+                      this.recorder.ondataavailable = e => this.chunks.push(e.data);
+                      this.recorder.onstop = async () => {
+                        stream.getTracks().forEach(t => t.stop());
+                        const blob = new Blob(this.chunks, {type: 'audio/webm'});
+                        const fd = new FormData();
+                        fd.append('audio', blob, 'rec.webm');
+                        try {
+                          const r = await fetch('/web/chat/transcribe', {method: 'POST', body: fd});
+                          const text = await r.text();
+                          if (r.ok) {
+                            const ta = document.getElementById('chat-query');
+                            ta.value = (ta.value ? ta.value + ' ' : '') + text;
+                            ta.dispatchEvent(new Event('input'));
+                            ta.focus();
+                          }
+                        } catch (e) { /* silent */ }
+                        this.recording = false;
+                      };
+                      this.recorder.start();
+                      this.recording = true;
+                    } catch (e) {
+                      alert('Micro indisponible : ' + e.message);
+                    }
+                  }
+                }"
+                x-on:click="toggle()"
+                :class="{'chat-input__icon--active': recording}"
+                title="Dictée vocale (Whisper)"
+                aria-label="Dictée vocale">
+          <span x-text="recording ? '⏺' : '🎤'"></span>
+        </button>
+
+        {# Bouton stop (parité V1 stopGeneration) #}
+        <button type="button"
+                class="chat-input__icon chat-input__icon--stop"
+                x-show="sending"
+                x-cloak
+                x-on:click="htmx.trigger(document.querySelector('[sse-connect]'), 'sse-close'); document.querySelectorAll('[sse-connect]').forEach(el => { try { el.removeAttribute('sse-connect'); } catch(e) {} }); sending=false"
+                title="Arrêter la génération"
+                aria-label="Stop">
+          ⏹
+        </button>
+
+        <button type="submit" class="chat-input__send" aria-label="Envoyer">
+          {{ icon('arrow-right', 16) }}
+        </button>
+      </div>
     </form>
 
   </section>
 </div>
+
+<style>[x-cloak] { display: none !important; }</style>
 {% endblock %}

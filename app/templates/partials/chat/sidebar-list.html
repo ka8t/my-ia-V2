@@ -1,8 +1,7 @@
 {# ─────────────────────────────────────────────────────────────────────
  # partials/chat/sidebar-list.html
- # Liste des conversations dans la sidebar.
- # Rendu inline dans pages/chat/chat.html ET retourné par
- # GET /web/chat/sidebar pour rafraîchissement post-envoi.
+ # Liste des conversations dans la sidebar avec recherche + suppression
+ # (parité V1 conversations.js).
  # ────────────────────────────────────────────────────────────────────── #}
 {% from "macros/icon.html" import icon %}
 
@@ -10,7 +9,8 @@
   {% if sidebar_conversations %}
     {% for c in sidebar_conversations %}
       {% set is_active = (conversation and conversation.id == c.id) or (active_id and active_id == c.id) %}
-      <li>
+      <li class="chat-sidebar__row"
+          x-show="!sidebarFilter || '{{ c.title|replace("'", "")|lower }}'.includes(sidebarFilter.toLowerCase())">
         <a class="chat-sidebar__item{% if is_active %} chat-sidebar__item--active{% endif %}"
            href="/web/chat/{{ c.id }}"
            title="{{ c.title }}">
@@ -21,6 +21,17 @@
           </span>
           {% endif %}
         </a>
+        {# Bouton supprimer (parité V1 conversations.js:createConversationItem) #}
+        <button type="button"
+                class="chat-sidebar__delete"
+                hx-delete="/web/chat/conversations/{{ c.id }}"
+                hx-confirm="Supprimer définitivement « {{ c.title }} » ?"
+                hx-target="closest li"
+                hx-swap="outerHTML"
+                title="Supprimer cette conversation"
+                aria-label="Supprimer">
+          ✕
+        </button>
       </li>
     {% endfor %}
   {% else %}
