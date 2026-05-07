@@ -130,8 +130,19 @@ def make_templates(directory: str | Path = TEMPLATES_DIR) -> Jinja2Templates:
     """Return a ``Jinja2Templates`` with project globals wired in.
 
     Globals available in every template (without explicit import):
-      - ``t(key, lang='fr', default=None, **kwargs)`` — i18n lookup
+      - ``t(key, default=None, **kwargs)`` — i18n lookup. Utilise
+        automatiquement ``user_lang`` du contexte courant (Phase 3.7.b)
+        sauf si ``lang=`` est passé explicitement.
     """
+    from jinja2 import pass_context
+
     templates = Jinja2Templates(directory=str(directory))
-    templates.env.globals["t"] = t
+
+    @pass_context
+    def t_ctx(ctx, key, default=None, lang=None, **kwargs):
+        # Si lang explicite passé, prend précédence sinon prend la lang user
+        effective_lang = lang or ctx.get("user_lang") or DEFAULT_LANG
+        return t(key, lang=effective_lang, default=default, **kwargs)
+
+    templates.env.globals["t"] = t_ctx
     return templates
