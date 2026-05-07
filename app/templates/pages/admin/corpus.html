@@ -4,11 +4,13 @@
 {% block title %}Corpus — Admin{% endblock %}
 
 {% block admin_content %}
+<section x-data="{ selected: new Set() }" hx-on:corpus-refresh="window.location.reload()">
 
 <header class="admin-page__head">
   <div class="admin-page__eyebrow"><span>Console / 04</span></div>
   <h1 class="admin-page__title">
-    Corpus <em>thématiques</em>.
+    Corpus <em>thématiques</em>
+    {% if total is defined %}<span class="admin-page__count">— {{ total }}</span>{% endif %}
   </h1>
   <p class="admin-page__lede">
     Un corpus regroupe documents et sources externes pour le RAG.
@@ -63,6 +65,37 @@
   </div>
 </div>
 
+{# Search #}
+<form class="admin-toolbar" method="get" action="/web/admin/corpus">
+  <input type="search" name="q" value="{{ q or '' }}" placeholder="Nom du corpus…" class="admin-toolbar__search">
+  <button type="submit" class="btn btn--ghost btn--sm">Rechercher</button>
+  {% if q %}<a href="/web/admin/corpus" class="btn btn--ghost btn--sm">Reset</a>{% endif %}
+</form>
+
+{# Bulk bar #}
+<form class="admin-bulkbar"
+      x-show="selected.size > 0" x-cloak
+      x-data="{ bulkAction: 'reindex' }"
+      hx-post="/web/admin/corpus/bulk-action"
+      hx-target="#bulk-result" hx-swap="innerHTML"
+      hx-on::config-request="
+        const params = event.detail.parameters;
+        params['corpus_ids'] = Array.from(selected);
+        params['csrf_token'] = '{{ csrf_token }}';
+        params['action'] = bulkAction;
+      ">
+  <span><span x-text="selected.size"></span> sélectionné(s)</span>
+  <select x-model="bulkAction" class="admin-toolbar__select">
+    <option value="reindex">Réindexer</option>
+    <option value="clear-index">Vider l'index</option>
+    <option value="delete">Supprimer</option>
+  </select>
+  <button type="submit" class="btn btn--primary btn--sm"
+          x-on:click="if (bulkAction === 'delete' && !confirm('Supprimer ' + selected.size + ' corpus ?')) $event.preventDefault()">Appliquer</button>
+  <button type="button" class="btn btn--ghost btn--sm" x-on:click="selected = new Set()">Annuler</button>
+</form>
+<div id="bulk-result" aria-live="polite"></div>
+
 {# ─── Table ─── #}
 <div class="admin-table-wrap">
   <div class="admin-table-head admin-corpus-row">
@@ -89,5 +122,6 @@
     {% endif %}
   </div>
 </div>
-
+</section>
+<style>[x-cloak] { display: none !important; }</style>
 {% endblock %}

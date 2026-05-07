@@ -186,10 +186,14 @@ async def _render_row(
 @router.get("", response_class=HTMLResponse)
 async def admin_corpus_list(
     request: Request,
+    q: str | None = None,
     user: dict = Depends(require_web_admin),
     db: AsyncSession = Depends(get_async_session),
 ) -> HTMLResponse:
     rows = await _corpus_with_counts(db)
+    if q:
+        ql = q.strip().lower()
+        rows = [r for r in rows if ql in (r.get("display_name", "") or "").lower() or ql in (r.get("name", "") or "").lower()]
     return templates.TemplateResponse(
         request,
         "pages/admin/corpus.html",
@@ -200,7 +204,66 @@ async def admin_corpus_list(
             active_section="corpus",
             user=user,
             rows=rows,
+            q=q or "",
+            total=len(rows),
         ),
+    )
+
+
+@router.post("/bulk-action", response_class=HTMLResponse)
+async def admin_corpus_bulk(
+    request: Request,
+    action: Annotated[str, Form()],
+    corpus_ids: Annotated[list[str], Form()],
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    """Bulk : reindex / clear-index / delete corpus."""
+    from app.web.admin import _csrf_or_400 as _csrf
+    if (err := _csrf(request, csrf_token)):
+        return err
+    if action not in {"reindex", "clear-index", "delete"}:
+        return HTMLResponse("<div class='toast toast--error'>Action invalide.</div>", status_code=400)
+    affected = 0
+    for raw in corpus_ids:
+        try:
+            cid = uuid.UUID(raw)
+        except ValueError:
+            continue
+        c = await _get_corpus_or_404(db, cid)
+        if c is None:
+            continue
+        try:
+            if action == "delete":
+                await db.delete(c)
+            elif action == "reindex":
+                # Reindex queue : utilise ReindexManager si dispo, sinon log.
+                try:
+                    from app.common.utils.reindex import ReindexManager
+                    await ReindexManager.queue_corpus_reindex(c.id)
+                except Exception:
+                    logger.warning("ReindexManager indisponible — corpus %s skip", cid)
+            elif action == "clear-index":
+                # Vider les chunks de tous les docs/sources rattachés
+                from app.models import CorpusDocument as _CD
+                docs_q = await db.execute(
+                    select(Document).join(_CD, _CD.document_id == Document.id).where(_CD.corpus_id == c.id)
+                )
+                for d in docs_q.unique().scalars().all():
+                    d.chunk_count = 0
+                    d.embedding_count = 0
+            affected += 1
+        except Exception:
+            logger.exception("Bulk corpus %s on %s failed", action, cid)
+    try:
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        return HTMLResponse("<div class='toast toast--error'>Échec bulk.</div>", status_code=500)
+    return HTMLResponse(
+        f"<div class='toast toast--success'>{affected} corpus traité(s).</div>",
+        headers={"HX-Trigger": "corpus-refresh"},
     )
 
 
