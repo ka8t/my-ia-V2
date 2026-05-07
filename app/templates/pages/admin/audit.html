@@ -4,19 +4,28 @@
 {% block title %}Journal d'audit — Admin{% endblock %}
 
 {% block admin_content %}
+<section x-data="{ tab: 'logs', auditLogId: null, showPurge: false }">
 
 <header class="admin-page__head">
   <div class="admin-page__eyebrow"><span>Console / 06</span></div>
   <h1 class="admin-page__title">
-    Journal <em>d'audit</em>.
+    Journal <em>d'audit</em>
+    <span class="admin-page__count">— {{ total }}</span>
   </h1>
   <p class="admin-page__lede">
     Trace immuable des actions admin et événements de sécurité.
-    {{ total }} entrée{{ 's' if total != 1 }} au total.
   </p>
 </header>
 
-{# ─── Filtres ─── #}
+{# Sous-onglets (parité V1 audit.js : Logs / Exports / Purge) #}
+<nav class="admin-filters">
+  <button type="button" class="admin-filter" :class="{ 'admin-filter--active': tab === 'logs' }" x-on:click="tab = 'logs'">📋 Logs</button>
+  <button type="button" class="admin-filter" :class="{ 'admin-filter--active': tab === 'exports' }" x-on:click="tab = 'exports'">⬇ Exports</button>
+  <button type="button" class="admin-filter" :class="{ 'admin-filter--active': tab === 'purge' }" x-on:click="tab = 'purge'">🗑 Purge</button>
+</nav>
+
+{# ─── Onglet Logs ─── #}
+<div x-show="tab === 'logs'">
 <form method="get" action="/web/admin/audit" class="admin-filters-form">
   <div class="admin-form__grid">
     <label class="admin-form__field">
@@ -24,90 +33,60 @@
       <select name="action" class="admin-form__input">
         <option value="">— toutes —</option>
         {% for a in all_actions %}
-        <option value="{{ a.name }}" {% if filter_action == a.name %}selected{% endif %}>
-          {{ a.name }}
-        </option>
+        <option value="{{ a.name }}" {% if filter_action == a.name %}selected{% endif %}>{{ a.name }}</option>
         {% endfor %}
       </select>
     </label>
-
     <label class="admin-form__field">
-      <span class="admin-form__label">Email utilisateur (contient)</span>
-      <input type="text" name="user_email" value="{{ filter_user_email }}"
-             placeholder="ex: admin@" class="admin-form__input">
+      <span class="admin-form__label">Sévérité</span>
+      <select name="severity" class="admin-form__input">
+        <option value="">— toutes —</option>
+        <option value="info" {% if filter_severity == 'info' %}selected{% endif %}>Info</option>
+        <option value="warning" {% if filter_severity == 'warning' %}selected{% endif %}>Warning</option>
+        <option value="critical" {% if filter_severity == 'critical' %}selected{% endif %}>Critical</option>
+      </select>
     </label>
-
     <label class="admin-form__field">
-      <span class="admin-form__label">Du (date)</span>
-      <input type="date" name="date_from" value="{{ filter_date_from }}"
-             class="admin-form__input">
+      <span class="admin-form__label">Email utilisateur</span>
+      <input type="text" name="user_email" value="{{ filter_user_email }}" placeholder="ex: admin@" class="admin-form__input">
     </label>
-
     <label class="admin-form__field">
-      <span class="admin-form__label">Au (date)</span>
-      <input type="date" name="date_to" value="{{ filter_date_to }}"
-             class="admin-form__input">
+      <span class="admin-form__label">Du</span>
+      <input type="date" name="date_from" value="{{ filter_date_from }}" class="admin-form__input">
+    </label>
+    <label class="admin-form__field">
+      <span class="admin-form__label">Au</span>
+      <input type="date" name="date_to" value="{{ filter_date_to }}" class="admin-form__input">
     </label>
   </div>
-
   <div class="admin-form__actions">
     <a href="/web/admin/audit" class="admin-btn admin-btn--ghost">Réinitialiser</a>
-    <button type="submit" class="admin-btn admin-btn--primary">
-      {{ icon('sparkle', 12) }} Filtrer
-    </button>
+    <button type="submit" class="admin-btn admin-btn--primary">{{ icon('sparkle', 12) }} Filtrer</button>
   </div>
 </form>
 
-{# ─── Table ─── #}
 <div class="admin-table-wrap">
   <div class="admin-table-head admin-audit-row">
-    <span>Date</span>
-    <span>Action</span>
-    <span>Utilisateur</span>
-    <span>Ressource</span>
-    <span>IP</span>
-    <span>Détails</span>
+    <span>Date</span><span>Action</span><span>Utilisateur</span><span>Ressource</span><span>IP</span><span></span>
   </div>
-
   <div class="admin-table-body">
     {% if logs %}
       {% for log in logs %}
       <div class="admin-audit-row admin-table-row">
-        <div class="admin-table-cell admin-table-cell__mono">
-          {{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
-        </div>
+        <div class="admin-table-cell admin-table-cell__mono">{{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</div>
         <div class="admin-table-cell">
           <span class="admin-config__cat">{{ log.action.name if log.action else '?' }}</span>
-        </div>
-        <div class="admin-table-cell">
-          {% if log.user %}
-            {{ log.user.email }}
-          {% else %}
-            <span class="admin-config__hint">—</span>
+          {% if log.action and log.action.severity and log.action.severity != 'info' %}
+            <span class="admin-status admin-status--{{ log.action.severity }}">{{ log.action.severity }}</span>
           {% endif %}
         </div>
+        <div class="admin-table-cell">{{ log.user.email if log.user else '—' }}</div>
         <div class="admin-table-cell">
-          {% if log.resource_type %}
-            <span class="admin-config__cat">{{ log.resource_type.name }}</span>
-            {% if log.resource_id %}
-            <span class="admin-corpus__slug">{{ log.resource_id|string|truncate(8, True, '') }}</span>
-            {% endif %}
-          {% else %}
-            <span class="admin-config__hint">—</span>
-          {% endif %}
+          {% if log.resource_type %}{{ log.resource_type.name }} <span class="admin-corpus__slug">{{ log.resource_id|string|truncate(8, True, '') }}</span>{% else %}—{% endif %}
         </div>
-        <div class="admin-table-cell admin-table-cell__mono">
-          {{ log.ip_address or '—' }}
-        </div>
+        <div class="admin-table-cell admin-table-cell__mono">{{ log.ip_address or '—' }}</div>
         <div class="admin-table-cell">
-          {% if log.details %}
-          <details class="admin-audit__details">
-            <summary>voir</summary>
-            <pre class="admin-audit__json">{{ log.details|tojson(indent=2) }}</pre>
-          </details>
-          {% else %}
-            <span class="admin-config__hint">—</span>
-          {% endif %}
+          <button type="button" class="admin-action" x-on:click="auditLogId = '{{ log.id }}'" title="Détails">{{ icon('info-circle', 14) }}</button>
         </div>
       </div>
       {% endfor %}
@@ -117,19 +96,77 @@
   </div>
 </div>
 
-{# ─── Pagination ─── #}
 {% if total_pages > 1 %}
 <nav class="admin-pagination">
-  {% set qs %}page_size={{ page_size }}{% if filter_action %}&action={{ filter_action }}{% endif %}{% if filter_user_email %}&user_email={{ filter_user_email }}{% endif %}{% if filter_date_from %}&date_from={{ filter_date_from }}{% endif %}{% if filter_date_to %}&date_to={{ filter_date_to }}{% endif %}{% endset %}
-
-  {% if page > 1 %}
-    <a href="?page={{ page - 1 }}&{{ qs }}" class="admin-btn admin-btn--ghost">← Précédent</a>
-  {% endif %}
-  <span class="admin-config__hint">Page {{ page }} / {{ total_pages }}</span>
-  {% if page < total_pages %}
-    <a href="?page={{ page + 1 }}&{{ qs }}" class="admin-btn admin-btn--ghost">Suivant →</a>
-  {% endif %}
+  {% set qs %}page_size={{ page_size }}{% if filter_action %}&action={{ filter_action }}{% endif %}{% if filter_severity %}&severity={{ filter_severity }}{% endif %}{% if filter_user_email %}&user_email={{ filter_user_email }}{% endif %}{% if filter_date_from %}&date_from={{ filter_date_from }}{% endif %}{% if filter_date_to %}&date_to={{ filter_date_to }}{% endif %}{% endset %}
+  {% if page > 1 %}<a href="?page={{ page - 1 }}&{{ qs }}" class="admin-btn admin-btn--ghost">← Préc</a>{% endif %}
+  <span>Page {{ page }} / {{ total_pages }}</span>
+  {% if page < total_pages %}<a href="?page={{ page + 1 }}&{{ qs }}" class="admin-btn admin-btn--ghost">Suiv →</a>{% endif %}
 </nav>
 {% endif %}
+</div>
 
+{# ─── Onglet Exports CSV ─── #}
+<div x-show="tab === 'exports'" x-cloak>
+  <p style="color:var(--color-fg-muted); margin-bottom:var(--space-3)">
+    Téléchargements CSV (pseudonymisés selon RGPD) via l'API admin.
+  </p>
+  <ul class="admin-bare-list">
+    <li class="admin-bare-list__item">
+      <span class="admin-bare-list__main">Audit logs</span>
+      <span class="admin-bare-list__actions">
+        <a href="/api/admin/export/audit-logs?format=csv" class="btn btn--ghost btn--sm">⬇ CSV</a>
+        <a href="/api/admin/export/audit-logs?format=json" class="btn btn--ghost btn--sm">⬇ JSON</a>
+      </span>
+    </li>
+    <li class="admin-bare-list__item">
+      <span class="admin-bare-list__main">Utilisateurs</span>
+      <span class="admin-bare-list__actions">
+        <a href="/api/admin/export/users?format=csv" class="btn btn--ghost btn--sm">⬇ CSV</a>
+      </span>
+    </li>
+    <li class="admin-bare-list__item">
+      <span class="admin-bare-list__main">Conversations</span>
+      <span class="admin-bare-list__actions">
+        <a href="/api/admin/export/conversations?format=csv" class="btn btn--ghost btn--sm">⬇ CSV</a>
+      </span>
+    </li>
+    <li class="admin-bare-list__item">
+      <span class="admin-bare-list__main">Documents</span>
+      <span class="admin-bare-list__actions">
+        <a href="/api/admin/export/documents?format=csv" class="btn btn--ghost btn--sm">⬇ CSV</a>
+      </span>
+    </li>
+  </ul>
+</div>
+
+{# ─── Onglet Purge ─── #}
+<div x-show="tab === 'purge'" x-cloak>
+  <form hx-post="/web/admin/audit/purge" hx-target="#purge-result" hx-swap="innerHTML"
+        x-data="{ days: 365 }"
+        x-on:submit="if (!confirm('Supprimer définitivement tous les logs > ' + days + ' jours ?')) $event.preventDefault()"
+        class="admin-form admin-form--stacked">
+    {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+    <label class="admin-form__field">
+      <span class="admin-form__label">Supprimer les logs plus anciens que (jours)</span>
+      <input type="number" name="older_than_days" min="1" max="3650" value="365" x-model.number="days" class="admin-form__input" required>
+    </label>
+    <div class="admin-form__actions">
+      <button type="submit" class="btn btn--danger btn--sm">🗑 Purger</button>
+    </div>
+  </form>
+  <div id="purge-result" aria-live="polite" style="margin-top:var(--space-3)"></div>
+</div>
+
+{# Modal détails #}
+<div class="admin-modal" x-show="auditLogId !== null" x-cloak role="dialog"
+     x-on:click.self="auditLogId = null" x-on:keydown.escape.window="auditLogId = null">
+  <div class="admin-modal__panel"
+       x-init="$watch('auditLogId', id => { if (id) htmx.ajax('GET', '/web/admin/audit/log/' + id + '/details', {target: $el, swap: 'innerHTML'}) })">
+    Chargement…
+  </div>
+</div>
+
+</section>
+<style>[x-cloak] { display: none !important; }</style>
 {% endblock %}

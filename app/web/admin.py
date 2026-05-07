@@ -492,6 +492,7 @@ async def admin_audit_get(
     page: int = 1,
     page_size: int = 50,
     action: str | None = None,
+    severity: str | None = None,
     user_email: str | None = None,
     date_from: str | None = None,
     date_to: str | None = None,
@@ -557,6 +558,7 @@ async def admin_audit_get(
             total_pages=total_pages,
             all_actions=all_actions,
             filter_action=action or "",
+            filter_severity=severity or "",
             filter_user_email=user_email or "",
             filter_date_from=date_from or "",
             filter_date_to=date_to or "",
@@ -1258,3 +1260,77 @@ async def admin_doc_row(
     if doc is None:
         return HTMLResponse("", status_code=404)
     return await _render_admin_doc_row(request, db, doc)
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  Phase 3.6.a — admin/audit : modal détails, purge, exports CSV
+# ═════════════════════════════════════════════════════════════════════════════
+
+@router.get("/audit/log/{log_id}/details", response_class=HTMLResponse)
+async def admin_audit_log_details(
+    request: Request,
+    log_id: uuid.UUID,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    """Modal détails d'un log d'audit (parité V1 audit.js:showLogDetail)."""
+    try:
+        from app.features.audit.repository import AuditRepository
+        log = await AuditRepository.get_log_by_id(db, log_id)
+    except Exception:
+        log = None
+    if log is None:
+        return HTMLResponse("Log introuvable.", status_code=404)
+    details = log.details if isinstance(log.details, dict) else {}
+    rows = "".join(
+        f"<dt>{k}</dt><dd><code>{str(v)[:200]}</code></dd>"
+        for k, v in details.items()
+    )
+    action_name = log.action.name if log.action else "—"
+    severity = getattr(log.action, 'severity', '—') if log.action else '—'
+    user_email = log.user.email if log.user else "—"
+    res_name = log.resource_type.name if log.resource_type else "—"
+    res_id = str(log.resource_id)[:24] if log.resource_id else "—"
+    return HTMLResponse(
+        f"""<header class='admin-modal__head'>
+        <h2>Log #{str(log.id)[:8]}</h2>
+        <button type='button' x-on:click='auditLogId = null'>✕</button>
+        </header>
+        <dl class='docs-modal__meta'>
+        <dt>Action</dt><dd><code>{action_name}</code></dd>
+        <dt>Sévérité</dt><dd>{severity}</dd>
+        <dt>Utilisateur</dt><dd>{user_email}</dd>
+        <dt>Resource</dt><dd>{res_name} / <code>{res_id}</code></dd>
+        <dt>Date</dt><dd>{log.created_at.strftime('%d/%m/%Y %H:%M:%S') if log.created_at else '—'}</dd>
+        <dt>IP</dt><dd>{log.ip_address or '—'}</dd>
+        {rows}
+        </dl>
+        <footer class='admin-modal__foot'>
+          <button type='button' class='btn btn--ghost btn--sm' x-on:click='auditLogId = null'>Fermer</button>
+        </footer>"""
+    )
+
+
+@router.post("/audit/purge", response_class=HTMLResponse)
+async def admin_audit_purge(
+    request: Request,
+    older_than_days: Annotated[int, Form()],
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    """Purge logs audit > N jours (parité V1 audit.js:purgeAuditLogs)."""
+    if (err := _csrf_or_400(request, csrf_token)):
+        return err
+    if older_than_days < 1:
+        return HTMLResponse("<div class='toast toast--error'>Nombre de jours invalide.</div>", status_code=400)
+    try:
+        from app.features.audit.repository import AuditRepository
+        n = await AuditRepository.delete_old_logs(db, days=older_than_days)
+        await db.commit()
+    except Exception as exc:
+        logger.exception("Audit purge failed")
+        return HTMLResponse(f"<div class='toast toast--error'>Échec : {exc}</div>", status_code=500)
+    return HTMLResponse(
+        f"<div class='toast toast--success'>{n} log(s) audit purgé(s) (>{older_than_days}j).</div>"
+    )
