@@ -8,8 +8,11 @@
 </head>
 <body>
     <div class="header">
-        <h1>MY-IA — Documentation Technique</h1>
-        <p class="subtitle">Architecture & Stack Technologique</p>
+        <h1>MY-IA V2 — Documentation Technique</h1>
+        <p class="subtitle">Architecture & Stack Technologique — Stack 100% Python (FastAPI + Jinja2 + HTMX)</p>
+        <p style="font-size: 13px; color: #666; margin-top: 8px;">
+            Mise à jour : 2026-05-07 · V2 en production sur <code>my-ia.codefixture.com</code> · Origine : tag <code>v1.0.0-js-final</code> de la stack JS.
+        </p>
     </div>
 
     <div class="page">
@@ -38,45 +41,59 @@
         <section id="overview" class="section">
             <h2><span class="section-number">1</span> Vue d'Ensemble</h2>
 
+            <p>MY-IA V2 est une <strong>stack 100% Python</strong> : un seul
+            container <code>app</code> sert à la fois le HTML (Jinja2 + HTMX +
+            Alpine.js) et l'API JSON versionnée (<code>/api/v1/*</code>). Les
+            anciens containers JS séparés (UI-FRONT, UI-BACK) ont été supprimés
+            au cutover (Phase 4.d/e, mai 2026).</p>
+
             <div class="pipeline">
 ┌─────────────────────────────────────────────────────────────────────┐
-│                         INFRASTRUCTURE MY-IA                        │
+│                       INFRASTRUCTURE MY-IA V2                       │
 ├─────────────────────────────────────────────────────────────────────┤
 │                                                                     │
-│  ┌──────────────┐  ┌──────────────┐                                │
-│  │   UI-FRONT   │  │   UI-BACK    │     Nginx (SSL/Proxy)          │
-│  │   Port 3000  │  │   Port 8081  │                                │
-│  └──────┬───────┘  └──────┬───────┘                                │
-│         │                 │                                         │
-│         └────────┬────────┘                                         │
-│                  ▼                                                  │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │                    FASTAPI BACKEND                          │   │
-│  │                       Port 8080                             │   │
-│  │  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐           │   │
-│  │  │  Auth   │ │  Chat   │ │  Docs   │ │  Admin  │           │   │
-│  │  │ (JWT)   │ │  (RAG)  │ │(Upload) │ │(Config) │           │   │
-│  │  └─────────┘ └─────────┘ └─────────┘ └─────────┘           │   │
-│  └──────────────────────┬──────────────────────────────────────┘   │
-│                         │                                           │
-│         ┌───────────────┼───────────────┐                          │
-│         ▼               ▼               ▼                          │
-│  ┌────────────┐  ┌────────────┐  ┌────────────┐                   │
-│  │ PostgreSQL │  │  ChromaDB  │  │   Ollama   │                   │
-│  │    :5432   │  │   :8000    │  │   :11434   │                   │
-│  │            │  │            │  │     ou     │                   │
-│  │  Metadata  │  │  Vectors   │  │ llama.cpp  │                   │
-│  │  Users     │  │  Embeddings│  │   :8081    │                   │
-│  │  Audit     │  │            │  │            │                   │
-│  └────────────┘  └────────────┘  └────────────┘                   │
+│   Internet (HTTPS:443)                                              │
+│         │                                                           │
+│         ▼                                                           │
+│   ┌──────────────────────┐                                          │
+│   │  Nginx système VPS   │  Let's Encrypt (my-ia.codefixture.com)   │
+│   │  reverse-proxy SSL   │  TLS termination + redirect 80→443       │
+│   └──────────┬───────────┘                                          │
+│              │ http://127.0.0.1:8090                                │
+│              ▼                                                      │
+│   ┌──────────────────────────────────────────────────────────────┐  │
+│   │                   FASTAPI / UVICORN                          │  │
+│   │                                                              │  │
+│   │   app/web/*       → Jinja2 + HTMX (cookies session HttpOnly) │  │
+│   │   app/api/v1/*    → JSON (JWT bearer, clients tiers)         │  │
+│   │   app/features/*  → Services métier partagés                 │  │
+│   │   app/common/*    → llm, rag, storage, crypto, i18n, utils   │  │
+│   └────────────────────────────┬─────────────────────────────────┘  │
+│                                │                                    │
+│         ┌──────────────────────┼─────────────────────┐              │
+│         ▼                      ▼                     ▼              │
+│  ┌────────────┐         ┌────────────┐       ┌────────────────┐     │
+│  │ PostgreSQL │         │  ChromaDB  │       │ Ollama (host)  │     │
+│  │   :5442    │         │   :8010    │       │ :11434         │     │
+│  │  metadata  │         │  vectors   │       │ ou llama.cpp   │     │
+│  │  audit     │         │ embeddings │       │ (multi-client) │     │
+│  └────────────┘         └────────────┘       └────────────────┘     │
 │                                                                     │
-│  ┌────────────┐  ┌────────────┐  ┌────────────┐                   │
-│  │   Whisper  │  │    N8N     │  │  pgAdmin   │                   │
-│  │   :9001    │  │   :5678    │  │   :5050    │                   │
-│  │   (STT)    │  │ (Workflow) │  │  (DB GUI)  │                   │
-│  └────────────┘  └────────────┘  └────────────┘                   │
+│  ┌──────────────┐   ┌──────────────┐   ┌──────────────┐             │
+│  │   Whisper    │   │   pgAdmin    │   │  Redis       │             │
+│  │ (STT, :9011) │   │ (DB, :5060)  │   │ (optionnel,  │             │
+│  │              │   │              │   │  multi-wkr)  │             │
+│  └──────────────┘   └──────────────┘   └──────────────┘             │
 │                                                                     │
 └─────────────────────────────────────────────────────────────────────┘
+            </div>
+
+            <div class="callout info">
+                <strong>Cutover V1→V2 (Phase 4.d-4.e, mai 2026)</strong> : V2
+                réutilise la BDD V1 (<code>my_ia_postgres</code>) et la
+                ChromaDB V1 (<code>my_ia_chroma</code>) via le network Docker
+                <code>my_ia_internal</code> partagé. Les containers V1 obsolètes
+                (UI-FRONT, UI-BACK, app FastAPI V1) ont été supprimés.
             </div>
         </section>
 
@@ -150,9 +167,33 @@
                     </tr>
                     <tr>
                         <td><strong>Frontend</strong></td>
-                        <td>Vanilla JS ES6</td>
-                        <td>-</td>
-                        <td>Zero framework</td>
+                        <td>Jinja2 + HTMX 2.0 + Alpine.js</td>
+                        <td>2.0 / 3.14</td>
+                        <td>SSR + interactions HTMX (SSE chat) + Alpine pour state local</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Templating</strong></td>
+                        <td>Jinja2</td>
+                        <td>3.x</td>
+                        <td>Layouts (base/auth/user/admin) + macros mutualisées</td>
+                    </tr>
+                    <tr>
+                        <td><strong>i18n</strong></td>
+                        <td>JSON locales + helper <code>t()</code></td>
+                        <td>—</td>
+                        <td><code>fr.json</code> 2221 clés / <code>en.json</code> 2213. Switch via préférence user.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Auth web</strong></td>
+                        <td>Session cookies HttpOnly + CSRF</td>
+                        <td>itsdangerous</td>
+                        <td>JWT réservé à <code>/api/v1/*</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Pending streams (chat)</strong></td>
+                        <td>Redis (optionnel) ou dict in-memory</td>
+                        <td>5.0+</td>
+                        <td>Multi-worker safe si <code>REDIS_URL</code> définie</td>
                     </tr>
                     <tr>
                         <td><strong>Containers</strong></td>
@@ -505,10 +546,40 @@ class EncryptionService:
 
             <div class="pipeline">
 app/
-├── main.py                 # Point d'entrée FastAPI (minimal)
-├── db.py                   # Engine & session factory
+├── main.py                 # Point d'entrée FastAPI (mount routers + middleware)
+├── db.py                   # Engine & session factory async
 ├── models.py               # SQLAlchemy models (User, Document, Corpus, etc.)
-├── ingest_v2.py            # Pipeline d'ingestion v2
+│
+├── web/                    # === Routes HTML (Jinja2 + HTMX, V2) ===
+│   ├── auth.py             # Login, register, verify, reset password
+│   ├── chat.py             # Chat + SSE streaming + transcribe + delete pair
+│   ├── documents.py        # User documents (upload, search, download)
+│   ├── preferences.py      # Profil + paramètres + voix
+│   ├── admin.py            # Console admin (users, audit, logs, dashboard)
+│   ├── admin_corpus.py     # Admin corpus
+│   ├── admin_sources.py    # Admin sources de contexte
+│   ├── admin_collections.py# Admin bibliothèques (V2 nouvelle page)
+│   ├── admin_conversations.py # Admin modération conversations (V2 nouvelle)
+│   ├── admin_system.py     # Admin system/* (LLM, RAG, geo, indexation, …)
+│   ├── admin_config.py     # Admin config dynamic
+│   ├── deps.py             # require_web_auth, require_web_admin
+│   └── jinja.py            # web_context, t() i18n, csrf, factory
+│
+├── api/v1/                 # === Routes JSON (JWT, clients tiers) ===
+│   └── ...                 # Versionnement /api/v1/*
+│
+├── templates/              # === Jinja2 templates ===
+│   ├── layouts/            # base, auth, user, admin
+│   ├── pages/              # auth/, chat/, documents/, preferences/, admin/
+│   ├── partials/           # Fragments rendus par HTMX
+│   └── macros/             # icon, button, field, toast, table, badge
+│
+├── static/
+│   ├── css/                # tokens, base, components (data-theme dark/light)
+│   ├── icons/              # SVG sprites
+│   └── js/                 # (HTMX/Alpine via CDN dans base.html)
+│
+├── locales/                # fr.json, en.json (~2200 clés)
 │
 ├── core/
 │   ├── config.py           # Settings Pydantic (depuis system_configs)
@@ -589,44 +660,85 @@ app/
         <section id="frontend" class="section">
             <h2><span class="section-number">8</span> Architecture Frontend</h2>
 
+            <p>Le frontend V2 est rendu côté serveur via Jinja2. HTMX gère
+            les interactions dynamiques (swap partiels, SSE chat). Alpine.js
+            apporte le state local (modals, toggles, sélections multiples).</p>
+
             <div class="pipeline">
-UI-SHARED/                  # Code partagé entre UI-FRONT et UI-BACK
+app/templates/                # === Jinja2 templates ===
+├── layouts/
+│   ├── base.html             # &lt;html data-theme&gt;, favicon, htmx, alpine, marked
+│   ├── auth.html             # Layout pages auth
+│   ├── user.html             # Layout user (sidebar conversations + content)
+│   └── admin.html            # Layout admin (sidebar nav + badge polling)
+├── pages/
+│   ├── auth/                 # login, register, register-pending,
+│   │                         # register-rejected, verify, password-reset*
+│   ├── chat/                 # chat.html (sidebar + thread + input)
+│   ├── documents/            # list.html (toolbar + table + modal détails)
+│   ├── preferences/          # index.html (profil + voice + thème)
+│   └── admin/
+│       ├── users.html        # 11 colonnes + bulk + modal create
+│       ├── documents.html    # filtres + bulk + reindex
+│       ├── sources.html      # CRUD + test + reindex
+│       ├── corpus.html       # gestion + bulk
+│       ├── collections.html  # nouvelle V2 (CRUD, peek, sync, clear)
+│       ├── conversations.html# nouvelle V2 (modération cross-user)
+│       ├── audit.html        # onglets Logs/Exports/Purge + sévérité
+│       ├── logs.html         # stats + cleanup + alertes
+│       ├── validation.html   # approve/reject individuels + badge
+│       ├── dashboard.html    # stats + timing P50/P95 + recent actions
+│       └── system/           # 14 sous-modules (llm, rag, geo, smtp, …)
+├── partials/                 # Fragments rendus par HTMX (rows, modals)
+└── macros/
+    ├── icon.html             # {{ icon('name', size) }} → SVG inline
+    ├── button.html           # button(label, primary/ghost/danger, sm/lg)
+    ├── field.html            # field(name, label, type, ...)
+    ├── toast.html            # toast(level, message, title)
+    ├── table.html            # table(headers, rows)
+    └── badge.html            # badge(label, color)
+
+app/static/
 ├── css/
-│   ├── base/               # Variables, reset, typography
-│   └── components/         # Cards, forms, modals, tables, etc.
-├── icons/                  # SVG par catégorie
-│   ├── actions/            # edit, delete, refresh, etc.
-│   ├── controls/           # play, pause, settings, etc.
-│   ├── fields/             # email, password, user, etc.
-│   └── status/             # success, error, warning, etc.
-├── js/
-│   ├── components/         # Toast, Modal, Sidebar, etc.
-│   ├── config/             # env.js, icons.js
-│   ├── mixins/             # Comportements réutilisables
-│   ├── modules/            # Modules métier partagés
-│   ├── services/           # ApiService, ReindexBanner, etc.
-│   └── utils/              # Helpers JS
-├── locales/                # fr.json, en.json (i18n)
-├── templates/              # HTML templates (Jinja-like)
-│   ├── admin/              # Tables, forms, cards admin
-│   ├── auth/               # Login, register
-│   └── front/              # Chat, documents user
-└── images/                 # Assets images
+│   ├── tokens.css            # Variables (couleurs, spacing, radius)
+│   │                         # :root[data-theme="dark"] override
+│   ├── base.css              # Reset + typography + layout primitives
+│   └── components.css        # Buttons, cards, modals, toasts,
+│                             # admin-table, chat-message, docs-row, …
+└── icons/                    # PNG/ICO favicons + manifeste PWA
 
-UI-BACK/                    # Interface Admin
-├── js/
-│   ├── modules/            # Pages admin (users, documents, corpus, etc.)
-│   │   └── system/         # Config système (llm, rag, storage)
-│   ├── services/           # adminApi.js
-│   └── utils/              # icons.js (admin-specific)
-└── index.html
+app/locales/
+├── fr.json                   # 2221 clés (référence)
+└── en.json                   # 2213 clés (8 manquantes non bloquantes)
 
-UI-FRONT/                   # Interface Utilisateur
-├── js/
-│   ├── modules/            # chat.js, documents.js, profile.js
-│   └── services/           # userApi.js
-└── index.html
+CDN (chargés depuis base.html) :
+  - htmx.org@2.0.3              # SSR + swap dynamique
+  - htmx-ext-sse@2.2.2          # Server-Sent Events pour chat
+  - alpinejs@3.14.3             # State local UI (modals, toggles)
+  - marked@12.0.2               # Markdown rendering chat
+  - highlight.js@11.9.0         # Syntax highlighting code blocks
             </div>
+
+            <h3>Conventions clés</h3>
+            <ul>
+                <li><strong>Aucune génération de DOM en JS</strong> : tout HTML
+                est rendu par Jinja, soit en page complète, soit en partial
+                swap-é par HTMX.</li>
+                <li><strong>Macros mutualisées</strong> : avant de créer un
+                template, vérifier <code>templates/macros/</code>.</li>
+                <li><strong>Alpine.js réservé</strong> aux modals, dropdowns,
+                sélection multiple (Set), pas de state global.</li>
+                <li><strong>CSRF</strong> : token rotatif par session, validé
+                sur tous les POST/PUT/PATCH/DELETE web.</li>
+                <li><strong>i18n</strong> : <code>{{ t('cle') }}</code>
+                utilise automatiquement <code>user_lang</code> du contexte
+                (helper <code>@pass_context</code>). Fallback FR.</li>
+                <li><strong>Thème</strong> : <code>&lt;html data-theme="auto|light|dark"&gt;</code>
+                lu depuis la préférence user en session.</li>
+                <li><strong>Streaming chat</strong> : SSE via
+                <code>htmx-ext-sse</code> + <code>marked.js</code> au close
+                pour rendu Markdown progressif.</li>
+            </ul>
         </section>
 
         <!-- Section 9 -->
@@ -739,111 +851,123 @@ DELETE /admin/collections/{id}/clear        # Vider la collection</pre>
         <section id="deploiement" class="section">
             <h2><span class="section-number">11</span> Déploiement</h2>
 
-            <h3>Docker Compose (Production)</h3>
+            <h3>Docker Compose (Production V2)</h3>
 
             <div class="code-block">
-<pre># Clone
-git clone https://github.com/xxx/my-ia.git
-cd my-ia
+<pre># Clone V2
+git clone https://github.com/ka8t/my-ia-V2.git
+cd my-ia-V2
 
-# Configuration
+# Configuration .env (PostgreSQL credentials minimaux)
 cp .env.example .env
-# Éditer .env avec vos credentials PostgreSQL
+# Éditer .env : POSTGRES_USER/PASSWORD, APP_DB_*, DATABASE_URL,
+# SESSION_SECRET, optionnel REDIS_URL pour multi-worker.
 
 # Lancement
 docker compose up -d
 
 # Vérification
-curl http://localhost:8080/health</pre>
+curl http://localhost:8090/health</pre>
             </div>
 
-            <h3>Ports par défaut</h3>
+            <h3>Ports V2 (un seul container app)</h3>
 
             <table>
                 <thead>
                     <tr>
                         <th>Service</th>
-                        <th>Port</th>
+                        <th>Port hôte</th>
                         <th>Description</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr><td>Frontend</td><td>3000</td><td>UI utilisateur (HTTPS)</td></tr>
-                    <tr><td>Admin</td><td>8081</td><td>UI administration (HTTPS)</td></tr>
-                    <tr><td>API</td><td>8080</td><td>Backend FastAPI (HTTP interne)</td></tr>
-                    <tr><td>PostgreSQL</td><td>5432</td><td>Base de données</td></tr>
-                    <tr><td>ChromaDB</td><td>8000</td><td>Vector store</td></tr>
-                    <tr><td>Ollama</td><td>11434</td><td>LLM inference</td></tr>
-                    <tr><td>Whisper</td><td>9001</td><td>Speech-to-text</td></tr>
-                    <tr><td>N8N</td><td>5678</td><td>Workflow automation</td></tr>
-                    <tr><td>pgAdmin</td><td>5050</td><td>DB GUI</td></tr>
+                    <tr><td>app (FastAPI)</td><td><strong>8090</strong></td><td>Sert HTML (Jinja2+HTMX) + API JSON. Internal port 8080.</td></tr>
+                    <tr><td>PostgreSQL</td><td>5442</td><td>BDD V2 propre (en cutover : utilise <code>my_ia_postgres</code> V1).</td></tr>
+                    <tr><td>ChromaDB</td><td>8010</td><td>Vector store. En cutover : <code>my_ia_chroma</code> V1.</td></tr>
+                    <tr><td>Whisper</td><td>9011</td><td>Speech-to-text (utilisé par dictée chat).</td></tr>
+                    <tr><td>pgAdmin V2</td><td>5060</td><td>DB GUI optionnel.</td></tr>
+                    <tr><td>Ollama (host)</td><td>11434</td><td>LLM inference, externe au compose (<code>host.docker.internal</code>).</td></tr>
                 </tbody>
             </table>
 
-            <h3>Configuration SSL</h3>
+            <h3>Configuration SSL — Let's Encrypt (Production)</h3>
 
-            <p>Le projet supporte deux modes SSL :</p>
-
-            <h4>Option 1 : Certificats self-signed (sans domaine)</h4>
-            <p>Configuration par défaut pour les déploiements sans nom de domaine. Affiche un avertissement dans le navigateur mais le trafic est chiffré.</p>
-
-            <div class="code-block">
-<pre># Générer les certificats self-signed sur le VPS
-cd /home/debian/my-ia
-mkdir -p ssl
-openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-  -keyout ssl/selfsigned.key \
-  -out ssl/selfsigned.crt \
-  -subj "/CN=my-ia.local/O=MY-IA/C=FR"
-
-# Redémarrer les containers UI
-docker compose restart ui-front ui-back</pre>
-            </div>
-
-            <p><strong>Fichiers impliqués :</strong></p>
-            <ul>
-                <li><code>ssl/selfsigned.crt</code> et <code>ssl/selfsigned.key</code> — Certificats</li>
-                <li><code>docker/nginx/ssl-proxy.conf</code> — Config nginx pour ui-front</li>
-                <li><code>docker/nginx/ssl-back-proxy.conf</code> — Config nginx pour ui-back</li>
-                <li><code>docker-compose.ssl.yml</code> — Override Docker pour activer SSL</li>
-            </ul>
-
-            <h4>Option 2 : Let's Encrypt (avec domaine)</h4>
-            <p>Configuration recommandée pour la production avec un nom de domaine. Certificat gratuit et reconnu par les navigateurs.</p>
+            <p>V2 prod utilise nginx système avec Let's Encrypt sur
+            <code>my-ia.codefixture.com</code>. Le container <code>app</code>
+            écoute en HTTP sur <code>127.0.0.1:8090</code>, nginx fait la
+            terminaison SSL et le reverse-proxy.</p>
 
             <div class="code-block">
-<pre># 1. Installer nginx et certbot sur le VPS
+<pre># Sur le VPS — installation nginx + certbot
 sudo apt install nginx certbot python3-certbot-nginx
+sudo certbot --nginx -d my-ia.codefixture.com
 
-# 2. Obtenir le certificat Let's Encrypt
-sudo certbot --nginx -d votre-domaine.com
+# Config nginx (extrait, /etc/nginx/sites-available/my-ia.codefixture.com)
+server {
+    server_name my-ia.codefixture.com;
+    client_max_body_size 100m;
 
-# 3. Copier la config reverse proxy
-# (remplacer les variables ${...} par les vraies valeurs)
-sudo cp nginx/prod.conf /etc/nginx/sites-available/myia
-sudo ln -s /etc/nginx/sites-available/myia /etc/nginx/sites-enabled/
-sudo nginx -t && sudo systemctl reload nginx
+    location / {
+        proxy_pass http://127.0.0.1:8090;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 300s;       # SSE chat
+        proxy_buffering off;            # SSE flush immédiat
+        proxy_set_header Connection ''; # SSE keep-alive
+        proxy_http_version 1.1;
+        proxy_cache off;
+    }
 
-# 4. Configurer les containers en HTTP simple (plus besoin de SSL interne)
-# Modifier docker-compose pour exposer les ports HTTP uniquement</pre>
+    listen 443 ssl;       # managed by Certbot
+    ssl_certificate     /etc/letsencrypt/live/my-ia.codefixture.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/my-ia.codefixture.com/privkey.pem;
+}
+
+# Redirect 80 → 443 ajouté automatiquement par certbot.</pre>
             </div>
 
-            <p><strong>Architecture avec Let's Encrypt :</strong></p>
+            <p><strong>Architecture déploiement V2 :</strong></p>
             <div class="pipeline">
 Internet (HTTPS:443)
         │
         ▼
 ┌──────────────────────┐
-│   Nginx système      │  ← Let's Encrypt (auto-renouvelé)
+│   Nginx système      │  ← Let's Encrypt (renouvelé auto)
 │   (reverse proxy)    │
 └──────────┬───────────┘
-           │ HTTP interne
-     ┌─────┴─────┬─────────────┐
-     ▼           ▼             ▼
-┌─────────┐ ┌─────────┐ ┌─────────┐
-│Frontend │ │  API    │ │  Admin  │
-│  :3000  │ │  :8080  │ │  :8081  │
-└─────────┘ └─────────┘ └─────────┘
+           │ HTTP 127.0.0.1:8090
+           ▼
+┌──────────────────────┐
+│  app (FastAPI)       │  → /web/* (Jinja2+HTMX)
+│  uvicorn :8080       │  → /api/v1/* (JSON+JWT)
+└──────────┬───────────┘
+           │ Networks Docker (internal + v1_internal)
+   ┌───────┼─────────┬──────────┐
+   ▼       ▼         ▼          ▼
+postgres chroma   whisper   pgadmin
+            </div>
+
+            <h3>Cutover V1 → V2 (mai 2026)</h3>
+
+            <p>V2 réutilise les volumes V1 (BDD + ChromaDB) sans migration.
+            Le compose V2 monte le network <code>my_ia_internal</code> de V1
+            comme network externe :</p>
+
+            <div class="code-block">
+<pre># docker-compose.yml V2
+networks:
+  internal:
+    driver: bridge
+  external:
+    driver: bridge
+  v1_internal:                # Phase 4.d cutover : accès BDD/Chroma V1
+    external: true
+    name: my_ia_internal      # Network créé par my-ia v1
+
+# Storage uploads V1 monté en symlink dans data/uploads V2 :
+ln -sfn /home/debian/my-ia/data/uploads /home/debian/my-ia-v2/data/uploads</pre>
             </div>
 
             <h3>Déploiement distant</h3>
