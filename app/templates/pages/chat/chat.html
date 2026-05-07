@@ -104,12 +104,13 @@
         </button>
         <button type="button"
                 class="chat-header__action"
+                data-conv-title="{{ conversation.title }}"
                 x-on:click="
                   const text = document.getElementById('chat-thread').innerText;
                   const blob = new Blob([text], {type:'text/markdown'});
                   const a = document.createElement('a');
                   a.href = URL.createObjectURL(blob);
-                  a.download = '{{ conversation.title }}.md';
+                  a.download = $el.dataset.convTitle.replace(/[^\w\s.-]/g, '_') + '.md';
                   a.click();
                   URL.revokeObjectURL(a.href);
                 "

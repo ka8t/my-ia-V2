@@ -32,7 +32,7 @@
   <div class="chat-message__body"
        data-streaming="1"
        data-streaming-text=""
-       hx-on:htmx:sse-message="
+       hx-on::sse-message="
          if (event.detail.type === 'token') {
            const decoded = new DOMParser().parseFromString(event.detail.data, 'text/html').documentElement.textContent;
            this.dataset.streamingText = (this.dataset.streamingText || '') + decoded;

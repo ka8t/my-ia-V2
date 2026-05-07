@@ -717,7 +717,11 @@ async def transcribe(
     request: Request,
     user: dict = Depends(require_web_auth),
 ):
-    """Proxy vers Whisper (parité V1 speech.js)."""
+    """Proxy vers Whisper (parité V1 speech.js).
+
+    SpeechService.transcribe attend des `bytes`, pas un UploadFile —
+    on lit le contenu d'abord puis on l'envoie.
+    """
     try:
         from app.features.speech.service import SpeechService
     except Exception:
@@ -727,13 +731,23 @@ async def transcribe(
         )
     form = await request.form()
     audio = form.get("audio")
-    if not audio:
+    if audio is None or not hasattr(audio, "read"):
         return HTMLResponse(
             "<div class='toast toast--error'>Audio absent.</div>",
             status_code=400,
         )
+    audio_bytes = await audio.read()
+    if not audio_bytes:
+        return HTMLResponse(
+            "<div class='toast toast--error'>Audio vide.</div>",
+            status_code=400,
+        )
+    filename = getattr(audio, "filename", None) or "audio.webm"
     try:
-        text = await SpeechService.transcribe(audio)
+        text, _lang, _dur, _proc = await SpeechService.transcribe(
+            audio_bytes,
+            filename=filename,
+        )
     except Exception as exc:
         logger.exception("Transcribe failed: %s", exc)
         return HTMLResponse(
