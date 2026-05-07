@@ -4072,3 +4072,19 @@ select.field__input {
   gap: var(--space-2);
   justify-content: flex-end;
 }
+
+/* Sous-vague A — Bandeau debug header chat (parité V1 loadModelInfo) */
+.chat-debug {
+  font-size: var(--text-xs);
+  font-family: var(--font-mono);
+  color: var(--color-fg-muted);
+}
+.chat-debug code {
+  font-size: 11px;
+  padding: 1px 4px;
+  background: var(--color-bg-elevated);
+  border-radius: var(--radius-sm);
+}
+.chat-debug__ok { color: #16a34a; font-weight: 600; }
+.chat-debug__warn { color: #d97706; font-weight: 600; }
+.chat-debug__muted { color: var(--color-fg-muted); }

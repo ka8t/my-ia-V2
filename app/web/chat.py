@@ -871,3 +871,37 @@ async def transcribe(
             status_code=500,
         )
     return HTMLResponse(text or "", status_code=200)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  GET /web/chat/health-info — bandeau debug header (parité V1 loadModelInfo)
+# ─────────────────────────────────────────────────────────────────────────────
+@router.get("/health-info", response_class=HTMLResponse)
+async def chat_health_info(
+    request: Request,
+    user: dict = Depends(require_web_auth),
+):
+    """Renvoie un fragment HTML compact avec provider, modèle, statut GPU/CPU."""
+    try:
+        import httpx as _httpx
+        async with _httpx.AsyncClient(timeout=2.0) as c:
+            r = await c.get("http://localhost:8080/health")
+        data = r.json() if r.status_code == 200 else {}
+    except Exception:
+        data = {}
+    provider = (data.get("llm") or {}).get("provider", "—")
+    model = data.get("model", "—")
+    using_gpu = data.get("using_gpu")
+    if using_gpu is True:
+        gpu_label = "GPU"
+        gpu_cls = "ok"
+    elif using_gpu is False:
+        gpu_label = "CPU"
+        gpu_cls = "warn"
+    else:
+        gpu_label = "?"
+        gpu_cls = "muted"
+    return HTMLResponse(
+        f"<code>{provider}</code> · <code>{model}</code> "
+        f"· <span class='chat-debug__{gpu_cls}'>{gpu_label}</span>"
+    )

@@ -92,6 +92,16 @@
             <span>{{ conversation.collection.display_name }}</span>
           </span>
         {% endif %}
+        {# Bandeau debug provider/modèle/GPU (parité V1 loadModelInfo/updateGpuStatus).
+           Visible si debug_mode (debug.endpoints_enabled = true). #}
+        {% if debug_mode %}
+        <span class="chat-header__sep">·</span>
+        <span class="chat-debug"
+              hx-get="/web/chat/health-info"
+              hx-trigger="load"
+              hx-swap="innerHTML"
+              title="Provider · modèle · GPU">…</span>
+        {% endif %}
       </span>
 
       {# Actions header (parité V1 copyConversation/exportConversation/archive) #}
