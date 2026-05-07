@@ -31,23 +31,10 @@
   {# Conteneur : data-streaming-text accumule le texte brut, on rerend via marked.js. #}
   <div class="chat-message__body"
        data-streaming="1"
-       data-streaming-text=""
-       hx-on::sse-message="
-         if (event.detail.type === 'token') {
-           const decoded = new DOMParser().parseFromString(event.detail.data, 'text/html').documentElement.textContent;
-           this.dataset.streamingText = (this.dataset.streamingText || '') + decoded;
-           if (typeof marked !== 'undefined') {
-             this.innerHTML = marked.parse(this.dataset.streamingText, { breaks: true, gfm: true });
-             if (typeof hljs !== 'undefined') {
-               this.querySelectorAll('pre code').forEach(b => { try { hljs.highlightElement(b); } catch(e){} });
-             }
-           } else {
-             this.textContent = this.dataset.streamingText;
-           }
-           this.closest('.chat-thread').scrollTop = this.closest('.chat-thread').scrollHeight;
-         }
-       "
-       hx-on::sse-close="this.removeAttribute('data-streaming'); var s=this.closest('.chat-message').querySelector('.chat-message__status'); if(s) s.remove();"
+       sse-swap="token"
+       hx-swap="beforeend"
+       hx-on::after-swap="this.closest('.chat-thread').scrollTop = this.closest('.chat-thread').scrollHeight;"
+       hx-on::sse-close="this.removeAttribute('data-streaming'); var s=this.closest('.chat-message').querySelector('.chat-message__status'); if(s) s.remove(); if (typeof window.renderChatMarkdown === 'function') { window.renderChatMarkdown(this); }"
        hx-on::sse-error="this.removeAttribute('data-streaming'); var s=this.closest('.chat-message').querySelector('.chat-message__status'); if(s){s.textContent='Erreur de streaming.'; s.style.color='var(--color-danger)';}"></div>
 
   {# Slot pour l'event "sources" #}
