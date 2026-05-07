@@ -32,4 +32,14 @@
   {{ form_actions() }}
 </form>
 
+
+{# ─── Log level effectif (parité V1) ─── #}
+<section class="admin-fieldset">
+  <legend>Log level effectif</legend>
+  <button type="button" class="btn btn--ghost btn--sm"
+          hx-get="/web/admin/system/debug/log-level" hx-target="#log-level-badge" hx-swap="innerHTML">⟳</button>
+  <div id="log-level-badge" hx-get="/web/admin/system/debug/log-level" hx-trigger="load" hx-swap="innerHTML"
+       style="margin-top:var(--space-2)">Chargement…</div>
+</section>
+
 {% endblock %}

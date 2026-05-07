@@ -2121,3 +2121,62 @@ async def speech_status(
         )
     parts.append("</div>")
     return HTMLResponse("".join(parts))
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  Phase 3.5.d — Mode edit + appearance theme picker + debug log level badge
+# ═════════════════════════════════════════════════════════════════════════════
+
+@router.patch("/modes/{mode_id}", response_class=HTMLResponse)
+async def modes_edit(
+    request: Request,
+    mode_id: int,
+    display_name: Annotated[str, Form()],
+    description: Annotated[str, Form()] = "",
+    system_prompt: Annotated[str, Form()] = "",
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    """Édition d'un mode existant (parité V1 modes.js:editMode)."""
+    if (err := _csrf_or_400(request, csrf_token)):
+        return err
+    from sqlalchemy import select
+    from app.models import ConversationMode
+    mode = (await db.execute(select(ConversationMode).where(ConversationMode.id == mode_id))).scalar_one_or_none()
+    if mode is None:
+        return HTMLResponse("", status_code=404)
+    mode.display_name = display_name.strip() or mode.display_name
+    mode.description = description.strip() or None
+    mode.system_prompt = system_prompt.strip() or None
+    try:
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        return HTMLResponse("<div class='toast toast--error'>Échec.</div>", status_code=500)
+    return HTMLResponse(
+        f"<div class='toast toast--success'>Mode « {mode.display_name} » mis à jour.</div>",
+        headers={"HX-Trigger": "modes-refresh"},
+    )
+
+
+@router.get("/debug/log-level", response_class=HTMLResponse)
+async def debug_log_level(
+    request: Request,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    """Badge log level effectif courant (parité V1 debug.js)."""
+    import logging as _lg
+    root_level = _lg.getLevelName(_lg.getLogger().getEffectiveLevel())
+    app_level = _lg.getLevelName(_lg.getLogger("app").getEffectiveLevel())
+    return HTMLResponse(
+        f"""<div class='llm-health'>
+        <div class='llm-health__row llm-health__row--ok'>
+          <strong>root</strong> <small>{root_level}</small>
+        </div>
+        <div class='llm-health__row llm-health__row--ok'>
+          <strong>app</strong> <small>{app_level}</small>
+        </div>
+        </div>"""
+    )
