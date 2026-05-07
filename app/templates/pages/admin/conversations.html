@@ -1,0 +1,140 @@
+{% extends "layouts/admin.html" %}
+{% from "macros/icon.html" import icon %}
+
+{% block title %}Conversations — Admin{% endblock %}
+
+{% block admin_content %}
+<section x-data="{ selected: new Set(), viewId: null }"
+         hx-on:convs-refresh="window.location.reload()">
+
+<header class="admin-page__head">
+  <div class="admin-page__eyebrow"><span>Console / 07</span></div>
+  <h1 class="admin-page__title">
+    Conversations <em>cross-user</em>
+    <span class="admin-page__count">— {{ total }}</span>
+  </h1>
+  <p class="admin-page__lede">
+    Modération conversations toutes équipes. Visualisation messages,
+    export Markdown, suppression.
+  </p>
+</header>
+
+{# Filters #}
+<nav class="admin-filters">
+  <a class="admin-filter{% if not archived %} admin-filter--active{% endif %}" href="/web/admin/conversations">Toutes</a>
+  <a class="admin-filter{% if archived == 'no' %} admin-filter--active{% endif %}" href="/web/admin/conversations?archived=no">Actives</a>
+  <a class="admin-filter{% if archived == 'yes' %} admin-filter--active{% endif %}" href="/web/admin/conversations?archived=yes">Archivées</a>
+</nav>
+
+{# Search #}
+<form class="admin-toolbar" method="get" action="/web/admin/conversations">
+  {% if archived %}<input type="hidden" name="archived" value="{{ archived }}">{% endif %}
+  <input type="search" name="q" value="{{ q }}" placeholder="Titre…" class="admin-toolbar__search">
+  <button type="submit" class="btn btn--ghost btn--sm">Rechercher</button>
+  {% if q %}<a href="/web/admin/conversations{% if archived %}?archived={{ archived }}{% endif %}" class="btn btn--ghost btn--sm">Reset</a>{% endif %}
+</form>
+
+{# Bulk bar #}
+<form class="admin-bulkbar"
+      x-show="selected.size > 0" x-cloak
+      hx-post="/web/admin/conversations/bulk-delete"
+      hx-target="#bulk-result" hx-swap="innerHTML"
+      hx-on::config-request="
+        event.detail.parameters['conversation_ids'] = Array.from(selected);
+        event.detail.parameters['csrf_token'] = '{{ csrf_token }}';
+      ">
+  <span><span x-text="selected.size"></span> sélectionnée(s)</span>
+  <button type="submit" class="btn btn--danger btn--sm"
+          x-on:click="if (!confirm('Supprimer ' + selected.size + ' conversation(s) ?')) $event.preventDefault()">Supprimer</button>
+  <button type="button" class="btn btn--ghost btn--sm" x-on:click="selected = new Set()">Annuler</button>
+</form>
+<div id="bulk-result" aria-live="polite"></div>
+
+{# Table #}
+<div class="admin-table-wrap">
+  <div class="admin-table-head admin-conv-row">
+    <span></span>
+    <span>Titre</span>
+    <span>Propriétaire</span>
+    <span>Collection</span>
+    <span>MAJ</span>
+    <span>Statut</span>
+    <span>Actions</span>
+  </div>
+  <div class="admin-table-body">
+    {% if rows %}
+      {% for r in rows %}
+      <div class="admin-conv-row admin-table-row" id="conv-{{ r.conv.id }}">
+        <div class="admin-table-cell">
+          <input type="checkbox" value="{{ r.conv.id }}"
+                 x-on:change="$event.target.checked ? selected.add('{{ r.conv.id }}') : selected.delete('{{ r.conv.id }}'); selected = new Set(selected)">
+        </div>
+        <div class="admin-table-cell admin-table-cell--name" title="{{ r.conv.title }}">
+          {{ r.conv.title[:80] }}{% if r.conv.title|length > 80 %}…{% endif %}
+        </div>
+        <div class="admin-table-cell admin-table-cell__mono">{{ r.email }}</div>
+        <div class="admin-table-cell admin-table-cell__mono">
+          {{ r.conv.collection.display_name if r.conv.collection else '—' }}
+        </div>
+        <div class="admin-table-cell admin-table-cell__mono">
+          {% if r.conv.updated_at %}{{ r.conv.updated_at.strftime('%d/%m %H:%M') }}{% endif %}
+        </div>
+        <div class="admin-table-cell">
+          {% if r.conv.archived_at %}
+            <span class="admin-status admin-status--inactive">Archivée</span>
+          {% else %}
+            <span class="admin-status admin-status--ok">Active</span>
+          {% endif %}
+        </div>
+        <div class="admin-table-cell admin-table-cell--actions">
+          <button type="button" class="admin-action" x-on:click="viewId = '{{ r.conv.id }}'" title="Voir messages">{{ icon('info-circle', 14) }}</button>
+          <a class="admin-action" href="/web/admin/conversations/{{ r.conv.id }}/export" title="Export Markdown">{{ icon('arrow-up-right', 14) }}</a>
+          <button type="button" class="admin-action admin-action--danger"
+                  hx-delete="/web/admin/conversations/{{ r.conv.id }}"
+                  hx-confirm="Supprimer définitivement « {{ r.conv.title }} » ?"
+                  hx-target="#conv-{{ r.conv.id }}" hx-swap="outerHTML"
+                  title="Supprimer">{{ icon('alert-circle', 14) }}</button>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="admin-empty">Aucune conversation.</div>
+    {% endif %}
+  </div>
+</div>
+
+{# Pagination #}
+{% if total_pages > 1 %}
+<nav class="admin-pagination">
+  {% set qsb = '/web/admin/conversations?' %}
+  {% if archived %}{% set qsb = qsb ~ 'archived=' ~ archived ~ '&' %}{% endif %}
+  {% if q %}{% set qsb = qsb ~ 'q=' ~ q ~ '&' %}{% endif %}
+  {% if page > 1 %}<a href="{{ qsb }}page={{ page - 1 }}" class="btn btn--ghost btn--sm">← Préc</a>{% endif %}
+  <span>Page {{ page }} / {{ total_pages }}</span>
+  {% if page < total_pages %}<a href="{{ qsb }}page={{ page + 1 }}" class="btn btn--ghost btn--sm">Suiv →</a>{% endif %}
+</nav>
+{% endif %}
+
+{# Modal view messages #}
+<div class="admin-modal" x-show="viewId !== null" x-cloak role="dialog"
+     x-on:click.self="viewId = null" x-on:keydown.escape.window="viewId = null">
+  <div class="admin-modal__panel" style="max-width: 760px"
+       x-init="$watch('viewId', id => { if (id) htmx.ajax('GET', '/web/admin/conversations/' + id + '/view', {target: $el, swap: 'innerHTML'}) })">
+    Chargement…
+  </div>
+</div>
+
+</section>
+<style>
+[x-cloak] { display: none !important; }
+.admin-conv-row {
+  display: grid;
+  grid-template-columns: 32px 2fr 1fr 1fr 100px 90px auto;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  align-items: center;
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--text-xs);
+}
+</style>
+{% endblock %}

@@ -1,0 +1,33 @@
+{# Modal view : messages d'une conversation (admin) #}
+<header class="admin-modal__head">
+  <h2 title="{{ conv.title }}">{{ conv.title }}</h2>
+  <button type="button" x-on:click="viewId = null">✕</button>
+</header>
+<div class="admin-modal__body" style="max-height: 60vh; overflow-y: auto">
+  <p style="font-size:var(--text-xs); color:var(--color-fg-muted)">
+    Propriétaire : <strong>{{ conv.user.email }}</strong> ·
+    Collection : <strong>{{ conv.collection.display_name if conv.collection else '—' }}</strong> ·
+    {{ messages|length }} message{{ 's' if messages|length > 1 }}
+  </p>
+  {% if messages %}
+    <ul style="display:flex; flex-direction:column; gap:var(--space-3); list-style:none; padding:0">
+      {% for m in messages %}
+      <li style="padding:var(--space-3); background:var(--color-bg-elevated); border-radius:var(--radius-sm); border-left: 3px solid {% if m.sender_type == 'user' %}var(--color-accent){% else %}var(--color-fg-muted){% endif %}">
+        <small style="color:var(--color-fg-muted); font-weight:600; text-transform:uppercase">
+          {{ 'Utilisateur' if m.sender_type == 'user' else 'Assistant' }}
+          {% if m.created_at %} · {{ m.created_at.strftime('%d/%m/%Y %H:%M') }}{% endif %}
+        </small>
+        <div style="margin-top:4px; white-space:pre-wrap; word-break:break-word; font-size:var(--text-sm)">
+          {{ m.content }}
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>Aucun message.</p>
+  {% endif %}
+</div>
+<footer class="admin-modal__foot">
+  <a class="btn btn--ghost btn--sm" href="/web/admin/conversations/{{ conv.id }}/export">Export MD</a>
+  <button type="button" class="btn btn--ghost btn--sm" x-on:click="viewId = null">Fermer</button>
+</footer>
