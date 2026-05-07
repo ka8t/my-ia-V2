@@ -1,0 +1,161 @@
+{% extends "layouts/admin.html" %}
+{% from "macros/icon.html" import icon %}
+
+{% block title %}Bibliothèques — Admin{% endblock %}
+
+{% block admin_content %}
+<section x-data="{ selected: new Set(), peekId: null, showCreate: false }"
+         hx-on:collections-refresh="window.location.reload()">
+
+<header class="admin-page__head">
+  <div class="admin-page__eyebrow"><span>Console / 06</span></div>
+  <h1 class="admin-page__title">
+    Bibliothèques <em>RAG</em>
+    <span class="admin-page__count">— {{ total }}</span>
+  </h1>
+  <p class="admin-page__lede">
+    Vue cross-utilisateur des collections (privées et publiques) ChromaDB.
+    Sync compteurs, peek chunks, clear index, gestion sources rattachées.
+  </p>
+</header>
+
+{# Filters + actions #}
+<nav class="admin-filters">
+  <a class="admin-filter{% if not type_filter %} admin-filter--active{% endif %}" href="/web/admin/collections">Toutes</a>
+  <a class="admin-filter{% if type_filter == 'public' %} admin-filter--active{% endif %}" href="/web/admin/collections?type_filter=public">Publiques</a>
+  <a class="admin-filter{% if type_filter == 'private' %} admin-filter--active{% endif %}" href="/web/admin/collections?type_filter=private">Privées</a>
+
+  <button type="button" class="btn btn--primary btn--sm" x-on:click="showCreate = true" style="margin-left:auto">+ Publique</button>
+  <form hx-post="/web/admin/collections/sync-all" hx-target="#bulk-result" hx-swap="innerHTML" style="display:inline">
+    {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+    <button type="submit" class="btn btn--ghost btn--sm">⟳ Sync compteurs (toutes)</button>
+  </form>
+</nav>
+
+{# Search #}
+<form class="admin-toolbar" method="get" action="/web/admin/collections">
+  {% if type_filter %}<input type="hidden" name="type_filter" value="{{ type_filter }}">{% endif %}
+  <input type="search" name="q" value="{{ q }}" placeholder="Nom de collection…" class="admin-toolbar__search">
+  <button type="submit" class="btn btn--ghost btn--sm">Rechercher</button>
+  {% if q %}<a href="/web/admin/collections{% if type_filter %}?type_filter={{ type_filter }}{% endif %}" class="btn btn--ghost btn--sm">Reset</a>{% endif %}
+</form>
+
+{# Bulk bar — supprimer en masse #}
+<form class="admin-bulkbar"
+      x-show="selected.size > 0" x-cloak
+      hx-post="/web/admin/collections/bulk-delete"
+      hx-target="#bulk-result" hx-swap="innerHTML"
+      hx-on::config-request="
+        event.detail.parameters['collection_ids'] = Array.from(selected);
+        event.detail.parameters['csrf_token'] = '{{ csrf_token }}';
+      ">
+  <span><span x-text="selected.size"></span> sélectionnée(s)</span>
+  <button type="submit" class="btn btn--danger btn--sm"
+          x-on:click="if (!confirm('Supprimer ' + selected.size + ' collection(s) ?')) $event.preventDefault()">Supprimer</button>
+  <button type="button" class="btn btn--ghost btn--sm" x-on:click="selected = new Set()">Annuler</button>
+</form>
+<div id="bulk-result" aria-live="polite"></div>
+
+{# Table #}
+<div class="admin-table-wrap">
+  <div class="admin-table-head admin-coll-row">
+    <span></span>
+    <span>Nom</span>
+    <span>Type</span>
+    <span>Propriétaire</span>
+    <span>Docs</span>
+    <span>Chunks</span>
+    <span>Actions</span>
+  </div>
+  <div class="admin-table-body">
+    {% if collections %}
+      {% for c in collections %}
+      <div class="admin-coll-row admin-table-row" id="coll-{{ c.id }}">
+        <div class="admin-table-cell">
+          <input type="checkbox" value="{{ c.id }}"
+                 x-on:change="$event.target.checked ? selected.add('{{ c.id }}') : selected.delete('{{ c.id }}'); selected = new Set(selected)">
+        </div>
+        <div class="admin-table-cell admin-table-cell--name">
+          <span title="{{ c.name }}">{{ c.display_name }}</span>
+          <small style="color:var(--color-fg-muted); font-size:11px"><code>{{ c.name }}</code></small>
+        </div>
+        <div class="admin-table-cell">
+          <span class="collection-badge collection-badge--{{ c.type }}">{{ 'Publique' if c.type == 'public' else 'Privée' }}</span>
+        </div>
+        <div class="admin-table-cell">
+          <span class="admin-table-cell__mono">{{ owners.get(c.owner_id, '—') if c.owner_id else '—' }}</span>
+        </div>
+        <div class="admin-table-cell admin-table-cell__mono">{{ c.document_count or 0 }}</div>
+        <div class="admin-table-cell admin-table-cell__mono">{{ c.chunk_count or 0 }}</div>
+        <div class="admin-table-cell admin-table-cell--actions">
+          <button type="button" class="admin-action" x-on:click="peekId = '{{ c.id }}'" title="Peek chunks">{{ icon('info-circle', 14) }}</button>
+          <form class="admin-action-form" hx-post="/web/admin/collections/{{ c.id }}/sync" hx-target="#bulk-result" hx-swap="innerHTML">
+            {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+            <button type="submit" class="admin-action" title="Sync compteurs">⟳</button>
+          </form>
+          <form class="admin-action-form" hx-post="/web/admin/collections/{{ c.id }}/clear" hx-target="#bulk-result" hx-swap="innerHTML"
+                hx-confirm="Vider l'index ChromaDB de « {{ c.display_name }} » ?">
+            {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+            <button type="submit" class="admin-action" title="Clear index">×</button>
+          </form>
+          <button type="button" class="admin-action admin-action--danger"
+                  hx-delete="/web/admin/collections/{{ c.id }}"
+                  hx-confirm="Supprimer définitivement « {{ c.display_name }} » ?"
+                  hx-target="#coll-{{ c.id }}" hx-swap="outerHTML"
+                  title="Supprimer">{{ icon('alert-circle', 14) }}</button>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="admin-empty">Aucune collection.</div>
+    {% endif %}
+  </div>
+</div>
+
+{# Modal create publique #}
+<div class="admin-modal" x-show="showCreate" x-cloak role="dialog"
+     x-on:click.self="showCreate = false" x-on:keydown.escape.window="showCreate = false">
+  <form class="admin-modal__panel"
+        hx-post="/web/admin/collections"
+        hx-target="#bulk-result" hx-swap="innerHTML"
+        hx-on::after-request="if (event.detail.successful) showCreate = false">
+    {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+    <header class="admin-modal__head">
+      <h2>Créer une collection publique</h2>
+      <button type="button" x-on:click="showCreate = false">✕</button>
+    </header>
+    <div class="admin-modal__body">
+      <label>Nom <input type="text" name="display_name" required></label>
+      <label>Description <textarea name="description" rows="2"></textarea></label>
+    </div>
+    <footer class="admin-modal__foot">
+      <button type="button" class="btn btn--ghost btn--sm" x-on:click="showCreate = false">Annuler</button>
+      <button type="submit" class="btn btn--primary btn--sm">Créer</button>
+    </footer>
+  </form>
+</div>
+
+{# Modal peek chunks #}
+<div class="admin-modal" x-show="peekId !== null" x-cloak role="dialog"
+     x-on:click.self="peekId = null" x-on:keydown.escape.window="peekId = null">
+  <div class="admin-modal__panel"
+       x-init="$watch('peekId', id => { if (id) htmx.ajax('GET', '/web/admin/collections/' + id + '/peek', {target: $el, swap: 'innerHTML'}) })">
+    Chargement…
+  </div>
+</div>
+
+</section>
+<style>
+[x-cloak] { display: none !important; }
+.admin-coll-row {
+  display: grid;
+  grid-template-columns: 32px 2fr 90px 1fr 70px 80px auto;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  align-items: center;
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--text-xs);
+}
+.admin-coll-row .admin-table-cell--name { display: flex; flex-direction: column; gap: 2px; }
+</style>
+{% endblock %}

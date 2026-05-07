@@ -38,6 +38,7 @@ from app.web.documents import router as web_documents_router
 from app.web.admin import router as web_admin_router
 from app.web.admin_config import router as web_admin_config_router
 from app.web.admin_corpus import router as web_admin_corpus_router
+from app.web.admin_collections import router as web_admin_collections_router
 from app.web.admin_sources import router as web_admin_sources_router
 from app.web.admin_system import router as web_admin_system_router
 from app.web.preferences import router as web_preferences_router
@@ -259,6 +260,7 @@ app.include_router(web_admin_router)
 app.include_router(web_admin_config_router)
 app.include_router(web_admin_corpus_router)
 app.include_router(web_admin_sources_router)
+app.include_router(web_admin_collections_router)
 app.include_router(web_admin_system_router)
 
 
