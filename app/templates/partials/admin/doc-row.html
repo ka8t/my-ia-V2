@@ -1,0 +1,76 @@
+{# Admin doc-row : checkbox + 8 colonnes + actions (parité V1 content-documents.js) #}
+{% from "macros/icon.html" import icon %}
+
+<div class="admin-doc-row admin-table-row" id="adoc-{{ r.doc.id }}"
+     {% if r.doc.chunk_count is none or r.doc.chunk_count == 0 %}
+     hx-get="/web/admin/documents/{{ r.doc.id }}/row"
+     hx-trigger="every 4s"
+     hx-target="this"
+     hx-swap="outerHTML"
+     {% endif %}>
+  <div class="admin-table-cell">
+    <input type="checkbox"
+           value="{{ r.doc.id }}"
+           x-on:change="$event.target.checked ? selected.add('{{ r.doc.id }}') : selected.delete('{{ r.doc.id }}'); selected = new Set(selected)">
+  </div>
+  <div class="admin-table-cell admin-table-cell--name">
+    <span class="admin-table-cell__icon">{{ icon('document', 14) }}</span>
+    <span class="admin-table-cell__email" title="{{ r.doc.filename }}">{{ r.doc.filename }}</span>
+    {% if r.doc.visibility == 'public' %}
+      <span class="docs-row__visibility docs-row__visibility--public">PUB</span>
+    {% else %}
+      <span class="docs-row__visibility docs-row__visibility--private">PRIV</span>
+    {% endif %}
+  </div>
+  <div class="admin-table-cell"><span class="admin-table-cell__mono">{{ r.user_email }}</span></div>
+  <div class="admin-table-cell"><span class="admin-table-cell__mono">{{ r.doc.file_type or '—' }}</span></div>
+  <div class="admin-table-cell"><span class="admin-table-cell__mono">{{ r.size }}</span></div>
+  <div class="admin-table-cell"><span class="admin-table-cell__mono">{{ r.doc.indexed_provider or '—' }}</span></div>
+  <div class="admin-table-cell">
+    <span class="admin-table-cell__mono" title="{{ r.doc.collection.display_name if r.doc.collection else '' }}">
+      {{ r.doc.collection.display_name[:12] ~ '…' if r.doc.collection and r.doc.collection.display_name|length > 12 else (r.doc.collection.display_name if r.doc.collection else '—') }}
+    </span>
+    <span class="admin-table-cell__mono">· {{ r.doc.chunk_count or 0 }}</span>
+  </div>
+  <div class="admin-table-cell">
+    {% if r.indexed %}
+      <span class="admin-status admin-status--approved">Indexé</span>
+    {% else %}
+      <span class="admin-status admin-status--pending">En attente</span>
+    {% endif %}
+  </div>
+  <div class="admin-table-cell admin-table-cell--actions">
+    {# Détails #}
+    <button type="button" class="admin-action"
+            x-on:click="modalDocId = '{{ r.doc.id }}'" title="Détails">{{ icon('info-circle', 14) }}</button>
+    {# Reindex #}
+    <form class="admin-action-form"
+          hx-post="/web/admin/documents/{{ r.doc.id }}/reindex"
+          hx-target="#adoc-{{ r.doc.id }}" hx-swap="outerHTML">
+      {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+      <button type="submit" class="admin-action" title="Réindexer">{{ icon('sparkle', 14) }}</button>
+    </form>
+    {# Toggle visibility #}
+    <form class="admin-action-form"
+          hx-post="/web/admin/documents/{{ r.doc.id }}/visibility"
+          hx-target="#adoc-{{ r.doc.id }}" hx-swap="outerHTML"
+          hx-confirm="Basculer en {{ 'privé' if r.doc.visibility == 'public' else 'public' }} ?">
+      {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+      <button type="submit" class="admin-action" title="Basculer visibilité">{{ icon('check-circle', 14) }}</button>
+    </form>
+    {# Clear index #}
+    <form class="admin-action-form"
+          hx-post="/web/admin/documents/{{ r.doc.id }}/clear-index"
+          hx-target="#adoc-{{ r.doc.id }}" hx-swap="outerHTML"
+          hx-confirm="Vider l'index de ce document ?">
+      {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+      <button type="submit" class="admin-action" title="Vider index">×₁</button>
+    </form>
+    {# Delete #}
+    <button type="button" class="admin-action admin-action--danger"
+            hx-delete="/web/admin/documents/{{ r.doc.id }}"
+            hx-confirm="Supprimer définitivement « {{ r.doc.filename }} » ?"
+            hx-target="#adoc-{{ r.doc.id }}" hx-swap="outerHTML"
+            title="Supprimer">{{ icon('alert-circle', 14) }}</button>
+  </div>
+</div>

@@ -1,0 +1,25 @@
+{# Modal détails admin (parité V1 content-documents.js:showDetail) #}
+{% from "macros/icon.html" import icon %}
+
+<header class="admin-modal__head">
+  <h2 title="{{ doc.filename }}">{{ doc.filename }}</h2>
+  <button type="button" x-on:click="modalDocId = null">✕</button>
+</header>
+<dl class="docs-modal__meta">
+  <dt>Propriétaire</dt><dd>{{ owner_email }}</dd>
+  <dt>Type</dt><dd>{{ doc.file_type or '—' }}</dd>
+  <dt>Taille</dt><dd>{{ size }}</dd>
+  <dt>Visibilité</dt><dd>{{ 'Public' if doc.visibility == 'public' else 'Privé' }}</dd>
+  <dt>Collection</dt><dd>{{ doc.collection.display_name if doc.collection else '—' }}</dd>
+  <dt>Chunks</dt><dd>{{ doc.chunk_count or 0 }}</dd>
+  <dt>Embeddings</dt><dd>{{ doc.embedding_count or 0 }}</dd>
+  {% if doc.indexed_provider %}<dt>Provider</dt><dd><code>{{ doc.indexed_provider }}</code></dd>{% endif %}
+  {% if doc.created_at %}<dt>Créé le</dt><dd>{{ doc.created_at.strftime('%d/%m/%Y %H:%M') }}</dd>{% endif %}
+  {% if doc.updated_at %}<dt>MAJ</dt><dd>{{ doc.updated_at.strftime('%d/%m/%Y %H:%M') }}</dd>{% endif %}
+  {% if doc.file_path %}<dt>Chemin</dt><dd><code style="font-size:11px">{{ doc.file_path }}</code></dd>{% endif %}
+  {% if doc.file_hash %}<dt>Hash</dt><dd><code style="font-size:11px">{{ doc.file_hash[:24] }}…</code></dd>{% endif %}
+</dl>
+<footer class="docs-modal__actions">
+  <a href="/web/documents/{{ doc.id }}/download" class="btn btn--ghost btn--sm">Télécharger</a>
+  <button type="button" class="btn btn--ghost btn--sm" x-on:click="modalDocId = null">Fermer</button>
+</footer>

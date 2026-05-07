@@ -1,66 +1,94 @@
 {% extends "layouts/admin.html" %}
 {% from "macros/icon.html" import icon %}
+{% from "macros/button.html" import button %}
 
 {% block title %}Documents — Admin{% endblock %}
 
 {% block admin_content %}
+<section x-data="{ selected: new Set(), modalDocId: null, showUpload: false }"
+         hx-on:docs-refresh="window.location.reload()">
 
 <header class="admin-page__head">
   <div class="admin-page__eyebrow"><span>Console / 02</span></div>
   <h1 class="admin-page__title">
-    Tous les <em>documents</em>.
+    Tous les <em>documents</em>
+    <span class="admin-page__count">— {{ total }}</span>
   </h1>
-  <p class="admin-page__lede">
-    Vue cross-utilisateur des documents indexés (200 derniers).
-  </p>
+  <p class="admin-page__lede">Vue cross-utilisateur. Filtres, bulk actions, réindexation.</p>
 </header>
 
+{# Toolbar #}
+<form class="admin-toolbar" method="get" action="/web/admin/documents">
+  <input type="search" name="q" value="{{ q }}" placeholder="Nom du fichier…" class="admin-toolbar__search">
+  <select name="visibility" class="admin-toolbar__select">
+    <option value="">Visibilité : toutes</option>
+    <option value="private" {% if visibility == 'private' %}selected{% endif %}>Privée</option>
+    <option value="public"  {% if visibility == 'public'  %}selected{% endif %}>Publique</option>
+  </select>
+  <select name="indexed" class="admin-toolbar__select">
+    <option value="">Indexation : toutes</option>
+    <option value="true"  {% if indexed == 'true'  %}selected{% endif %}>Indexés</option>
+    <option value="false" {% if indexed == 'false' %}selected{% endif %}>Non indexés</option>
+  </select>
+  <select name="sort" class="admin-toolbar__select">
+    <option value="date" {% if sort == 'date' %}selected{% endif %}>Date</option>
+    <option value="name" {% if sort == 'name' %}selected{% endif %}>Nom</option>
+    <option value="size" {% if sort == 'size' %}selected{% endif %}>Taille</option>
+  </select>
+  <select name="order" class="admin-toolbar__select">
+    <option value="desc" {% if order == 'desc' %}selected{% endif %}>↓</option>
+    <option value="asc"  {% if order == 'asc'  %}selected{% endif %}>↑</option>
+  </select>
+  <button type="submit" class="btn btn--ghost btn--sm">Appliquer</button>
+  {% if q or visibility or indexed or sort != 'date' or order != 'desc' %}
+  <a href="/web/admin/documents" class="btn btn--ghost btn--sm">Reset</a>
+  {% endif %}
+  <button type="button" class="btn btn--primary btn--sm" x-on:click="showUpload = true" style="margin-left:auto">+ Upload</button>
+</form>
+
+{# Bulk action bar #}
+<form class="admin-bulkbar"
+      x-show="selected.size > 0" x-cloak
+      x-data="{ bulkAction: 'delete' }"
+      hx-post="/web/admin/documents/bulk-action"
+      hx-target="#bulk-result" hx-swap="innerHTML"
+      hx-on::config-request="
+        const params = event.detail.parameters;
+        params['doc_ids'] = Array.from(selected);
+        params['csrf_token'] = '{{ csrf_token }}';
+        params['action'] = bulkAction;
+      ">
+  <span><span x-text="selected.size"></span> sélectionné(s)</span>
+  <select x-model="bulkAction" class="admin-toolbar__select">
+    <option value="delete">Supprimer</option>
+    <option value="toggle-public">Rendre public</option>
+    <option value="toggle-private">Rendre privé</option>
+    <option value="clear-index">Vider l'index</option>
+  </select>
+  <button type="submit" class="btn btn--primary btn--sm"
+          x-on:click="if (bulkAction === 'delete' && !confirm('Supprimer ' + selected.size + ' document(s) ?')) $event.preventDefault()">Appliquer</button>
+  <button type="button" class="btn btn--ghost btn--sm" x-on:click="selected = new Set()">Annuler</button>
+</form>
+<div id="bulk-result" aria-live="polite"></div>
+
+{# Table 9 colonnes (checkbox + 8) #}
 <div class="admin-table-wrap">
   <div class="admin-table-head admin-doc-row">
+    <span></span>
     <span>Fichier</span>
     <span>Propriétaire</span>
     <span>Type</span>
     <span>Taille</span>
-    <span>Indexation</span>
+    <span>Provider</span>
+    <span>Corpus/Chunks</span>
+    <span>Statut</span>
     <span></span>
   </div>
 
   <div class="admin-table-body">
     {% if rows %}
       {% for r in rows %}
-      <div class="admin-doc-row admin-table-row" id="adoc-{{ r.doc.id }}">
-        <div class="admin-table-cell admin-table-cell--name">
-          <span class="admin-table-cell__icon">{{ icon('document', 14) }}</span>
-          <span class="admin-table-cell__email" title="{{ r.doc.filename }}">{{ r.doc.filename }}</span>
-        </div>
-        <div class="admin-table-cell">
-          <span class="admin-table-cell__mono">{{ r.user_email }}</span>
-        </div>
-        <div class="admin-table-cell">
-          <span class="admin-table-cell__mono">{{ r.doc.file_type or '—' }}</span>
-        </div>
-        <div class="admin-table-cell">
-          <span class="admin-table-cell__mono">{{ r.size }}</span>
-        </div>
-        <div class="admin-table-cell">
-          {% if r.indexed %}
-          <span class="admin-status admin-status--approved">Indexé · {{ r.doc.chunk_count }} chunks</span>
-          {% else %}
-          <span class="admin-status admin-status--pending">En cours…</span>
-          {% endif %}
-        </div>
-        <div class="admin-table-cell admin-table-cell--actions">
-          <button type="button"
-                  class="admin-action admin-action--danger"
-                  hx-delete="/web/admin/documents/{{ r.doc.id }}"
-                  hx-confirm="Supprimer définitivement « {{ r.doc.filename }} » ?"
-                  hx-target="#adoc-{{ r.doc.id }}"
-                  hx-swap="outerHTML"
-                  title="Supprimer">
-            {{ icon('arrow-up-right', 14) }}
-          </button>
-        </div>
-      </div>
+        {% include 'partials/admin/doc-row.html' %}
       {% endfor %}
     {% else %}
       <div class="admin-empty">Aucun document.</div>
@@ -68,4 +96,57 @@
   </div>
 </div>
 
+{# Pagination #}
+{% if total_pages > 1 %}
+<nav class="admin-pagination">
+  {% set qsb = '/web/admin/documents?' %}
+  {% if q %}{% set qsb = qsb ~ 'q=' ~ q ~ '&' %}{% endif %}
+  {% if visibility %}{% set qsb = qsb ~ 'visibility=' ~ visibility ~ '&' %}{% endif %}
+  {% if indexed %}{% set qsb = qsb ~ 'indexed=' ~ indexed ~ '&' %}{% endif %}
+  {% set qsb = qsb ~ 'sort=' ~ sort ~ '&order=' ~ order ~ '&' %}
+  {% if page > 1 %}<a href="{{ qsb }}page={{ page - 1 }}" class="btn btn--ghost btn--sm">← Précédent</a>{% endif %}
+  <span>Page {{ page }} / {{ total_pages }}</span>
+  {% if page < total_pages %}<a href="{{ qsb }}page={{ page + 1 }}" class="btn btn--ghost btn--sm">Suivant →</a>{% endif %}
+</nav>
+{% endif %}
+
+{# Modal upload (admin upload — réutilise /web/documents/upload sous la session admin) #}
+<div class="admin-modal" x-show="showUpload" x-cloak role="dialog"
+     x-on:click.self="showUpload = false" x-on:keydown.escape.window="showUpload = false">
+  <form class="admin-modal__panel"
+        hx-post="/web/documents/upload"
+        hx-encoding="multipart/form-data"
+        hx-target="#upload-result"
+        hx-swap="innerHTML"
+        hx-on::after-request="if (event.detail.successful) { showUpload = false; window.location.reload(); }">
+    {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+    <header class="admin-modal__head">
+      <h2>Uploader un document (admin)</h2>
+      <button type="button" x-on:click="showUpload = false">✕</button>
+    </header>
+    <div class="admin-modal__body">
+      <p style="font-size:var(--text-xs); color:var(--color-fg-muted)">
+        Upload sous votre session admin. Le document sera créé sous votre user.
+      </p>
+      <input type="file" name="file" required>
+      <div id="upload-result" aria-live="polite"></div>
+    </div>
+    <footer class="admin-modal__foot">
+      <button type="button" class="btn btn--ghost btn--sm" x-on:click="showUpload = false">Annuler</button>
+      <button type="submit" class="btn btn--primary btn--sm">Téléverser</button>
+    </footer>
+  </form>
+</div>
+
+{# Modal détails document #}
+<div class="admin-modal" x-show="modalDocId !== null" x-cloak role="dialog"
+     x-on:click.self="modalDocId = null" x-on:keydown.escape.window="modalDocId = null">
+  <div class="admin-modal__panel"
+       x-init="$watch('modalDocId', id => { if (id) htmx.ajax('GET', '/web/admin/documents/' + id + '/details', {target: $el, swap: 'innerHTML'}) })">
+    Chargement…
+  </div>
+</div>
+
+</section>
+<style>[x-cloak] { display: none !important; }</style>
 {% endblock %}

@@ -22,7 +22,7 @@ import logging
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Form, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -382,21 +382,61 @@ async def admin_user_delete(
 @router.get("/documents", response_class=HTMLResponse)
 async def admin_documents(
     request: Request,
+    q: str | None = None,
+    visibility: str | None = None,
+    indexed: str | None = None,
+    sort: str = "date",
+    order: str = "desc",
+    page: int = 1,
     user: dict = Depends(require_web_admin),
     db: AsyncSession = Depends(get_async_session),
 ) -> HTMLResponse:
-    query = select(Document, User.email).join(User, User.id == Document.user_id).order_by(Document.created_at.desc()).limit(200)
-    result = await db.execute(query)
+    """Liste cross-user paginée + filtrée (parité V1 content-documents.js)."""
+    from sqlalchemy.orm import joinedload as _joinedload
+    page_size = 25
+    query = (
+        select(Document, User.email)
+        .join(User, User.id == Document.user_id)
+        .options(_joinedload(Document.collection))
+    )
+    if q:
+        like = f"%{q.strip()}%"
+        query = query.where(Document.filename.ilike(like))
+    if visibility in {"private", "public"}:
+        query = query.where(Document.visibility == visibility)
+    if indexed in {"true", "false"}:
+        if indexed == "true":
+            query = query.where(Document.chunk_count > 0)
+        else:
+            query = query.where((Document.chunk_count.is_(None)) | (Document.chunk_count == 0))
+
+    sort_col = {
+        "name": Document.filename,
+        "size": Document.file_size,
+        "date": Document.updated_at,
+    }.get(sort, Document.updated_at)
+    query = query.order_by(sort_col.asc() if order == "asc" else sort_col.desc())
+
+    # Total count
+    count_q = select(func.count(Document.id)).select_from(Document)
+    if q: count_q = count_q.where(Document.filename.ilike(f"%{q.strip()}%"))
+    if visibility in {"private", "public"}: count_q = count_q.where(Document.visibility == visibility)
+    if indexed == "true": count_q = count_q.where(Document.chunk_count > 0)
+    if indexed == "false": count_q = count_q.where((Document.chunk_count.is_(None)) | (Document.chunk_count == 0))
+    total = (await db.execute(count_q)).scalar_one()
+
+    page = max(1, page)
+    offset = (page - 1) * page_size
+    result = await db.execute(query.offset(offset).limit(page_size))
     rows = []
     for doc, email in result.unique().all():
-        rows.append(
-            {
-                "doc": doc,
-                "user_email": email,
-                "size": _human_size(doc.file_size),
-                "indexed": (doc.chunk_count or 0) > 0,
-            }
-        )
+        rows.append({
+            "doc": doc,
+            "user_email": email,
+            "size": _human_size(doc.file_size),
+            "indexed": (doc.chunk_count or 0) > 0,
+        })
+    total_pages = max(1, (total + page_size - 1) // page_size)
 
     return templates.TemplateResponse(
         request,
@@ -408,7 +448,14 @@ async def admin_documents(
             active_section="documents",
             user=user,
             rows=rows,
-            total=len(rows),
+            total=total,
+            q=q or "",
+            visibility=visibility or "",
+            indexed=indexed or "",
+            sort=sort,
+            order=order,
+            page=page,
+            total_pages=total_pages,
         ),
     )
 
@@ -1008,3 +1055,206 @@ async def admin_users_bulk(
         status_code=200,
         headers={"HX-Trigger": "users-refresh"},
     )
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  Phase 3.4.b — Admin/documents : visibility, reindex, clear, details, bulk
+# ═════════════════════════════════════════════════════════════════════════════
+
+async def _render_admin_doc_row(request: Request, db: AsyncSession, doc: Document) -> HTMLResponse:
+    """Renvoie le row partial admin (re-fetch user email)."""
+    from sqlalchemy.orm import joinedload as _joinedload
+    res = await db.execute(
+        select(Document, User.email)
+        .join(User, User.id == Document.user_id)
+        .options(_joinedload(Document.collection))
+        .where(Document.id == doc.id)
+    )
+    row_data = res.unique().one_or_none()
+    if row_data is None:
+        return HTMLResponse("", status_code=404)
+    fresh_doc, email = row_data
+    return templates.TemplateResponse(
+        request,
+        "partials/admin/doc-row.html",
+        web_context(
+            request,
+            row={
+                "doc": fresh_doc,
+                "user_email": email,
+                "size": _human_size(fresh_doc.file_size),
+                "indexed": (fresh_doc.chunk_count or 0) > 0,
+            },
+        ),
+    )
+
+
+@router.post("/documents/{doc_id}/visibility", response_class=HTMLResponse)
+async def admin_doc_toggle_visibility(
+    request: Request,
+    doc_id: uuid.UUID,
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    if (err := _csrf_or_400(request, csrf_token)):
+        return err
+    doc = (await db.execute(select(Document).where(Document.id == doc_id))).unique().scalar_one_or_none()
+    if doc is None:
+        return HTMLResponse("", status_code=404)
+    doc.visibility = "private" if str(doc.visibility) == "public" else "public"
+    await db.commit()
+    return await _render_admin_doc_row(request, db, doc)
+
+
+@router.post("/documents/{doc_id}/reindex", response_class=HTMLResponse)
+async def admin_doc_reindex(
+    request: Request,
+    doc_id: uuid.UUID,
+    background_tasks: BackgroundTasks,
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    if (err := _csrf_or_400(request, csrf_token)):
+        return err
+    doc = (await db.execute(select(Document).where(Document.id == doc_id))).unique().scalar_one_or_none()
+    if doc is None:
+        return HTMLResponse("", status_code=404)
+    try:
+        from app.core.deps import get_storage_service, get_chroma_client as _gcc
+        from app.features.ingestion.router import _run_indexation_in_background, set_doc_reindex_progress
+
+        storage = get_storage_service()
+        if not doc.file_path:
+            return HTMLResponse(
+                "<div class='toast toast--error'>Fichier source absent.</div>",
+                status_code=400,
+            )
+        content = await storage.download(doc.file_path)
+        file_ext = (doc.filename or "").rsplit(".", 1)[-1] if "." in (doc.filename or "") else "txt"
+        # Collection cible
+        collection_name = None
+        if doc.collection_id:
+            from app.models import Collection as _Collection
+            col = (await db.execute(select(_Collection).where(_Collection.id == doc.collection_id))).unique().scalar_one_or_none()
+            if col:
+                collection_name = col.name
+
+        set_doc_reindex_progress(str(doc.id), 0, "queued", document_name=doc.filename)
+        background_tasks.add_task(
+            _run_indexation_in_background,
+            document_id=doc.id,
+            content=content,
+            file_ext=file_ext,
+            collection_name=collection_name,
+        )
+    except Exception as exc:
+        logger.exception("Admin reindex failed")
+        return HTMLResponse(
+            f"<div class='toast toast--error'>Échec : {exc}</div>",
+            status_code=500,
+        )
+    return await _render_admin_doc_row(request, db, doc)
+
+
+@router.post("/documents/{doc_id}/clear-index", response_class=HTMLResponse)
+async def admin_doc_clear_index(
+    request: Request,
+    doc_id: uuid.UUID,
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    if (err := _csrf_or_400(request, csrf_token)):
+        return err
+    doc = (await db.execute(select(Document).where(Document.id == doc_id))).unique().scalar_one_or_none()
+    if doc is None:
+        return HTMLResponse("", status_code=404)
+    doc.chunk_count = 0
+    doc.embedding_count = 0
+    await db.commit()
+    return await _render_admin_doc_row(request, db, doc)
+
+
+@router.get("/documents/{doc_id}/details", response_class=HTMLResponse)
+async def admin_doc_details(
+    request: Request,
+    doc_id: uuid.UUID,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    from sqlalchemy.orm import joinedload as _joinedload
+    res = await db.execute(
+        select(Document, User.email)
+        .join(User, User.id == Document.user_id)
+        .options(_joinedload(Document.collection))
+        .where(Document.id == doc_id)
+    )
+    row = res.unique().one_or_none()
+    if row is None:
+        return HTMLResponse("Document introuvable.", status_code=404)
+    doc, email = row
+    return templates.TemplateResponse(
+        request,
+        "partials/admin/doc-details-modal.html",
+        web_context(request, doc=doc, owner_email=email, size=_human_size(doc.file_size)),
+    )
+
+
+@router.post("/documents/bulk-action", response_class=HTMLResponse)
+async def admin_docs_bulk(
+    request: Request,
+    action: Annotated[str, Form()],
+    doc_ids: Annotated[list[str], Form()],
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    if (err := _csrf_or_400(request, csrf_token)):
+        return err
+    if action not in {"delete", "toggle-public", "toggle-private", "clear-index"}:
+        return HTMLResponse("<div class='toast toast--error'>Action invalide.</div>", status_code=400)
+    affected = 0
+    for raw in doc_ids:
+        try:
+            did = uuid.UUID(raw)
+        except ValueError:
+            continue
+        doc = (await db.execute(select(Document).where(Document.id == did))).unique().scalar_one_or_none()
+        if doc is None:
+            continue
+        if action == "delete":
+            await db.delete(doc)
+        elif action == "toggle-public":
+            doc.visibility = "public"
+        elif action == "toggle-private":
+            doc.visibility = "private"
+        elif action == "clear-index":
+            doc.chunk_count = 0
+            doc.embedding_count = 0
+        affected += 1
+    if affected:
+        try:
+            await db.commit()
+        except Exception:
+            await db.rollback()
+            return HTMLResponse("<div class='toast toast--error'>Échec.</div>", status_code=500)
+    return HTMLResponse(
+        f"<div class='toast toast--success'>{affected} document(s) traité(s).</div>",
+        headers={"HX-Trigger": "docs-refresh"},
+    )
+
+
+@router.get("/documents/{doc_id}/row", response_class=HTMLResponse)
+async def admin_doc_row(
+    request: Request,
+    doc_id: uuid.UUID,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    """Refresh d'une ligne admin (HTMX polling status indexation)."""
+    doc = (await db.execute(select(Document).where(Document.id == doc_id))).unique().scalar_one_or_none()
+    if doc is None:
+        return HTMLResponse("", status_code=404)
+    return await _render_admin_doc_row(request, db, doc)
