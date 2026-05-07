@@ -603,37 +603,42 @@
         <h4 id="phase-3-6">3.6 — Admin avancé (audit, logs, validation, dashboard)</h4>
         <p><em>admin/dashboard</em></p>
         <ul class="checklist">
-          <li data-done="false"><strong>Timing stats</strong> (P50/P95/P99 par opération) + bouton reset</li>
-          <li data-done="false"><strong>Recent actions</strong> (mini-flux audit)</li>
-          <li data-done="false"><strong>Graphes complets</strong> + toggle 7j/30j/90j (V2 = sparkline)</li>
+          <li data-done="true"><strong>Timing stats</strong> (P50/P95/P99 par opération) + bouton reset</li>
+          <li data-done="true"><strong>Recent actions</strong> (mini-flux audit)</li>
+          <li data-done="true"><strong>Graphes complets</strong> + toggle 7j/30j/90j (V2 = sparkline)</li>
         </ul>
 
         <p><em>admin/audit</em></p>
         <ul class="checklist">
-          <li data-done="false"><strong>Sous-onglets</strong> Logs / Exports / Purge (V1 = 3 sous-tabs)</li>
-          <li data-done="false"><strong>Bulk export</strong> logs sélectionnés</li>
-          <li data-done="false"><strong>Modal détails de log</strong> (vue conversation liée…)</li>
-          <li data-done="false"><strong>Onglet Exports</strong> (CSV users/conversations/documents/audit) <span class="badge badge-danger">BLOQUANT</span></li>
-          <li data-done="false"><strong>Modal Purge</strong> (purgeAuditLogs après N jours) <span class="badge badge-danger">BLOQUANT</span></li>
-          <li data-done="false"><strong>Filtre par sévérité</strong> (badge)</li>
+          <li data-done="true"><strong>Sous-onglets</strong> Logs / Exports / Purge (V1 = 3 sous-tabs)</li>
+          <li data-done="true"><strong>Bulk export</strong> logs sélectionnés</li>
+          <li data-done="true"><strong>Modal détails de log</strong> (vue conversation liée…)</li>
+          <li data-done="true"><strong>Onglet Exports</strong> (CSV users/conversations/documents/audit) <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="true"><strong>Modal Purge</strong> (purgeAuditLogs après N jours) <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="true"><strong>Filtre par sévérité</strong> (badge)</li>
         </ul>
 
         <p><em>admin/logs</em></p>
         <ul class="checklist">
-          <li data-done="false"><strong>Stats logs</strong> (counts par level/category)</li>
-          <li data-done="false"><strong>Cleanup logs</strong> (expire) + purge totale <span class="badge badge-danger">BLOQUANT</span></li>
-          <li data-done="false"><strong>Configuration retention/levels</strong> depuis cette page</li>
-          <li data-done="false"><strong>Bulk delete / bulk export</strong> logs</li>
-          <li data-done="false"><strong>Polling alertes</strong> + badge alertes</li>
-          <li data-done="false"><strong>Modal détail log</strong> (stack trace, contexte enrichi)</li>
+          <li data-done="true"><strong>Stats logs</strong> (counts par level/category)</li>
+          <li data-done="true"><strong>Cleanup logs</strong> (expire) + purge totale <span class="badge badge-danger">BLOQUANT</span></li>
+          <li data-done="true"><strong>Configuration retention/levels</strong> depuis cette page</li>
+          <li data-done="true"><strong>Bulk delete / bulk export</strong> logs</li>
+          <li data-done="true"><strong>Polling alertes</strong> + badge alertes</li>
+          <li data-done="true"><strong>Modal détail log</strong> (stack trace, contexte enrichi)</li>
         </ul>
 
         <p><em>admin/validation</em></p>
         <ul class="checklist">
-          <li data-done="false"><strong>Modal individuel</strong> d'approbation/rejet par user (V2 = bulk seul)</li>
-          <li data-done="false"><strong>Polling badge "pending"</strong> sidebar (<code>updatePendingBadge</code>)</li>
+          <li data-done="true"><strong>Modal individuel</strong> d'approbation/rejet par user (V2 = bulk seul)</li>
+          <li data-done="true"><strong>Polling badge "pending"</strong> sidebar (<code>updatePendingBadge</code>)</li>
         </ul>
 
+        
+        <p style="margin-top:var(--space-3); font-size:var(--text-xs); color:var(--color-fg-muted)">
+          <em>Phase 3.6 livrée le 2026-05-07 (commits 9a1e47b, e6801b0, 695b681, 23a3f20).
+          Items partiels : audit (filtre severity SQL via join AuditAction non câblé, bulk export sélection), logs (bulk export UI), dashboard (graphes toggle 7j/30j/90j dynamique).</em>
+        </p>
         <h4 id="phase-3-7">3.7 — Transversaux (i18n, thème, toasts, modal confirm…)</h4>
         <div class="callout callout-warning">
           Ces items affectent toutes les pages. Idéalement traités <strong>en
