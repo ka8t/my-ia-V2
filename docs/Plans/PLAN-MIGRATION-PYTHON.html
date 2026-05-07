@@ -646,13 +646,13 @@
           respecter l'ordre du master plan.
         </div>
         <ul class="checklist">
-          <li data-done="false"><strong>i18n complet</strong> tous templates user (auth, chat, documents, preferences, home) — <code>t()</code> existe (<code>app/web/jinja.py</code>) mais aucun template ne l'utilise. Locales <code>UI-SHARED/locales/{fr,en}.json</code> à porter.</li>
-          <li data-done="false"><strong>Thème dynamique</strong> (light/dark/auto) — V2 a tokens CSS mais ne lit pas <code>prefs.theme</code>. <code>layouts/base.html</code> doit poser <code>data-theme</code> sur <code>&lt;html&gt;</code>.</li>
-          <li data-done="false"><strong>Système de toasts global</strong> (success/info/warn/err, persistants pour warn/err) — V1 <code>UI-SHARED/js/components/toast.js</code></li>
-          <li data-done="false"><strong>Modal de confirmation</strong> (V2 = <code>hx-confirm</code> natif laid) — V1 <code>UI-SHARED/js/components/confirm.js</code></li>
-          <li data-done="false"><strong>Bandeau debug</strong> (CPU warning, mode debug actif) — V1 <code>UI-SHARED/js/components/debug-banner.js</code></li>
-          <li data-done="false"><strong>Favicon set complet</strong> (favicon-32, apple-touch-icon, ico) — V2 = SVG inline figé</li>
-          <li data-done="false"><strong>Multi-worker streaming chat</strong> via Redis (V2 = <code>_PENDING_STREAMS</code> dict in-memory, non multi-worker) <span class="badge badge-danger">BLOQUANT en prod multi-worker</span></li>
+          <li data-done="true"><strong>i18n complet</strong> tous templates user (auth, chat, documents, preferences, home) — <code>t()</code> existe (<code>app/web/jinja.py</code>) mais aucun template ne l'utilise. Locales <code>UI-SHARED/locales/{fr,en}.json</code> à porter.</li>
+          <li data-done="true"><strong>Thème dynamique</strong> (light/dark/auto) — V2 a tokens CSS mais ne lit pas <code>prefs.theme</code>. <code>layouts/base.html</code> doit poser <code>data-theme</code> sur <code>&lt;html&gt;</code>.</li>
+          <li data-done="true"><strong>Système de toasts global</strong> (success/info/warn/err, persistants pour warn/err) — V1 <code>UI-SHARED/js/components/toast.js</code></li>
+          <li data-done="true"><strong>Modal de confirmation</strong> (V2 = <code>hx-confirm</code> natif laid) — V1 <code>UI-SHARED/js/components/confirm.js</code></li>
+          <li data-done="true"><strong>Bandeau debug</strong> (CPU warning, mode debug actif) — V1 <code>UI-SHARED/js/components/debug-banner.js</code></li>
+          <li data-done="true"><strong>Favicon set complet</strong> (favicon-32, apple-touch-icon, ico) — V2 = SVG inline figé</li>
+          <li data-done="true"><strong>Multi-worker streaming chat</strong> via Redis (V2 = <code>_PENDING_STREAMS</code> dict in-memory, non multi-worker) <span class="badge badge-danger">BLOQUANT en prod multi-worker</span></li>
         </ul>
 
         <p style="margin-top: var(--space-6)"><em>À chaque page :
@@ -662,7 +662,11 @@
     </div>
 
     <div class="vflow-step">
-      <div class="vflow-marker">4</div>
+      
+        <p style="margin-top:var(--space-3); font-size:var(--text-xs); color:var(--color-fg-muted)">
+          <em>Phase 3.7 livrée le 2026-05-07 (commits 38f8b78, e4eacf8, fb7a024). 3.7.c = BLOQUANT prod résolu (multi-worker Redis avec fallback dict).</em>
+        </p>
+          <div class="vflow-marker">4</div>
       <div class="vflow-content">
         <h3>Phase 4 — Décommissionnement / cutover production <span class="badge badge-warning">4.a-4.d ✅ · 4.e ⏳</span></h3>
         <ul class="checklist">
