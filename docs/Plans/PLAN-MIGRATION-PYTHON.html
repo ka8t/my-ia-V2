@@ -370,10 +370,10 @@
         <h4 id="phase-3-1">3.1 — Auth (login, register, reset password)</h4>
         <ul class="checklist">
           <li data-done="false"><strong>OAuth Google/GitHub</strong> sur login (boutons + <code>loadOAuthProviders()</code>) — V1 <code>UI-FRONT/js/app.js</code> → V2 <code>app/templates/pages/auth/login.html</code> + <code>app/web/auth.py</code></li>
-          <li data-done="false"><strong>Panneau debug login</strong> (auto-fill credentials, register debug rapide avec rôle) — V1 <code>app.js:initDebugLoginPanel()</code> → V2 <code>pages/auth/login.html</code></li>
-          <li data-done="false"><strong>Vérification email</strong> écran <code>/verify?token=...</code> avec success/error/redirect 2s — V1 <code>app.js:handleEmailVerification()</code> → nouvelle route + <code>pages/auth/verify.html</code></li>
-          <li data-done="false"><strong>Écran "approval rejected"</strong> dédié (V2 a uniquement pending) — V1 <code>app.js:showApprovalRejectedScreen()</code> → <code>pages/auth/register-rejected.html</code></li>
-          <li data-done="false"><strong>i18n</strong> : tous les textes auth hardcodés FR à passer via <code>t()</code> (locale fr/en) — V1 <code>UI-SHARED/templates/auth/*.html</code> avec <code>data-i18n</code> → tous <code>pages/auth/*.html</code></li>
+          <li data-done="true"><strong>Panneau debug login</strong> (auto-fill credentials, register debug rapide avec rôle) — livré 2026-05-07 (commit <code>000813a</code>)</li>
+          <li data-done="true"><strong>Vérification email</strong> écran <code>/verify?token=...</code> avec success/error/redirect 2s — livré 2026-05-07 (commit <code>000813a</code>)</li>
+          <li data-done="true"><strong>Écran "approval rejected"</strong> dédié — livré 2026-05-07 (commit <code>000813a</code>)</li>
+          <li data-done="true"><strong>i18n</strong> auth : labels/boutons fonctionnels (login, label_email, label_password, forgot_password, back_to_login, create_account, debug_banner_login_*) passés en <code>t()</code> — livré 2026-05-07 (commit <code>000813a</code>). Reste hardcodé : textes décoratifs V2 (eyebrows, hero titles) hors scope V1.</li>
         </ul>
 
         <h4 id="phase-3-2">3.2 — User front (home, profile/preferences, documents)</h4>
