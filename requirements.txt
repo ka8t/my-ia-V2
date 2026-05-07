@@ -56,3 +56,4 @@ aiofiles>=23.0.0
 # ----- Observabilité -----
 prometheus-client==0.20.0
 slowapi==0.1.9
+redis>=5.0.0

@@ -25,6 +25,7 @@ import asyncio
 import html as _html
 import json
 import logging
+import os
 import secrets
 import time
 import uuid
@@ -50,14 +51,39 @@ templates = make_templates(TEMPLATES_DIR)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  In-memory pending stream store
+#  Pending stream store — Redis si REDIS_URL définie, sinon dict in-memory
+#  (Phase 3.7.c — support multi-worker via backend Redis partagé)
 # ─────────────────────────────────────────────────────────────────────────────
-_PENDING_STREAMS: dict[str, dict] = {}
+_PENDING_STREAMS: dict[str, dict] = {}  # fallback in-memory (dev mono-worker)
 _PENDING_TTL_SECONDS = 300  # 5 min
+_REDIS_KEY_PREFIX = "myia:pending_stream:"
+_redis_client = None  # lazy-initialized
+
+
+def _get_redis():
+    """Lazy-init Redis client. Returns None si REDIS_URL absent ou erreur init."""
+    global _redis_client
+    if _redis_client is False:
+        return None  # déjà tenté et échoué
+    if _redis_client is not None:
+        return _redis_client
+    redis_url = os.environ.get("REDIS_URL")
+    if not redis_url:
+        _redis_client = False
+        return None
+    try:
+        import redis.asyncio as _redis_async
+        _redis_client = _redis_async.from_url(redis_url, decode_responses=True)
+        logger.info("Pending streams backend: Redis @ %s", redis_url)
+        return _redis_client
+    except Exception as exc:
+        logger.warning("Redis init failed (%s) — fallback in-memory dict", exc)
+        _redis_client = False
+        return None
 
 
 def _gc_pending_streams() -> None:
-    """Drop entries older than the TTL."""
+    """Drop entries older than the TTL (in-memory fallback only)."""
     cutoff = time.time() - _PENDING_TTL_SECONDS
     for sid in [s for s, v in _PENDING_STREAMS.items() if v["created_at"] < cutoff]:
         _PENDING_STREAMS.pop(sid, None)
@@ -69,21 +95,111 @@ def _put_pending(
     user_id: str,
     rag_mode: str = "auto",
 ) -> str:
-    _gc_pending_streams()
     sid = secrets.token_urlsafe(24)
-    _PENDING_STREAMS[sid] = {
+    payload = {
         "query": query,
         "conversation_id": conversation_id,
         "user_id": user_id,
         "rag_mode": rag_mode,
         "created_at": time.time(),
     }
+    r = _get_redis()
+    if r is not None:
+        # Redis : SETEX avec TTL natif, pas besoin de GC manuel
+        try:
+            import asyncio as _asyncio
+            loop = _asyncio.get_event_loop()
+            loop.create_task(
+                r.set(
+                    _REDIS_KEY_PREFIX + sid,
+                    json.dumps(payload),
+                    ex=_PENDING_TTL_SECONDS,
+                )
+            )
+            return sid
+        except Exception as exc:
+            logger.warning("Redis put failed (%s) — fallback in-memory", exc)
+    # Fallback in-memory
+    _gc_pending_streams()
+    _PENDING_STREAMS[sid] = payload
     return sid
 
 
 def _pop_pending(stream_id: str) -> dict | None:
     """One-shot consume — defeats replay even within TTL."""
+    r = _get_redis()
+    if r is not None:
+        try:
+            import asyncio as _asyncio
+
+            async def _redis_pop():
+                key = _REDIS_KEY_PREFIX + stream_id
+                pipe = r.pipeline()
+                pipe.get(key)
+                pipe.delete(key)
+                results = await pipe.execute()
+                return results[0]
+
+            loop = _asyncio.get_event_loop()
+            raw = loop.run_until_complete(_redis_pop()) if not loop.is_running() else None
+            if raw:
+                return json.loads(raw)
+            # En contexte async, on ne peut pas run_until_complete : la
+            # route stream_get est async, on devrait utiliser await. Le code
+            # actuel est sync ici. Fallback : on essaie le dict in-memory.
+        except Exception as exc:
+            logger.warning("Redis pop failed (%s) — fallback in-memory", exc)
     return _PENDING_STREAMS.pop(stream_id, None)
+
+
+# Variante async pour la route stream (qui est async)
+async def _pop_pending_async(stream_id: str) -> dict | None:
+    """One-shot async consume (préféré dans les routes async)."""
+    r = _get_redis()
+    if r is not None:
+        try:
+            key = _REDIS_KEY_PREFIX + stream_id
+            pipe = r.pipeline()
+            pipe.get(key)
+            pipe.delete(key)
+            results = await pipe.execute()
+            raw = results[0]
+            if raw:
+                return json.loads(raw)
+        except Exception as exc:
+            logger.warning("Redis pop_async failed (%s) — fallback in-memory", exc)
+    return _PENDING_STREAMS.pop(stream_id, None)
+
+
+# Variante async pour _put_pending (préférée dans les routes async)
+async def _put_pending_async(
+    query: str,
+    conversation_id: str,
+    user_id: str,
+    rag_mode: str = "auto",
+) -> str:
+    sid = secrets.token_urlsafe(24)
+    payload = {
+        "query": query,
+        "conversation_id": conversation_id,
+        "user_id": user_id,
+        "rag_mode": rag_mode,
+        "created_at": time.time(),
+    }
+    r = _get_redis()
+    if r is not None:
+        try:
+            await r.set(
+                _REDIS_KEY_PREFIX + sid,
+                json.dumps(payload),
+                ex=_PENDING_TTL_SECONDS,
+            )
+            return sid
+        except Exception as exc:
+            logger.warning("Redis put_async failed (%s) — fallback in-memory", exc)
+    _gc_pending_streams()
+    _PENDING_STREAMS[sid] = payload
+    return sid
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -343,7 +459,7 @@ async def submit_message(
         await db.commit()
 
     # 2) Stash the query for the SSE GET that follows
-    stream_id = _put_pending(
+    stream_id = await _put_pending_async(
         query,
         str(conv.id),
         str(user_id),
@@ -468,7 +584,7 @@ async def chat_stream(
     user: dict = Depends(require_web_auth),
     db: AsyncSession = Depends(get_async_session),
 ):
-    pending = _pop_pending(stream_id)
+    pending = await _pop_pending_async(stream_id)
     if pending is None:
         # Unknown / expired / replayed — close immediately
         async def _gone() -> AsyncIterator[bytes]:

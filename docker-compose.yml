@@ -122,6 +122,9 @@ services:
       # construit à partir des credentials V2 vers le service postgres
       # local. Permet à 4.d cutover (Option A) de pointer vers la BDD V1.
       - DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://${APP_DB_USER}:${APP_DB_PASSWORD}@postgres:5432/${APP_DB_NAME}}
+      # REDIS_URL : si défini, le store de pending streams chat utilise
+      # Redis (multi-worker safe). Sinon fallback dict in-memory (1 worker).
+      - REDIS_URL=${REDIS_URL:-}
       - SESSION_SECRET=${SESSION_SECRET}
       - DEPLOY_ENV=${DEPLOY_ENV:-dev}
       - UVICORN_WORKERS=${UVICORN_WORKERS:-1}
