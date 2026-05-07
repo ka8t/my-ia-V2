@@ -533,6 +533,7 @@ async def admin_audit_get(
         limit=page_size,
         user_id=user_id,
         action_name=action.strip() if action else None,
+        severity=severity.strip() if severity else None,
         date_from=parsed_from,
         date_to=parsed_to,
     )

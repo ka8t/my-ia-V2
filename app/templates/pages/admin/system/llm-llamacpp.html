@@ -102,4 +102,16 @@
   </p>
 </section>
 
+
+{# ─── Métriques live llamacpp (parité V1, sous-vague C) ─── #}
+<section class="admin-fieldset">
+  <legend>Métriques live</legend>
+  <button type="button" class="btn btn--ghost btn--sm"
+          hx-get="/web/admin/system/llm/llamacpp/metrics"
+          hx-target="#llamacpp-metrics" hx-swap="innerHTML">⟳ Actualiser</button>
+  <div id="llamacpp-metrics"
+       hx-get="/web/admin/system/llm/llamacpp/metrics" hx-trigger="load"
+       hx-swap="innerHTML" style="margin-top:var(--space-2)">Chargement…</div>
+</section>
+
 {% endblock %}

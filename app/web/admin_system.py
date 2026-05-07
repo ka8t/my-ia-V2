@@ -2180,3 +2180,95 @@ async def debug_log_level(
         </div>
         </div>"""
     )
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  Sous-vague C — Métriques llamacpp live + RAG stats + import villes
+# ═════════════════════════════════════════════════════════════════════════════
+
+@router.get("/llm/llamacpp/metrics", response_class=HTMLResponse)
+async def llamacpp_metrics(
+    request: Request,
+    user: dict = Depends(require_web_admin),
+    db=Depends(get_async_session),
+) -> HTMLResponse:
+    """Métriques live llamacpp via /metrics endpoint (parité V1)."""
+    try:
+        import httpx as _h
+        from app.features.admin.config.service import _runtime_overrides
+        host = _runtime_overrides.get("llm.llamacpp_host", "host.docker.internal")
+        port = _runtime_overrides.get("llm.llamacpp_port", 8081)
+        async with _h.AsyncClient(timeout=3.0) as c:
+            r = await c.get(f"http://{host}:{port}/metrics")
+        if r.status_code != 200:
+            return HTMLResponse(
+                f"<div class='toast toast--warning'>Métriques indisponibles "
+                f"(serveur llamacpp arrêté ou métriques désactivées).</div>"
+            )
+        # Parser quelques métriques clés
+        text = r.text
+        rows = []
+        for key in ("llamacpp_kv_cache_used_cells", "llamacpp_tokens_predicted_total",
+                    "llamacpp_n_decode_total", "llamacpp_prompt_seconds_total"):
+            for line in text.split("\n"):
+                if line.startswith(key + " "):
+                    val = line.split()[-1]
+                    rows.append(f"<dt><code>{key}</code></dt><dd>{val}</dd>")
+                    break
+        if not rows:
+            return HTMLResponse(
+                "<small style='color:var(--color-fg-muted)'>Métriques disponibles "
+                "mais pas de clé connue trouvée. Vérifier "
+                "<code>llm.llamacpp.metrics_enabled</code>.</small>"
+            )
+        return HTMLResponse(f"<dl class='docs-modal__meta'>{''.join(rows)}</dl>")
+    except Exception as exc:
+        return HTMLResponse(f"<div class='toast toast--error'>Erreur : {exc}</div>")
+
+
+@router.get("/rag/stats", response_class=HTMLResponse)
+async def rag_stats_accordion(
+    request: Request,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    """Stats RAG live (chunks indexés, derniers indexés) — parité V1."""
+    try:
+        from app.features.admin.config.service import ConfigService
+        stats = await ConfigService.get_rag_stats(db)
+        total_chunks = getattr(stats, "total_chunks", 0)
+        total_collections = getattr(stats, "total_collections", 0)
+        last_indexed = getattr(stats, "last_indexed_at", None)
+    except Exception as exc:
+        return HTMLResponse(f"<div class='toast toast--error'>Stats indisponibles : {exc}</div>")
+    last_str = last_indexed.strftime("%d/%m/%Y %H:%M") if last_indexed else "—"
+    return HTMLResponse(
+        f"<dl class='docs-modal__meta'>"
+        f"<dt>Chunks indexés</dt><dd>{total_chunks}</dd>"
+        f"<dt>Collections</dt><dd>{total_collections}</dd>"
+        f"<dt>Dernier indexé</dt><dd>{last_str}</dd>"
+        f"</dl>"
+    )
+
+
+@router.post("/geo/import/cities/{country_code}", response_class=HTMLResponse)
+async def geo_import_cities(
+    request: Request,
+    country_code: str,
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    """Import villes pour un pays (parité V1 importCities)."""
+    if (err := _csrf_or_400(request, csrf_token)):
+        return err
+    try:
+        from app.features.admin.geo.service import GeoAdminService
+        result = await GeoAdminService.import_cities(db, country_code.upper())
+        n = getattr(result, "imported", 0)
+    except Exception as exc:
+        return HTMLResponse(f"<div class='toast toast--error'>Échec : {exc}</div>", status_code=500)
+    return HTMLResponse(
+        f"<div class='toast toast--success'>{n} ville(s) importées pour {country_code.upper()}.</div>",
+        headers={"HX-Trigger": "geo-stats-refresh"},
+    )

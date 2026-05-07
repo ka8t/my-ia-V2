@@ -54,10 +54,18 @@
     </form>
   </div>
   <div id="geo-actions-result" aria-live="polite" style="margin-top:var(--space-2)"></div>
+  <form hx-post="/web/admin/system/geo/import/cities/{country_code}" hx-target="#geo-actions-result" hx-swap="innerHTML"
+        x-data="{ code: 'FR' }"
+        x-on:submit="$el.setAttribute('hx-post', '/web/admin/system/geo/import/cities/' + code.toUpperCase()); htmx.process($el)"
+        style="display:flex; gap:var(--space-2); margin-top:var(--space-2)">
+    {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+    <input type="text" x-model="code" placeholder="Code ISO (ex: FR)" maxlength="3" required
+           style="width:120px" class="admin-toolbar__search">
+    <button type="submit" class="btn btn--ghost btn--sm">⬇ Importer villes</button>
+  </form>
   <p style="font-size:var(--text-xs); color:var(--color-fg-muted); margin-top:var(--space-2)">
-    Import/export villes par pays code, et toggle activation par pays : voir API
-    <code>/api/admin/geo/countries/{code}/toggle-active</code> et
-    <code>/api/admin/geo/import/cities/{country_code}</code>.
+    Toggle activation par pays : voir API
+    <code>/api/admin/geo/countries/{code}/toggle-active</code>.
   </p>
 </section>
 

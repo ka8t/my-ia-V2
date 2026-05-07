@@ -47,4 +47,14 @@
   <div id="rag-test-result" aria-live="polite" style="margin-top:var(--space-2)"></div>
 </section>
 
+
+{# ─── Stats RAG live (parité V1 sous-vague C) ─── #}
+<section class="admin-fieldset">
+  <legend>Statistiques RAG</legend>
+  <button type="button" class="btn btn--ghost btn--sm"
+          hx-get="/web/admin/system/rag/stats" hx-target="#rag-stats" hx-swap="innerHTML">⟳</button>
+  <div id="rag-stats" hx-get="/web/admin/system/rag/stats" hx-trigger="load" hx-swap="innerHTML"
+       style="margin-top:var(--space-2)">Chargement…</div>
+</section>
+
 {% endblock %}
