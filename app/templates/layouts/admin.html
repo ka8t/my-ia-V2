@@ -91,9 +91,15 @@
           </a>
         </li>
         <li>
-          <a class="admin-nav__item admin-nav__item--soon" aria-disabled="true">
+          <a class="admin-nav__item{% if active_section == 'collections' %} admin-nav__item--active{% endif %}"
+             href="/web/admin/collections">
+            {{ icon('document', 14) }}<span>Bibliothèques</span>
+          </a>
+        </li>
+        <li>
+          <a class="admin-nav__item{% if active_section == 'conversations' %} admin-nav__item--active{% endif %}"
+             href="/web/admin/conversations">
             {{ icon('chat', 14) }}<span>Conversations</span>
-            <span class="admin-nav__soon">Bientôt</span>
           </a>
         </li>
         <li>
