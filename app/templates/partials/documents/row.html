@@ -1,8 +1,9 @@
 {# ─────────────────────────────────────────────────────────────────────
  # partials/documents/row.html
- # Une ligne du tableau Documents.
- # Si le statut est "pending", la ligne se ré-interroge toutes les 3s
- # via hx-get + hx-trigger="every 3s" pour rafraîchir le statut.
+ # Une ligne du tableau Documents, avec checkbox de sélection
+ # multiple + actions (download / visibility / replace / details /
+ # delete) à parité V1 documents.js.
+ # Si le statut est "pending", la ligne se ré-interroge toutes les 4s.
  # ────────────────────────────────────────────────────────────────────── #}
 {% from "macros/icon.html" import icon %}
 
@@ -15,9 +16,22 @@
      hx-swap="outerHTML"
      {% endif %}>
 
+  <div class="docs-row__cell docs-row__select">
+    <input type="checkbox"
+           class="docs-row__checkbox"
+           value="{{ doc.id }}"
+           x-on:change="$event.target.checked ? selected.add('{{ doc.id }}') : selected.delete('{{ doc.id }}'); selected = new Set(selected)">
+  </div>
+
   <div class="docs-row__cell docs-row__name" title="{{ doc.filename }}">
     <span class="docs-row__icon">{{ icon('document', 16) }}</span>
     <span class="docs-row__filename">{{ doc.filename }}</span>
+    {# Badge visibilité (parité V1 documents.js) #}
+    {% if doc.visibility == 'public' %}
+      <span class="docs-row__visibility docs-row__visibility--public" title="Document public">PUB</span>
+    {% else %}
+      <span class="docs-row__visibility docs-row__visibility--private" title="Document privé">PRIV</span>
+    {% endif %}
   </div>
 
   <div class="docs-row__cell">
@@ -37,14 +51,70 @@
   </div>
 
   <div class="docs-row__cell docs-row__actions">
+    {# Détails (parité V1 showDocumentDetails) #}
+    <button type="button"
+            class="docs-row__action"
+            x-on:click="modalDocId = '{{ doc.id }}'"
+            title="Détails"
+            aria-label="Détails">
+      {{ icon('info-circle', 14) }}
+    </button>
+
+    {# Download (parité V1 downloadDocument) #}
+    <a class="docs-row__action"
+       href="/web/documents/{{ doc.id }}/download"
+       title="Télécharger"
+       aria-label="Télécharger">
+      {{ icon('arrow-up-right', 14) }}
+    </a>
+
+    {# Toggle visibility (parité V1 toggleVisibility) #}
+    <form class="docs-row__action-form"
+          hx-post="/web/documents/{{ doc.id }}/visibility"
+          hx-target="#doc-{{ doc.id }}"
+          hx-swap="outerHTML"
+          hx-confirm="Basculer la visibilité de « {{ doc.filename }} » en {{ 'privé' if doc.visibility == 'public' else 'public' }} ?">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="visibility" value="{{ 'private' if doc.visibility == 'public' else 'public' }}">
+      <button type="submit" class="docs-row__action"
+              title="{{ 'Rendre privé' if doc.visibility == 'public' else 'Rendre public' }}"
+              aria-label="Basculer visibilité">
+        {{ icon('sparkle', 14) }}
+      </button>
+    </form>
+
+    {# Replace (parité V1 showReplaceDialog) — file picker hidden #}
+    <form class="docs-row__action-form"
+          x-data="{}"
+          hx-put="/web/documents/{{ doc.id }}/replace"
+          hx-encoding="multipart/form-data"
+          hx-target="#doc-{{ doc.id }}"
+          hx-swap="outerHTML">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="file"
+             x-ref="replaceInput"
+             name="file"
+             style="display:none"
+             x-on:change="$el.files.length && htmx.trigger($el.closest('form'), 'submit')">
+      <button type="button"
+              class="docs-row__action"
+              x-on:click="$refs.replaceInput.click()"
+              title="Remplacer le fichier"
+              aria-label="Remplacer">
+        {{ icon('check-circle', 14) }}
+      </button>
+    </form>
+
+    {# Delete (parité V1) #}
     <button type="button"
             class="docs-row__action docs-row__action--danger"
             hx-delete="/web/documents/{{ doc.id }}"
             hx-confirm="Supprimer définitivement « {{ doc.filename }} » ?"
             hx-target="#doc-{{ doc.id }}"
             hx-swap="outerHTML"
+            title="Supprimer"
             aria-label="Supprimer">
-      {{ icon('arrow-up-right', 14) }}
+      {{ icon('alert-circle', 14) }}
     </button>
   </div>
 </div>

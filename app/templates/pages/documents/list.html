@@ -5,7 +5,9 @@
 {% block title %}Documents — MY-IA{% endblock %}
 
 {% block app_content %}
-<section class="docs-shell">
+<section class="docs-shell"
+         x-data="{ selected: new Set(), modalDocId: null }"
+         hx-on:docs-refresh="window.location.reload()">
 
   <header class="docs-header">
     <div>
@@ -25,7 +27,23 @@
     </div>
   </header>
 
-  {# ─── Upload zone ─── #}
+  {# ─── Quota storage (parité V1 documents.js:loadStorageStats) ─── #}
+  <div class="docs-quota">
+    <div class="docs-quota__head">
+      <span><strong>{{ quota.used_human }}</strong> / {{ quota.quota_human }}</span>
+      <span class="docs-quota__count">{{ quota.file_count }} fichier{{ 's' if quota.file_count != 1 }}</span>
+    </div>
+    <div class="docs-quota__bar" role="progressbar"
+         aria-valuenow="{{ quota.percent|round|int }}"
+         aria-valuemin="0" aria-valuemax="100">
+      <span class="docs-quota__fill"
+            style="width: {{ [quota.percent, 100]|min|round(1) }}%;
+                   {% if quota.percent > 90 %}background: var(--color-danger);{% elif quota.percent > 70 %}background: var(--color-warning);{% endif %}">
+      </span>
+    </div>
+  </div>
+
+  {# ─── Upload zone (parité V1 upload.js : choix collection + multi-files) ─── #}
   <form class="docs-upload"
         hx-post="/web/documents/upload"
         hx-encoding="multipart/form-data"
@@ -34,27 +52,44 @@
         hx-disabled-elt="button[type=submit]"
         hx-on::before-request="document.getElementById('docs-empty')?.remove()"
         hx-on::after-request="if (event.detail.successful) { this.reset(); document.getElementById('upload-error').innerHTML=''; } else { document.getElementById('upload-error').innerHTML=event.detail.xhr.responseText; }"
-        x-data="{ fileName: '' }">
+        x-data="{ files: [], targetCol: '{% if collections %}{{ collections[0].id }}{% endif %}' }">
 
     {% if csrf_token %}
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     {% endif %}
 
+    {# Sélecteur de collection cible (parité V1 upload.js:loadUploadCollections) #}
+    {% if collections %}
+    <div class="docs-upload__collection">
+      <label for="upload-collection">Collection cible :</label>
+      <select id="upload-collection" name="collection_id" x-model="targetCol">
+        {% for c in collections %}
+        <option value="{{ c.id }}">
+          {{ c.display_name }} ({{ 'privée' if c.type == 'private' else 'publique' }})
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    {% endif %}
+
     <label class="docs-upload__drop"
            x-on:dragover.prevent="$el.classList.add('is-drag')"
            x-on:dragleave.prevent="$el.classList.remove('is-drag')"
-           x-on:drop.prevent="$el.classList.remove('is-drag'); var f=$event.dataTransfer.files[0]; if (f) { $refs.input.files=$event.dataTransfer.files; fileName=f.name; }">
+           x-on:drop.prevent="$el.classList.remove('is-drag'); if ($event.dataTransfer.files.length) { $refs.input.files=$event.dataTransfer.files; files=Array.from($event.dataTransfer.files); }">
       <input
         type="file"
         name="file"
         x-ref="input"
-        x-on:change="fileName = $el.files[0]?.name || ''"
+        x-on:change="files = $el.files ? Array.from($el.files) : []"
+        multiple
         required>
       <span class="docs-upload__icon">{{ icon('document', 26) }}</span>
       <span class="docs-upload__hint">
-        <strong x-text="fileName || 'Glissez-déposez un fichier'"></strong>
-        <small x-show="!fileName">ou cliquez pour parcourir</small>
-        <small x-show="fileName" x-cloak>Cliquez sur Téléverser pour confirmer</small>
+        <strong x-show="!files.length">Glissez-déposez un ou plusieurs fichiers</strong>
+        <strong x-show="files.length === 1" x-text="files[0]?.name" x-cloak></strong>
+        <strong x-show="files.length > 1" x-text="files.length + ' fichiers sélectionnés'" x-cloak></strong>
+        <small x-show="!files.length">ou cliquez pour parcourir</small>
+        <small x-show="files.length" x-cloak>Cliquez sur Téléverser pour confirmer</small>
       </span>
     </label>
 
@@ -65,8 +100,79 @@
     <div id="upload-error" aria-live="polite" class="docs-upload__error"></div>
   </form>
 
-  {# ─── Liste ─── #}
+  {# ─── Toolbar : search, filtres, tri (parité V1) ─── #}
+  <form class="docs-toolbar" method="get" action="/web/documents">
+    <div class="docs-toolbar__group">
+      <input type="search"
+             name="q"
+             value="{{ q }}"
+             placeholder="Rechercher par nom de fichier…"
+             class="docs-toolbar__search">
+    </div>
+
+    <div class="docs-toolbar__group">
+      <select name="visibility" class="docs-toolbar__select">
+        <option value="">Visibilité : toutes</option>
+        <option value="private" {% if visibility == 'private' %}selected{% endif %}>Privée</option>
+        <option value="public"  {% if visibility == 'public'  %}selected{% endif %}>Publique</option>
+      </select>
+
+      {% if collections %}
+      <select name="collection_id" class="docs-toolbar__select">
+        <option value="">Collection : toutes</option>
+        {% for c in collections %}
+        <option value="{{ c.id }}" {% if collection_id == c.id|string %}selected{% endif %}>
+          {{ c.display_name }}
+        </option>
+        {% endfor %}
+      </select>
+      {% endif %}
+
+      <select name="sort" class="docs-toolbar__select">
+        <option value="date" {% if sort == 'date' %}selected{% endif %}>Date</option>
+        <option value="name" {% if sort == 'name' %}selected{% endif %}>Nom</option>
+        <option value="size" {% if sort == 'size' %}selected{% endif %}>Taille</option>
+      </select>
+
+      <select name="order" class="docs-toolbar__select">
+        <option value="desc" {% if order == 'desc' %}selected{% endif %}>↓ desc.</option>
+        <option value="asc"  {% if order == 'asc'  %}selected{% endif %}>↑ asc.</option>
+      </select>
+
+      <button type="submit" class="btn btn--ghost btn--sm">Appliquer</button>
+      {% if q or visibility or collection_id or sort != 'date' or order != 'desc' %}
+      <a href="/web/documents" class="btn btn--ghost btn--sm">Réinitialiser</a>
+      {% endif %}
+    </div>
+  </form>
+
+  {# ─── Bulk-actions bar (visible si sélection > 0) ─── #}
+  <form class="docs-bulkbar"
+        x-show="selected.size > 0"
+        x-cloak
+        hx-post="/web/documents/bulk-delete"
+        hx-target="#bulk-result"
+        hx-swap="innerHTML"
+        hx-disabled-elt="button[type=submit]"
+        hx-on::config-request="event.detail.parameters['ids'] = Array.from(selected); event.detail.parameters['csrf_token'] = '{{ csrf_token }}'">
+    <span><span x-text="selected.size"></span> sélectionné<span x-show="selected.size > 1">s</span></span>
+    <button type="submit"
+            class="btn btn--danger btn--sm"
+            x-on:click="if (!confirm('Supprimer définitivement ' + selected.size + ' document(s) ?')) $event.preventDefault()">
+      Supprimer en masse
+    </button>
+    <button type="button"
+            class="btn btn--ghost btn--sm"
+            x-on:click="selected = new Set()">
+      Tout désélectionner
+    </button>
+  </form>
+  <div id="bulk-result" aria-live="polite"></div>
+
+  {# ─── Liste groupée par collection (parité V1 toggleDocsCollectionGroup) ─── #}
+  {% if grouped %}
   <div class="docs-list-head">
+    <span></span>
     <span>Fichier</span>
     <span>Type</span>
     <span>Taille</span>
@@ -75,17 +181,58 @@
   </div>
 
   <div id="docs-list" class="docs-list">
-    {% if rows %}
-      {% for r in rows %}
-        {% with doc=r.doc, status=r.status, size=r.size %}
-          {% include 'partials/documents/row.html' %}
-        {% endwith %}
-      {% endfor %}
-    {% else %}
-      <div id="docs-empty" class="docs-empty">
-        <span>Aucun document pour l'instant. Téléversez votre premier fichier.</span>
+    {% for col_name, col_rows in grouped.items() %}
+    <div class="docs-group" x-data="{ open: true }">
+      <button type="button" class="docs-group__head" x-on:click="open = !open">
+        <span x-text="open ? '▼' : '▶'" aria-hidden="true"></span>
+        <strong>{{ col_name }}</strong>
+        <span class="docs-group__count">{{ col_rows|length }}</span>
+      </button>
+      <div class="docs-group__body" x-show="open" x-cloak>
+        {% for r in col_rows %}
+          {% with doc=r.doc, status=r.status, size=r.size %}
+            {% include 'partials/documents/row.html' %}
+          {% endwith %}
+        {% endfor %}
       </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {# ─── Pagination ─── #}
+  {% if total_pages > 1 %}
+  <nav class="docs-pagination">
+    {% if page > 1 %}
+      <a href="?{% if q %}q={{ q }}&{% endif %}{% if visibility %}visibility={{ visibility }}&{% endif %}{% if collection_id %}collection_id={{ collection_id }}&{% endif %}sort={{ sort }}&order={{ order }}&page={{ page - 1 }}"
+         class="btn btn--ghost btn--sm">← Précédent</a>
     {% endif %}
+    <span>Page {{ page }} / {{ total_pages }}</span>
+    {% if page < total_pages %}
+      <a href="?{% if q %}q={{ q }}&{% endif %}{% if visibility %}visibility={{ visibility }}&{% endif %}{% if collection_id %}collection_id={{ collection_id }}&{% endif %}sort={{ sort }}&order={{ order }}&page={{ page + 1 }}"
+         class="btn btn--ghost btn--sm">Suivant →</a>
+    {% endif %}
+  </nav>
+  {% endif %}
+  {% else %}
+  <div id="docs-list" class="docs-list">
+    <div id="docs-empty" class="docs-empty">
+      <span>Aucun document. Téléversez votre premier fichier.</span>
+    </div>
+  </div>
+  {% endif %}
+
+  {# ─── Modal détails (Alpine show/hide) ─── #}
+  <div class="docs-modal"
+       x-show="modalDocId !== null"
+       x-cloak
+       role="dialog"
+       aria-modal="true"
+       x-on:click.self="modalDocId = null"
+       x-on:keydown.escape.window="modalDocId = null">
+    <div class="docs-modal__panel"
+         x-init="$watch('modalDocId', id => { if (id) htmx.ajax('GET', '/web/documents/' + id + '/details', {target: $el, swap: 'innerHTML'}) })">
+      Chargement…
+    </div>
   </div>
 
 </section>
