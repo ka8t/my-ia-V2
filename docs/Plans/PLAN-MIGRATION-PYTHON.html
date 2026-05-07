@@ -397,13 +397,13 @@
 
         <p><em>Profile / Preferences</em></p>
         <ul class="checklist">
-          <li data-done="false"><strong>Badge "vérifié"</strong> (email verified) dans profil — V1 <code>#profileVerifiedBadge</code></li>
-          <li data-done="false"><strong>"Membre depuis" / created_at</strong> — V1 <code>#profileCreatedAt</code></li>
-          <li data-done="false"><strong>Préférences vocales</strong> (voiceToText, voiceAutoSend, TTS enabled, TTS auto-play, TTS rate slider) — V1 <code>#voiceToTextGroup,...</code></li>
-          <li data-done="false"><strong>Mode par défaut</strong> (chatbot vs assistant) pour nouvelles conversations — V1 <code>#defaultMode</code></li>
-          <li data-done="false"><strong>Username éditable</strong> (V2 = read-only) — V1 <code>profile.js:UserForm.render</code></li>
-          <li data-done="false"><strong>Règles password affichées</strong> reflétant les vraies règles backend — V1 <code>password_requirements</code></li>
-          <li data-done="false"><strong>Sélecteur de langue dynamique</strong> (changement à chaud) — V1 <code>I18n.renderLanguageSelector</code></li>
+          <li data-done="true"><strong>Badge "vérifié"</strong> (email verified) — livré 2026-05-07 (commit <code>268048a</code>)</li>
+          <li data-done="true"><strong>"Membre depuis" / created_at</strong> — livré 2026-05-07 (commit <code>268048a</code>)</li>
+          <li data-done="true"><strong>Préférences vocales</strong> (5 champs : voice_to_text, voice_auto_send, voice_tts_enabled, voice_tts_auto_play, voice_tts_rate) — livré 2026-05-07 (commit <code>268048a</code>)</li>
+          <li data-done="true"><strong>Mode par défaut</strong> (chatbot vs assistant) — livré 2026-05-07 (commit <code>268048a</code>)</li>
+          <li data-done="true"><strong>Username éditable</strong> (avec validation unicité) — livré 2026-05-07 (commit <code>268048a</code>)</li>
+          <li data-done="true"><strong>Règles password affichées</strong> (lues depuis PasswordPolicy default en BDD) — livré 2026-05-07 (commit <code>268048a</code>)</li>
+          <li data-done="true"><strong>Sélecteur de langue dynamique</strong> (auto-submit + reload pour appliquer la langue) — livré 2026-05-07 (commit <code>268048a</code>)</li>
         </ul>
 
         <h4 id="phase-3-3">3.3 — Chat (page la plus dégradée)</h4>
