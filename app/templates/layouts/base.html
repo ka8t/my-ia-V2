@@ -60,6 +60,54 @@
         }
       }, 50);
     });
+
+    // Listener global : à la fermeture SSE (event "done"), on retire
+    // data-streaming sur le body en cours de stream → le MutationObserver
+    // ci-dessous se déclenche et applique le rendu Markdown.
+    document.addEventListener('htmx:sseClose', function (e) {
+      var article = e.target;
+      if (!article || !article.classList) return;
+      var body = article.querySelector('.chat-message__body[data-streaming]');
+      if (body) body.removeAttribute('data-streaming');
+    });
+    // Fallback : si l'event sseClose ne bubble pas, on déclenche aussi sur
+    // 'done' (notre custom close-event). htmx-ext-sse fait .close() côté
+    // EventSource au reçu de l'event listé dans sse-close attribute.
+    document.addEventListener('htmx:sseMessage', function (e) {
+      if (e.detail && (e.detail.type === 'done' || e.detail.type === 'error')) {
+        var article = e.target;
+        var body = article && article.querySelector
+          ? article.querySelector('.chat-message__body[data-streaming]')
+          : null;
+        if (body) body.removeAttribute('data-streaming');
+      }
+    });
+
+    // Detect end-of-stream : MutationObserver sur les .chat-message__body
+    // qui passent de data-streaming="1" à absent de l'attribut.
+    document.addEventListener('DOMContentLoaded', function () {
+      var observer = new MutationObserver(function (mutations) {
+        mutations.forEach(function (m) {
+          if (m.type !== 'attributes' || m.attributeName !== 'data-streaming') return;
+          var el = m.target;
+          if (!el.classList || !el.classList.contains('chat-message__body')) return;
+          if (el.hasAttribute('data-streaming')) return;  // toujours en stream
+          // Stream terminé → remove status + parse markdown
+          var assistant = el.closest('.chat-message');
+          if (assistant) {
+            var s = assistant.querySelector('.chat-message__status');
+            if (s) s.remove();
+          }
+          el.removeAttribute('data-rendered');
+          window.renderChatMarkdown(el);
+        });
+      });
+      observer.observe(document.body, {
+        attributes: true,
+        attributeFilter: ['data-streaming'],
+        subtree: true,
+      });
+    });
   </script>
 
   {# HTMX 2 ne swap pas sur 4xx/5xx par défaut. Pour l'auth web on veut
