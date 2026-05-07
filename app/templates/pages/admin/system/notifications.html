@@ -60,4 +60,21 @@
   {{ form_actions() }}
 </form>
 
+
+{# ─── Test par canal (parité V1 testNotification) ─── #}
+<section class="admin-fieldset">
+  <legend>Tester un canal</legend>
+  <form hx-post="/web/admin/system/notifications/test" hx-target="#notif-test-result" hx-swap="innerHTML"
+        style="display:flex; gap:var(--space-2)">
+    {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+    <select name="channel" class="admin-toolbar__select">
+      <option value="email">Email</option>
+      <option value="slack">Slack</option>
+      <option value="webhook">Webhook</option>
+    </select>
+    <button type="submit" class="btn btn--primary btn--sm">Tester</button>
+  </form>
+  <div id="notif-test-result" aria-live="polite" style="margin-top:var(--space-2)"></div>
+</section>
+
 {% endblock %}

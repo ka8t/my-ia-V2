@@ -2028,3 +2028,96 @@ async def indexation_post(
         success=f"{saved} clé(s) enregistrée(s)." if not errors else None,
         error="; ".join(errors) if errors else None,
     )
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  Phase 3.5.c — Comm tests : SMTP + notifications + speech health
+# ═════════════════════════════════════════════════════════════════════════════
+
+@router.post("/smtp/test", response_class=HTMLResponse)
+async def smtp_test(
+    request: Request,
+    recipient: Annotated[str | None, Form()] = None,
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    if (err := _csrf_or_400(request, csrf_token)):
+        return err
+    try:
+        from app.features.admin.config.service import ConfigService
+        result = await ConfigService.test_smtp_connection(
+            db,
+            recipient_email=(recipient or user.get("email") or "").strip(),
+            admin_user_email=user.get("email") or "",
+        )
+        ok = bool(getattr(result, "success", False))
+        msg = getattr(result, "message", "") or ("Test OK" if ok else "Échec")
+    except Exception as exc:
+        ok = False
+        msg = str(exc)[:200]
+    cls = "toast--success" if ok else "toast--error"
+    return HTMLResponse(f"<div class='toast {cls}'>{msg}</div>", status_code=200 if ok else 500)
+
+
+@router.post("/notifications/test", response_class=HTMLResponse)
+async def notifications_test(
+    request: Request,
+    channel: Annotated[str, Form()],
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    if (err := _csrf_or_400(request, csrf_token)):
+        return err
+    if channel not in {"email", "slack", "webhook"}:
+        return HTMLResponse("<div class='toast toast--error'>Canal invalide.</div>", status_code=400)
+    try:
+        from app.common.utils.notifier import NotificationService
+        ok = bool(await NotificationService.test_channel(db, channel))
+        msg = "Test OK" if ok else "Échec (voir logs)"
+    except Exception as exc:
+        ok = False
+        msg = str(exc)[:200]
+    cls = "toast--success" if ok else "toast--error"
+    return HTMLResponse(f"<div class='toast {cls}'>[{channel}] {msg}</div>", status_code=200 if ok else 500)
+
+
+@router.get("/speech/status", response_class=HTMLResponse)
+async def speech_status(
+    request: Request,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    """Health check Whisper + modèle chargé."""
+    out = []
+    try:
+        import httpx as _h
+        from app.features.admin.config.service import _runtime_overrides
+        host = _runtime_overrides.get("speech.whisper_host", "whisper")
+        port = _runtime_overrides.get("speech.whisper_port", 8000)
+        async with _h.AsyncClient(timeout=5.0) as c:
+            r = await c.get(f"http://{host}:{port}/health")
+        ok = r.status_code == 200
+        out.append({"name": "Whisper", "ok": ok, "info": "OK" if ok else f"HTTP {r.status_code}"})
+        # Modèle chargé
+        try:
+            async with _h.AsyncClient(timeout=5.0) as c:
+                rm = await c.get(f"http://{host}:{port}/v1/models")
+            if rm.status_code == 200:
+                models = [m.get("id") for m in rm.json().get("data", [])]
+                out.append({"name": "Modèles chargés", "ok": True, "info": ", ".join(models) or "aucun"})
+        except Exception:
+            pass
+    except Exception as exc:
+        out.append({"name": "Whisper", "ok": False, "info": str(exc)[:60]})
+    parts = ["<div class='llm-health'>"]
+    for p in out:
+        cls = "ok" if p["ok"] else "error"
+        icon = "✓" if p["ok"] else "✗"
+        parts.append(
+            f"<div class='llm-health__row llm-health__row--{cls}'>"
+            f"<strong>{icon} {p['name']}</strong> <small>{p['info']}</small></div>"
+        )
+    parts.append("</div>")
+    return HTMLResponse("".join(parts))

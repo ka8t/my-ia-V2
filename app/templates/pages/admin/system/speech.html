@@ -83,4 +83,16 @@
   {{ form_actions() }}
 </form>
 
+
+{# ─── Status Whisper (parité V1 speech.js status) ─── #}
+<section class="admin-fieldset">
+  <legend>Status Whisper</legend>
+  <button type="button" class="btn btn--ghost btn--sm"
+          hx-get="/web/admin/system/speech/status" hx-target="#speech-status" hx-swap="innerHTML">
+    Vérifier
+  </button>
+  <div id="speech-status" aria-live="polite" style="margin-top:var(--space-2)"
+       hx-get="/web/admin/system/speech/status" hx-trigger="load" hx-swap="innerHTML">Chargement…</div>
+</section>
+
 {% endblock %}

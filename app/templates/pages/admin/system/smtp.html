@@ -61,4 +61,17 @@
   {{ form_actions() }}
 </form>
 
+
+{# ─── Test connexion SMTP (parité V1 testSmtp) ─── #}
+<section class="admin-fieldset">
+  <legend>Test de connexion</legend>
+  <form hx-post="/web/admin/system/smtp/test" hx-target="#smtp-test-result" hx-swap="innerHTML"
+        style="display:flex; gap:var(--space-2)">
+    {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+    <input type="email" name="recipient" placeholder="email destinataire (vide = vous)" class="admin-toolbar__search">
+    <button type="submit" class="btn btn--primary btn--sm">Envoyer test</button>
+  </form>
+  <div id="smtp-test-result" aria-live="polite" style="margin-top:var(--space-2)"></div>
+</section>
+
 {% endblock %}
