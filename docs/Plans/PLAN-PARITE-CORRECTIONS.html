@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MY-IA &mdash; Plan de corrections parit&eacute; V1&rarr;V2</title>
+  <link rel="stylesheet" href="../assets/doc-style.css">
+</head>
+<body>
+
+<!-- ==================== HEADER ==================== -->
+<div class="header">
+  <div class="page">
+    <div class="header-icon">&#x1F527;</div>
+    <div>
+      <h1>MY-IA &mdash; Plan de corrections parit&eacute; V1&rarr;V2</h1>
+      <div class="subtitle">
+        Suivi d'ex&eacute;cution des 25 actions identifi&eacute;es par l'audit de parit&eacute;.
+        Cocher <code>data-done="true"</code> apr&egrave;s chaque commit valid&eacute;.
+      </div>
+      <div class="meta">
+        <span>Version 1.0 &mdash; ouverture</span>
+        <span>D&eacute;marr&eacute; 2026-05-07</span>
+        <span>25 actions</span>
+        <span>4 niveaux P0&rarr;P3</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+
+<!-- ==================== STATUT GLOBAL ==================== -->
+<div class="section" id="statut">
+  <div class="section-header">
+    <div class="section-icon icon-blue">&#x1F4CA;</div>
+    <div><h2>Statut d'ex&eacute;cution</h2></div>
+  </div>
+
+  <p>Source de v&eacute;rit&eacute; pour le suivi des corrections de parit&eacute;. Mis &agrave; jour &agrave; chaque commit.
+  Pour le diagnostic d&eacute;taill&eacute;, voir <a href="PLAN-AUDIT-PARITE-V1-V2.html">PLAN-AUDIT-PARITE-V1-V2.html</a>.</p>
+
+  <table>
+    <thead>
+      <tr><th>Niveau</th><th>P&eacute;rim&egrave;tre</th><th>Items</th><th>Livr&eacute;s</th><th>Effort estim&eacute;</th><th>Statut</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="badge badge-danger">P0 Critique</span></td>
+        <td>Bugs prod / fonctionnalit&eacute;s centrales</td>
+        <td>5</td>
+        <td>0/5</td>
+        <td>3-5 jours</td>
+        <td><span class="badge badge-warning">&Agrave; faire</span></td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-warning">P1 Majeur</span></td>
+        <td>Composants UI manquants + tests critiques</td>
+        <td>8</td>
+        <td>0/8</td>
+        <td>10-14 jours</td>
+        <td><span class="badge badge-warning">&Agrave; faire</span></td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-info">P2 Mod&eacute;r&eacute;</span></td>
+        <td>Compl&eacute;tion parit&eacute;</td>
+        <td>7</td>
+        <td>0/7</td>
+        <td>15-20 jours</td>
+        <td><span class="badge badge-warning">&Agrave; faire</span></td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-info">P3 Dette</span></td>
+        <td>Recouvrement tests + dette archi</td>
+        <td>5</td>
+        <td>0/5</td>
+        <td>20-40 jours</td>
+        <td><span class="badge badge-warning">&Agrave; faire</span></td>
+      </tr>
+      <tr>
+        <td><strong>TOTAL</strong></td>
+        <td>&mdash;</td>
+        <td><strong>25</strong></td>
+        <td><strong>0/25</strong></td>
+        <td><strong>5-7 semaines</strong></td>
+        <td>&mdash;</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-info">
+    <span class="callout-icon">&#x1F4A1;</span>
+    <div>
+      <strong>Convention de suivi</strong> : pour chaque action, le bloc inclut
+      (a) une checkbox principale <code>data-done</code>, (b) une zone "Commit", (c) une zone "Tests ajout&eacute;s".
+      Apr&egrave;s chaque commit valid&eacute;, mettre &agrave; jour les 3 zones puis incr&eacute;menter le compteur dans la
+      table de statut globale ci-dessus.
+    </div>
+  </div>
+</div>
+
+<!-- ==================== TOC ==================== -->
+<div class="toc">
+  <h2>Table des mati&egrave;res</h2>
+  <div class="toc-grid">
+    <a href="#statut"><span class="toc-num">0</span> Statut global</a>
+    <a href="#p0"><span class="toc-num">1</span> P0 &mdash; Critique (5)</a>
+    <a href="#p1"><span class="toc-num">2</span> P1 &mdash; Majeur (8)</a>
+    <a href="#p2"><span class="toc-num">3</span> P2 &mdash; Mod&eacute;r&eacute; (7)</a>
+    <a href="#p3"><span class="toc-num">4</span> P3 &mdash; Dette (5)</a>
+    <a href="#trajectoire"><span class="toc-num">5</span> Trajectoire</a>
+  </div>
+</div>
+
+<!-- ==================== P0 ==================== -->
+<div class="section" id="p0">
+  <div class="section-header">
+    <div class="section-icon icon-red">&#x1F525;</div>
+    <div><h2>P0 &mdash; Critique <span class="section-num">&mdash; 5 actions</span></h2></div>
+  </div>
+
+  <p>D&eacute;lai cible : <strong>&le; 1 semaine</strong>. Crit&egrave;re : bug en prod ou fonctionnalit&eacute; centrale inaccessible.</p>
+
+  <!-- P0.1 -->
+  <h3 id="p0-1">P0.1 &mdash; &Eacute;dition utilisateur en admin</h3>
+  <ul class="checklist">
+    <li data-done="false"><strong>P0.1 livr&eacute;</strong> &mdash; UI &eacute;dition + 13 champs + reset password</li>
+  </ul>
+  <div class="callout callout-info">
+    <span class="callout-icon">&#x1F4DD;</span>
+    <div>
+      <strong>P&eacute;rim&egrave;tre</strong> : ajouter bouton "&Eacute;diter" dans <code>partials/admin/user-row.html</code>,
+      cr&eacute;er <code>partials/admin/user-edit-modal.html</code> avec les 13 champs V1
+      (email, username, first_name, last_name, phone, address_line1/2, city_id, country_code, role,
+      is_active, is_verified, voice_to_text_enabled, approval_status), compl&eacute;ter route
+      <code>POST /web/admin/users/{id}</code>, ajouter section "Reset password admin".
+      <br><br>
+      <strong>Fichiers</strong> : <code>app/web/admin.py</code> (l. 850-912) ;
+      <code>app/templates/pages/admin/users.html</code> ;
+      <code>app/templates/partials/admin/user-row.html</code> ;
+      <code>app/templates/partials/admin/user-edit-modal.html</code> (nouveau).
+      <br>
+      <strong>Effort</strong> : 1 jour. <strong>Tests</strong> : +10 cases <code>tests/integration/test_admin_users_edit.py</code>.
+      <br>
+      <strong>Commit(s)</strong> : <em>(&agrave; remplir apr&egrave;s livraison)</em>
+    </div>
+  </div>
+
+  <!-- P0.2 -->
+  <h3 id="p0-2">P0.2 &mdash; Ingestion xlsx : deps + redeploy</h3>
+  <ul class="checklist">
+    <li data-done="false"><strong>P0.2 livr&eacute;</strong> &mdash; <code>unstructured[xlsx,docx,pptx]</code> install&eacute; + tests</li>
+  </ul>
+  <div class="callout callout-info">
+    <span class="callout-icon">&#x1F4DD;</span>
+    <div>
+      <strong>P&eacute;rim&egrave;tre</strong> : <code>requirements.txt</code> :
+      <code>unstructured==0.15.13</code> &rarr; <code>unstructured[xlsx,docx,pptx]==0.15.13</code>.
+      Rebuild image V2 + redeploy. Tester upload xlsx/docx/pptx.
+      <br><br>
+      <strong>Fichiers</strong> : <code>requirements.txt</code> ; <code>Dockerfile</code> (rebuild requis).
+      <br>
+      <strong>Effort</strong> : 0.5 jour. <strong>Tests</strong> : +3 cases <code>tests/integration/test_ingestion_formats.py</code>.
+      <br>
+      <strong>Commit(s)</strong> : <em>(&agrave; remplir)</em>
+    </div>
+  </div>
+
+  <!-- P0.3 -->
+  <h3 id="p0-3">P0.3 &mdash; UX statut "Indexation&hellip;" infinie</h3>
+  <ul class="checklist">
+    <li data-done="false"><strong>P0.3 livr&eacute;</strong> &mdash; <code>_doc_status()</code> consulte ReindexManager + colonnes BDD <code>indexing_status/error</code></li>
+  </ul>
+  <div class="callout callout-info">
+    <span class="callout-icon">&#x1F4DD;</span>
+    <div>
+      <strong>P&eacute;rim&egrave;tre</strong> : (a) <code>_doc_status()</code> consulte
+      <code>get_doc_reindex_progress()</code> in-memory ; (b) si failed, afficher "Erreur d'indexation" +
+      bouton "R&eacute;essayer" + arr&ecirc;t du polling ; (c) ajouter colonnes <code>indexing_status</code> +
+      <code>indexing_error</code> sur <code>documents</code> avec migration Alembic pour persister
+      l'erreur au-del&agrave; d'un restart.
+      <br><br>
+      <strong>Fichiers</strong> : <code>app/web/documents.py</code> (l. 72-81) ;
+      <code>app/templates/partials/documents/row.html</code> ; <code>app/models.py</code> ;
+      <code>app/alembic/versions/</code>.
+      <br>
+      <strong>Effort</strong> : 1 jour. <strong>Tests</strong> : +5 cases UX statut.
+      <br>
+      <strong>Commit(s)</strong> : <em>(&agrave; remplir)</em>
+    </div>
+  </div>
+
+  <!-- P0.4 -->
+  <h3 id="p0-4">P0.4 &mdash; Tests de non-r&eacute;gression sur bugs observ&eacute;s</h3>
+  <ul class="checklist">
+    <li data-done="false"><strong>P0.4 livr&eacute;</strong> &mdash; 5 tests r&eacute;gression cibl&eacute;s</li>
+  </ul>
+  <div class="callout callout-info">
+    <span class="callout-icon">&#x1F4DD;</span>
+    <div>
+      <strong>P&eacute;rim&egrave;tre</strong> : 5 tests de r&eacute;gression pour les bugs observ&eacute;s :<br>
+      (a) xlsx mime > 50 chars (VARCHAR migration <code>20260507_1700_extend_document_file_type</code>)<br>
+      (b) <code>local.py</code> UnboundLocalError sur permissions<br>
+      (c) <code>partition_xlsx</code> deps (couvert par P0.2)<br>
+      (d) <code>/admin/logs/stats</code> 500 (LogStatsResponse iteration)<br>
+      (e) <code>/admin/logs/{id}/details</code> 500 (<code>timestamp</code> vs <code>created_at</code>)
+      <br><br>
+      <strong>Fichiers</strong> : <code>tests/integration/test_regressions.py</code> (nouveau).
+      <br>
+      <strong>Effort</strong> : 0.5 jour.
+      <br>
+      <strong>Commit(s)</strong> : <em>(&agrave; remplir)</em>
+    </div>
+  </div>
+
+  <!-- P0.5 -->
+  <h3 id="p0-5">P0.5 &mdash; Smoke tests user-facing E2E</h3>
+  <ul class="checklist">
+    <li data-done="false"><strong>P0.5 livr&eacute;</strong> &mdash; 4 sc&eacute;narios E2E Playwright user</li>
+  </ul>
+  <div class="callout callout-info">
+    <span class="callout-icon">&#x1F4DD;</span>
+    <div>
+      <strong>P&eacute;rim&egrave;tre</strong> : 4 sc&eacute;narios E2E Playwright sur les flows principaux user :<br>
+      (a) Login + accueil chat<br>
+      (b) Envoi message + r&eacute;ception streaming<br>
+      (c) Upload document + indexation r&eacute;ussie (xlsx, post-P0.2)<br>
+      (d) Modification pr&eacute;f&eacute;rences (lang/theme)
+      <br><br>
+      <strong>Fichiers</strong> : <code>tests/e2e/test_e2e_user_flows.py</code> (nouveau).
+      <br>
+      <strong>Effort</strong> : 1 jour.
+      <br>
+      <strong>Commit(s)</strong> : <em>(&agrave; remplir)</em>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== P1 ==================== -->
+<div class="section" id="p1">
+  <div class="section-header">
+    <div class="section-icon icon-orange">&#x26A0;&#xFE0F;</div>
+    <div><h2>P1 &mdash; Majeur <span class="section-num">&mdash; 8 actions</span></h2></div>
+  </div>
+
+  <p>D&eacute;lai cible : <strong>1-2 semaines</strong>. Crit&egrave;re : composant V1 perdu avec impact UX visible.</p>
+
+  <ul class="checklist">
+    <li data-done="false"><strong>P1.1</strong> &mdash; Port composant <code>progress.js</code> (modale Alpine + macro Jinja, multi-&eacute;tapes upload/index) &mdash; 2j</li>
+    <li data-done="false"><strong>P1.2</strong> &mdash; Port service <code>reindex-banner</code> (bann&egrave;re flottante centralis&eacute;e Alpine + HTMX polling) &mdash; 2j</li>
+    <li data-done="false"><strong>P1.3</strong> &mdash; Barre d'actions bulk dynamique (users, documents, conversations) macro Jinja r&eacute;utilisable &mdash; 1j</li>
+    <li data-done="false"><strong>P1.4</strong> &mdash; Archive/unarchive conversations admin (individuel + bulk + filtre) &mdash; 1j</li>
+    <li data-done="false"><strong>P1.5</strong> &mdash; Dashboard timing UI (P50/P95/P99 + bouton Reset stats) &mdash; 1j</li>
+    <li data-done="false"><strong>P1.6</strong> &mdash; Audit log details modal accessible (ouverture sur clic ligne) &mdash; 0.5j</li>
+    <li data-done="false"><strong>P1.7</strong> &mdash; Logs bulk-delete UI (checkboxes + barre actions) &mdash; 0.5j</li>
+    <li data-done="false"><strong>P1.8</strong> &mdash; Tests int&eacute;gration prioritaires : Auth (~25), Chat (~50), User (~30), Storage (~20), Crypto (~25) &mdash; 5j</li>
+  </ul>
+
+  <table>
+    <thead><tr><th>#</th><th>Action</th><th>Fichiers cl&eacute;s</th><th>Tests vis&eacute;s</th><th>Commit</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>P1.1</td>
+        <td>progress.js port</td>
+        <td><code>app/templates/macros/progress.html</code> (nouveau) ; <code>app/templates/components/progress-modal.html</code> (nouveau, Alpine)</td>
+        <td>+2 e2e</td>
+        <td><em>&agrave; remplir</em></td>
+      </tr>
+      <tr>
+        <td>P1.2</td>
+        <td>reindex-banner port</td>
+        <td><code>app/templates/components/reindex-banner.html</code> (nouveau, mont&eacute; dans <code>base.html</code>) ; route <code>/web/reindex/active</code> (agr&eacute;gation ReindexManager)</td>
+        <td>+3 integration</td>
+        <td><em>&agrave; remplir</em></td>
+      </tr>
+      <tr>
+        <td>P1.3</td>
+        <td>Barre bulk actions</td>
+        <td><code>app/templates/macros/bulk-actions-bar.html</code> (nouveau) ; usage dans users/documents/conversations</td>
+        <td>+3 integration</td>
+        <td><em>&agrave; remplir</em></td>
+      </tr>
+      <tr>
+        <td>P1.4</td>
+        <td>Archive convs admin</td>
+        <td><code>app/web/admin_conversations.py</code> ; <code>app/templates/pages/admin/conversations.html</code></td>
+        <td>+5 integration</td>
+        <td><em>&agrave; remplir</em></td>
+      </tr>
+      <tr>
+        <td>P1.5</td>
+        <td>Dashboard timing UI</td>
+        <td><code>app/templates/pages/admin/dashboard.html</code> ; <code>app/templates/partials/admin/dashboard-timing.html</code> (nouveau)</td>
+        <td>+3 integration</td>
+        <td><em>&agrave; remplir</em></td>
+      </tr>
+      <tr>
+        <td>P1.6</td>
+        <td>Audit details modal</td>
+        <td><code>app/templates/pages/admin/audit.html</code> (ajout <code>x-on:click</code>)</td>
+        <td>+2 integration</td>
+        <td><em>&agrave; remplir</em></td>
+      </tr>
+      <tr>
+        <td>P1.7</td>
+        <td>Logs bulk-delete UI</td>
+        <td><code>app/templates/pages/admin/logs.html</code> ; <code>app/templates/partials/admin/log-row.html</code></td>
+        <td>+2 integration</td>
+        <td><em>&agrave; remplir</em></td>
+      </tr>
+      <tr>
+        <td>P1.8</td>
+        <td>Tests int&eacute;gration 5 zones</td>
+        <td><code>tests/integration/test_auth_*.py</code> ; <code>test_chat_*.py</code> ; <code>test_user_*.py</code> ; <code>test_storage_*.py</code> ; <code>test_crypto_*.py</code></td>
+        <td>+150 cases</td>
+        <td><em>&agrave; remplir</em></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ==================== P2 ==================== -->
+<div class="section" id="p2">
+  <div class="section-header">
+    <div class="section-icon icon-yellow">&#x1F4A1;</div>
+    <div><h2>P2 &mdash; Mod&eacute;r&eacute; <span class="section-num">&mdash; 7 actions</span></h2></div>
+  </div>
+
+  <p>D&eacute;lai cible : <strong>2-4 semaines</strong>. Crit&egrave;re : compl&eacute;tion / am&eacute;lioration de parit&eacute;.</p>
+
+  <ul class="checklist">
+    <li data-done="false"><strong>P2.1</strong> &mdash; &Eacute;dition modes de conversation (PATCH route + UI) &mdash; 1j</li>
+    <li data-done="false"><strong>P2.2</strong> &mdash; Geo toggle country en formulaire web (basculer API JSON &rarr; web HTMX) &mdash; 0.5j</li>
+    <li data-done="false"><strong>P2.3</strong> &mdash; RAG overrides modes dynamiques (boucle modes BDD vs hardcoded fast/full) &mdash; 1j</li>
+    <li data-done="false"><strong>P2.4</strong> &mdash; Admin Documents : modal d&eacute;tails web + formulaire &eacute;dition (r&eacute;duire asym&eacute;trie web/API) &mdash; 2j</li>
+    <li data-done="false"><strong>P2.5</strong> &mdash; Edit/regenerate message chat (PATCH user msg + bouton regenerate) &mdash; 2j</li>
+    <li data-done="false"><strong>P2.6</strong> &mdash; Visibilit&eacute; checkbox dans upload user (public/priv&eacute; explicite) &mdash; 0.5j</li>
+    <li data-done="false"><strong>P2.7</strong> &mdash; Tests int&eacute;gration zones secondaires : Sources connectors (~50), LLM providers (~50), Geo (~40), Speech (~25), Logs core (~80) &mdash; 10j</li>
+  </ul>
+</div>
+
+<!-- ==================== P3 ==================== -->
+<div class="section" id="p3">
+  <div class="section-header">
+    <div class="section-icon icon-gray">&#x1F4DA;</div>
+    <div><h2>P3 &mdash; Dette <span class="section-num">&mdash; 5 chantiers</span></h2></div>
+  </div>
+
+  <p>D&eacute;lai cible : <strong>3-6 mois (continu)</strong>. Crit&egrave;re : couverture tests + dette architecture.</p>
+
+  <ul class="checklist">
+    <li data-done="false"><strong>P3.1</strong> &mdash; Migration routes JSON vers <code>/api/v1/</code> (alignement CLAUDE.md V2 + compat layer) &mdash; 5-10j</li>
+    <li data-done="false"><strong>P3.2</strong> &mdash; Recouvrement tests services backend (~220 cases : analytics, common, health, audit rules, preferences, collections, ingestion) &mdash; 10j</li>
+    <li data-done="false"><strong>P3.3</strong> &mdash; Composants UI-SHARED restants (toasts draggables + drag&amp;drop documents) &mdash; 2j</li>
+    <li data-done="false"><strong>P3.4</strong> &mdash; GGUF download UI + Whisper model select (admin syst&egrave;me QoL) &mdash; 2j</li>
+    <li data-done="false"><strong>P3.5</strong> &mdash; Suite E2E Playwright compl&egrave;te (RAG flow, upload+reindex+chat, admin CRUD users, etc.) &mdash; 5j</li>
+  </ul>
+</div>
+
+<!-- ==================== TRAJECTOIRE ==================== -->
+<div class="section" id="trajectoire">
+  <div class="section-header">
+    <div class="section-icon icon-purple">&#x1F4C5;</div>
+    <div><h2>Trajectoire propos&eacute;e <span class="section-num">&mdash; Sprints</span></h2></div>
+  </div>
+
+  <div class="vflow">
+    <div class="vflow-step flow-red">
+      <strong>Sprint 1 (S1)</strong> &mdash; <strong>P0 complet (5 actions)</strong>
+      <span class="flow-label">3-5 jours. Focus : restaurer fonctionnalit&eacute; critique (&eacute;dition user, ingestion xlsx) + tests r&eacute;gression + smoke E2E user.</span>
+    </div>
+    <div class="vflow-step flow-orange">
+      <strong>Sprint 2-3 (S2-S3)</strong> &mdash; <strong>P1 (8 actions)</strong>
+      <span class="flow-label">10-14 jours. Focus : restaurer composants UI manquants (progress.js, reindex-banner, bulk actions bar), boucher les fonctionnalit&eacute;s admin manquantes, lancer la couverture tests des 5 zones critiques.</span>
+    </div>
+    <div class="vflow-step flow-yellow">
+      <strong>Sprint 4-5 (S4-S5)</strong> &mdash; <strong>P2 partiel (compl&eacute;tion features)</strong>
+      <span class="flow-label">15-20 jours. Focus : modes &eacute;dition, geo toggle, RAG overrides, admin documents.</span>
+    </div>
+    <div class="vflow-step flow-blue">
+      <strong>Sprint 6+ (continu)</strong> &mdash; <strong>P2.7 + P3</strong>
+      <span class="flow-label">20-40 jours. Recouvrement tests, migration <code>/api/v1/</code>, suite E2E compl&egrave;te. En parall&egrave;le des d&eacute;veloppements feature.</span>
+    </div>
+  </div>
+
+  <h3>Crit&egrave;res d'acceptation de cl&ocirc;ture</h3>
+  <ul class="checklist">
+    <li data-done="false">Tous les items P0 sont livr&eacute;s, test&eacute;s, et d&eacute;ploy&eacute;s</li>
+    <li data-done="false">Au moins 6/8 items P1 sont livr&eacute;s</li>
+    <li data-done="false">Couverture tests V2 atteint &ge; 60% des cases V1 (~1000 cases) sur les modules critiques</li>
+    <li data-done="false">Aucun bug user-visible majeur d&eacute;tect&eacute; pendant 1 semaine de QA active</li>
+  </ul>
+</div>
+
+</div>
+</body>
+</html>

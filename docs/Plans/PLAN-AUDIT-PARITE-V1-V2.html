@@ -1,0 +1,1326 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MY-IA &mdash; Audit de parit&eacute; V1 &rarr; V2</title>
+  <link rel="stylesheet" href="../assets/doc-style.css">
+</head>
+<body>
+
+<!-- ==================== HEADER ==================== -->
+<div class="header">
+  <div class="page">
+    <div class="header-icon">&#x1F50D;</div>
+    <div>
+      <h1>MY-IA &mdash; Audit de parit&eacute; V1 &rarr; V2</h1>
+      <div class="subtitle">
+        V&eacute;rification exhaustive que toutes les fonctionnalit&eacute;s V1 (stack JS UI-FRONT/UI-BACK/UI-SHARED)
+        sont bien pr&eacute;sentes dans V2 (FastAPI + Jinja2 + HTMX + Alpine.js).
+      </div>
+      <div class="meta">
+        <span>Version 1.0 &mdash; complet (P1&rarr;P5)</span>
+        <span>D&eacute;marr&eacute; 2026-05-07</span>
+        <span>5 axes</span>
+        <span>5 phases</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+
+<!-- ==================== STATUT GLOBAL ==================== -->
+<div class="section" id="statut">
+  <div class="section-header">
+    <div class="section-icon icon-blue">&#x1F4CA;</div>
+    <div><h2>Statut global de l'audit</h2></div>
+  </div>
+
+  <p>Ce document est <strong>vivant</strong>. Chaque phase (P1&hellip;P5) est livr&eacute;e
+  s&eacute;quentiellement avec un GO utilisateur entre chaque. La table ci-dessous est mise
+  &agrave; jour &agrave; chaque commit ; <code>data-done</code> est utilis&eacute; sur les checklists pour
+  marquer la progression.</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Phase</th>
+        <th>Axe</th>
+        <th>P&eacute;rim&egrave;tre</th>
+        <th>Statut</th>
+        <th>Constats</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>P1</strong></td>
+        <td>Axe 1 &mdash; D&eacute;pendances</td>
+        <td>requirements.txt + JS CDN/local</td>
+        <td><span class="badge badge-success">Livr&eacute;</span></td>
+        <td>5 deps Python diverg&eacute;es ; refonte JS compl&egrave;te (vanilla &rarr; HTMX/Alpine)</td>
+      </tr>
+      <tr>
+        <td><strong>P2</strong></td>
+        <td>Axe 2 &mdash; APIs</td>
+        <td>Routes V1 &harr; V2 (HTML + JSON)</td>
+        <td><span class="badge badge-success">Livr&eacute;</span></td>
+        <td><strong>Parit&eacute; 100%</strong> sur les 321 routes JSON. 195 routes web HTML ajout&eacute;es en V2 (attendu). 3 fichiers modifi&eacute;s (1 refactor + 2 bugfixes positifs).</td>
+      </tr>
+      <tr>
+        <td><strong>P3</strong></td>
+        <td>Axe 3 &mdash; UI &eacute;cran par &eacute;cran</td>
+        <td>Actions, toasts, progression, refresh</td>
+        <td><span class="badge badge-warning">Livr&eacute;</span></td>
+        <td><strong>Parit&eacute; ~80%</strong>. Les 4 hypoth&egrave;ses utilisateur sont confirm&eacute;es. Cas critique : <strong>&eacute;dition user en admin inaccessible</strong> (route OK, UI absente, 5 champs sur 13).</td>
+      </tr>
+      <tr>
+        <td><strong>P4</strong></td>
+        <td>Axe 4 &mdash; Tests (couverture)</td>
+        <td>Mapping tests V1 &harr; V2</td>
+        <td><span class="badge badge-danger">Livr&eacute; &mdash; alarmant</span></td>
+        <td><strong>1727 cases V1 vs 209 V2 (&minus;88%)</strong>. 16 features sans aucun test V2 (auth, chat, user, storage, crypto, sources connectors, logs core, LLM providers, etc.). Tous les bugs observ&eacute;s sont dans des zones non test&eacute;es.</td>
+      </tr>
+      <tr>
+        <td><strong>P5</strong></td>
+        <td>Axe 5 &mdash; Plan d'action consolid&eacute;</td>
+        <td>Priorisation P0/P1/P2/P3 + trajectoire</td>
+        <td><span class="badge badge-success">Livr&eacute;</span></td>
+        <td>25 actions identifi&eacute;es. Effort total estim&eacute; : 5-7 semaines/d&eacute;v. Trajectoire : 5 sprints.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-info">
+    <span class="callout-icon">&#x1F4A1;</span>
+    <div>
+      <strong>L&eacute;gende des badges utilis&eacute;s dans ce document</strong> :<br>
+      <span class="badge badge-success">Pr&eacute;sent</span> &mdash; fonctionnalit&eacute; identique en V2 ;
+      <span class="badge badge-warning">Partiel</span> &mdash; pr&eacute;sente mais avec divergence de comportement ;
+      <span class="badge badge-danger">Manquant</span> &mdash; absent de V2, &agrave; impl&eacute;menter ;
+      <span class="badge badge-info">N/A</span> &mdash; abandonn&eacute; volontairement ou non applicable en V2.
+    </div>
+  </div>
+</div>
+
+<!-- ==================== TABLE OF CONTENTS ==================== -->
+<div class="toc">
+  <h2>Table des mati&egrave;res</h2>
+  <div class="toc-grid">
+    <a href="#statut"><span class="toc-num">0</span> Statut global</a>
+    <a href="#methodo"><span class="toc-num">M</span> M&eacute;thodologie</a>
+    <a href="#axe1"><span class="toc-num">1</span> Axe 1 &mdash; D&eacute;pendances</a>
+    <a href="#axe2"><span class="toc-num">2</span> Axe 2 &mdash; APIs <em>(P2)</em></a>
+    <a href="#axe3"><span class="toc-num">3</span> Axe 3 &mdash; UI <em>(P3)</em></a>
+    <a href="#axe4"><span class="toc-num">4</span> Axe 4 &mdash; Tests <em>(P4)</em></a>
+    <a href="#plan"><span class="toc-num">5</span> Plan d'action <em>(P5)</em></a>
+    <a href="#annexes"><span class="toc-num">A</span> Annexes</a>
+  </div>
+</div>
+
+<!-- ==================== METHODOLOGIE ==================== -->
+<div class="section" id="methodo">
+  <div class="section-header">
+    <div class="section-icon icon-purple">&#x1F9EA;</div>
+    <div><h2>M&eacute;thodologie <span class="section-num">&mdash; M</span></h2></div>
+  </div>
+
+  <h3>Sources de v&eacute;rit&eacute;</h3>
+  <ul class="feature-list">
+    <li><strong>V1</strong> &mdash; <code>/Users/mac/Documents/Code/my-ia</code> (commit <code>e35b904</code>, snapshot final stack JS pr&eacute;-migration)</li>
+    <li><strong>V2</strong> &mdash; <code>/Users/mac/Documents/Code/my-ia-V2</code> (branche <code>dev</code>)</li>
+  </ul>
+
+  <h3>Approche par axe</h3>
+  <div class="cards">
+    <div class="card">
+      <div class="card-title">&#x1F4E6; Axe 1 &mdash; D&eacute;pendances</div>
+      <div class="card-text">Diff <code>requirements.txt</code> + scripts JS (CDN + locaux). Identifier les deps perdues, ajout&eacute;es, ou volontairement remplac&eacute;es.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F517; Axe 2 &mdash; APIs</div>
+      <div class="card-text">Lister toutes les routes V1 (<code>app/features/*/router.py</code>) et V2 (<code>app/features/*/router.py</code> + <code>app/web/*.py</code>). Tableau crois&eacute; route V1 &rarr; V2.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F5A5;&#xFE0F; Axe 3 &mdash; UI</div>
+      <div class="card-text">Pour chaque page V1 (<code>UI-FRONT/UI-BACK</code> + modules JS), inventorier les actions utilisateur (boutons, formulaires, polling, toasts, refresh). V&eacute;rifier la pr&eacute;sence en V2 (templates Jinja + <code>hx-*</code> + Alpine).</div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F9EA; Axe 4 &mdash; Tests</div>
+      <div class="card-text">Mapping fichier par fichier <code>tests/</code> V1 &rarr; V2. Identifier les tests perdus. Lancer les tests V1 et V2 sur des sc&eacute;narios concrets pour comparaison comportementale.</div>
+    </div>
+  </div>
+
+  <h3>Sortie attendue</h3>
+  <p>Ce document HTML, mis &agrave; jour phase par phase, est la <strong>r&eacute;f&eacute;rence unique</strong>
+  de l'audit. Il alimente ensuite un <strong>plan de remise en conformit&eacute;</strong>
+  s&eacute;par&eacute; (<code>PLAN-PARITE-CORRECTIONS.html</code>) qui contiendra les fixes &agrave;
+  appliquer, priorisation, et tests E2E associ&eacute;s.</p>
+
+  <div class="callout callout-warning">
+    <span class="callout-icon">&#x26A0;&#xFE0F;</span>
+    <div><strong>Important</strong> : <strong>aucun fix de code</strong> n'est r&eacute;alis&eacute; pendant cet audit.
+    Seul le constat est produit. Les corrections feront l'objet d'un plan d&eacute;di&eacute; apr&egrave;s validation.</div>
+  </div>
+</div>
+
+<!-- ==================== AXE 1 — DEPENDANCES ==================== -->
+<div class="section" id="axe1">
+  <div class="section-header">
+    <div class="section-icon icon-teal">&#x1F4E6;</div>
+    <div><h2>Axe 1 &mdash; D&eacute;pendances <span class="section-num">&mdash; Section 1</span></h2></div>
+  </div>
+
+  <h3>1.1 D&eacute;pendances Python (<code>requirements.txt</code>)</h3>
+
+  <p><strong>Volume</strong> : V1 = 33 deps, V2 = 35 deps. Diff&eacute;rence nette : <strong>+2</strong>.</p>
+
+  <h4>1.1.1 D&eacute;pendances pr&eacute;sentes en V1 mais absentes en V2</h4>
+  <table>
+    <thead>
+      <tr><th>Package V1</th><th>Statut V2</th><th>Justification</th><th>Risque</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>passlib==1.7.4</code></td>
+        <td><span class="badge badge-info">N/A</span></td>
+        <td>Remplac&eacute; par <code>pwdlib[argon2]</code> via <code>fastapi-users 13.x</code> qui utilise <code>PasswordHelper</code> (pwdlib). Migration documentaire dans MEMORY.md.</td>
+        <td>Aucun &mdash; remplacement officiel.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h4>1.1.2 D&eacute;pendances ajout&eacute;es en V2</h4>
+  <table>
+    <thead>
+      <tr><th>Package V2</th><th>Version</th><th>Justification V2</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>jinja2</code></td>
+        <td>3.1.4</td>
+        <td>Templates HTML server-side (V1 = client-side rendering vanilla JS).</td>
+      </tr>
+      <tr>
+        <td><code>itsdangerous</code></td>
+        <td>2.2.0</td>
+        <td>Sessions HttpOnly + CSRF tokens (V1 = JWT cookies sans CSRF).</td>
+      </tr>
+      <tr>
+        <td><code>pwdlib[argon2]</code></td>
+        <td>&ge; 0.2.0</td>
+        <td>Hashing mots de passe via Argon2 (remplace passlib).</td>
+      </tr>
+      <tr>
+        <td><code>redis</code></td>
+        <td>&ge; 5.0.0</td>
+        <td>Pending streams chat multi-worker (V1 = mono-worker, dict in-memory uniquement).</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h4>1.1.3 D&eacute;pendances identiques (versions strictement &eacute;gales)</h4>
+  <p>Les deps suivantes sont <strong>identiques entre V1 et V2</strong> (m&ecirc;me version verrouill&eacute;e) &mdash; pas de risque de r&eacute;gression :</p>
+
+  <ul class="feature-list">
+    <li><strong>Web</strong> : <code>fastapi</code>, <code>uvicorn[standard]==0.32.0</code>, <code>httpx==0.28.1</code>, <code>python-multipart==0.0.9</code></li>
+    <li><strong>Pydantic</strong> : <code>pydantic==2.10.4</code>, <code>pydantic-settings==2.7.1</code>, <code>python-dotenv==1.0.1</code></li>
+    <li><strong>DB</strong> : <code>sqlalchemy==2.0.23</code>, <code>asyncpg==0.29.0</code>, <code>alembic==1.13.0</code>, <code>psycopg2-binary==2.9.9</code></li>
+    <li><strong>Auth</strong> : <code>fastapi-users[sqlalchemy]==13.0.0</code>, <code>bcrypt==4.1.2</code>, <code>email-validator==2.1.0</code>, <code>python-jose[cryptography]==3.3.0</code>, <code>httpx-oauth==0.15.1</code>, <code>aiosmtplib==3.0.1</code></li>
+    <li><strong>Vector</strong> : <code>chromadb==1.4.1</code></li>
+    <li><strong>Document parsing</strong> : <code>pymupdf==1.25.3</code>, <code>beautifulsoup4==4.12.3</code>, <code>lxml==5.1.0</code>, <code>unstructured==0.15.13</code>, <code>langchain==0.3.7</code>, <code>langchain-text-splitters==0.3.2</code>, <code>langchain-community==0.3.5</code>, <code>python-magic==0.4.27</code>, <code>python-docx==1.1.2</code>, <code>openpyxl==3.1.5</code>, <code>Pillow==10.4.0</code>, <code>pytesseract==0.3.13</code>, <code>pdf2image==1.17.0</code>, <code>markdown==3.7</code></li>
+    <li><strong>Background</strong> : <code>apscheduler==3.10.4</code>, <code>aiofiles&gt;=23.0.0</code></li>
+    <li><strong>Observabilit&eacute;</strong> : <code>prometheus-client==0.20.0</code>, <code>slowapi==0.1.9</code></li>
+  </ul>
+
+  <h4>1.1.4 Cas concret : bug d'indexation xlsx</h4>
+  <div class="callout callout-danger">
+    <span class="callout-icon">&#x1F6A8;</span>
+    <div>
+      <strong>D&eacute;couvert pendant l'audit (session 2026-05-07)</strong> &mdash;
+      Upload xlsx en V2 : indexation &eacute;chec silencieux avec
+      <code>partition_xlsx() is not available because one or more dependencies are not installed</code>.
+      <br><br>
+      <strong>Cause</strong> : <code>unstructured==0.15.13</code> est install&eacute; sans extras. Le parsing xlsx
+      requiert <code>unstructured[xlsx]</code> qui pull <code>networkx</code>. La m&ecirc;me ligne
+      existe en V1 (m&ecirc;me bug pr&eacute;sent ?). En V2, le bug est aggrav&eacute; par l'absence de feedback UI :
+      la ligne du tableau Documents reste sur "Indexation&hellip;" infiniment (cf. Axe 3 &sect; "Documents").
+      <br><br>
+      <strong>Action retenue</strong> : ajouter <code>unstructured[xlsx]</code> &agrave; <code>requirements.txt</code>
+      <em>(plan de correction s&eacute;par&eacute;, post-audit)</em>.
+    </div>
+  </div>
+
+  <h3>1.2 D&eacute;pendances JavaScript</h3>
+
+  <p>Refonte compl&egrave;te entre V1 et V2 : passage d'une SPA vanilla JS multi-modules
+  &agrave; un rendu serveur Jinja avec interactivit&eacute; HTMX + Alpine.</p>
+
+  <h4>1.2.1 V1 &mdash; Stack JS</h4>
+  <ul class="feature-list">
+    <li><strong>UI-FRONT</strong> (interface user) &mdash; 1 fichier <code>index.html</code>, charge ~30 modules JS locaux + 2 CDN (<code>marked@11.1.1</code>, <code>highlight.js@11.9.0</code>).</li>
+    <li><strong>UI-BACK</strong> (admin) &mdash; 1 fichier <code>index.html</code>, charge ~50 modules JS locaux + les m&ecirc;mes CDN.</li>
+    <li><strong>UI-SHARED</strong> &mdash; modules JS partag&eacute;s entre les deux UIs : <code>config/</code>, <code>services/</code>, <code>mixins/</code>, <code>components/</code>, <code>modules/</code>, <code>utils/</code>, <code>templates/</code>, <code>locales/</code>.</li>
+  </ul>
+
+  <p>Liste des composants JS V1 (UI-SHARED/components/) &agrave; v&eacute;rifier en Axe 3 :</p>
+  <table>
+    <thead><tr><th>Composant V1</th><th>Pr&eacute;sent V2 ?</th><th>Forme V2</th></tr></thead>
+    <tbody>
+      <tr><td><code>confirm.js</code></td><td><span class="badge badge-warning">&Agrave; v&eacute;rifier</span></td><td>Modal Alpine <code>app-confirm</code> (constat&eacute; dans <code>base.html</code>)</td></tr>
+      <tr><td><code>debug-banner.js</code></td><td><span class="badge badge-warning">&Agrave; v&eacute;rifier</span></td><td>Bandeau conditionnel dans <code>base.html</code> (sous-vague A)</td></tr>
+      <tr><td><code>draggable.js</code></td><td><span class="badge badge-warning">&Agrave; v&eacute;rifier</span></td><td><em>&agrave; mapper P3</em></td></tr>
+      <tr><td><code>markdown.js</code></td><td><span class="badge badge-warning">&Agrave; v&eacute;rifier</span></td><td>Rendu post-stream dans <code>chat.js</code> inline + <code>marked</code> CDN</td></tr>
+      <tr><td><code>message-modal.js</code></td><td><span class="badge badge-warning">&Agrave; v&eacute;rifier</span></td><td><em>&agrave; mapper P3</em></td></tr>
+      <tr><td><code>password-reset.js</code></td><td><span class="badge badge-warning">&Agrave; v&eacute;rifier</span></td><td>Page <code>auth/password-reset</code> Jinja</td></tr>
+      <tr><td><code>progress.js</code></td><td><span class="badge badge-warning">&Agrave; v&eacute;rifier</span></td><td><em>&agrave; mapper P3</em> &mdash; <strong>hypoth&egrave;se utilisateur : barres de progression manquantes</strong></td></tr>
+      <tr><td><code>table-pagination.js</code></td><td><span class="badge badge-warning">&Agrave; v&eacute;rifier</span></td><td>Pagination serveur via HTMX query string</td></tr>
+      <tr><td><code>toast.js</code></td><td><span class="badge badge-warning">&Agrave; v&eacute;rifier</span></td><td><code>app-toasts</code> global Alpine (constat&eacute; dans <code>base.html</code>)</td></tr>
+      <tr><td><code>upload.js</code></td><td><span class="badge badge-warning">&Agrave; v&eacute;rifier</span></td><td>Form HTMX <code>multipart/form-data</code></td></tr>
+      <tr><td><code>user-form.js</code></td><td><span class="badge badge-warning">&Agrave; v&eacute;rifier</span></td><td><em>&agrave; mapper P3</em> &mdash; <strong>hypoth&egrave;se utilisateur : &eacute;dition users absente</strong></td></tr>
+    </tbody>
+  </table>
+
+  <h4>1.2.2 V2 &mdash; Stack JS</h4>
+  <p>V2 charge les biblioth&egrave;ques suivantes depuis <code>app/templates/layouts/base.html</code> :</p>
+  <table>
+    <thead><tr><th>Lib</th><th>Version V2</th><th>Version V1</th><th>Note</th></tr></thead>
+    <tbody>
+      <tr><td><code>htmx.org</code></td><td>2.0.3</td><td>&mdash;</td><td>Nouveau en V2 (CDN unpkg).</td></tr>
+      <tr><td><code>htmx-ext-sse</code></td><td>2.2.2</td><td>&mdash;</td><td>Streaming SSE pour le chat.</td></tr>
+      <tr><td><code>alpinejs</code></td><td>3.14.3</td><td>&mdash;</td><td>Nouveau en V2 (modals, dropdowns, toggles).</td></tr>
+      <tr><td><code>marked</code></td><td><strong>12.0.2</strong></td><td>11.1.1</td><td>Bump mineur (pas de breaking change attendu).</td></tr>
+      <tr><td><code>highlight.js</code></td><td>11.9.0</td><td>11.9.0</td><td>Identique.</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>JS local V2</strong> : <code>app/static/js/</code> est <strong>vide</strong>. Toute la logique JS V1
+  (services, mixins, composants, modules, utils) doit avoir &eacute;t&eacute; remplac&eacute;e
+  par : (a) HTML render&eacute; serveur, (b) <code>hx-*</code> pour les actions, (c) Alpine pour les widgets locaux.
+  La v&eacute;rification de cette migration est l'objet de l'Axe 3.</p>
+
+  <h4>1.2.3 Locales / i18n</h4>
+  <p>V1 utilise <code>UI-SHARED/locales/{fr,en}.json</code> (i18n c&ocirc;t&eacute; client via <code>shared/js/utils/i18n.js</code>).<br>
+  V2 utilise <code>app/locales/{fr,en}.json</code> (i18n c&ocirc;t&eacute; serveur via fonction Jinja <code>t()</code>).
+  &Agrave; v&eacute;rifier en Axe 3 : <strong>tous les textes</strong> V1 sont-ils traduits en V2 ?</p>
+
+  <h3>1.3 Synth&egrave;se Axe 1</h3>
+  <ul class="checklist">
+    <li data-done="true">Diff <code>requirements.txt</code> Python livr&eacute;</li>
+    <li data-done="true">Identification de <code>passlib</code> remplac&eacute; par <code>pwdlib</code> (volontaire)</li>
+    <li data-done="true">Identification des 4 nouvelles deps V2 (jinja2, itsdangerous, pwdlib, redis)</li>
+    <li data-done="true">Constat bug xlsx : <code>unstructured[xlsx]</code> manquant en V2 (et probablement V1)</li>
+    <li data-done="true">Mapping CDN JS V1 vs V2 (marked, highlight.js identiques ; htmx/alpine/itsdangerous nouveaux V2)</li>
+    <li data-done="true">Inventaire des composants JS V1 &agrave; mapper en Axe 3 (12 composants UI-SHARED)</li>
+    <li data-done="false">P2 &mdash; Mapping routes V1 &harr; V2</li>
+    <li data-done="false">P3 &mdash; UI &eacute;cran par &eacute;cran</li>
+    <li data-done="false">P4 &mdash; Mapping tests V1 &harr; V2</li>
+    <li data-done="false">P5 &mdash; Plan d'action consolid&eacute;</li>
+  </ul>
+
+  <div class="callout callout-info">
+    <span class="callout-icon">&#x1F4A1;</span>
+    <div>
+      <strong>Verdict Axe 1</strong> : pas de d&eacute;pendance Python critique perdue. La refonte JS
+      est compl&egrave;te et coh&eacute;rente avec l'architecture V2 (rendu serveur). Les
+      <strong>vrais risques</strong> sont en Axe 3 (UI : composants V1 non port&eacute;s) et en Axe 4 (tests :
+      &eacute;cart 93 vs 19 fichiers &agrave; investiguer).
+    </div>
+  </div>
+</div>
+
+<!-- ==================== AXE 2 — APIs ==================== -->
+<div class="section" id="axe2">
+  <div class="section-header">
+    <div class="section-icon icon-orange">&#x1F517;</div>
+    <div><h2>Axe 2 &mdash; APIs <span class="section-num">&mdash; Section 2</span></h2></div>
+  </div>
+
+  <div class="callout callout-success">
+    <span class="callout-icon">&#x2705;</span>
+    <div>
+      <strong>Verdict global Axe 2 : parit&eacute; API parfaite.</strong> Les 321 routes JSON
+      du backend (<code>app/features/*/router.py</code>) sont <strong>strictement identiques</strong>
+      entre V1 et V2 : m&ecirc;mes m&eacute;thodes, m&ecirc;mes paths, m&ecirc;mes signatures de handlers.
+      V2 ajoute en plus 194 routes <code>web/*</code> (HTML server-side) qui sont la
+      contrepartie web des SPA V1.
+    </div>
+  </div>
+
+  <h3>2.1 Couverture des routes API (<code>app/features/*/</code>)</h3>
+
+  <table>
+    <thead>
+      <tr><th>Feature</th><th>V1 routes</th><th>V2 routes</th><th>Diff paths</th><th>Statut</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>features/admin</code> (14 sous-routers)</td><td>234</td><td>234</td><td>0</td><td><span class="badge badge-success">Identique</span></td></tr>
+      <tr><td><code>features/analytics</code></td><td>5</td><td>5</td><td>0</td><td><span class="badge badge-success">Identique</span></td></tr>
+      <tr><td><code>features/audit</code></td><td>7</td><td>7</td><td>0</td><td><span class="badge badge-success">Identique</span></td></tr>
+      <tr><td><code>features/auth</code></td><td>6</td><td>6</td><td>0</td><td><span class="badge badge-success">Identique</span></td></tr>
+      <tr><td><code>features/chat</code></td><td>2</td><td>2</td><td>0</td><td><span class="badge badge-success">Identique</span></td></tr>
+      <tr><td><code>features/collections</code></td><td>3</td><td>3</td><td>0</td><td><span class="badge badge-success">Identique</span></td></tr>
+      <tr><td><code>features/config</code> (public)</td><td>1</td><td>1</td><td>0</td><td><span class="badge badge-success">Identique</span></td></tr>
+      <tr><td><code>features/conversations</code></td><td>11</td><td>11</td><td>0</td><td><span class="badge badge-success">Identique</span></td></tr>
+      <tr><td><code>features/documents</code></td><td>13</td><td>13</td><td>0</td><td><span class="badge badge-success">Identique</span></td></tr>
+      <tr><td><code>features/geo</code></td><td>5</td><td>5</td><td>0</td><td><span class="badge badge-success">Identique</span></td></tr>
+      <tr><td><code>features/health</code></td><td>3</td><td>3</td><td>0</td><td><span class="badge badge-success">Identique</span></td></tr>
+      <tr><td><code>features/ingestion</code></td><td>3</td><td>3</td><td>0</td><td><span class="badge badge-success">Identique</span></td></tr>
+      <tr><td><code>features/logs</code></td><td>6</td><td>6</td><td>0</td><td><span class="badge badge-success">Identique</span></td></tr>
+      <tr><td><code>features/preferences</code></td><td>3</td><td>3</td><td>0</td><td><span class="badge badge-success">Identique</span></td></tr>
+      <tr><td><code>features/sources</code></td><td>23</td><td>23</td><td>0</td><td><span class="badge badge-success">Identique</span></td></tr>
+      <tr><td><code>features/speech</code></td><td>3</td><td>3</td><td>0</td><td><span class="badge badge-success">Identique</span></td></tr>
+      <tr><td><code>features/user</code></td><td>3</td><td>3</td><td>0</td><td><span class="badge badge-success">Identique</span></td></tr>
+      <tr><td><strong>TOTAL</strong></td><td><strong>321</strong></td><td><strong>321</strong></td><td><strong>0</strong></td><td><span class="badge badge-success">100%</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3>2.2 D&eacute;tail admin (sous-routers)</h3>
+  <table>
+    <thead><tr><th>Sous-router</th><th>V1</th><th>V2</th><th>Statut</th></tr></thead>
+    <tbody>
+      <tr><td><code>admin/router.py</code> (root)</td><td>14</td><td>14</td><td><span class="badge badge-success">OK</span></td></tr>
+      <tr><td><code>admin/bulk/router.py</code></td><td>12</td><td>12</td><td><span class="badge badge-success">OK</span></td></tr>
+      <tr><td><code>admin/collections/router.py</code></td><td>28</td><td>28</td><td><span class="badge badge-success">OK</span></td></tr>
+      <tr><td><code>admin/config/router.py</code></td><td>72</td><td>72</td><td><span class="badge badge-success">OK</span></td></tr>
+      <tr><td><code>admin/conversations/router.py</code></td><td>12</td><td>12</td><td><span class="badge badge-success">OK</span></td></tr>
+      <tr><td><code>admin/corpus/router.py</code></td><td>30</td><td>30</td><td><span class="badge badge-success">OK</span></td></tr>
+      <tr><td><code>admin/dashboard/router.py</code></td><td>8</td><td>8</td><td><span class="badge badge-success">OK</span></td></tr>
+      <tr><td><code>admin/documents/router.py</code></td><td>14</td><td>14</td><td><span class="badge badge-success">OK</span></td></tr>
+      <tr><td><code>admin/export/router.py</code></td><td>4</td><td>4</td><td><span class="badge badge-success">OK</span></td></tr>
+      <tr><td><code>admin/geo/router.py</code></td><td>16</td><td>16</td><td><span class="badge badge-success">OK</span></td></tr>
+      <tr><td><code>admin/password_policy/router.py</code></td><td>7</td><td>7</td><td><span class="badge badge-success">OK</span></td></tr>
+      <tr><td><code>admin/permissions/router.py</code></td><td>2</td><td>2</td><td><span class="badge badge-success">OK</span></td></tr>
+      <tr><td><code>admin/users/router.py</code></td><td>9</td><td>9</td><td><span class="badge badge-success">OK</span></td></tr>
+      <tr><td><code>admin/validation/router.py</code></td><td>6</td><td>6</td><td><span class="badge badge-success">OK</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3>2.3 Diff de code dans les services backend</h3>
+  <p>3 fichiers <code>.py</code> diff&egrave;rent r&eacute;ellement entre V1 et V2 (hors <code>__pycache__</code>) :</p>
+
+  <table>
+    <thead><tr><th>Fichier</th><th>Lignes V1 / V2</th><th>Type</th><th>Analyse</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>features/admin/corpus/router.py</code></td>
+        <td>1356 / 1151</td>
+        <td><span class="badge badge-info">Refactor</span></td>
+        <td>205 lignes extraites vers <code>reindex_tasks.py</code> (nouveau fichier en V2). M&ecirc;mes 30 routes expos&eacute;es.</td>
+      </tr>
+      <tr>
+        <td><code>features/admin/validation/service.py</code></td>
+        <td>+/- 2 lignes</td>
+        <td><span class="badge badge-success">Bugfix</span></td>
+        <td>Ajout de <code>.unique()</code> sur jointures (V1 plantait sur duplicates). Am&eacute;lioration V2 strictement positive.</td>
+      </tr>
+      <tr>
+        <td><code>features/system/service.py</code></td>
+        <td>+/- 11 lignes</td>
+        <td><span class="badge badge-success">Bugfix</span></td>
+        <td>Retypage automatique des valeurs de config (admin peut d&eacute;sormais &eacute;crire bool/int sur une cl&eacute; mal typ&eacute;e). Am&eacute;lioration V2 strictement positive.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>2.4 Routes web V2 (<code>app/web/*.py</code>) &mdash; nouvelles 194 routes HTML</h3>
+  <p>V2 ajoute une couche de rendu serveur HTML qui n'existe pas en V1. Ces routes
+  sont la contrepartie HTMX/Jinja des SPA V1 (<code>UI-FRONT</code> + <code>UI-BACK</code>).
+  Le mapping d&eacute;taill&eacute; "module JS V1 &rarr; page V2" est l'objet de l'Axe 3.</p>
+
+  <table>
+    <thead><tr><th>Fichier <code>app/web/</code></th><th># routes</th><th>P&eacute;rim&egrave;tre</th></tr></thead>
+    <tbody>
+      <tr><td><code>auth.py</code></td><td>12</td><td>Login, register, OAuth, password-reset, logout</td></tr>
+      <tr><td><code>chat.py</code></td><td>12</td><td>Liste conversations, sidebar, stream SSE, sources-list, health-info</td></tr>
+      <tr><td><code>documents.py</code></td><td>9</td><td>Liste, upload, row, details, download, replace, delete</td></tr>
+      <tr><td><code>preferences.py</code></td><td>4</td><td>Page, update profile, password, settings</td></tr>
+      <tr><td><code>admin.py</code></td><td>39</td><td>Dashboard, users CRUD, validation, audit, logs</td></tr>
+      <tr><td><code>admin_collections.py</code></td><td>9</td><td>CRUD bibliot&egrave;ques + sync ChromaDB + bulk</td></tr>
+      <tr><td><code>admin_config.py</code></td><td>4</td><td>&Eacute;dition cl&eacute;s <code>system_configs</code> g&eacute;n&eacute;riques</td></tr>
+      <tr><td><code>admin_conversations.py</code></td><td>5</td><td>Listing, view, export, bulk-delete</td></tr>
+      <tr><td><code>admin_corpus.py</code></td><td>23</td><td>CRUD corpus + assignation docs/sources/collections + cascade</td></tr>
+      <tr><td><code>admin_sources.py</code></td><td>14</td><td>CRUD sources + crawl + reindex + toggle</td></tr>
+      <tr><td><code>admin_system.py</code></td><td>63</td><td>LLM provider/Ollama/llama.cpp, RAG, Storage, SMTP, Notifications, Password, Debug, Logging, Perf, Modes, Chat, Geo, Appearance, Speech</td></tr>
+      <tr><td><code>main.py</code> (root)</td><td>1</td><td>Redirect <code>/</code> &rarr; <code>/web/chat</code> ou <code>/web/login</code></td></tr>
+      <tr><td><strong>TOTAL</strong></td><td><strong>195</strong></td><td>&mdash;</td></tr>
+    </tbody>
+  </table>
+
+  <h3>2.5 Note architecturale &mdash; <code>app/api/v1/</code> vide</h3>
+  <div class="callout callout-warning">
+    <span class="callout-icon">&#x26A0;&#xFE0F;</span>
+    <div>
+      Le <code>CLAUDE.md</code> V2 stipule : <em>&laquo; API versioning : Toutes les routes JSON sous <code>/api/v1/</code> &raquo;</em>.
+      Or <code>app/api/v1/</code> ne contient que <code>__init__.py</code> (0 route). Toutes les routes JSON
+      h&eacute;rit&eacute;es de V1 sont rest&eacute;es sous <code>/api/admin/...</code>, <code>/api/users/...</code>, etc.
+      <br><br>
+      <strong>Ce n'est pas une r&eacute;gression V1&rarr;V2</strong> (V1 avait la m&ecirc;me structure), mais une
+      <strong>dette par rapport &agrave; l'objectif V2</strong> document&eacute;. &Agrave; arbitrer dans le plan d'action :
+      conserver les paths actuels (compat clients tiers) ou versionner.
+    </div>
+  </div>
+
+  <h3>2.6 Synth&egrave;se Axe 2</h3>
+  <ul class="checklist">
+    <li data-done="true">Extraction routes V1 (<code>/tmp/v1-routes.json</code>, 331 routes)</li>
+    <li data-done="true">Extraction routes V2 (<code>/tmp/v2-routes.json</code>, 526 routes)</li>
+    <li data-done="true">Diff path/m&eacute;thode V1 vs V2 dans <code>features/*/</code> &rarr; <strong>0 diff (321 = 321)</strong></li>
+    <li data-done="true">Diff code source <code>router.py</code> par feature &rarr; identiques sauf 1 refactor (admin/corpus)</li>
+    <li data-done="true">Identification des 3 fichiers backend r&eacute;ellement modifi&eacute;s (tous = am&eacute;liorations)</li>
+    <li data-done="true">Inventaire des 195 nouvelles routes <code>web/</code> en V2</li>
+    <li data-done="true">Note architecturale : <code>api/v1/</code> vide (dette V2)</li>
+    <li data-done="false">[P3] Mapping module JS V1 &rarr; page web V2</li>
+  </ul>
+
+  <div class="callout callout-success">
+    <span class="callout-icon">&#x1F389;</span>
+    <div>
+      <strong>Conclusion Axe 2</strong> : la migration backend est <strong>excellente</strong>. Aucune route
+      perdue, aucun changement de signature non document&eacute;, deux bugfixes positifs en plus.
+      <strong>Le risque de r&eacute;gression fonctionnelle ne vient pas du backend</strong>, il est forc&eacute;ment
+      en frontend (Axe 3) ou dans la couverture de tests (Axe 4).
+    </div>
+  </div>
+</div>
+
+<!-- ==================== AXE 3 — UI ==================== -->
+<div class="section" id="axe3">
+  <div class="section-header">
+    <div class="section-icon icon-pink">&#x1F5A5;&#xFE0F;</div>
+    <div><h2>Axe 3 &mdash; UI &eacute;cran par &eacute;cran <span class="section-num">&mdash; Section 3</span></h2></div>
+  </div>
+
+  <div class="callout callout-warning">
+    <span class="callout-icon">&#x26A0;&#xFE0F;</span>
+    <div>
+      <strong>Verdict global Axe 3 : parit&eacute; fonctionnelle ~80%.</strong> Le backend est intact (Axe 2),
+      mais plusieurs comportements UI V1 ont &eacute;t&eacute; <strong>perdus</strong> ou <strong>simplifi&eacute;s</strong> dans la migration.
+      Les 4 hypoth&egrave;ses utilisateur (&eacute;dition user, barres de progression, toasts, refresh) sont
+      <strong>toutes confirm&eacute;es</strong> &agrave; des degr&eacute;s divers. Le cas le plus critique est
+      l'<strong>&eacute;dition user en admin</strong> : la route existe c&ocirc;t&eacute; backend mais aucun bouton ne la d&eacute;clenche.
+    </div>
+  </div>
+
+  <h3>3.1 Synth&egrave;se par zone</h3>
+
+  <p>Audit r&eacute;parti sur 5 zones fonctionnelles, chacune trait&eacute;e par un sous-agent Explore en
+  parall&egrave;le. Chaque zone est not&eacute;e sur la parit&eacute; d'actions UI (boutons, formulaires, toasts,
+  refresh, polling).</p>
+
+  <table>
+    <thead>
+      <tr><th>Zone</th><th>P&eacute;rim&egrave;tre</th><th>Parit&eacute;</th><th>Manques critiques</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Z1</strong></td>
+        <td>Auth + Chat (user)</td>
+        <td><span class="badge badge-success">85%</span></td>
+        <td>Edit/regenerate message ; toasts pas syst&eacute;matiques apr&egrave;s succ&egrave;s ; pas de progress modal</td>
+      </tr>
+      <tr>
+        <td><strong>Z2</strong></td>
+        <td>Documents + Pr&eacute;f&eacute;rences (user)</td>
+        <td><span class="badge badge-warning">70%</span></td>
+        <td>Barres de progression upload/r&eacute;indexation absentes ; bann&egrave;re centralis&eacute;e perdue ; barre d'actions bulk pas affich&eacute;e</td>
+      </tr>
+      <tr>
+        <td><strong>Z3</strong></td>
+        <td>Admin Core (dashboard, users, validation, audit, logs, conversations)</td>
+        <td><span class="badge badge-warning">75%</span></td>
+        <td><strong>&Eacute;dition user inaccessible</strong> ; archive conversations supprim&eacute;e ; dashboard timing/usage UI absent ; audit log details non ouvrable</td>
+      </tr>
+      <tr>
+        <td><strong>Z4</strong></td>
+        <td>Admin Corpus + Collections + Sources + Documents</td>
+        <td><span class="badge badge-success">82%</span></td>
+        <td>Admin Documents asym&eacute;trique 65% (lecture web, CRUD/r&eacute;index en API uniquement) ; pas de barre de progression reindex doc</td>
+      </tr>
+      <tr>
+        <td><strong>Z5</strong></td>
+        <td>Admin Syst&egrave;me (20 sous-sections de config)</td>
+        <td><span class="badge badge-success">90%</span></td>
+        <td>Modes : pas d'&eacute;dition (cr&eacute;ation+suppression seulement) ; toggle pays geo en API JSON pas dans le formulaire web ; RAG overrides hardcod&eacute;s 'fast/full'</td>
+      </tr>
+      <tr>
+        <td><strong>Moyenne</strong></td>
+        <td>5 zones</td>
+        <td><span class="badge badge-warning">~80%</span></td>
+        <td>4 hypoth&egrave;ses utilisateur confirm&eacute;es</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>3.2 Z1 &mdash; Auth + Chat (parit&eacute; 85%)</h3>
+
+  <p><strong>Pages couvertes</strong> : login, register, register-pending, verify-email, password-reset, chat principal + sidebar.</p>
+
+  <h4>Manques critiques</h4>
+  <ul class="feature-list">
+    <li><strong>Edit message</strong> &mdash; V1 permet d'&eacute;diter un message user pr&eacute;c&eacute;dent, V2 a un hint dans le partial mais pas de route ni handler.</li>
+    <li><strong>Regenerate response</strong> &mdash; V1 a un bouton "Regenerate" sur les r&eacute;ponses assistant, absent en V2.</li>
+    <li><strong>Toasts non syst&eacute;matiques apr&egrave;s succ&egrave;s</strong> &mdash; V1 affiche toujours un <code>showToast()</code> apr&egrave;s archive/delete/etc., V2 ne le fait que sur erreurs.</li>
+    <li><strong>Progress modal</strong> &mdash; V1 a un <code>showProgress()</code> modal pour les t&acirc;ches longues. V2 n'a que le statut SSE inline dans la bulle de message.</li>
+  </ul>
+
+  <h4>Divergences accept&eacute;es (non bloquantes)</h4>
+  <ul class="feature-list">
+    <li>Theme/lang/show-sources : V1 = JS/localStorage, V2 = pr&eacute;f&eacute;rences DB &mdash; <em>am&eacute;lioration</em>.</li>
+    <li>CSRF : V1 = JS, V2 = middleware Jinja &mdash; <em>am&eacute;lioration</em>.</li>
+    <li>Session : V1 = JWT localStorage, V2 = HttpOnly cookie &mdash; <em>am&eacute;lioration s&eacute;curit&eacute;</em>.</li>
+  </ul>
+
+  <h3>3.3 Z2 &mdash; Documents + Pr&eacute;f&eacute;rences (parit&eacute; 70%)</h3>
+
+  <p><strong>Pages couvertes</strong> : documents list user, upload form, profile, preferences (language/theme/RAG/voice).</p>
+
+  <h4>Couverture par fonctionnalit&eacute;</h4>
+  <table>
+    <thead><tr><th>Fonctionnalit&eacute;</th><th>Parit&eacute;</th><th>Note</th></tr></thead>
+    <tbody>
+      <tr><td>Profil + Pr&eacute;f&eacute;rences (settings)</td><td><span class="badge badge-success">95%</span></td><td>Quasi parfait. Tous les champs port&eacute;s.</td></tr>
+      <tr><td>Documents list (recherche, filtres, tri, pagination)</td><td><span class="badge badge-success">95%</span></td><td>Quota visible OK.</td></tr>
+      <tr><td>Toasts</td><td><span class="badge badge-success">85%</span></td><td>Pas draggables, pas multi-niveau.</td></tr>
+      <tr><td>Upload</td><td><span class="badge badge-warning">75%</span></td><td>Visibilit&eacute; checkbox absente, barre de progression absente.</td></tr>
+      <tr><td>R&eacute;indexation / Progress</td><td><span class="badge badge-warning">40%</span></td><td>Polling ligne par ligne, pas de bann&egrave;re centralis&eacute;e.</td></tr>
+      <tr><td>Bulk actions</td><td><span class="badge badge-danger">30%</span></td><td>Checkboxes Alpine OK, mais barre d'actions invisible.</td></tr>
+    </tbody>
+  </table>
+
+  <h4>Manques critiques (composants UI-SHARED V1 non port&eacute;s)</h4>
+  <ul class="feature-list">
+    <li><code>progress.js</code> &mdash; <strong>modale de progression multi-&eacute;tapes</strong> (upload &rarr; parsing &rarr; embedding &rarr; indexing).</li>
+    <li><code>reindex-banner.js</code> &mdash; <strong>bann&egrave;re flottante centralis&eacute;e</strong> qui agr&egrave;ge tous les uploads/r&eacute;indexations en cours.</li>
+    <li>Barre d'actions bulk dynamique (compteur "X s&eacute;lectionn&eacute;s" + bouton "Supprimer la s&eacute;lection").</li>
+    <li>Checkbox <strong>visibilit&eacute; (public/priv&eacute;)</strong> dans le formulaire d'upload &mdash; V2 d&eacute;duit la visibilit&eacute; du type de collection.</li>
+    <li><code>showConfirm()</code> custom &mdash; V2 utilise <code>hx-confirm</code> dialog navigateur basique.</li>
+    <li><code>draggable.js</code> &mdash; r&eacute;organisation des documents par drag&amp;drop (perdu).</li>
+  </ul>
+
+  <h3>3.4 Z3 &mdash; Admin Core (parit&eacute; 75%) &mdash; cas critique</h3>
+
+  <p><strong>Pages couvertes</strong> : dashboard, users, validation, audit, logs serveur, conversations admin.</p>
+
+  <div class="callout callout-danger">
+    <span class="callout-icon">&#x1F6A8;</span>
+    <div>
+      <strong>Cas mentionn&eacute; par l'utilisateur &mdash; &Eacute;dition user en admin : confirm&eacute; manquant.</strong>
+      La route <code>POST /web/admin/users/{user_id}</code> existe (<code>app/web/admin.py:850-912</code>),
+      la variable Alpine <code>editing: null</code> est d&eacute;clar&eacute;e dans le template, mais
+      <strong>aucun bouton ne d&eacute;clenche l'ouverture du formulaire d'&eacute;dition</strong>.
+      De plus, la route ne couvre que <strong>5 champs</strong> (email, username, first_name, last_name, phone, new_password)
+      contre <strong>13 champs</strong> dans <code>UI-SHARED/js/components/user-form.js</code> V1.
+    </div>
+  </div>
+
+  <h4>Champs d'&eacute;dition user manquants en V2 (route incompl&egrave;te)</h4>
+  <ul class="feature-list">
+    <li>Adresse (line1, line2, city, country)</li>
+    <li>Toggle <code>is_active</code></li>
+    <li>Toggle <code>is_verified</code></li>
+    <li>Toggle <code>voice_to_text_enabled</code></li>
+    <li>Select <code>approval_status</code> (pending / approved / rejected)</li>
+    <li>Select <code>role</code> (existe mais en route s&eacute;par&eacute;e <code>/role</code>, pas dans le formulaire d'&eacute;dition global)</li>
+  </ul>
+
+  <h4>Autres manques critiques Admin Core</h4>
+  <ul class="feature-list">
+    <li><strong>Dashboard timing P50/P95/P99</strong> : routes <code>/admin/dashboard/timing</code> et <code>/timing-reset</code> existent, mais aucun affichage ni bouton "Reset" dans <code>dashboard.html</code>.</li>
+    <li><strong>Dashboard usage trends (sparklines)</strong> : route <code>/admin/dashboard/usage</code> existe, pas de template graphique.</li>
+    <li><strong>Audit log details modal</strong> : route <code>/admin/audit/log/{id}/details</code> existe, modal HTML existe, mais aucun &eacute;v&eacute;nement ne l'ouvre depuis le tableau audit.</li>
+    <li><strong>Logs bulk-delete UI</strong> : route <code>/admin/logs/bulk-delete</code> existe, mais pas de checkbox de s&eacute;lection dans le tableau logs.</li>
+    <li><strong>Conversations archive/unarchive</strong> : V1 a archive individuel + bulk archive/restore, V2 n'a que bulk-delete (archive supprim&eacute;).</li>
+    <li><strong>Bulk reject validation</strong> : V1 a un modal raison, V2 a une textarea inline (UX d&eacute;grad&eacute;e mais fonctionnelle).</li>
+  </ul>
+
+  <h3>3.5 Z4 &mdash; Admin Corpus + Collections + Sources + Documents (parit&eacute; 82%)</h3>
+
+  <h4>Couverture par &eacute;cran</h4>
+  <table>
+    <thead><tr><th>&Eacute;cran</th><th>Parit&eacute;</th><th>Note</th></tr></thead>
+    <tbody>
+      <tr><td>Sources</td><td><span class="badge badge-success">100%</span></td><td>Configuration JSON par type = am&eacute;lioration.</td></tr>
+      <tr><td>Collections</td><td><span class="badge badge-success">98%</span></td><td>Relation N-N &rarr; 1-1 (changement intentionnel V2).</td></tr>
+      <tr><td>Corpus detail</td><td><span class="badge badge-success">95%</span></td><td>Gestion relations docs/sources/collections compl&egrave;te.</td></tr>
+      <tr><td>Corpus list</td><td><span class="badge badge-success">92%</span></td><td>Polling reindex en partial HTMX (vs ReindexBanner V1).</td></tr>
+      <tr><td><strong>Admin Documents</strong></td><td><span class="badge badge-warning">65%</span></td><td><strong>Asym&eacute;trie web/API : list+delete en web, CRUD+reindex+d&eacute;tails restent en API JSON</strong>.</td></tr>
+    </tbody>
+  </table>
+
+  <h4>Manques critiques</h4>
+  <ul class="feature-list">
+    <li><strong>Barre de progression reindex sur ligne document</strong> : V1 affichait <code>progress %</code> + message d'&eacute;tape directement dans la cellule actions, V2 n'a que le polling status (label texte).</li>
+    <li><strong>Modal d&eacute;tails document c&ocirc;t&eacute; web admin</strong> : V1 ouvre une modal compl&egrave;te (versions, m&eacute;tadonn&eacute;es, corpus assign&eacute;s), V2 n'expose les d&eacute;tails qu'en API JSON.</li>
+    <li><strong>Formulaire d'&eacute;dition m&eacute;tadonn&eacute;es document</strong> : V2 n'a aucun formulaire d'&eacute;dition c&ocirc;t&eacute; web admin.</li>
+    <li><strong>Bulk reindex avec progress par item</strong> : V1 affichait la progression de chaque doc/source dans la table, V2 n'agr&egrave;ge qu'au niveau corpus.</li>
+    <li><strong>Toasts post-action partiels</strong> : reindex doc ne retourne pas de toast de succ&egrave;s.</li>
+  </ul>
+
+  <h3>3.6 Z5 &mdash; Admin Syst&egrave;me (parit&eacute; 90%)</h3>
+
+  <p>Couverture par sous-section : <strong>20/20 pages pr&eacute;sentes</strong> (Config g&eacute;n&eacute;rique, LLM Provider/Ollama/llama.cpp,
+  RAG Chunking/Search/Behavior/Overrides, Storage, Speech, SMTP, Notifications, Password Policy,
+  Debug, Logging, Perf, Indexation scheduler, Geo, Modes, Chat, Appearance).</p>
+
+  <p><strong>Patterns OK</strong> : tous les formulaires retournent <code>flash()</code> macro avec toast success/error,
+  CSRF auto-inject&eacute;, refresh via <code>HX-Trigger</code> custom events, tests de connectivit&eacute; (SMTP, Ollama, llama.cpp,
+  Whisper, Notifications) tous pr&eacute;sents et fonctionnels.</p>
+
+  <h4>Manques critiques</h4>
+  <ul class="feature-list">
+    <li><strong>Modes de conversation : pas d'&eacute;dition</strong> &mdash; V2 ne propose que CREATE + DELETE, pas de PATCH/PUT pour modifier <code>system_prompt</code>, <code>display_name</code>, <code>description</code> apr&egrave;s cr&eacute;ation. V1 avait un <code>showEditModeModal()</code> complet.</li>
+    <li><strong>Geo toggle country en web</strong> &mdash; V2 a une route <code>/api/admin/geo/countries/{code}/toggle-active</code> en JSON, mais le formulaire web <code>/web/admin/system/geo</code> ne l'expose pas. Admin doit utiliser Postman.</li>
+    <li><strong>RAG Overrides per-mode hardcod&eacute;s 'fast/full'</strong> &mdash; macro Jinja n'it&egrave;re pas sur les modes existants en DB ; ajouter un nouveau mode n&eacute;cessite de modifier le template.</li>
+  </ul>
+
+  <h4>Manques mineurs (acceptables)</h4>
+  <ul class="feature-list">
+    <li>GGUF download UI (V1 listait des mod&egrave;les HuggingFace populaires) &mdash; V2 = upload manuel dans <code>/code/models</code>.</li>
+    <li>Whisper model version select &mdash; V2 = config en BDD seulement.</li>
+  </ul>
+
+  <h3>3.7 Patterns transversaux &mdash; les 4 hypoth&egrave;ses utilisateur</h3>
+
+  <table>
+    <thead>
+      <tr><th>Hypoth&egrave;se</th><th>Confirm&eacute;e ?</th><th>O&ugrave; ?</th><th>Gravit&eacute;</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>&Eacute;dition d'un utilisateur d&eacute;j&agrave; inscrit (admin)</strong></td>
+        <td>&#x2705; Confirm&eacute;e</td>
+        <td>Z3 &mdash; route <code>POST /web/admin/users/{id}</code> existe sans bouton, et n'expose que 5 des 13 champs V1</td>
+        <td><span class="badge badge-danger">Critique</span></td>
+      </tr>
+      <tr>
+        <td><strong>Barres de progression manquantes</strong></td>
+        <td>&#x2705; Confirm&eacute;e</td>
+        <td>Z2 (upload, r&eacute;indexation user) ; Z4 (reindex doc admin, bulk reindex)</td>
+        <td><span class="badge badge-warning">Majeur</span></td>
+      </tr>
+      <tr>
+        <td><strong>Toasts post-action partiels</strong></td>
+        <td>&#x26A0;&#xFE0F; Partiellement</td>
+        <td>Z1 (chat archive/delete sans toast succ&egrave;s) ; Z2 (reindex doc) ; Z3 (logs/audit/dashboard)</td>
+        <td><span class="badge badge-warning">Majeur</span></td>
+      </tr>
+      <tr>
+        <td><strong>Refresh / mise &agrave; jour post-action</strong></td>
+        <td>&#x26A0;&#xFE0F; Partiellement</td>
+        <td>Globalement OK via HTMX <code>hx-target</code> et <code>HX-Trigger</code>, mais bann&egrave;re reindex centralis&eacute;e perdue (Z2)</td>
+        <td><span class="badge badge-info">Mineur</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>3.8 Composants V1 UI-SHARED non port&eacute;s en V2</h3>
+
+  <p>Bilan de portage des 12 composants <code>UI-SHARED/js/components/</code> :</p>
+
+  <table>
+    <thead><tr><th>Composant V1</th><th>Statut V2</th><th>Note</th></tr></thead>
+    <tbody>
+      <tr><td><code>toast.js</code></td><td><span class="badge badge-success">Port&eacute;</span></td><td>Macro Jinja <code>flash()</code> + Alpine <code>app-toasts</code>. Pas draggable, pas duration param.</td></tr>
+      <tr><td><code>confirm.js</code></td><td><span class="badge badge-warning">Partiel</span></td><td>Modal Alpine <code>app-confirm</code> existe, mais beaucoup d'usages utilisent <code>hx-confirm</code> dialog basique.</td></tr>
+      <tr><td><code>debug-banner.js</code></td><td><span class="badge badge-success">Port&eacute;</span></td><td>Bandeau conditionnel dans <code>base.html</code>.</td></tr>
+      <tr><td><code>password-reset.js</code></td><td><span class="badge badge-success">Port&eacute;</span></td><td>Page Jinja + form HTMX.</td></tr>
+      <tr><td><code>upload.js</code></td><td><span class="badge badge-warning">Partiel</span></td><td>Form HTMX + Alpine drag&amp;drop OK, mais pas de barre de progression ni mode "dossier".</td></tr>
+      <tr><td><code>user-form.js</code></td><td><span class="badge badge-danger">Manquant en admin</span></td><td>Existe c&ocirc;t&eacute; profile user, absent c&ocirc;t&eacute; admin (cas critique Z3).</td></tr>
+      <tr><td><code>table-pagination.js</code></td><td><span class="badge badge-success">Port&eacute;</span></td><td>Pagination serveur via query string.</td></tr>
+      <tr><td><code>markdown.js</code></td><td><span class="badge badge-success">Port&eacute;</span></td><td>marked.js 12.0.2 + hljs CDN dans <code>base.html</code>.</td></tr>
+      <tr><td><code>message-modal.js</code></td><td><span class="badge badge-success">Port&eacute;</span></td><td>Modals Alpine dans pages chat/conversations.</td></tr>
+      <tr><td><code>progress.js</code></td><td><span class="badge badge-danger">Manquant</span></td><td>Pas de modale de progression multi-&eacute;tapes en V2.</td></tr>
+      <tr><td><code>draggable.js</code></td><td><span class="badge badge-danger">Manquant</span></td><td>Pas de r&eacute;organisation par drag&amp;drop en V2.</td></tr>
+      <tr><td><code>reindex-banner</code> (service)</td><td><span class="badge badge-danger">Manquant</span></td><td>Bann&egrave;re centralis&eacute;e supprim&eacute;e &mdash; chaque ligne fait son propre polling.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>3.9 Synth&egrave;se Axe 3</h3>
+  <ul class="checklist">
+    <li data-done="true">Z1 Auth+Chat audit&eacute;e (parit&eacute; 85%)</li>
+    <li data-done="true">Z2 Documents+Pr&eacute;f&eacute;rences audit&eacute;e (parit&eacute; 70%)</li>
+    <li data-done="true">Z3 Admin Core audit&eacute;e (parit&eacute; 75%) &mdash; cas &eacute;dition user confirm&eacute;</li>
+    <li data-done="true">Z4 Corpus/Collections/Sources/Documents audit&eacute;e (parit&eacute; 82%)</li>
+    <li data-done="true">Z5 Admin Syst&egrave;me audit&eacute;e (parit&eacute; 90%)</li>
+    <li data-done="true">Patterns transversaux : 4 hypoth&egrave;ses utilisateur valid&eacute;es</li>
+    <li data-done="true">Bilan composants UI-SHARED V1 (12 items)</li>
+    <li data-done="false">[P4] Audit tests (couverture)</li>
+    <li data-done="false">[P5] Plan d'action consolid&eacute;</li>
+  </ul>
+
+  <div class="callout callout-info">
+    <span class="callout-icon">&#x1F4A1;</span>
+    <div>
+      <strong>Conclusion Axe 3</strong> : la migration UI est <strong>fonctionnellement majoritaire</strong> mais
+      a perdu plusieurs <strong>composants UX</strong> centraux de V1. L'utilisateur a raison &mdash; il
+      <em>manque effectivement des fonctionnalit&eacute;s</em>. Les correctifs prioritaires (P0/P1) seront
+      d&eacute;taill&eacute;s en P5 dans le plan d'action consolid&eacute;.
+    </div>
+  </div>
+</div>
+
+<!-- ==================== AXE 4 — Tests ==================== -->
+<div class="section" id="axe4">
+  <div class="section-header">
+    <div class="section-icon icon-green">&#x1F9EA;</div>
+    <div><h2>Axe 4 &mdash; Tests <span class="section-num">&mdash; Section 4</span></h2></div>
+  </div>
+
+  <div class="callout callout-danger">
+    <span class="callout-icon">&#x1F6A8;</span>
+    <div>
+      <strong>Verdict global Axe 4 : couverture tests effondr&eacute;e &mdash; 88% des cases V1 perdus.</strong>
+      <br><br>
+      V1 = 93 fichiers, 1727 cases. V2 = 19 fichiers, <strong>209 cases</strong> uniquement
+      (199 integration + 10 e2e). La couverture V2 se concentre <strong>exclusivement sur l'admin</strong> ;
+      tous les tests des services backend, du chat utilisateur, de l'auth, des documents user,
+      des connectors sources, des providers LLM, du storage, de la crypto, et autres modules
+      ont &eacute;t&eacute; <strong>perdus dans la migration</strong>.
+    </div>
+  </div>
+
+  <h3>4.1 Volum&eacute;trie globale</h3>
+
+  <table>
+    <thead>
+      <tr><th>M&eacute;trique</th><th>V1</th><th>V2</th><th>&Delta;</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Fichiers <code>test_*.py</code></td><td>93</td><td>19</td><td>&minus;74 (&minus;79%)</td></tr>
+      <tr><td>Cases (fonctions <code>test_*</code>)</td><td>1727</td><td>209</td><td>&minus;1518 (&minus;88%)</td></tr>
+      <tr><td>Tests passants</td><td><em>non v&eacute;rifi&eacute;</em></td><td>199 (selon MEMORY.md)</td><td>&mdash;</td></tr>
+      <tr><td>Structure</td><td>Par feature (24 dossiers)</td><td><code>unit/</code> (vide), <code>integration/</code> (16), <code>e2e/</code> (3)</td><td>R&eacute;organis&eacute;</td></tr>
+    </tbody>
+  </table>
+
+  <h3>4.2 Mapping de couverture par feature</h3>
+
+  <table>
+    <thead>
+      <tr><th>Feature V1</th><th>V1 cases</th><th>V2 cases (estim&eacute;s)</th><th>Statut</th><th>Note</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>admin/</code></td><td>391</td><td>~150 (admin_audit, admin_corpus*, admin_dashboard, admin_logs, admin_source_config, admin_sources, admin_system_*, admin_validation, smoke_admin)</td><td><span class="badge badge-warning">~38%</span></td><td>Couverture int&eacute;gration restant&eacute;e mais 240+ cases perdus (admin_users_crud, admin_bulk_users, admin_messages, etc.)</td></tr>
+      <tr><td><code>admin_documents/</code></td><td>28</td><td>0</td><td><span class="badge badge-danger">0%</span></td><td>Aucun test V2 sur l'admin documents (reindex_sync, integration)</td></tr>
+      <tr><td><code>analytics/</code></td><td>39</td><td>0</td><td><span class="badge badge-danger">0%</span></td><td>Service + integration analytics non test&eacute;s</td></tr>
+      <tr><td><code>api/</code></td><td>9</td><td>0</td><td><span class="badge badge-danger">0%</span></td><td>Tests API publique provider filter perdus</td></tr>
+      <tr><td><code>audit/</code> (rules)</td><td>47</td><td>0</td><td><span class="badge badge-danger">0%</span></td><td>Tests d'architecture (arch_rules, security_rules, ui_rules, ux_rules) <strong>perdus</strong></td></tr>
+      <tr><td><code>auth/</code></td><td>23</td><td>0</td><td><span class="badge badge-danger">0%</span></td><td>Aucun test d'inscription / login / OAuth en V2</td></tr>
+      <tr><td><code>chat/</code></td><td>130</td><td>0</td><td><span class="badge badge-danger">0%</span></td><td>chat_router, chat_service, conversation_memory <strong>tous perdus</strong></td></tr>
+      <tr><td><code>collections/</code></td><td>25</td><td>0</td><td><span class="badge badge-danger">0%</span></td><td>Service + integration collections non test&eacute;s</td></tr>
+      <tr><td><code>common/</code></td><td>29</td><td>0</td><td><span class="badge badge-danger">0%</span></td><td>Exceptions, pagination, sources utils perdus</td></tr>
+      <tr><td><code>crypto/</code></td><td>48</td><td>0</td><td><span class="badge badge-danger">0%</span></td><td>Encryption + search_index <strong>perdus</strong> (s&eacute;curit&eacute;)</td></tr>
+      <tr><td><code>documents/</code> (user)</td><td>46</td><td>0</td><td><span class="badge badge-danger">0%</span></td><td>Repository + integration documents user perdus</td></tr>
+      <tr><td><code>e2e/</code></td><td>11</td><td>10</td><td><span class="badge badge-warning">~91%</span></td><td>V1 = test_rag_context_flow ; V2 = e2e_admin_corpus, e2e_admin_sources, e2e_smoke (couverture diff&eacute;rente)</td></tr>
+      <tr><td><code>geo/</code></td><td>89</td><td>0</td><td><span class="badge badge-danger">0%</span></td><td>5 fichiers (admin_geo_import, admin_geo_service, geo_streaming, integration, service) <strong>tous perdus</strong></td></tr>
+      <tr><td><code>health/</code></td><td>33</td><td>0</td><td><span class="badge badge-danger">0%</span></td><td>health_service + integration perdus</td></tr>
+      <tr><td><code>ingestion/</code></td><td>7</td><td>0</td><td><span class="badge badge-danger">0%</span></td><td>upload_async perdu (li&eacute; au bug xlsx d&eacute;couvert !)</td></tr>
+      <tr><td><code>llm/</code></td><td>103</td><td>~11 (admin_system_llm)</td><td><span class="badge badge-danger">~10%</span></td><td>5 fichiers V1 (base, compatibility, factory, llamacpp_provider, ollama_provider) ; V2 ne teste que le formulaire admin LLM, pas les providers</td></tr>
+      <tr><td><code>logs/</code></td><td>222</td><td>~9 (admin_logs)</td><td><span class="badge badge-danger">~4%</span></td><td>8 fichiers V1 (alert_checker, integration, logging_core, middleware, notifier, repository, security_logger, service) ; <strong>perte massive</strong></td></tr>
+      <tr><td><code>preferences/</code></td><td>27</td><td>0</td><td><span class="badge badge-danger">0%</span></td><td>Service + integration preferences perdus</td></tr>
+      <tr><td><code>rag/</code></td><td>20</td><td>~14 (admin_system_rag)</td><td><span class="badge badge-warning">~70%</span></td><td>V1 testait <code>compactor</code>, V2 teste les formulaires admin RAG (pas le moteur)</td></tr>
+      <tr><td><code>sources/</code></td><td>186</td><td>~20 (admin_sources, admin_source_config)</td><td><span class="badge badge-danger">~11%</span></td><td>8 fichiers V1 (connectors, context, indexation_sync, indexer, integration, schemas, service, source_resolution_security) ; V2 teste les routes admin pas les services</td></tr>
+      <tr><td><code>speech/</code></td><td>41</td><td>0</td><td><span class="badge badge-danger">0%</span></td><td>Service + integration speech perdus</td></tr>
+      <tr><td><code>storage/</code></td><td>41</td><td>0</td><td><span class="badge badge-danger">0%</span></td><td>local_backend + storage_service <strong>perdus</strong> (li&eacute; au bug local.py UnboundLocalError !)</td></tr>
+      <tr><td><code>user/</code></td><td>88</td><td>0</td><td><span class="badge badge-danger">0%</span></td><td>5 fichiers V1 (conversations, conversations_archive, documents, preferences, profile) <strong>tous perdus</strong></td></tr>
+      <tr><td><code>test_api_endpoints.py</code></td><td>23</td><td>0</td><td><span class="badge badge-danger">0%</span></td><td>Tests d'endpoints publics perdus</td></tr>
+      <tr><td><code>test_auth.py</code></td><td>1</td><td>0</td><td><span class="badge badge-danger">0%</span></td><td>Test auth global perdu</td></tr>
+      <tr><td><code>test_health.py</code></td><td>3</td><td>0</td><td><span class="badge badge-danger">0%</span></td><td>Tests health globaux perdus</td></tr>
+      <tr><td><code>test_ingest_v2.py</code></td><td>17</td><td>0</td><td><span class="badge badge-danger">0%</span></td><td>Tests ingestion v2 (interne V1) perdus</td></tr>
+    </tbody>
+  </table>
+
+  <h3>4.3 Inventaire d&eacute;taill&eacute; V2</h3>
+
+  <p>V2 a 19 fichiers de tests, exclusivement focalis&eacute;s sur l'admin web :</p>
+
+  <table>
+    <thead><tr><th>Fichier V2</th><th># cases</th><th>P&eacute;rim&egrave;tre test&eacute;</th></tr></thead>
+    <tbody>
+      <tr><td><code>e2e/test_e2e_admin_corpus.py</code></td><td>4</td><td>E2E Playwright admin corpus</td></tr>
+      <tr><td><code>e2e/test_e2e_admin_sources.py</code></td><td>4</td><td>E2E Playwright admin sources</td></tr>
+      <tr><td><code>e2e/test_e2e_smoke.py</code></td><td>2</td><td>E2E smoke test (chargement pages)</td></tr>
+      <tr><td><code>integration/test_admin_audit.py</code></td><td>7</td><td>Routes admin audit web</td></tr>
+      <tr><td><code>integration/test_admin_corpus.py</code></td><td>15</td><td>Routes admin corpus web</td></tr>
+      <tr><td><code>integration/test_admin_corpus_reindex.py</code></td><td>13</td><td>R&eacute;indexation cascade corpus</td></tr>
+      <tr><td><code>integration/test_admin_corpus_relations.py</code></td><td>19</td><td>Relations docs/sources/collections</td></tr>
+      <tr><td><code>integration/test_admin_dashboard.py</code></td><td>5</td><td>Dashboard admin</td></tr>
+      <tr><td><code>integration/test_admin_logs.py</code></td><td>9</td><td>Logs admin web</td></tr>
+      <tr><td><code>integration/test_admin_source_config.py</code></td><td>17</td><td>Config sources par type</td></tr>
+      <tr><td><code>integration/test_admin_sources.py</code></td><td>20</td><td>Routes admin sources web</td></tr>
+      <tr><td><code>integration/test_admin_system_app.py</code></td><td>17</td><td>System &mdash; modes/chat/appearance</td></tr>
+      <tr><td><code>integration/test_admin_system_comm.py</code></td><td>12</td><td>System &mdash; SMTP / Notifications</td></tr>
+      <tr><td><code>integration/test_admin_system_infra.py</code></td><td>13</td><td>System &mdash; Storage / Speech</td></tr>
+      <tr><td><code>integration/test_admin_system_llm.py</code></td><td>11</td><td>System &mdash; LLM provider/Ollama/llama.cpp (formulaire web seulement)</td></tr>
+      <tr><td><code>integration/test_admin_system_rag.py</code></td><td>14</td><td>System &mdash; RAG (formulaire web seulement)</td></tr>
+      <tr><td><code>integration/test_admin_system_secops.py</code></td><td>14</td><td>System &mdash; Password / Debug / Logging / Perf</td></tr>
+      <tr><td><code>integration/test_admin_validation.py</code></td><td>8</td><td>Validation users admin</td></tr>
+      <tr><td><code>integration/test_smoke_admin.py</code></td><td>5</td><td>Smoke admin (pages chargent)</td></tr>
+    </tbody>
+  </table>
+
+  <h3>4.4 Zones sans aucun test en V2</h3>
+
+  <p>Liste des p&eacute;rim&egrave;tres test&eacute;s en V1 et <strong>strictement non couverts</strong> en V2 :</p>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-title">&#x1F510; Auth (23 cases V1)</div>
+      <div class="card-text">Inscription, login, validation email, OAuth, password-reset. <strong>Z&eacute;ro test V2</strong> sur le flow d'authentification.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F4AC; Chat (130 cases V1)</div>
+      <div class="card-text">chat_router, chat_service, conversation_memory. Streaming SSE non test&eacute;, m&eacute;moire conversationnelle non test&eacute;e.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F464; User (88 cases V1)</div>
+      <div class="card-text">conversations, conversations_archive, documents user, preferences, profile. <strong>Z&eacute;ro test V2</strong> sur les pages utilisateur.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F4C4; Documents user (46 cases V1)</div>
+      <div class="card-text">Repository + integration. CRUD documents personnels non couvert.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F517; Collections (25 cases V1)</div>
+      <div class="card-text">Service + integration. Sync ChromaDB non test&eacute;e.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F50C; Sources / Connectors (186 cases V1)</div>
+      <div class="card-text">connectors (91 cases), indexer, context, source_resolution_security. <strong>Le moteur RAG n'a aucun test V2</strong>.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F4DC; Logs core (222 cases V1)</div>
+      <div class="card-text">logging_core (54), integration (49), alert_checker, middleware, notifier, security_logger. <strong>Le syst&egrave;me de logs n'a quasi aucun test V2</strong>.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F916; LLM Providers (103 cases V1)</div>
+      <div class="card-text">factory (33), llamacpp_provider (27), ollama_provider (22). Les providers ne sont test&eacute;s qu'&agrave; travers les formulaires admin en V2.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F30D; Geo (89 cases V1)</div>
+      <div class="card-text">5 fichiers V1, dont admin_geo_import (21) et streaming (15). Z&eacute;ro test V2.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F397;&#xFE0F; Speech (41 cases V1)</div>
+      <div class="card-text">speech_service + integration. Whisper STT non test&eacute;.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F4BE; Storage (41 cases V1)</div>
+      <div class="card-text">local_backend (20), storage_service (21). <strong>Li&eacute; directement au bug <code>local.py</code> UnboundLocalError d&eacute;couvert dans la session !</strong></div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F510; Crypto (48 cases V1)</div>
+      <div class="card-text">encryption (17), search_index (31). Module de s&eacute;curit&eacute; sans aucun test V2.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F4E5; Ingestion (7 cases V1)</div>
+      <div class="card-text">upload_async. <strong>Li&eacute; au bug xlsx d&eacute;couvert !</strong> (manque <code>unstructured[xlsx]</code>).</div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x2697;&#xFE0F; Audit rules (47 cases V1)</div>
+      <div class="card-text">arch_rules, security_rules, ui_rules, ux_rules, maintenance_rules. <strong>Tests d'architecture/coh&eacute;rence perdus</strong>.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F4CA; Analytics (39 cases V1)</div>
+      <div class="card-text">analytics_service + integration. Tracking utilisateur non test&eacute;.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F517; Common utils (29 cases V1)</div>
+      <div class="card-text">exceptions, pagination, sources utils. Briques transversales non test&eacute;es.</div>
+    </div>
+  </div>
+
+  <h3>4.5 Corr&eacute;lation tests perdus &harr; bugs d&eacute;couverts</h3>
+
+  <p>Les bugs identifi&eacute;s dans la session de QA correspondent <strong>directement</strong> &agrave; des modules
+  dont les tests ont &eacute;t&eacute; perdus. Probabilit&eacute; &eacute;lev&eacute;e que d'autres bugs similaires existent :</p>
+
+  <table>
+    <thead><tr><th>Bug observ&eacute;</th><th>Module concern&eacute;</th><th>Tests V1 perdus</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Upload xlsx 500 (mime VARCHAR(50) trop court)</td>
+        <td><code>features/documents/models.py</code></td>
+        <td>26 cases <code>documents/test_integration.py</code> + 28 cases <code>admin_documents/</code></td>
+      </tr>
+      <tr>
+        <td>Upload xlsx UnboundLocalError storage</td>
+        <td><code>common/storage/backends/local.py</code></td>
+        <td>20 cases <code>storage/test_local_backend.py</code></td>
+      </tr>
+      <tr>
+        <td>Upload xlsx <code>partition_xlsx</code> manquant</td>
+        <td><code>features/ingestion/</code></td>
+        <td>7 cases <code>test_ingest_v2.py</code> + 7 cases <code>ingestion/test_upload_async.py</code></td>
+      </tr>
+      <tr>
+        <td>Logs admin /stats 500 (LogStatsResponse iterating)</td>
+        <td><code>features/logs/</code></td>
+        <td>222 cases <code>logs/</code> dont 49 integration + 18 service + 20 repository</td>
+      </tr>
+      <tr>
+        <td>Logs admin /details 500 (<code>created_at</code> vs <code>timestamp</code>)</td>
+        <td><code>features/logs/models</code></td>
+        <td>20 cases <code>logs/test_repository.py</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-warning">
+    <span class="callout-icon">&#x26A0;&#xFE0F;</span>
+    <div>
+      <strong>Lecture critique</strong> : 100% des bugs constat&eacute;s dans la session correspondent &agrave; des
+      modules dont les tests V1 n'ont pas &eacute;t&eacute; port&eacute;s. C'est un signal fort que d'autres bugs sont
+      probablement pr&eacute;sents dans les zones non couvertes (auth, chat, sources connectors, providers LLM, crypto).
+    </div>
+  </div>
+
+  <h3>4.6 Synth&egrave;se Axe 4</h3>
+  <ul class="checklist">
+    <li data-done="true">Inventaire fichiers tests V1 (93 fichiers, 1727 cases)</li>
+    <li data-done="true">Inventaire fichiers tests V2 (19 fichiers, 209 cases)</li>
+    <li data-done="true">Mapping de couverture par feature (24 features V1)</li>
+    <li data-done="true">Identification des 16 zones sans aucun test V2</li>
+    <li data-done="true">Corr&eacute;lation entre tests perdus et bugs observ&eacute;s</li>
+    <li data-done="false">[P5] Ex&eacute;cution comparative V1/V2 sur sc&eacute;narios concrets (optionnel)</li>
+    <li data-done="false">[P5] Plan de remise en couverture (priorisation)</li>
+  </ul>
+
+  <div class="callout callout-danger">
+    <span class="callout-icon">&#x1F6A8;</span>
+    <div>
+      <strong>Conclusion Axe 4</strong> : c'est l'axe le plus alarmant de cet audit. Avec 88% des
+      cases perdus, V2 est en r&eacute;alit&eacute; <em>peu test&eacute;</em>. La p&eacute;rim&egrave;tre couvert (admin web)
+      laisse <strong>tout l'utilisateur final, l'auth, le chat, les services backend, et les modules
+      de s&eacute;curit&eacute; sans filet de s&eacute;curit&eacute;</strong>. C'est probablement la raison principale pour
+      laquelle les bugs d&eacute;couverts par l'utilisateur en QA n'ont pas &eacute;t&eacute; intercept&eacute;s avant la prod.
+    </div>
+  </div>
+</div>
+
+<!-- ==================== PLAN D'ACTION ==================== -->
+<div class="section" id="plan">
+  <div class="section-header">
+    <div class="section-icon icon-red">&#x1F527;</div>
+    <div><h2>Plan d'action consolid&eacute; <span class="section-num">&mdash; Section 5</span></h2></div>
+  </div>
+
+  <h3>5.1 Synth&egrave;se ex&eacute;cutive</h3>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-title">&#x2705; Backend (Axes 1-2)</div>
+      <div class="card-text"><strong>Excellent</strong>. 321/321 routes API identiques V1&harr;V2. 2 bugfixes positifs en V2. D&eacute;pendances Python coh&eacute;rentes. Refonte JS coh&eacute;rente avec l'archi V2. <strong>Aucune action critique requise sur le backend</strong>.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x26A0;&#xFE0F; UI (Axe 3)</div>
+      <div class="card-text"><strong>Parit&eacute; ~80%</strong>. 4 hypoth&egrave;ses utilisateur confirm&eacute;es. 3 composants UI-SHARED non port&eacute;s (progress, reindex-banner, draggable). 1 fonctionnalit&eacute; critique cach&eacute;e (&eacute;dition user admin).</div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F6A8; Tests (Axe 4)</div>
+      <div class="card-text"><strong>Couverture effondr&eacute;e &minus;88%</strong>. 16 features sans aucun test V2. 100% des bugs observ&eacute;s sont dans des zones non couvertes. <strong>Risque de r&eacute;gression &eacute;lev&eacute;</strong>.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F4CA; Volum&eacute;trie</div>
+      <div class="card-text">~25 actions de remise en conformit&eacute; identifi&eacute;es, r&eacute;parties en 4 niveaux de priorit&eacute; (P0 critique &rarr; P3 dette). Effort total estim&eacute; : <strong>5&minus;7 semaines/d&eacute;v</strong>.</div>
+    </div>
+  </div>
+
+  <h3>5.2 Niveaux de priorit&eacute;</h3>
+
+  <table>
+    <thead>
+      <tr><th>Niveau</th><th>Crit&egrave;re</th><th>D&eacute;lai</th><th>#actions</th><th>Effort</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><span class="badge badge-danger">P0 &mdash; Critique</span></td><td>Bugs en prod ou fonctionnalit&eacute; centrale inaccessible</td><td>&le; 1 semaine</td><td>5</td><td>~3-5 jours</td></tr>
+      <tr><td><span class="badge badge-warning">P1 &mdash; Majeur</span></td><td>Composant V1 perdu avec impact UX visible</td><td>1-2 semaines</td><td>8</td><td>~10-14 jours</td></tr>
+      <tr><td><span class="badge badge-info">P2 &mdash; Mod&eacute;r&eacute;</span></td><td>Compl&eacute;tion / am&eacute;lioration de parit&eacute;</td><td>2-4 semaines</td><td>7</td><td>~15-20 jours</td></tr>
+      <tr><td><span class="badge badge-info">P3 &mdash; Dette</span></td><td>Couverture tests + dette architecture</td><td>3-6 mois (continu)</td><td>~5 (gros chantiers)</td><td>~20-40 jours</td></tr>
+    </tbody>
+  </table>
+
+  <h3>5.3 P0 &mdash; Critique (5 actions, ~3-5 jours)</h3>
+
+  <table>
+    <thead><tr><th>#</th><th>Action</th><th>Fichiers</th><th>Effort</th><th>Tests</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>P0.1</td>
+        <td><strong>&Eacute;dition utilisateur en admin (UI + champs)</strong>.<br>
+          (a) Ajouter bouton "&Eacute;diter" dans <code>partials/admin/user-row.html</code>.<br>
+          (b) Cr&eacute;er <code>partials/admin/user-edit-modal.html</code> avec les 13 champs V1.<br>
+          (c) Compl&eacute;ter route <code>POST /web/admin/users/{id}</code> : adresse, <code>is_active</code>, <code>is_verified</code>, <code>voice_to_text_enabled</code>, <code>approval_status</code>, <code>role</code>.<br>
+          (d) Ajouter section "Reset password admin".
+        </td>
+        <td><code>app/web/admin.py</code> (l. 850-912)<br><code>app/templates/pages/admin/users.html</code><br><code>app/templates/partials/admin/user-row.html</code> (nouveau modal)</td>
+        <td>1 jour</td>
+        <td>+10 cases <code>tests/integration/test_admin_users_edit.py</code></td>
+      </tr>
+      <tr>
+        <td>P0.2</td>
+        <td><strong>Ingestion xlsx : deps + statut erreur</strong>.<br>
+          (a) <code>requirements.txt</code> : <code>unstructured==0.15.13</code> &rarr; <code>unstructured[xlsx,docx,pptx]==0.15.13</code>.<br>
+          (b) Rebuild image V2 + redeploy.<br>
+          (c) Tests upload xlsx/docx/pptx OK.
+        </td>
+        <td><code>requirements.txt</code><br><code>Dockerfile</code> (rebuild)</td>
+        <td>0.5 jour</td>
+        <td>+3 cases <code>tests/integration/test_ingestion_formats.py</code> (xlsx, docx, pptx)</td>
+      </tr>
+      <tr>
+        <td>P0.3</td>
+        <td><strong>UX statut "Indexation&hellip;" infinie</strong>.<br>
+          (a) <code>_doc_status()</code> consulte <code>get_doc_reindex_progress()</code> in-memory pour distinguer "pending" vs "failed".<br>
+          (b) Si failed : afficher "Erreur d'indexation" + bouton "R&eacute;essayer" + arr&ecirc;t du polling.<br>
+          (c) Optionnel mais recommand&eacute; : ajouter colonnes <code>indexing_status</code> + <code>indexing_error</code> sur <code>documents</code> avec migration Alembic pour persister l'erreur au-del&agrave; d'un restart.
+        </td>
+        <td><code>app/web/documents.py</code> (l. 72-81)<br><code>app/templates/partials/documents/row.html</code><br><code>app/models.py</code><br><code>app/alembic/versions/</code></td>
+        <td>1 jour</td>
+        <td>+5 cases tests UX statut</td>
+      </tr>
+      <tr>
+        <td>P0.4</td>
+        <td><strong>Tests de non-r&eacute;gression sur bugs observ&eacute;s</strong>.<br>
+          5 bugs identifi&eacute;s dans la session doivent &ecirc;tre couverts pour pr&eacute;venir leur r&eacute;apparition :<br>
+          (a) xlsx mime > 50 chars (VARCHAR migration).<br>
+          (b) <code>local.py</code> UnboundLocalError sur permissions.<br>
+          (c) <code>partition_xlsx</code> deps (couvert par P0.2).<br>
+          (d) <code>/admin/logs/stats</code> 500 (LogStatsResponse iteration).<br>
+          (e) <code>/admin/logs/{id}/details</code> 500 (<code>timestamp</code> vs <code>created_at</code>).
+        </td>
+        <td><code>tests/integration/test_regressions.py</code> (nouveau)</td>
+        <td>0.5 jour</td>
+        <td>+5 cases r&eacute;gression cibl&eacute;s</td>
+      </tr>
+      <tr>
+        <td>P0.5</td>
+        <td><strong>Smoke tests user-facing</strong>.<br>
+          E2E Playwright sur les 4 flows principaux user :<br>
+          (a) Login + accueil chat.<br>
+          (b) Envoi message + r&eacute;ception streaming.<br>
+          (c) Upload document + indexation r&eacute;ussie.<br>
+          (d) Modification pr&eacute;f&eacute;rences (lang/theme).
+        </td>
+        <td><code>tests/e2e/test_e2e_user_flows.py</code> (nouveau)</td>
+        <td>1 jour</td>
+        <td>+4 cases E2E</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>5.4 P1 &mdash; Majeur (8 actions, ~10-14 jours)</h3>
+
+  <table>
+    <thead><tr><th>#</th><th>Action</th><th>Effort</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>P1.1</td>
+        <td><strong>Port composant <code>progress.js</code></strong> &mdash; modale Alpine + macro Jinja pour barre de progression multi-&eacute;tapes (upload &rarr; parsing &rarr; embedding &rarr; indexing). R&eacute;utilisable pour upload doc, indexation source, r&eacute;indexation corpus.</td>
+        <td>2 jours</td>
+      </tr>
+      <tr>
+        <td>P1.2</td>
+        <td><strong>Port service <code>reindex-banner</code></strong> &mdash; bann&egrave;re flottante centralis&eacute;e (Alpine + HTMX polling) qui agr&egrave;ge tous les uploads/r&eacute;indexations en cours. R&eacute;utilise <code>ReindexManager</code> existant. Affichage global sur toutes les pages admin.</td>
+        <td>2 jours</td>
+      </tr>
+      <tr>
+        <td>P1.3</td>
+        <td><strong>Barre d'actions bulk dynamique</strong> (users, documents, conversations) &mdash; macro Jinja r&eacute;utilisable affichant compteur "X s&eacute;lectionn&eacute;s" + boutons d'action contextuels. Apparait/disparait selon Alpine <code>selected.size</code>.</td>
+        <td>1 jour</td>
+      </tr>
+      <tr>
+        <td>P1.4</td>
+        <td><strong>Archive/unarchive conversations admin</strong>. Restaurer parit&eacute; V1 : (a) bouton individuel archive sur chaque ligne ; (b) bulk archive/restore dans la barre d'actions ; (c) toggle filtre archived dans la liste.</td>
+        <td>1 jour</td>
+      </tr>
+      <tr>
+        <td>P1.5</td>
+        <td><strong>Dashboard timing UI</strong> &mdash; afficher P50/P95/P99 (pre-LLM, ChromaDB, contextualization, RAG) avec tableau + bouton "Reset stats". Routes <code>/admin/dashboard/timing</code> et <code>/timing-reset</code> existent d&eacute;j&agrave; en backend.</td>
+        <td>1 jour</td>
+      </tr>
+      <tr>
+        <td>P1.6</td>
+        <td><strong>Audit log details modal</strong> &mdash; rendre la modal accessible : ajouter <code>x-on:click="logId='{{ log.id }}'"</code> sur les lignes du tableau audit. Route <code>/admin/audit/log/{id}/details</code> existe d&eacute;j&agrave;.</td>
+        <td>0.5 jour</td>
+      </tr>
+      <tr>
+        <td>P1.7</td>
+        <td><strong>Logs bulk-delete UI</strong> &mdash; ajouter colonne checkbox + barre d'actions bulk dans la table logs. Route <code>/admin/logs/bulk-delete</code> existe d&eacute;j&agrave;.</td>
+        <td>0.5 jour</td>
+      </tr>
+      <tr>
+        <td>P1.8</td>
+        <td><strong>Tests int&eacute;gration prioritaires</strong> &mdash; couvrir les 5 zones les plus critiques perdues :<br>
+          (a) Auth (registration, login, password-reset, OAuth) : ~25 cases.<br>
+          (b) Chat (router, service, streaming, memory) : ~50 cases.<br>
+          (c) User (conversations, documents, preferences, profile) : ~30 cases.<br>
+          (d) Storage (local backend, service) : ~20 cases.<br>
+          (e) Crypto (encryption, search index) : ~25 cases.
+        </td>
+        <td>5 jours</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>5.5 P2 &mdash; Mod&eacute;r&eacute; (7 actions, ~15-20 jours)</h3>
+
+  <table>
+    <thead><tr><th>#</th><th>Action</th><th>Effort</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>P2.1</td>
+        <td><strong>&Eacute;dition modes de conversation</strong> &mdash; ajouter route <code>PATCH /web/admin/system/modes/{id}</code> + UI &eacute;dition (<code>name</code>, <code>display_name</code>, <code>description</code>, <code>system_prompt</code>).</td>
+        <td>1 jour</td>
+      </tr>
+      <tr>
+        <td>P2.2</td>
+        <td><strong>Geo toggle country en formulaire web</strong> &mdash; basculer la route <code>POST /api/admin/geo/countries/{code}/toggle-active</code> en variante web (form + redirect avec flash). Ou ajouter un appel HTMX direct sur le formulaire <code>/web/admin/system/geo</code>.</td>
+        <td>0.5 jour</td>
+      </tr>
+      <tr>
+        <td>P2.3</td>
+        <td><strong>RAG overrides modes dynamiques</strong> &mdash; remplacer la macro Jinja hardcod&eacute;e (fast/full) par une boucle sur les modes existants en BDD. Permet d'ajouter de nouveaux modes sans modifier le template.</td>
+        <td>1 jour</td>
+      </tr>
+      <tr>
+        <td>P2.4</td>
+        <td><strong>Admin Documents : modal d&eacute;tails web + formulaire &eacute;dition</strong> &mdash; r&eacute;duire l'asym&eacute;trie web/API. Ajouter <code>GET /web/admin/documents/{id}/details</code> (modal versions + m&eacute;tadonn&eacute;es) et <code>PATCH /web/admin/documents/{id}</code> (form &eacute;dition).</td>
+        <td>2 jours</td>
+      </tr>
+      <tr>
+        <td>P2.5</td>
+        <td><strong>Edit/regenerate message chat</strong> &mdash; ajouter route + UI : (a) bouton "&Eacute;diter" sur message user (PATCH content puis r&eacute;-ex&eacute;cute la query) ; (b) bouton "Regenerate" sur r&eacute;ponse assistant (re-stream avec m&ecirc;mes params).</td>
+        <td>2 jours</td>
+      </tr>
+      <tr>
+        <td>P2.6</td>
+        <td><strong>Visibilit&eacute; checkbox dans upload user</strong> &mdash; permettre &agrave; l'user de choisir public/priv&eacute; lors de l'upload (V1 le faisait, V2 d&eacute;duit du type de collection). N&eacute;cessite extension du form + handler.</td>
+        <td>0.5 jour</td>
+      </tr>
+      <tr>
+        <td>P2.7</td>
+        <td><strong>Tests int&eacute;gration zones secondaires</strong> &mdash; couvrir :<br>
+          (a) Sources connectors (~50 cases).<br>
+          (b) LLM providers (factory, ollama, llamacpp) (~50 cases).<br>
+          (c) Geo service + integration (~40 cases).<br>
+          (d) Speech service + integration (~25 cases).<br>
+          (e) Logs core (logging_core, alert_checker, repository) (~80 cases).
+        </td>
+        <td>10 jours</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>5.6 P3 &mdash; Dette (~5 chantiers, ~20-40 jours)</h3>
+
+  <table>
+    <thead><tr><th>#</th><th>Action</th><th>Effort</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>P3.1</td>
+        <td><strong>Migration routes JSON &agrave; <code>/api/v1/</code></strong> (alignement CLAUDE.md V2). Refactor avec compat layer pendant la transition (alias <code>/api/admin/...</code> &rarr; <code>/api/v1/admin/...</code>).</td>
+        <td>5-10 jours</td>
+      </tr>
+      <tr>
+        <td>P3.2</td>
+        <td><strong>Recouvrement tests services backend</strong> &mdash; finaliser la couverture pour atteindre 70-80% des cases V1 :<br>
+          analytics (40), common utils (30), health (33), audit rules (47), preferences (27), collections (25), ingestion (15). ~220 cases.
+        </td>
+        <td>10 jours</td>
+      </tr>
+      <tr>
+        <td>P3.3</td>
+        <td><strong>Composants UI-SHARED restants</strong> &mdash; toasts draggables + drag&amp;drop documents (faible impact UX, mais am&eacute;liore la perception parit&eacute;).</td>
+        <td>2 jours</td>
+      </tr>
+      <tr>
+        <td>P3.4</td>
+        <td><strong>GGUF download UI + Whisper model select</strong> &mdash; quality of life pour admin syst&egrave;me. Optionnel.</td>
+        <td>2 jours</td>
+      </tr>
+      <tr>
+        <td>P3.5</td>
+        <td><strong>Suite E2E Playwright compl&egrave;te</strong> &mdash; au-del&agrave; des smoke tests, ajouter sc&eacute;narios complets : RAG flow, upload + reindex + chat, admin CRUD users complet, etc.</td>
+        <td>5 jours</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>5.7 Trajectoire propos&eacute;e</h3>
+
+  <div class="vflow">
+    <div class="vflow-step">
+      <strong>Sprint 1 (Semaine 1)</strong> &mdash; P0 complet (5 actions). Focus : restaurer fonctionnalit&eacute; critique (&eacute;dition user, ingestion xlsx) + tests de non-r&eacute;gression sur bugs observ&eacute;s + smoke E2E user.
+    </div>
+    <div class="vflow-step">
+      <strong>Sprint 2-3 (Semaines 2-3)</strong> &mdash; P1 (8 actions). Focus : restaurer composants UI manquants (progress.js, reindex-banner, bulk actions bar), boucher les fonctionnalit&eacute;s admin manquantes, et lancer la couverture tests des 5 zones critiques.
+    </div>
+    <div class="vflow-step">
+      <strong>Sprint 4-5 (Semaines 4-5)</strong> &mdash; P2 partiel (compl&eacute;tion features manquantes : modes &eacute;dition, geo toggle, RAG overrides, admin documents).
+    </div>
+    <div class="vflow-step">
+      <strong>Sprint 6+ (continu)</strong> &mdash; P2.7 + P3 (recouvrement tests, migration <code>/api/v1/</code>, suite E2E compl&egrave;te). En parall&egrave;le des d&eacute;veloppements feature.
+    </div>
+  </div>
+
+  <h3>5.8 Crit&egrave;res d'acceptation</h3>
+
+  <p>L'audit de parit&eacute; sera consid&eacute;r&eacute; comme cl&ocirc;tur&eacute; quand :</p>
+  <ul class="checklist">
+    <li data-done="false">Tous les items P0 sont livr&eacute;s, test&eacute;s, et d&eacute;ploy&eacute;s</li>
+    <li data-done="false">Au moins 6/8 items P1 sont livr&eacute;s</li>
+    <li data-done="false">Couverture tests V2 atteint &ge; 60% des cases V1 (~1000 cases) sur les modules critiques</li>
+    <li data-done="false">Aucun bug user-visible majeur d&eacute;tect&eacute; pendant 1 semaine de QA active</li>
+    <li data-done="false">Document <code>PLAN-PARITE-CORRECTIONS.html</code> cr&eacute;&eacute; pour suivre l'ex&eacute;cution P0/P1/P2/P3</li>
+  </ul>
+
+  <h3>5.9 Synth&egrave;se Axe 5 (P5)</h3>
+  <ul class="checklist">
+    <li data-done="true">Synth&egrave;se ex&eacute;cutive des 4 axes</li>
+    <li data-done="true">Niveaux de priorit&eacute; d&eacute;finis (P0/P1/P2/P3)</li>
+    <li data-done="true">5 actions P0 d&eacute;taill&eacute;es avec fichiers + effort + tests</li>
+    <li data-done="true">8 actions P1 d&eacute;taill&eacute;es</li>
+    <li data-done="true">7 actions P2 d&eacute;taill&eacute;es</li>
+    <li data-done="true">5 chantiers P3 identifi&eacute;s</li>
+    <li data-done="true">Trajectoire de sprint propos&eacute;e</li>
+    <li data-done="true">Crit&egrave;res d'acceptation</li>
+  </ul>
+
+  <div class="callout callout-success">
+    <span class="callout-icon">&#x1F389;</span>
+    <div>
+      <strong>Audit termin&eacute;</strong>. Document complet livr&eacute; en 5 phases (P1&rarr;P5).
+      Prochaine &eacute;tape recommand&eacute;e : cr&eacute;er <code>PLAN-PARITE-CORRECTIONS.html</code> qui suivra
+      l'ex&eacute;cution des 25 actions identifi&eacute;es, avec checkboxes <code>data-done</code> mises &agrave;
+      jour &agrave; chaque commit (cf. r&egrave;gle MEMORY.md "Plans HTML &mdash; syst&egrave;me de marquage des t&acirc;ches").
+    </div>
+  </div>
+</div>
+
+<!-- ==================== ANNEXES ==================== -->
+<div class="section" id="annexes">
+  <div class="section-header">
+    <div class="section-icon icon-gray">&#x1F4DA;</div>
+    <div><h2>Annexes <span class="section-num">&mdash; Section A</span></h2></div>
+  </div>
+  <h3>A.1 R&eacute;f&eacute;rences sources</h3>
+  <ul class="feature-list">
+    <li>V1 : <code>/Users/mac/Documents/Code/my-ia</code> commit <code>e35b904</code></li>
+    <li>V2 : <code>/Users/mac/Documents/Code/my-ia-V2</code> branche <code>dev</code></li>
+    <li>Plan migration archiv&eacute; : <code>docs/Plans/Closed/PLAN-MIGRATION-PYTHON.html</code></li>
+  </ul>
+  <h3>A.2 Phases &amp; livrables</h3>
+  <ul class="feature-list">
+    <li><strong>P1</strong> &mdash; Axe 1 (d&eacute;pendances) &mdash; livr&eacute; 2026-05-07</li>
+    <li><strong>P2</strong> &mdash; Axe 2 (APIs)</li>
+    <li><strong>P3</strong> &mdash; Axe 3 (UI &eacute;cran par &eacute;cran)</li>
+    <li><strong>P4</strong> &mdash; Axe 4 (mapping tests)</li>
+    <li><strong>P5</strong> &mdash; Axe 4 (tests fonctionnels) + plan d'action consolid&eacute;</li>
+  </ul>
+</div>
+
+</div>
+</body>
+</html>
