@@ -158,4 +158,30 @@
   </p>
 </section>
 
+{# ─── Timing stats P50/P95/P99 (parité V1 dashboard.js) ─── #}
+<section class="admin-section">
+  <div class="admin-section__header">
+    <h2 class="admin-section__title">{{ icon('settings', 16) }} Performance · Timings</h2>
+    <div style="display:flex; gap:var(--space-2)">
+      <button type="button" class="btn btn--ghost btn--sm"
+              hx-get="/web/admin/dashboard/timing" hx-target="#timing-stats" hx-swap="innerHTML">⟳ Actualiser</button>
+      <button type="button" class="btn btn--ghost btn--sm"
+              hx-delete="/web/admin/dashboard/timing"
+              hx-confirm="Réinitialiser tous les timings ?"
+              hx-target="#timing-stats" hx-swap="innerHTML">🗑 Reset</button>
+    </div>
+  </div>
+  <div id="timing-stats" hx-get="/web/admin/dashboard/timing" hx-trigger="load" hx-swap="innerHTML">Chargement…</div>
+</section>
+
+{# ─── Recent actions (parité V1 dashboard.js:loadRecentActions) ─── #}
+<section class="admin-section">
+  <div class="admin-section__header">
+    <h2 class="admin-section__title">{{ icon('sparkle', 16) }} Actions récentes</h2>
+    <button type="button" class="btn btn--ghost btn--sm"
+            hx-get="/web/admin/dashboard/recent-actions" hx-target="#recent-actions" hx-swap="innerHTML">⟳</button>
+  </div>
+  <div id="recent-actions" hx-get="/web/admin/dashboard/recent-actions" hx-trigger="load, every 60s" hx-swap="innerHTML">Chargement…</div>
+</section>
+
 {% endblock %}

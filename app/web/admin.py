@@ -1535,3 +1535,79 @@ async def admin_validation_pending_count(
     if n == 0:
         return HTMLResponse("")
     return HTMLResponse(f"<span class='admin-nav__badge'>{n}</span>")
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  Phase 3.6.d — admin/dashboard : timing + recent actions
+# ═════════════════════════════════════════════════════════════════════════════
+
+@router.get("/dashboard/timing", response_class=HTMLResponse)
+async def admin_dashboard_timing(
+    request: Request,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    """Timing stats P50/P95/P99 (parité V1 dashboard.js)."""
+    try:
+        from app.common.utils.timing_stats import timing_stats
+        stats = timing_stats.get_all_stats()
+    except Exception as exc:
+        return HTMLResponse(f"<div class='toast toast--error'>Stats indisponibles : {exc}</div>")
+    if not stats:
+        return HTMLResponse("<p style='color:var(--color-fg-muted)'>Aucune donnée de timing.</p>")
+    parts = ["<table class='admin-mini-table'><thead><tr><th>Opération</th><th>Count</th><th>P50 ms</th><th>P95 ms</th><th>P99 ms</th></tr></thead><tbody>"]
+    for op, s in stats.items():
+        if not isinstance(s, dict):
+            continue
+        parts.append(
+            f"<tr><td><code>{op}</code></td>"
+            f"<td>{s.get('count', 0)}</td>"
+            f"<td>{s.get('p50_ms', 0):.0f}</td>"
+            f"<td>{s.get('p95_ms', 0):.0f}</td>"
+            f"<td>{s.get('p99_ms', 0):.0f}</td></tr>"
+        )
+    parts.append("</tbody></table>")
+    return HTMLResponse("".join(parts))
+
+
+@router.delete("/dashboard/timing", response_class=HTMLResponse)
+async def admin_dashboard_timing_reset(
+    request: Request,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    try:
+        from app.common.utils.timing_stats import timing_stats
+        timing_stats.reset()
+    except Exception as exc:
+        return HTMLResponse(f"<div class='toast toast--error'>Échec : {exc}</div>", status_code=500)
+    return HTMLResponse("<div class='toast toast--success'>Timing stats réinitialisés.</div>")
+
+
+@router.get("/dashboard/recent-actions", response_class=HTMLResponse)
+async def admin_dashboard_recent_actions(
+    request: Request,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    """Recent audit actions (parité V1 dashboard.js:loadRecentActions)."""
+    try:
+        from app.features.audit.repository import AuditRepository
+        logs, _total = await AuditRepository.get_logs(db=db, skip=0, limit=20)
+    except Exception:
+        logs = []
+    if not logs:
+        return HTMLResponse("<p style='color:var(--color-fg-muted)'>Aucune action récente.</p>")
+    parts = ["<ul class='admin-bare-list'>"]
+    for log in logs:
+        when = log.created_at.strftime('%H:%M') if log.created_at else ''
+        action_name = log.action.name if log.action else "—"
+        user_email = log.user.email if log.user else "—"
+        parts.append(
+            f"<li class='admin-bare-list__item'>"
+            f"<span class='admin-bare-list__main'><code>{action_name}</code></span>"
+            f"<span class='admin-bare-list__meta'>{user_email} · {when}</span>"
+            f"</li>"
+        )
+    parts.append("</ul>")
+    return HTMLResponse("".join(parts))
