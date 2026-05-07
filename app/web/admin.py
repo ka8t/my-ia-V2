@@ -30,6 +30,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db import get_async_session
 from app.models import (
     ApprovalStatus,
+    Collection,
     ContextSource,
     Conversation,
     Corpus,
@@ -144,18 +145,65 @@ async def admin_users(
     request: Request,
     status: str | None = None,
     role: int | None = None,
+    q: str | None = None,
+    active: str | None = None,
+    verified: str | None = None,
+    sort: str = "date",
+    order: str = "desc",
+    page: int = 1,
     user: dict = Depends(require_web_admin),
     db: AsyncSession = Depends(get_async_session),
 ) -> HTMLResponse:
-    query = select(User).order_by(User.created_at.desc())
+    """Liste paginée + filtrée + triée + recherche (parité V1 users.js)."""
+    from sqlalchemy.orm import joinedload as _joinedload
+    page_size = 25
+    # Eager-load preferences (utilisé dans le partial pour voice_to_text)
+    query = select(User).options(_joinedload(User.preferences))
     if status in {"pending", "approved", "rejected"}:
         query = query.where(User.approval_status == status)
     if role is not None:
         query = query.where(User.role_id == role)
+    if active in {"true", "false"}:
+        query = query.where(User.is_active == (active == "true"))
+    if verified in {"true", "false"}:
+        query = query.where(User.is_verified == (verified == "true"))
+    if q:
+        # Search ILIKE sur email + username
+        like = f"%{q.strip()}%"
+        query = query.where((User.email.ilike(like)) | (User.username.ilike(like)))
 
-    result = await db.execute(query)
+    # Tri
+    sort_col = {
+        "email": User.email,
+        "username": User.username,
+        "role": User.role_id,
+        "date": User.created_at,
+    }.get(sort, User.created_at)
+    query = query.order_by(sort_col.asc() if order == "asc" else sort_col.desc())
+
+    total = (
+        await db.execute(select(func.count()).select_from(query.subquery()))
+    ).scalar_one()
+    page = max(1, page)
+    offset = (page - 1) * page_size
+    result = await db.execute(query.offset(offset).limit(page_size))
     users = list(result.unique().scalars().all())
+    total_pages = max(1, (total + page_size - 1) // page_size)
     roles = await _load_roles(db)
+
+    # Charger les collections privées des users affichés (pour afficher
+    # le bouton "créer collection" si absent — parité V1 users.js).
+    user_ids = [u.id for u in users]
+    user_has_collection: dict = {}
+    if user_ids:
+        cols_result = await db.execute(
+            select(Collection.owner_id).where(
+                Collection.owner_id.in_(user_ids),
+                Collection.type == "private",
+            )
+        )
+        for owner_id in cols_result.scalars().all():
+            user_has_collection[owner_id] = True
 
     return templates.TemplateResponse(
         request,
@@ -168,8 +216,17 @@ async def admin_users(
             user=user,
             users=users,
             roles=roles,
+            user_has_collection=user_has_collection,
             filter_status=status,
             filter_role=role,
+            q=q or "",
+            active=active or "",
+            verified=verified or "",
+            sort=sort,
+            order=order,
+            page=page,
+            total=total,
+            total_pages=total_pages,
         ),
     )
 
@@ -662,3 +719,292 @@ async def admin_validation_bulk_reject(
         result.get("failed_count", 0), reason,
     )
     return RedirectResponse(url="/web/admin/validation", status_code=303)
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  Phase 3.4.a — Admin/users : create, edit, voice-to-text, create-collection,
+#  bulk (parité V1 users.js)
+# ═════════════════════════════════════════════════════════════════════════════
+from fastapi_users.password import PasswordHelper as _AdminPasswordHelper
+
+_admin_pwd_helper = _AdminPasswordHelper()
+
+
+@router.post("/users", response_class=HTMLResponse)
+async def admin_user_create(
+    request: Request,
+    email: Annotated[str, Form()],
+    username: Annotated[str, Form()],
+    password: Annotated[str, Form()],
+    role_id: Annotated[int, Form()] = 2,
+    first_name: Annotated[str | None, Form()] = None,
+    last_name: Annotated[str | None, Form()] = None,
+    is_active: Annotated[str | None, Form()] = "true",
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    """Création utilisateur (parité V1 users.js:UserForm save)."""
+    if (err := _csrf_or_400(request, csrf_token)):
+        return err
+
+    email = (email or "").strip().lower()
+    username = (username or "").strip()
+    if not email or not username or not password:
+        return HTMLResponse(
+            "<div class='toast toast--error'>Email, identifiant et mot de passe requis.</div>",
+            status_code=400,
+        )
+
+    # Vérifier unicité
+    existing = await db.execute(
+        select(User).where((User.email == email) | (User.username == username))
+    )
+    if existing.unique().scalar_one_or_none() is not None:
+        return HTMLResponse(
+            "<div class='toast toast--error'>Email ou identifiant déjà utilisé.</div>",
+            status_code=409,
+        )
+
+    new_user = User(
+        email=email,
+        username=username,
+        hashed_password=_admin_pwd_helper.hash(password),
+        role_id=role_id,
+        is_active=(is_active == "true"),
+        is_superuser=(role_id == 1),
+        is_verified=True,  # créé par admin → considéré vérifié
+        approval_status=ApprovalStatus.APPROVED,
+        first_name=(first_name or "").strip() or None,
+        last_name=(last_name or "").strip() or None,
+    )
+    db.add(new_user)
+    try:
+        await db.commit()
+        await db.refresh(new_user)
+    except Exception:
+        await db.rollback()
+        logger.exception("Create user failed")
+        return HTMLResponse(
+            "<div class='toast toast--error'>Échec de la création.</div>",
+            status_code=500,
+        )
+    return HTMLResponse(
+        f"<div class='toast toast--success'>Utilisateur {email} créé.</div>",
+        status_code=201,
+        headers={"HX-Trigger": "users-refresh"},
+    )
+
+
+@router.patch("/users/{user_id}", response_class=HTMLResponse)
+async def admin_user_edit(
+    request: Request,
+    user_id: uuid.UUID,
+    email: Annotated[str | None, Form()] = None,
+    username: Annotated[str | None, Form()] = None,
+    first_name: Annotated[str | None, Form()] = None,
+    last_name: Annotated[str | None, Form()] = None,
+    phone: Annotated[str | None, Form()] = None,
+    new_password: Annotated[str | None, Form()] = None,
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    """Édition complète d'un utilisateur (parité V1 users.js:editUser)."""
+    if (err := _csrf_or_400(request, csrf_token)):
+        return err
+    target = await _get_user_or_404(db, user_id)
+    if target is None:
+        return HTMLResponse("", status_code=404)
+
+    if email and email.strip().lower() != target.email:
+        # Vérifier unicité
+        existing = await db.execute(
+            select(User).where(User.email == email.strip().lower(), User.id != target.id)
+        )
+        if existing.unique().scalar_one_or_none() is not None:
+            return HTMLResponse(
+                "<div class='toast toast--error'>Email déjà utilisé.</div>",
+                status_code=409,
+            )
+        target.email = email.strip().lower()
+
+    if username and username.strip() != target.username:
+        existing = await db.execute(
+            select(User).where(User.username == username.strip(), User.id != target.id)
+        )
+        if existing.unique().scalar_one_or_none() is not None:
+            return HTMLResponse(
+                "<div class='toast toast--error'>Identifiant déjà utilisé.</div>",
+                status_code=409,
+            )
+        target.username = username.strip()
+
+    if first_name is not None:
+        target.first_name = first_name.strip() or None
+    if last_name is not None:
+        target.last_name = last_name.strip() or None
+    if phone is not None:
+        target.phone = phone.strip() or None
+    if new_password:
+        target.hashed_password = _admin_pwd_helper.hash(new_password)
+
+    try:
+        await db.commit()
+        await db.refresh(target)
+    except Exception:
+        await db.rollback()
+        logger.exception("Edit user failed")
+        return HTMLResponse(
+            "<div class='toast toast--error'>Échec.</div>",
+            status_code=500,
+        )
+    return await _render_user_row(request, db, target)
+
+
+@router.post("/users/{user_id}/voice-to-text", response_class=HTMLResponse)
+async def admin_user_toggle_voice(
+    request: Request,
+    user_id: uuid.UUID,
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    """Toggle voice-to-text d'un user (parité V1 users.js:toggleVoiceToText)."""
+    if (err := _csrf_or_400(request, csrf_token)):
+        return err
+    target = await _get_user_or_404(db, user_id)
+    if target is None:
+        return HTMLResponse("", status_code=404)
+    # UserPreference est lazy-loaded — on charge ou crée
+    from app.models import UserPreference
+    pref = (
+        await db.execute(select(UserPreference).where(UserPreference.user_id == user_id))
+    ).scalar_one_or_none()
+    if pref is None:
+        pref = UserPreference(user_id=user_id)
+        db.add(pref)
+        await db.flush()
+    pref.voice_to_text_enabled = not pref.voice_to_text_enabled
+    try:
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        logger.exception("Toggle voice failed")
+        return HTMLResponse(
+            "<div class='toast toast--error'>Échec.</div>",
+            status_code=500,
+        )
+    await db.refresh(target)
+    return await _render_user_row(request, db, target)
+
+
+@router.post("/users/{user_id}/create-collection", response_class=HTMLResponse)
+async def admin_user_create_collection(
+    request: Request,
+    user_id: uuid.UUID,
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    """Crée la collection privée d'un user qui n'en a pas (parité V1)."""
+    if (err := _csrf_or_400(request, csrf_token)):
+        return err
+    target = await _get_user_or_404(db, user_id)
+    if target is None:
+        return HTMLResponse("", status_code=404)
+
+    existing = await db.execute(
+        select(Collection).where(
+            Collection.owner_id == user_id, Collection.type == "private"
+        )
+    )
+    if existing.unique().scalar_one_or_none() is not None:
+        return HTMLResponse(
+            "<div class='toast toast--info'>Collection déjà existante.</div>",
+            status_code=200,
+        )
+
+    coll = Collection(
+        name=f"user_{user_id}",
+        display_name="Personnel",
+        type="private",
+        owner_id=user_id,
+    )
+    db.add(coll)
+    try:
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        logger.exception("Create collection failed")
+        return HTMLResponse(
+            "<div class='toast toast--error'>Échec.</div>",
+            status_code=500,
+        )
+    return await _render_user_row(request, db, target)
+
+
+@router.post("/users/bulk-action", response_class=HTMLResponse)
+async def admin_users_bulk(
+    request: Request,
+    action: Annotated[str, Form()],
+    user_ids: Annotated[list[str], Form()],
+    role_id: Annotated[int | None, Form()] = None,
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    """Actions en masse (parité V1 users.js:bulkActions).
+
+    action ∈ {activate, deactivate, delete, change-role, approve, reject}.
+    """
+    if (err := _csrf_or_400(request, csrf_token)):
+        return err
+    if action not in {"activate", "deactivate", "delete", "change-role", "approve", "reject"}:
+        return HTMLResponse(
+            "<div class='toast toast--error'>Action invalide.</div>",
+            status_code=400,
+        )
+    self_id = uuid.UUID(user["id"])
+    affected = 0
+    for raw in user_ids:
+        try:
+            uid = uuid.UUID(raw)
+        except ValueError:
+            continue
+        if action == "delete" and uid == self_id:
+            continue  # protection
+        target = await _get_user_or_404(db, uid)
+        if target is None:
+            continue
+        if action == "activate":
+            target.is_active = True
+        elif action == "deactivate":
+            target.is_active = False
+        elif action == "delete":
+            await db.delete(target)
+        elif action == "change-role" and role_id is not None:
+            target.role_id = role_id
+            target.is_superuser = role_id == 1
+        elif action == "approve":
+            target.approval_status = ApprovalStatus.APPROVED
+            target.approved_by = self_id
+            from datetime import datetime, timezone
+            target.approved_at = datetime.now(timezone.utc)
+        elif action == "reject":
+            target.approval_status = ApprovalStatus.REJECTED
+        affected += 1
+    try:
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        logger.exception("Bulk action failed")
+        return HTMLResponse(
+            "<div class='toast toast--error'>Échec bulk.</div>",
+            status_code=500,
+        )
+    return HTMLResponse(
+        f"<div class='toast toast--success'>{affected} utilisateur(s) modifié(s).</div>",
+        status_code=200,
+        headers={"HX-Trigger": "users-refresh"},
+    )

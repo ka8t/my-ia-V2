@@ -4,11 +4,14 @@
 {% block title %}Utilisateurs — Admin{% endblock %}
 
 {% block admin_content %}
+<section x-data="{ selected: new Set(), showCreate: false, editing: null }"
+         hx-on:users-refresh="window.location.reload()">
 
 <header class="admin-page__head">
   <div class="admin-page__eyebrow"><span>Console / 01</span></div>
   <h1 class="admin-page__title">
-    Gestion des <em>utilisateurs</em>.
+    Gestion des <em>utilisateurs</em>
+    <span class="admin-page__count">— {{ total }}</span>
   </h1>
   <p class="admin-page__lede">
     Validez les inscriptions, attribuez des rôles, désactivez ou supprimez
@@ -16,7 +19,7 @@
   </p>
 </header>
 
-{# ─── Filters ─── #}
+{# ─── Filters principaux par status ─── #}
 <nav class="admin-filters">
   <a class="admin-filter{% if not filter_status %} admin-filter--active{% endif %}"
      href="/web/admin/users">Tous</a>
@@ -26,15 +29,99 @@
      href="/web/admin/users?status=approved">Approuvés</a>
   <a class="admin-filter{% if filter_status == 'rejected' %} admin-filter--active{% endif %}"
      href="/web/admin/users?status=rejected">Refusés</a>
+  <button type="button" class="btn btn--primary btn--sm" x-on:click="showCreate = true" style="margin-left:auto">
+    + Nouvel utilisateur
+  </button>
 </nav>
+
+{# ─── Toolbar : search + filters role/active/verified + tri ─── #}
+<form class="admin-toolbar" method="get" action="/web/admin/users">
+  {% if filter_status %}<input type="hidden" name="status" value="{{ filter_status }}">{% endif %}
+  <input type="search" name="q" value="{{ q }}" placeholder="Email ou identifiant…" class="admin-toolbar__search">
+
+  <select name="role" class="admin-toolbar__select">
+    <option value="">Rôle : tous</option>
+    {% for r in roles %}
+    <option value="{{ r.id }}" {% if filter_role == r.id %}selected{% endif %}>{{ r.display_name or r.name }}</option>
+    {% endfor %}
+  </select>
+
+  <select name="active" class="admin-toolbar__select">
+    <option value="">Actif : tous</option>
+    <option value="true"  {% if active == 'true' %}selected{% endif %}>Actifs</option>
+    <option value="false" {% if active == 'false' %}selected{% endif %}>Désactivés</option>
+  </select>
+
+  <select name="verified" class="admin-toolbar__select">
+    <option value="">Vérifié : tous</option>
+    <option value="true"  {% if verified == 'true' %}selected{% endif %}>Vérifiés</option>
+    <option value="false" {% if verified == 'false' %}selected{% endif %}>Non vérifiés</option>
+  </select>
+
+  <select name="sort" class="admin-toolbar__select">
+    <option value="date"     {% if sort == 'date'     %}selected{% endif %}>Date</option>
+    <option value="email"    {% if sort == 'email'    %}selected{% endif %}>Email</option>
+    <option value="username" {% if sort == 'username' %}selected{% endif %}>Identifiant</option>
+    <option value="role"     {% if sort == 'role'     %}selected{% endif %}>Rôle</option>
+  </select>
+  <select name="order" class="admin-toolbar__select">
+    <option value="desc" {% if order == 'desc' %}selected{% endif %}>↓</option>
+    <option value="asc"  {% if order == 'asc'  %}selected{% endif %}>↑</option>
+  </select>
+
+  <button type="submit" class="btn btn--ghost btn--sm">Appliquer</button>
+  {% if q or filter_role or active or verified or sort != 'date' or order != 'desc' %}
+  <a href="/web/admin/users{% if filter_status %}?status={{ filter_status }}{% endif %}" class="btn btn--ghost btn--sm">Reset</a>
+  {% endif %}
+</form>
+
+{# ─── Bulk action bar ─── #}
+<form class="admin-bulkbar"
+      x-show="selected.size > 0"
+      x-cloak
+      x-data="{ bulkAction: 'activate', bulkRole: 2 }"
+      hx-post="/web/admin/users/bulk-action"
+      hx-target="#bulk-result"
+      hx-swap="innerHTML"
+      hx-on::config-request="
+        const params = event.detail.parameters;
+        params['user_ids'] = Array.from(selected);
+        params['csrf_token'] = '{{ csrf_token }}';
+        params['action'] = bulkAction;
+        if (bulkAction === 'change-role') params['role_id'] = bulkRole;
+      ">
+  <span><span x-text="selected.size"></span> sélectionné(s)</span>
+  <select x-model="bulkAction" class="admin-toolbar__select">
+    <option value="activate">Activer</option>
+    <option value="deactivate">Désactiver</option>
+    <option value="approve">Approuver</option>
+    <option value="reject">Refuser</option>
+    <option value="change-role">Changer rôle</option>
+    <option value="delete">Supprimer</option>
+  </select>
+  <select x-show="bulkAction === 'change-role'" x-cloak x-model.number="bulkRole" class="admin-toolbar__select">
+    {% for r in roles %}<option value="{{ r.id }}">{{ r.display_name or r.name }}</option>{% endfor %}
+  </select>
+  <button type="submit"
+          class="btn btn--primary btn--sm"
+          x-on:click="if (bulkAction === 'delete' && !confirm('Supprimer ' + selected.size + ' utilisateur(s) ?')) $event.preventDefault()">
+    Appliquer
+  </button>
+  <button type="button" class="btn btn--ghost btn--sm" x-on:click="selected = new Set()">Annuler</button>
+</form>
+<div id="bulk-result" aria-live="polite"></div>
 
 {# ─── Table ─── #}
 <div class="admin-table-wrap">
   <div class="admin-table-head admin-user-row">
+    <span></span>{# checkbox col #}
     <span>E-mail</span>
     <span>Identifiant</span>
     <span>Rôle</span>
     <span>Statut</span>
+    <span>Vérifié</span>
+    <span>Voix</span>
+    <span>Collec.</span>
     <span>Inscrit le</span>
     <span></span>
   </div>
@@ -42,7 +129,7 @@
   <div class="admin-table-body">
     {% if users %}
       {% for u in users %}
-        {% with user_row=u %}
+        {% with user_row=u, has_collection=user_has_collection.get(u.id, False) %}
           {% include 'partials/admin/user-row.html' %}
         {% endwith %}
       {% endfor %}
@@ -52,4 +139,57 @@
   </div>
 </div>
 
+{# ─── Pagination ─── #}
+{% if total_pages > 1 %}
+<nav class="admin-pagination">
+  {% set qsb = '/web/admin/users?' %}
+  {% if filter_status %}{% set qsb = qsb ~ 'status=' ~ filter_status ~ '&' %}{% endif %}
+  {% if q %}{% set qsb = qsb ~ 'q=' ~ q ~ '&' %}{% endif %}
+  {% if filter_role %}{% set qsb = qsb ~ 'role=' ~ filter_role ~ '&' %}{% endif %}
+  {% if active %}{% set qsb = qsb ~ 'active=' ~ active ~ '&' %}{% endif %}
+  {% if verified %}{% set qsb = qsb ~ 'verified=' ~ verified ~ '&' %}{% endif %}
+  {% set qsb = qsb ~ 'sort=' ~ sort ~ '&order=' ~ order ~ '&' %}
+  {% if page > 1 %}<a href="{{ qsb }}page={{ page - 1 }}" class="btn btn--ghost btn--sm">← Précédent</a>{% endif %}
+  <span>Page {{ page }} / {{ total_pages }} ({{ total }})</span>
+  {% if page < total_pages %}<a href="{{ qsb }}page={{ page + 1 }}" class="btn btn--ghost btn--sm">Suivant →</a>{% endif %}
+</nav>
+{% endif %}
+
+{# ─── Modal Create user ─── #}
+<div class="admin-modal" x-show="showCreate" x-cloak role="dialog" x-on:click.self="showCreate = false" x-on:keydown.escape.window="showCreate = false">
+  <form class="admin-modal__panel"
+        hx-post="/web/admin/users"
+        hx-target="#create-result"
+        hx-swap="innerHTML">
+    {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+    <header class="admin-modal__head">
+      <h2>Créer un utilisateur</h2>
+      <button type="button" x-on:click="showCreate = false">✕</button>
+    </header>
+    <div class="admin-modal__body">
+      <label>Email <input type="email" name="email" required></label>
+      <label>Identifiant <input type="text" name="username" required></label>
+      <label>Mot de passe <input type="password" name="password" required minlength="8"></label>
+      <label>Rôle
+        <select name="role_id">
+          {% for r in roles %}<option value="{{ r.id }}" {% if r.name == 'user' %}selected{% endif %}>{{ r.display_name or r.name }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Prénom <input type="text" name="first_name"></label>
+      <label>Nom <input type="text" name="last_name"></label>
+      <label>
+        <input type="checkbox" name="is_active" value="true" checked>
+        <span>Actif</span>
+      </label>
+      <div id="create-result" aria-live="polite"></div>
+    </div>
+    <footer class="admin-modal__foot">
+      <button type="button" class="btn btn--ghost btn--sm" x-on:click="showCreate = false">Annuler</button>
+      <button type="submit" class="btn btn--primary btn--sm">Créer</button>
+    </footer>
+  </form>
+</div>
+
+</section>
+<style>[x-cloak] { display: none !important; }</style>
 {% endblock %}

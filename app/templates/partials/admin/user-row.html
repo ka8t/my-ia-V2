@@ -1,11 +1,19 @@
 {# ─────────────────────────────────────────────────────────────────────
  # partials/admin/user-row.html
- # Une ligne du tableau utilisateurs.
- # Le row entier est swap-cible quand les actions sont POSTées.
+ # Une ligne du tableau utilisateurs avec checkbox + 11 colonnes
+ # (parité V1 users.js).
  # ────────────────────────────────────────────────────────────────────── #}
 {% from "macros/icon.html" import icon %}
+{% set st = user_row.approval_status.value if user_row.approval_status.value is defined else user_row.approval_status %}
+{% set v2t = (user_row.preferences and user_row.preferences.voice_to_text_enabled) %}
 
 <div class="admin-user-row admin-table-row" id="user-{{ user_row.id }}">
+
+  <div class="admin-table-cell">
+    <input type="checkbox"
+           value="{{ user_row.id }}"
+           x-on:change="$event.target.checked ? selected.add('{{ user_row.id }}') : selected.delete('{{ user_row.id }}'); selected = new Set(selected)">
+  </div>
 
   <div class="admin-table-cell admin-table-cell--name">
     <span class="admin-table-cell__avatar">{{ (user_row.username or user_row.email or '?')[0]|upper }}</span>
@@ -33,7 +41,6 @@
   </div>
 
   <div class="admin-table-cell">
-    {% set st = user_row.approval_status.value if user_row.approval_status.value is defined else user_row.approval_status %}
     <span class="admin-status admin-status--{{ st }}">
       {% if st == 'pending' %}En attente
       {% elif st == 'approved' %}Approuvé
@@ -43,6 +50,46 @@
     </span>
     {% if not user_row.is_active %}
     <span class="admin-status admin-status--inactive">Désactivé</span>
+    {% endif %}
+  </div>
+
+  {# Vérifié #}
+  <div class="admin-table-cell">
+    {% if user_row.is_verified %}
+      <span class="admin-status admin-status--ok" title="Email vérifié">✓</span>
+    {% else %}
+      <span class="admin-status admin-status--warn" title="Non vérifié">—</span>
+    {% endif %}
+  </div>
+
+  {# Voice-to-text toggle #}
+  <div class="admin-table-cell">
+    <form class="admin-action-form"
+          hx-post="/web/admin/users/{{ user_row.id }}/voice-to-text"
+          hx-target="#user-{{ user_row.id }}"
+          hx-swap="outerHTML">
+      {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+      <button type="submit"
+              class="admin-action {% if v2t %}admin-action--accent{% endif %}"
+              title="Voice-to-text {% if v2t %}activé{% else %}désactivé{% endif %}">
+        🎤{% if v2t %} ✓{% endif %}
+      </button>
+    </form>
+  </div>
+
+  {# Collection privée #}
+  <div class="admin-table-cell">
+    {% if has_collection %}
+      <span class="admin-status admin-status--ok" title="Collection privée existe">✓</span>
+    {% else %}
+      <form class="admin-action-form"
+            hx-post="/web/admin/users/{{ user_row.id }}/create-collection"
+            hx-target="#user-{{ user_row.id }}"
+            hx-swap="outerHTML"
+            hx-confirm="Créer la collection privée pour {{ user_row.email }} ?">
+        {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+        <button type="submit" class="admin-action" title="Créer collection">+</button>
+      </form>
     {% endif %}
   </div>
 
