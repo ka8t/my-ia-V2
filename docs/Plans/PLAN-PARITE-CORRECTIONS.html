@@ -62,12 +62,12 @@
         <td><span class="badge badge-success">Termin&eacute;</span></td>
       </tr>
       <tr>
-        <td><span class="badge badge-info">P2 Mod&eacute;r&eacute;</span></td>
-        <td>Compl&eacute;tion parit&eacute;</td>
+        <td><span class="badge badge-success">P2 Mod&eacute;r&eacute;</span></td>
+        <td>Compl&eacute;tion parit&eacute; (scope r&eacute;duit)</td>
         <td>7</td>
-        <td>0/7</td>
-        <td>15-20 jours</td>
-        <td><span class="badge badge-warning">&Agrave; faire</span></td>
+        <td>5/7</td>
+        <td>livr&eacute; (P2.5/P2.7 descop&eacute;s P3)</td>
+        <td><span class="badge badge-success">Termin&eacute;</span></td>
       </tr>
       <tr>
         <td><span class="badge badge-info">P3 Dette</span></td>
@@ -396,13 +396,13 @@
   <p>D&eacute;lai cible : <strong>2-4 semaines</strong>. Crit&egrave;re : compl&eacute;tion / am&eacute;lioration de parit&eacute;.</p>
 
   <ul class="checklist">
-    <li data-done="false"><strong>P2.1</strong> &mdash; &Eacute;dition modes de conversation (PATCH route + UI) &mdash; 1j</li>
-    <li data-done="false"><strong>P2.2</strong> &mdash; Geo toggle country en formulaire web (basculer API JSON &rarr; web HTMX) &mdash; 0.5j</li>
-    <li data-done="false"><strong>P2.3</strong> &mdash; RAG overrides modes dynamiques (boucle modes BDD vs hardcoded fast/full) &mdash; 1j</li>
-    <li data-done="false"><strong>P2.4</strong> &mdash; Admin Documents : modal d&eacute;tails web + formulaire &eacute;dition (r&eacute;duire asym&eacute;trie web/API) &mdash; 2j</li>
-    <li data-done="false"><strong>P2.5</strong> &mdash; Edit/regenerate message chat (PATCH user msg + bouton regenerate) &mdash; 2j</li>
-    <li data-done="false"><strong>P2.6</strong> &mdash; Visibilit&eacute; checkbox dans upload user (public/priv&eacute; explicite) &mdash; 0.5j</li>
-    <li data-done="false"><strong>P2.7</strong> &mdash; Tests int&eacute;gration zones secondaires : Sources connectors (~50), LLM providers (~50), Geo (~40), Speech (~25), Logs core (~80) &mdash; 10j</li>
+    <li data-done="true"><strong>P2.1</strong> &mdash; &Eacute;dition modes de conversation : bouton "&Eacute;diter" + form inline Alpine x-show, route <code>PATCH /modes/{id}</code> existante c&acirc;bl&eacute;e</li>
+    <li data-done="true"><strong>P2.2</strong> &mdash; Geo toggle countries dans le formulaire web : nouvelle route <code>GET /geo/countries</code> + UI partial avec boutons Activer/D&eacute;sactiver</li>
+    <li data-done="true"><strong>P2.3</strong> &mdash; RAG overrides modes dynamiques : <code>_all_mode_slugs(db)</code> charge les modes BDD, template boucle au lieu du hardcoded fast/full</li>
+    <li data-done="true"><strong>P2.4</strong> &mdash; Admin Documents modal d&eacute;tails &mdash; <strong>d&eacute;j&agrave; impl&eacute;ment&eacute;</strong> (audit Z3 erron&eacute; : <code>x-on:click="modalDocId = ..."</code> + <code>$watch</code> HTMX dans documents.html). &Eacute;dition web reste en P3 (form complet).</li>
+    <li data-done="false"><strong>P2.5</strong> &mdash; Edit/regenerate message chat &mdash; <strong>descop&eacute; vers P3</strong>. Gros morceau (route PATCH msg + route POST regenerate + UI boutons + tests SSE). D&eacute;pend du flow chat qui n'a pas de couverture e2e en V2 (descop&eacute; P1.8.e). &Agrave; ressaisir avec un sprint chat d&eacute;di&eacute;.</li>
+    <li data-done="true"><strong>P2.6</strong> &mdash; Visibilit&eacute; checkbox upload user : nouveau <code>visibility_public</code> dans le form, disabled si collection priv&eacute;e (s&eacute;curit&eacute;). Backend respecte le choix sur collection publique.</li>
+    <li data-done="false"><strong>P2.7</strong> &mdash; Tests int&eacute;gration zones secondaires &mdash; <strong>descop&eacute; vers P3</strong>. ~245 cases V1 (sources connectors, LLM providers, geo, speech, logs core). Effort ~10j seul, justifie un sprint qualit&eacute; d&eacute;di&eacute; plut&ocirc;t qu'une accumulation P2.</li>
   </ul>
 </div>
 
