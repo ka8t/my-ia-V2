@@ -49,9 +49,9 @@
         <td><span class="badge badge-danger">P0 Critique</span></td>
         <td>Bugs prod / fonctionnalit&eacute;s centrales</td>
         <td>5</td>
-        <td>4/5</td>
+        <td>5/5</td>
         <td>3-5 jours</td>
-        <td><span class="badge badge-warning">En cours</span></td>
+        <td><span class="badge badge-success">Termin&eacute;</span></td>
       </tr>
       <tr>
         <td><span class="badge badge-warning">P1 Majeur</span></td>
@@ -208,23 +208,32 @@
   <!-- P0.4 -->
   <h3 id="p0-4">P0.4 &mdash; Tests de non-r&eacute;gression sur bugs observ&eacute;s</h3>
   <ul class="checklist">
-    <li data-done="false"><strong>P0.4 livr&eacute;</strong> &mdash; 5 tests r&eacute;gression cibl&eacute;s</li>
+    <li data-done="true"><strong>P0.4 livr&eacute;</strong> &mdash; 4 tests r&eacute;gression (bug C couvert par P0.2)</li>
   </ul>
-  <div class="callout callout-info">
-    <span class="callout-icon">&#x1F4DD;</span>
+  <div class="callout callout-success">
+    <span class="callout-icon">&#x2705;</span>
     <div>
-      <strong>P&eacute;rim&egrave;tre</strong> : 5 tests de r&eacute;gression pour les bugs observ&eacute;s :<br>
-      (a) xlsx mime > 50 chars (VARCHAR migration <code>20260507_1700_extend_document_file_type</code>)<br>
-      (b) <code>local.py</code> UnboundLocalError sur permissions<br>
-      (c) <code>partition_xlsx</code> deps (couvert par P0.2)<br>
-      (d) <code>/admin/logs/stats</code> 500 (LogStatsResponse iteration)<br>
-      (e) <code>/admin/logs/{id}/details</code> 500 (<code>timestamp</code> vs <code>created_at</code>)
-      <br><br>
-      <strong>Fichiers</strong> : <code>tests/integration/test_regressions.py</code> (nouveau).
+      <strong>P&eacute;rim&egrave;tre livr&eacute;</strong> :
+      <ul>
+        <li><strong>Bug A</strong> &mdash; <code>test_document_file_type_accepts_long_office_mime</code> :
+            insert d'un Document avec mime xlsx (71 chars) ne plante plus.</li>
+        <li><strong>Bug B</strong> &mdash; <code>test_local_storage_save_permission_error_no_unbound_local</code> :
+            si <code>mkdir</code> &eacute;choue (PermissionError), l'except handler l&egrave;ve une exception
+            propre (StoragePermissionError/StorageIOError/OSError) sans UnboundLocalError.</li>
+        <li><strong>Bug D</strong> &mdash; <code>test_admin_logs_stats_endpoint_returns_200</code> :
+            la route <code>/admin/logs/stats</code> renvoie 200 + HTML valide,
+            pas d'<code>'object has no attribute items'</code>.</li>
+        <li><strong>Bug E</strong> &mdash; <code>test_admin_logs_details_endpoint_returns_200</code> :
+            la route <code>/admin/logs/{id}/details</code> renvoie 200 sur un log valide,
+            pas d'<code>AttributeError</code> sur <code>created_at</code>.</li>
+        <li><strong>Bug C</strong> (<code>partition_xlsx</code>) : couvert par P0.2 dans
+            <code>tests/integration/test_ingestion_formats.py</code>, pas dupliqu&eacute; ici.</li>
+      </ul>
+      <strong>Fichiers</strong> : <code>tests/integration/test_regressions.py</code> (nouveau, 4 cases).
       <br>
-      <strong>Effort</strong> : 0.5 jour.
+      <strong>Suite int&eacute;gration</strong> : 226 &rarr; 230 tests passants.
       <br>
-      <strong>Commit(s)</strong> : <em>(&agrave; remplir)</em>
+      <strong>Commit</strong> : <em>(en cours)</em>
     </div>
   </div>
 
