@@ -131,12 +131,13 @@ async def test_delete_corpus_removes_row(admin_page: Page) -> None:
     target = admin_page.locator(f'a:has-text("{name}")').first
     await expect(target).to_be_visible(timeout=3000)
 
-    # Auto-confirm le hx-confirm via window.confirm = () => true
-    await admin_page.evaluate("window.confirm = () => true")
-
-    # Cliquer sur le bouton supprimer (admin-action--danger) sur la même ligne
+    # Cibler le bouton delete sur la même ligne et bypasser le hx-confirm
+    # en retirant l'attribut directement (plus fiable que d'intercepter le
+    # dialog en headless, où window.confirm retourne false par défaut sans
+    # listener actif au moment exact du click).
     row_id = await target.evaluate("el => el.closest('.admin-corpus-row').id")
     delete_btn = admin_page.locator(f'#{row_id} button[hx-delete]')
+    await delete_btn.evaluate("el => el.removeAttribute('hx-confirm')")
     await delete_btn.click()
 
     # La ligne disparaît
