@@ -56,10 +56,11 @@
 </form>
 <div id="bulk-result" aria-live="polite"></div>
 
+{% from "macros/admin_table.html" import select_all_checkbox, pagination %}
 {# Table #}
 <div class="admin-table-wrap">
   <div class="admin-table-head admin-coll-row">
-    <span></span>
+    <span>{{ select_all_checkbox() }}</span>
     <span>Nom</span>
     <span>Type</span>
     <span>Propriétaire</span>
@@ -72,7 +73,7 @@
       {% for c in collections %}
       <div class="admin-coll-row admin-table-row" id="coll-{{ c.id }}">
         <div class="admin-table-cell">
-          <input type="checkbox" value="{{ c.id }}"
+          <input type="checkbox" class="js-bulk-checkbox" value="{{ c.id }}"
                  x-on:change="$event.target.checked ? selected.add('{{ c.id }}') : selected.delete('{{ c.id }}'); selected = new Set(selected)">
         </div>
         <div class="admin-table-cell admin-table-cell--name">
@@ -111,6 +112,10 @@
     {% endif %}
   </div>
 </div>
+
+{# Pagination #}
+{% set _qs %}{% if q %}q={{ q }}{% endif %}{% if type_filter %}{% if q %}&{% endif %}type_filter={{ type_filter }}{% endif %}{% endset %}
+{{ pagination(page, total_pages, total, '/web/admin/collections', _qs) }}
 
 {# Modal create publique #}
 <div class="admin-modal" x-show="showCreate" x-cloak role="dialog"

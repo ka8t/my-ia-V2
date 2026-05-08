@@ -6,6 +6,11 @@
 
 <div class="admin-corpus-row admin-table-row" id="corpus-{{ corpus.id }}">
 
+  <div class="admin-table-cell">
+    <input type="checkbox" class="js-bulk-checkbox" value="{{ corpus.id }}"
+           x-on:change="$event.target.checked ? selected.add('{{ corpus.id }}') : selected.delete('{{ corpus.id }}'); selected = new Set(selected)">
+  </div>
+
   <div class="admin-table-cell admin-table-cell--name">
     <a href="/web/admin/corpus/{{ corpus.id }}" class="admin-corpus__name">
       {{ corpus.display_name }}

@@ -5,6 +5,11 @@
 
 <div class="admin-source-row admin-table-row" id="source-{{ source.id }}">
 
+  <div class="admin-table-cell">
+    <input type="checkbox" class="js-bulk-checkbox" value="{{ source.id }}"
+           x-on:change="$event.target.checked ? selected.add('{{ source.id }}') : selected.delete('{{ source.id }}'); selected = new Set(selected)">
+  </div>
+
   <div class="admin-table-cell admin-table-cell--name">
     <span class="admin-source__name">{{ source.display_name }}</span>
     {% if source.description %}

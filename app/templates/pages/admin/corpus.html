@@ -96,9 +96,11 @@
 </form>
 <div id="bulk-result" aria-live="polite"></div>
 
+{% from "macros/admin_table.html" import select_all_checkbox, pagination %}
 {# ─── Table ─── #}
 <div class="admin-table-wrap">
   <div class="admin-table-head admin-corpus-row">
+    <span>{{ select_all_checkbox() }}</span>
     <span>Nom</span>
     <span>Documents</span>
     <span>Sources</span>
@@ -122,6 +124,10 @@
     {% endif %}
   </div>
 </div>
+
+{# Pagination #}
+{% set _qs %}{% if q %}q={{ q }}{% endif %}{% endset %}
+{{ pagination(page, total_pages, total, '/web/admin/corpus', _qs) }}
 </section>
 <style>[x-cloak] { display: none !important; }</style>
 {% endblock %}

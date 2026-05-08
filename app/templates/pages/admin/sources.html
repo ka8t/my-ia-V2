@@ -131,9 +131,11 @@
      href="/web/admin/sources?enabled=no{% if filter_type %}&source_type={{ filter_type }}{% endif %}">Inactives</a>
 </nav>
 
+{% from "macros/admin_table.html" import select_all_checkbox %}
 {# ─── Table ─── #}
 <div class="admin-table-wrap">
   <div class="admin-table-head admin-source-row">
+    <span>{{ select_all_checkbox() }}</span>
     <span>Nom</span>
     <span>Type</span>
     <span>Statut</span>

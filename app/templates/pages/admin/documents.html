@@ -71,10 +71,11 @@
 </form>
 <div id="bulk-result" aria-live="polite"></div>
 
+{% from "macros/admin_table.html" import select_all_checkbox %}
 {# Table 9 colonnes (checkbox + 8) #}
 <div class="admin-table-wrap">
   <div class="admin-table-head admin-doc-row">
-    <span></span>
+    <span>{{ select_all_checkbox() }}</span>
     <span>Fichier</span>
     <span>Propriétaire</span>
     <span>Type</span>

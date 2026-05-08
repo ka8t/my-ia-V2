@@ -1,0 +1,59 @@
+{# ─────────────────────────────────────────────────────────────────────
+ # Macros r&eacute;utilisables pour les tableaux admin avec checkbox bulk.
+ # Usage minimal :
+ #
+ #   {% from "macros/admin_table.html" import select_all_checkbox, pagination %}
+ #
+ #   <div class="admin-table-head">
+ #     {{ select_all_checkbox('.js-row-checkbox') }}
+ #     <span>Col 1</span> ...
+ #   </div>
+ #   <div class="admin-table-row">
+ #     <input type="checkbox" class="js-row-checkbox" value="{{ row.id }}"
+ #            x-on:change="$event.target.checked ? selected.add('{{ row.id }}') : selected.delete('{{ row.id }}'); selected = new Set(selected)">
+ #     ...
+ #   </div>
+ #
+ #   {{ pagination(page, total_pages, total, '/web/admin/users', extra_qs) }}
+ #
+ # Le scope Alpine doit avoir une propri&eacute;t&eacute; `selected: new Set()`.
+ # ────────────────────────────────────────────────────────────────────── #}
+
+{# select_all_checkbox(target_class) — header checkbox qui coche/d&eacute;coche
+ # toutes les checkboxes ayant la classe pass&eacute;e en argument, et synchronise
+ # l'&eacute;tat avec `selected` (Alpine Set du scope parent).
+ #}
+{% macro select_all_checkbox(target_class='.js-row-checkbox', title='Tout s&eacute;lectionner') %}
+<input type="checkbox"
+       class="admin-row__select-all"
+       x-on:change="
+         const checked = $event.target.checked;
+         document.querySelectorAll('{{ target_class }}').forEach(cb => {
+           cb.checked = checked;
+           if (checked) { selected.add(cb.value); }
+         });
+         if (!checked) { selected = new Set(); } else { selected = new Set(selected); }
+       "
+       title="{{ title }}"
+       aria-label="{{ title }}">
+{% endmacro %}
+
+
+{# pagination(page, total_pages, total, base_url, extra_qs)
+ # Rend une nav simple <prev / page X / Y / next>.
+ # extra_qs (string) : query-string sans le `?` ni le `page=` (ex: "q=foo&type=public").
+ #}
+{% macro pagination(page, total_pages, total, base_url, extra_qs='') %}
+{% if total_pages and total_pages > 1 %}
+{% set qs = (extra_qs ~ '&') if extra_qs else '' %}
+<nav class="admin-pagination" aria-label="Pagination">
+  {% if page > 1 %}
+  <a href="{{ base_url }}?{{ qs }}page={{ page - 1 }}" class="btn btn--ghost btn--sm">&larr; Pr&eacute;c&eacute;dent</a>
+  {% endif %}
+  <span class="admin-config__hint">Page {{ page }} / {{ total_pages }} ({{ total }})</span>
+  {% if page < total_pages %}
+  <a href="{{ base_url }}?{{ qs }}page={{ page + 1 }}" class="btn btn--ghost btn--sm">Suivant &rarr;</a>
+  {% endif %}
+</nav>
+{% endif %}
+{% endmacro %}

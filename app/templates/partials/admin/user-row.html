@@ -11,6 +11,7 @@
 
   <div class="admin-table-cell">
     <input type="checkbox"
+           class="js-bulk-checkbox"
            value="{{ user_row.id }}"
            x-on:change="$event.target.checked ? selected.add('{{ user_row.id }}') : selected.delete('{{ user_row.id }}'); selected = new Set(selected)">
   </div>

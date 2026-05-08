@@ -2657,19 +2657,19 @@ select.field__input {
 .admin-btn--ghost:hover { border-color: var(--color-line); }
 
 
-/* Corpus row grid : name | docs | sources | bibs | status | actions */
+/* Corpus row grid : checkbox | name | docs | sources | bibs | status | actions */
 .admin-corpus-row {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) 90px 90px 110px 110px 130px;
+  grid-template-columns: 32px minmax(0, 2fr) 90px 90px 110px 110px 130px;
   gap: var(--space-3);
   align-items: center;
 }
 @media (max-width: 1100px) {
   .admin-corpus-row {
-    grid-template-columns: minmax(0, 1.4fr) 80px 100px 110px;
+    grid-template-columns: 32px minmax(0, 1.4fr) 80px 100px 110px;
   }
-  .admin-corpus-row > .admin-table-cell:nth-child(3),
-  .admin-corpus-row > .admin-table-cell:nth-child(4) { display: none; }
+  .admin-corpus-row > .admin-table-cell:nth-child(4),
+  .admin-corpus-row > .admin-table-cell:nth-child(5) { display: none; }
 }
 .admin-corpus-row--editing { background: var(--color-bg-raised); }
 
@@ -2705,19 +2705,19 @@ select.field__input {
 }
 
 
-/* Source row grid : name | type | status | health | indexed | actions */
+/* Source row grid : checkbox | name | type | status | health | indexed | actions */
 .admin-source-row {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) 100px 100px 100px 130px 150px;
+  grid-template-columns: 32px minmax(0, 2fr) 100px 100px 100px 130px 150px;
   gap: var(--space-3);
   align-items: center;
 }
 @media (max-width: 1100px) {
   .admin-source-row {
-    grid-template-columns: minmax(0, 1.2fr) 90px 100px 130px;
+    grid-template-columns: 32px minmax(0, 1.2fr) 90px 100px 130px;
   }
-  .admin-source-row > .admin-table-cell:nth-child(4),
-  .admin-source-row > .admin-table-cell:nth-child(5) { display: none; }
+  .admin-source-row > .admin-table-cell:nth-child(5),
+  .admin-source-row > .admin-table-cell:nth-child(6) { display: none; }
 }
 
 .admin-source__name {

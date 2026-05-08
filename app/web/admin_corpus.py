@@ -187,6 +187,7 @@ async def _render_row(
 async def admin_corpus_list(
     request: Request,
     q: str | None = None,
+    page: int = 1,
     user: dict = Depends(require_web_admin),
     db: AsyncSession = Depends(get_async_session),
 ) -> HTMLResponse:
@@ -194,6 +195,13 @@ async def admin_corpus_list(
     if q:
         ql = q.strip().lower()
         rows = [r for r in rows if ql in (r.get("display_name", "") or "").lower() or ql in (r.get("name", "") or "").lower()]
+    # Pagination en mémoire (le dataset n'est pas trop gros)
+    page_size = 25
+    total = len(rows)
+    page = max(1, page)
+    total_pages = max(1, (total + page_size - 1) // page_size)
+    offset = (page - 1) * page_size
+    paged_rows = rows[offset:offset + page_size]
     return templates.TemplateResponse(
         request,
         "pages/admin/corpus.html",
@@ -203,9 +211,11 @@ async def admin_corpus_list(
             title="Corpus",
             active_section="corpus",
             user=user,
-            rows=rows,
+            rows=paged_rows,
             q=q or "",
-            total=len(rows),
+            total=total,
+            page=page,
+            total_pages=total_pages,
         ),
     )
 

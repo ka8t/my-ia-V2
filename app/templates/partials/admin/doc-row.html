@@ -10,6 +10,7 @@
      {% endif %}>
   <div class="admin-table-cell">
     <input type="checkbox"
+           class="js-bulk-checkbox"
            value="{{ r.doc.id }}"
            x-on:change="$event.target.checked ? selected.add('{{ r.doc.id }}') : selected.delete('{{ r.doc.id }}'); selected = new Set(selected)">
   </div>

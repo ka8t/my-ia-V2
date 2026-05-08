@@ -132,7 +132,7 @@
       <div class="admin-logs-row admin-logs-row--with-select admin-table-row">
         <div class="admin-table-cell">
           <input type="checkbox"
-                 class="admin-logs-row__checkbox"
+                 class="admin-logs-row__checkbox js-bulk-checkbox"
                  value="{{ log.id }}"
                  x-on:change="$event.target.checked ? selected.add('{{ log.id }}') : selected.delete('{{ log.id }}'); selected = new Set(selected)">
         </div>

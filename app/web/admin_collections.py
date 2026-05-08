@@ -48,19 +48,32 @@ async def admin_collections_list(
     request: Request,
     q: str | None = None,
     type_filter: str | None = None,
+    page: int = 1,
     user: dict = Depends(require_web_admin),
     db: AsyncSession = Depends(get_async_session),
 ) -> HTMLResponse:
     """Liste toutes les collections cross-user (parité V1 content-collections)."""
-    query = select(Collection)
+    page_size = 25
+    base_query = select(Collection)
+    count_query = select(func.count(Collection.id))
     if type_filter in {"public", "private"}:
-        query = query.where(Collection.type == type_filter)
+        base_query = base_query.where(Collection.type == type_filter)
+        count_query = count_query.where(Collection.type == type_filter)
     if q:
         like = f"%{q.strip()}%"
-        query = query.where(
+        base_query = base_query.where(
             (Collection.display_name.ilike(like)) | (Collection.name.ilike(like))
         )
-    query = query.order_by(Collection.type, Collection.display_name)
+        count_query = count_query.where(
+            (Collection.display_name.ilike(like)) | (Collection.name.ilike(like))
+        )
+
+    total = (await db.execute(count_query)).scalar_one() or 0
+    page = max(1, page)
+    offset = (page - 1) * page_size
+    total_pages = max(1, (total + page_size - 1) // page_size)
+
+    query = base_query.order_by(Collection.type, Collection.display_name).offset(offset).limit(page_size)
     result = await db.execute(query)
     collections = list(result.unique().scalars().all())
 
@@ -85,7 +98,9 @@ async def admin_collections_list(
             owners=owners,
             q=q or "",
             type_filter=type_filter or "",
-            total=len(collections),
+            total=total,
+            page=page,
+            total_pages=total_pages,
         ),
     )
 
