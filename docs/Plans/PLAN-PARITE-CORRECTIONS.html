@@ -49,7 +49,7 @@
         <td><span class="badge badge-danger">P0 Critique</span></td>
         <td>Bugs prod / fonctionnalit&eacute;s centrales</td>
         <td>5</td>
-        <td>3/5</td>
+        <td>4/5</td>
         <td>3-5 jours</td>
         <td><span class="badge badge-warning">En cours</span></td>
       </tr>
@@ -231,22 +231,40 @@
   <!-- P0.5 -->
   <h3 id="p0-5">P0.5 &mdash; Smoke tests user-facing E2E</h3>
   <ul class="checklist">
-    <li data-done="false"><strong>P0.5 livr&eacute;</strong> &mdash; 4 sc&eacute;narios E2E Playwright user</li>
+    <li data-done="true"><strong>P0.5 livr&eacute;</strong> &mdash; 13 sc&eacute;narios E2E Playwright (6 user + 7 admin/users)</li>
   </ul>
-  <div class="callout callout-info">
-    <span class="callout-icon">&#x1F4DD;</span>
+  <div class="callout callout-success">
+    <span class="callout-icon">&#x2705;</span>
     <div>
-      <strong>P&eacute;rim&egrave;tre</strong> : 4 sc&eacute;narios E2E Playwright sur les flows principaux user :<br>
-      (a) Login + accueil chat<br>
-      (b) Envoi message + r&eacute;ception streaming<br>
-      (c) Upload document + indexation r&eacute;ussie (xlsx, post-P0.2)<br>
-      (d) Modification pr&eacute;f&eacute;rences (lang/theme)
+      <strong>P&eacute;rim&egrave;tre &eacute;largi (apr&egrave;s feedback utilisateur sur bugs UI)</strong> :
       <br><br>
-      <strong>Fichiers</strong> : <code>tests/e2e/test_e2e_user_flows.py</code> (nouveau).
+      <strong>tests/e2e/test_e2e_user_flows.py (6 cases)</strong> :
+      <ul>
+        <li>Login user@test.example + redirect vers /web/chat</li>
+        <li>Topbar utilisateur visible apr&egrave;s login</li>
+        <li>Page documents charge avec form upload</li>
+        <li><strong>Upload xlsx via UI</strong> + nouvelle ligne appara&icirc;t dans le tableau (couvre le bug original)</li>
+        <li>Page pr&eacute;f&eacute;rences charge avec selects langue/th&egrave;me</li>
+        <li>Submit du form pr&eacute;f&eacute;rences sans 500</li>
+      </ul>
+      <strong>tests/e2e/test_e2e_admin_users.py (7 cases)</strong> &mdash; r&eacute;gression bugs s&eacute;ance pr&eacute;c&eacute;dente :
+      <ul>
+        <li>Page admin/users charge avec liste utilisateurs</li>
+        <li><strong>Filtres avec role=&laquo; &raquo; vide ne plantent plus en 422</strong></li>
+        <li>Filtre role=admin renvoie au moins admin@test.example</li>
+        <li><strong>Modal &eacute;dition affiche les champs pr&eacute;-remplis</strong> (pour admin@test.example seed&eacute; : email, username, first_name='Admin')</li>
+        <li><strong>Modal se ferme apr&egrave;s "Enregistrer"</strong> (CustomEvent + Alpine x-on)</li>
+        <li>Modal se ferme via Escape</li>
+        <li>Modal se ferme via bouton Annuler</li>
+      </ul>
+      <strong>R&eacute;sultats</strong> : 13/13 nouveaux tests PASSED. 1 test pr&eacute;-existant &eacute;choue
+      (<code>test_e2e_admin_corpus::test_delete_corpus_removes_row</code>) &mdash; bug ind&eacute;pendant
+      (delete corpus ne retire pas la row UI), &agrave; investiguer en P1.
+      <br><br>
+      <strong>Streaming chat (SSE)</strong> non couvert : d&eacute;pend Ollama, complexe &agrave; mocker.
+      D&eacute;cal&eacute; en P1.
       <br>
-      <strong>Effort</strong> : 1 jour.
-      <br>
-      <strong>Commit(s)</strong> : <em>(&agrave; remplir)</em>
+      <strong>Commit</strong> : <em>(en cours)</em>
     </div>
   </div>
 </div>
