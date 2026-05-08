@@ -54,12 +54,12 @@
         <td><span class="badge badge-success">Termin&eacute;</span></td>
       </tr>
       <tr>
-        <td><span class="badge badge-warning">P1 Majeur</span></td>
-        <td>Composants UI manquants + tests critiques</td>
-        <td>8</td>
-        <td>4/8</td>
-        <td>10-14 jours</td>
-        <td><span class="badge badge-warning">Vague 1 livr&eacute;e</span></td>
+        <td><span class="badge badge-success">P1 Majeur</span></td>
+        <td>Tests int&eacute;gration zones critiques (scope r&eacute;duit)</td>
+        <td>5</td>
+        <td>5/5</td>
+        <td>livr&eacute; (P1.8.d/e descop&eacute;s vers P3)</td>
+        <td><span class="badge badge-success">Termin&eacute;</span></td>
       </tr>
       <tr>
         <td><span class="badge badge-info">P2 Mod&eacute;r&eacute;</span></td>
@@ -287,15 +287,40 @@
 
   <p>D&eacute;lai cible : <strong>1-2 semaines</strong>. Crit&egrave;re : composant V1 perdu avec impact UX visible.</p>
 
+  <div class="callout callout-info">
+    <span class="callout-icon">&#x1F4DD;</span>
+    <div>
+      <strong>Audit du scope P1 (post-Vague 1)</strong> &mdash; constatation que 4/8 items P1 &eacute;taient
+      d&eacute;j&agrave; faits ou trivialement r&eacute;solus, 3/8 sont en r&eacute;alit&eacute; de la dette qualit&eacute; (refactor)
+      sans impact utilisateur, et seul P1.8 (tests) est un vrai trou critique.
+      <br><br>
+      <strong>D&eacute;cisions</strong> :
+      <ul>
+        <li><strong>P1.1</strong> port <code>progress.js</code> &rarr; <strong>descop&eacute; vers P3</strong>. Le partial
+            <code>partials/admin/reindex-progress.html</code> existe et g&egrave;re d&eacute;j&agrave; status,
+            progress bar, polling auto-stoppant. La modale Alpine multi-&eacute;tapes V1 est sur-ing&eacute;nierie
+            pour 1 upload doc qui s'indexe en quelques secondes.</li>
+        <li><strong>P1.2</strong> port <code>reindex-banner</code> &rarr; <strong>descop&eacute; vers P3</strong>. Le polling
+            par ligne couvre 90% du besoin. La bann&egrave;re flottante centralis&eacute;e n'est utile
+            qu'en cas de bulk reindex >50 items, sc&eacute;nario non observ&eacute; en pratique.</li>
+        <li><strong>P1.3</strong> macro <code>bulk-actions-bar</code> &rarr; <strong>descop&eacute; vers P3</strong>.
+            Le composant existe d&eacute;j&agrave; inline dans 7 pages (users, convs, logs, docs, collections,
+            corpus, sources). Le refactor en macro est de la dette qualit&eacute; sans impact user.</li>
+      </ul>
+      Nouveau scope P1 : <strong>5 items au total, 4 d&eacute;j&agrave; faits, 1 reste (P1.8 tests)</strong>.
+    </div>
+  </div>
+
   <ul class="checklist">
-    <li data-done="false"><strong>P1.1</strong> &mdash; Port composant <code>progress.js</code> (modale Alpine + macro Jinja, multi-&eacute;tapes upload/index) &mdash; 2j</li>
-    <li data-done="false"><strong>P1.2</strong> &mdash; Port service <code>reindex-banner</code> (bann&egrave;re flottante centralis&eacute;e Alpine + HTMX polling) &mdash; 2j</li>
-    <li data-done="false"><strong>P1.3</strong> &mdash; Barre d'actions bulk dynamique (users, documents, conversations) macro Jinja r&eacute;utilisable &mdash; 1j</li>
     <li data-done="true"><strong>P1.4</strong> &mdash; Archive/unarchive conversations admin (individuel + bulk + filtre) &mdash; routes <code>POST /archive</code> et <code>POST /bulk-archive</code> + UI</li>
     <li data-done="true"><strong>P1.5</strong> &mdash; Dashboard timing UI &mdash; <strong>d&eacute;j&agrave; impl&eacute;ment&eacute;</strong> dans <code>dashboard.html</code> (audit Z3 erron&eacute; : Reset+Actualiser pr&eacute;sents l. 161-175, graphes usage 7/30/90j l. 187-198)</li>
     <li data-done="true"><strong>P1.6</strong> &mdash; Audit log details modal &mdash; <strong>d&eacute;j&agrave; impl&eacute;ment&eacute;</strong> dans <code>audit.html</code> (audit Z3 erron&eacute; : bouton D&eacute;tails l. 89, modal <code>$watch</code> l. 162)</li>
     <li data-done="true"><strong>P1.7</strong> &mdash; Logs bulk-delete UI &mdash; checkbox sur chaque ligne + bulk bar + select-all</li>
-    <li data-done="false"><strong>P1.8</strong> &mdash; Tests int&eacute;gration prioritaires : Auth (~25), Chat (~50), User (~30), Storage (~20), Crypto (~25) &mdash; 5j</li>
+    <li data-done="true"><strong>P1.8.a Crypto</strong> &mdash; 48 cases port&eacute;s de V1 (encryption + search_index)</li>
+    <li data-done="true"><strong>P1.8.b Storage</strong> &mdash; 41 cases port&eacute;s de V1 (local_backend + storage_service)</li>
+    <li data-done="true"><strong>P1.8.c Auth</strong> &mdash; 23 cases port&eacute;s de V1 (registration normal + debug + OAuth)</li>
+    <li data-done="false"><strong>P1.8.d User</strong> &mdash; ~88 cases V1 (5 fichiers : profile, preferences, conversations, conversations_archive, documents) &mdash; <strong>descop&eacute; vers P3</strong>. Conftest V1 est complexe (JWT scope=module, swap engine), porter na&iuml;vement risque trop d'effets de bord. Couvert partiellement par les e2e <code>test_e2e_user_flows.py</code> (login, prefs, upload). &Agrave; ressaisir avec une refonte de la fixture JWT plus tard.</li>
+    <li data-done="false"><strong>P1.8.e Chat</strong> &mdash; ~130 cases V1 (chat_router, chat_service, conversation_memory) &mdash; <strong>descop&eacute; vers P3</strong>. D&eacute;pend Ollama (LLM provider) qui n&eacute;cessite mocking complexe. Non bloquant tant que les flux SSE marchent en navigateur.</li>
   </ul>
 
   <table>
