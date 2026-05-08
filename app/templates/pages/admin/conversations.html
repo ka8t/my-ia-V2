@@ -34,18 +34,34 @@
   {% if q %}<a href="/web/admin/conversations{% if archived %}?archived={{ archived }}{% endif %}" class="btn btn--ghost btn--sm">Reset</a>{% endif %}
 </form>
 
-{# Bulk bar #}
+{# Bulk bar — actions: archive, unarchive, delete (P1.4) #}
 <form class="admin-bulkbar"
       x-show="selected.size > 0" x-cloak
-      hx-post="/web/admin/conversations/bulk-delete"
+      x-data="{ bulkAction: 'archive' }"
+      x-on:submit="
+        if (bulkAction === 'delete' && !confirm('Supprimer ' + selected.size + ' conversation(s) ?')) {
+          $event.preventDefault();
+        }
+      "
+      x-bind:hx-post="bulkAction === 'delete'
+        ? '/web/admin/conversations/bulk-delete'
+        : '/web/admin/conversations/bulk-archive'"
       hx-target="#bulk-result" hx-swap="innerHTML"
       hx-on::config-request="
         event.detail.parameters['conversation_ids'] = Array.from(selected);
         event.detail.parameters['csrf_token'] = '{{ csrf_token }}';
+        if (bulkAction !== 'delete') {
+          event.detail.parameters['action'] = bulkAction;
+        }
       ">
   <span><span x-text="selected.size"></span> sélectionnée(s)</span>
-  <button type="submit" class="btn btn--danger btn--sm"
-          x-on:click="if (!confirm('Supprimer ' + selected.size + ' conversation(s) ?')) $event.preventDefault()">Supprimer</button>
+  <select x-model="bulkAction" class="admin-toolbar__select">
+    <option value="archive">Archiver</option>
+    <option value="unarchive">Désarchiver</option>
+    <option value="delete">Supprimer</option>
+  </select>
+  <button type="submit" class="btn btn--primary btn--sm"
+          x-bind:class="bulkAction === 'delete' ? 'btn--danger' : 'btn--primary'">Appliquer</button>
   <button type="button" class="btn btn--ghost btn--sm" x-on:click="selected = new Set()">Annuler</button>
 </form>
 <div id="bulk-result" aria-live="polite"></div>
@@ -89,6 +105,17 @@
         <div class="admin-table-cell admin-table-cell--actions">
           <button type="button" class="admin-action" x-on:click="viewId = '{{ r.conv.id }}'" title="Voir messages">{{ icon('info-circle', 14) }}</button>
           <a class="admin-action" href="/web/admin/conversations/{{ r.conv.id }}/export" title="Export Markdown">{{ icon('arrow-up-right', 14) }}</a>
+          {# P1.4 — Toggle archive/unarchive #}
+          <form class="admin-action-form"
+                hx-post="/web/admin/conversations/{{ r.conv.id }}/archive"
+                hx-target="#bulk-result" hx-swap="innerHTML">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button type="submit" class="admin-action"
+                    title="{{ 'Désarchiver' if r.conv.archived_at else 'Archiver' }}"
+                    aria-label="{{ 'Désarchiver' if r.conv.archived_at else 'Archiver' }}">
+              {{ icon('settings' if r.conv.archived_at else 'document', 14) }}
+            </button>
+          </form>
           <button type="button" class="admin-action admin-action--danger"
                   hx-delete="/web/admin/conversations/{{ r.conv.id }}"
                   hx-confirm="Supprimer définitivement « {{ r.conv.title }} » ?"

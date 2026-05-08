@@ -86,8 +86,39 @@
   </div>
 </form>
 
+{# ─── Bulk action bar (P1.7) — visible si au moins 1 ligne sélectionnée ─── #}
+<form class="admin-bulkbar"
+      x-show="selected.size > 0"
+      x-cloak
+      hx-post="/web/admin/logs/bulk-delete"
+      hx-target="#bulk-result"
+      hx-swap="innerHTML"
+      hx-on::config-request="
+        const params = event.detail.parameters;
+        params['log_ids'] = Array.from(selected);
+        params['csrf_token'] = '{{ csrf_token }}';
+      "
+      hx-confirm="Supprimer définitivement les logs sélectionnés ?">
+  <span><span x-text="selected.size"></span> sélectionné(s)</span>
+  <button type="submit" class="btn btn--danger btn--sm">Supprimer la sélection</button>
+  <button type="button" class="btn btn--ghost btn--sm" x-on:click="selected = new Set()">Annuler</button>
+</form>
+<div id="bulk-result" aria-live="polite"></div>
+
 <div class="admin-table-wrap">
-  <div class="admin-table-head admin-logs-row">
+  <div class="admin-table-head admin-logs-row admin-logs-row--with-select">
+    <span>
+      <input type="checkbox"
+             x-on:change="
+               if ($event.target.checked) {
+                 document.querySelectorAll('.admin-logs-row__checkbox').forEach(cb => { cb.checked = true; selected.add(cb.value); });
+               } else {
+                 document.querySelectorAll('.admin-logs-row__checkbox').forEach(cb => { cb.checked = false; });
+                 selected = new Set();
+               }
+             "
+             title="Tout sélectionner">
+    </span>
     <span>Date</span>
     <span>Niveau</span>
     <span>Catégorie</span>
@@ -98,7 +129,13 @@
   <div class="admin-table-body">
     {% if items %}
       {% for log in items %}
-      <div class="admin-logs-row admin-table-row">
+      <div class="admin-logs-row admin-logs-row--with-select admin-table-row">
+        <div class="admin-table-cell">
+          <input type="checkbox"
+                 class="admin-logs-row__checkbox"
+                 value="{{ log.id }}"
+                 x-on:change="$event.target.checked ? selected.add('{{ log.id }}') : selected.delete('{{ log.id }}'); selected = new Set(selected)">
+        </div>
         <div class="admin-table-cell admin-table-cell__mono">
           {{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') if log.timestamp else '—' }}
         </div>

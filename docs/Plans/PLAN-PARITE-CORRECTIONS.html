@@ -57,9 +57,9 @@
         <td><span class="badge badge-warning">P1 Majeur</span></td>
         <td>Composants UI manquants + tests critiques</td>
         <td>8</td>
-        <td>0/8</td>
+        <td>4/8</td>
         <td>10-14 jours</td>
-        <td><span class="badge badge-warning">&Agrave; faire</span></td>
+        <td><span class="badge badge-warning">Vague 1 livr&eacute;e</span></td>
       </tr>
       <tr>
         <td><span class="badge badge-info">P2 Mod&eacute;r&eacute;</span></td>
@@ -291,10 +291,10 @@
     <li data-done="false"><strong>P1.1</strong> &mdash; Port composant <code>progress.js</code> (modale Alpine + macro Jinja, multi-&eacute;tapes upload/index) &mdash; 2j</li>
     <li data-done="false"><strong>P1.2</strong> &mdash; Port service <code>reindex-banner</code> (bann&egrave;re flottante centralis&eacute;e Alpine + HTMX polling) &mdash; 2j</li>
     <li data-done="false"><strong>P1.3</strong> &mdash; Barre d'actions bulk dynamique (users, documents, conversations) macro Jinja r&eacute;utilisable &mdash; 1j</li>
-    <li data-done="false"><strong>P1.4</strong> &mdash; Archive/unarchive conversations admin (individuel + bulk + filtre) &mdash; 1j</li>
-    <li data-done="false"><strong>P1.5</strong> &mdash; Dashboard timing UI (P50/P95/P99 + bouton Reset stats) &mdash; 1j</li>
-    <li data-done="false"><strong>P1.6</strong> &mdash; Audit log details modal accessible (ouverture sur clic ligne) &mdash; 0.5j</li>
-    <li data-done="false"><strong>P1.7</strong> &mdash; Logs bulk-delete UI (checkboxes + barre actions) &mdash; 0.5j</li>
+    <li data-done="true"><strong>P1.4</strong> &mdash; Archive/unarchive conversations admin (individuel + bulk + filtre) &mdash; routes <code>POST /archive</code> et <code>POST /bulk-archive</code> + UI</li>
+    <li data-done="true"><strong>P1.5</strong> &mdash; Dashboard timing UI &mdash; <strong>d&eacute;j&agrave; impl&eacute;ment&eacute;</strong> dans <code>dashboard.html</code> (audit Z3 erron&eacute; : Reset+Actualiser pr&eacute;sents l. 161-175, graphes usage 7/30/90j l. 187-198)</li>
+    <li data-done="true"><strong>P1.6</strong> &mdash; Audit log details modal &mdash; <strong>d&eacute;j&agrave; impl&eacute;ment&eacute;</strong> dans <code>audit.html</code> (audit Z3 erron&eacute; : bouton D&eacute;tails l. 89, modal <code>$watch</code> l. 162)</li>
+    <li data-done="true"><strong>P1.7</strong> &mdash; Logs bulk-delete UI &mdash; checkbox sur chaque ligne + bulk bar + select-all</li>
     <li data-done="false"><strong>P1.8</strong> &mdash; Tests int&eacute;gration prioritaires : Auth (~25), Chat (~50), User (~30), Storage (~20), Crypto (~25) &mdash; 5j</li>
   </ul>
 

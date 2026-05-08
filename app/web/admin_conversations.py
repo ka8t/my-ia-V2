@@ -189,3 +189,93 @@ async def admin_conversations_bulk_delete(
         f"<div class='toast toast--success'>{affected} conversation(s) supprimée(s).</div>",
         headers={"HX-Trigger": "convs-refresh"},
     )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  P1.4 — Archive / unarchive admin (parité V1 content-conversations.js)
+# ─────────────────────────────────────────────────────────────────────────────
+@router.post("/{cid}/archive", response_class=HTMLResponse)
+async def admin_conversation_toggle_archive(
+    request: Request,
+    cid: uuid.UUID,
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    """Toggle archive d'une conversation (admin override sur n'importe quel user)."""
+    if (err := _csrf_or_400(request, csrf_token)):
+        return err
+    conv = (
+        await db.execute(select(Conversation).where(Conversation.id == cid))
+    ).unique().scalar_one_or_none()
+    if conv is None:
+        return HTMLResponse("", status_code=404)
+
+    from datetime import datetime, timezone
+    if conv.archived_at is None:
+        conv.archived_at = datetime.now(timezone.utc)
+        msg = "Conversation archivée."
+    else:
+        conv.archived_at = None
+        msg = "Conversation désarchivée."
+    try:
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        logger.exception("Admin toggle archive failed")
+        return HTMLResponse("<div class='toast toast--error'>Échec.</div>", status_code=500)
+    return HTMLResponse(
+        f"<div class='toast toast--success'>{msg}</div>",
+        headers={"HX-Trigger": "convs-refresh"},
+    )
+
+
+@router.post("/bulk-archive", response_class=HTMLResponse)
+async def admin_conversations_bulk_archive(
+    request: Request,
+    conversation_ids: Annotated[list[str], Form()],
+    action: Annotated[str, Form()],  # "archive" | "unarchive"
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    """Archive ou désarchive en masse (action = archive | unarchive)."""
+    if (err := _csrf_or_400(request, csrf_token)):
+        return err
+    if action not in {"archive", "unarchive"}:
+        return HTMLResponse(
+            "<div class='toast toast--error'>Action invalide.</div>",
+            status_code=400,
+        )
+
+    from datetime import datetime, timezone
+    affected = 0
+    now = datetime.now(timezone.utc)
+    for raw in conversation_ids:
+        try:
+            cid = uuid.UUID(raw)
+        except ValueError:
+            continue
+        conv = (
+            await db.execute(select(Conversation).where(Conversation.id == cid))
+        ).unique().scalar_one_or_none()
+        if conv is None:
+            continue
+        if action == "archive" and conv.archived_at is None:
+            conv.archived_at = now
+            affected += 1
+        elif action == "unarchive" and conv.archived_at is not None:
+            conv.archived_at = None
+            affected += 1
+
+    if affected:
+        try:
+            await db.commit()
+        except Exception:
+            await db.rollback()
+            return HTMLResponse("<div class='toast toast--error'>Échec.</div>", status_code=500)
+    verb = "archivée(s)" if action == "archive" else "désarchivée(s)"
+    return HTMLResponse(
+        f"<div class='toast toast--success'>{affected} conversation(s) {verb}.</div>",
+        headers={"HX-Trigger": "convs-refresh"},
+    )
