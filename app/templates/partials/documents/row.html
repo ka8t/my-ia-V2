@@ -41,7 +41,8 @@
   <div class="docs-row__cell docs-row__size">{{ size }}</div>
 
   <div class="docs-row__cell">
-    <span class="docs-status docs-status--{{ status.kind }}">
+    <span class="docs-status docs-status--{{ status.kind }}"
+          {% if status.kind == 'error' and status.detail %}title="{{ status.detail }}"{% endif %}>
       {% if status.kind == 'pending' %}
       <span class="docs-status__dot" aria-hidden="true"></span>
       {% endif %}
@@ -51,6 +52,21 @@
   </div>
 
   <div class="docs-row__cell docs-row__actions">
+    {# Réessayer indexation (visible uniquement si erreur — P0.3) #}
+    {% if status.kind == 'error' %}
+    <form class="docs-row__action-form"
+          hx-post="/web/documents/{{ doc.id }}/reindex"
+          hx-target="#doc-{{ doc.id }}"
+          hx-swap="outerHTML">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button type="submit" class="docs-row__action docs-row__action--retry"
+              title="Réessayer l'indexation"
+              aria-label="Réessayer l'indexation">
+        {{ icon('sparkle', 14) }}
+      </button>
+    </form>
+    {% endif %}
+
     {# Détails (parité V1 showDocumentDetails) #}
     <button type="button"
             class="docs-row__action"

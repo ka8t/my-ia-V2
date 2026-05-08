@@ -70,6 +70,15 @@ async def _get_or_create_user_corpus(db: AsyncSession, user_id: uuid.UUID) -> Co
 
 
 def _doc_status(doc: Document) -> dict:
+    """Statut visuel du document : indexé / en cours / échec.
+
+    Pour distinguer "indexation en cours" et "indexation échouée" quand le
+    BDD est à 0 chunks, on consulte le ReindexManager in-memory. Si l'état
+    in-memory est failed/error, on affiche l'erreur et on stoppe le polling.
+    Si pas d'état in-memory (ex: container redémarré ou jamais lancé), on
+    reste sur "Indexation…" (compromis acceptable tant que la persistance
+    BDD du statut n'est pas faite — voir P0.3.b dans le plan).
+    """
     if doc.chunk_count and doc.chunk_count > 0:
         return {
             "label": "Indexé",
@@ -78,6 +87,22 @@ def _doc_status(doc: Document) -> dict:
         }
     if doc.embedding_count and doc.embedding_count > 0:
         return {"label": "Indexé", "kind": "ok", "detail": f"{doc.embedding_count} embeddings"}
+
+    # BDD à 0 chunks : interroger le ReindexManager pour distinguer pending vs failed
+    try:
+        from app.common.utils.reindex import get_doc_reindex_progress
+        progress = get_doc_reindex_progress(str(doc.id))
+        status = (progress.get("status") or "").lower()
+        if status in {"failed", "error"}:
+            err = progress.get("error_message") or progress.get("message") or "Indexation échouée"
+            # Tronquer pour affichage compact
+            if len(err) > 120:
+                err = err[:117] + "…"
+            return {"label": "Erreur d'indexation", "kind": "error", "detail": err}
+    except Exception:  # noqa: BLE001
+        # ReindexManager indisponible → fallback pending
+        pass
+
     return {"label": "Indexation…", "kind": "pending", "detail": "en cours"}
 
 
@@ -642,6 +667,77 @@ async def documents_replace(
 # ─────────────────────────────────────────────────────────────────────────────
 #  DELETE /web/documents/{id}
 # ─────────────────────────────────────────────────────────────────────────────
+@router.post("/{document_id}/reindex", response_class=HTMLResponse)
+async def documents_reindex(
+    request: Request,
+    document_id: uuid.UUID,
+    background_tasks: BackgroundTasks,
+    csrf_token: Annotated[str | None, Form()] = None,
+    user: dict = Depends(require_web_auth),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    """Relance l'indexation d'un document (P0.3 — bouton Réessayer).
+
+    Sécurité : seul le propriétaire peut relancer (vérification user_id).
+    Récupère le contenu depuis le storage et relance le BackgroundTask.
+    """
+    if not verify_csrf_token(request, csrf_token):
+        return HTMLResponse(
+            "<div class='toast toast--error'>Session expirée.</div>",
+            status_code=400,
+        )
+    user_uuid = uuid.UUID(user["id"])
+    result = await db.execute(
+        select(Document)
+        .options(joinedload(Document.collection))
+        .where(Document.id == document_id, Document.user_id == user_uuid)
+    )
+    doc = result.unique().scalar_one_or_none()
+    if doc is None:
+        return HTMLResponse("", status_code=404)
+
+    if not doc.file_path:
+        return HTMLResponse(
+            "<div class='toast toast--error'>Fichier source absent.</div>",
+            status_code=400,
+        )
+
+    from app.core.deps import get_storage_service
+    from app.features.ingestion.router import (
+        _run_indexation_in_background,
+        set_doc_reindex_progress,
+    )
+
+    storage = get_storage_service()
+    try:
+        content = await storage.download(doc.file_path)
+    except Exception:
+        logger.exception("Reindex: download failed")
+        return HTMLResponse(
+            "<div class='toast toast--error'>Fichier source introuvable.</div>",
+            status_code=500,
+        )
+
+    file_ext = (doc.filename or "").rsplit(".", 1)[-1] if "." in (doc.filename or "") else "txt"
+    collection_name = doc.collection.name if doc.collection else None
+
+    # Reset état progress avant nouveau lancement
+    set_doc_reindex_progress(str(doc.id), 0, "queued", document_name=doc.filename)
+    background_tasks.add_task(
+        _run_indexation_in_background,
+        document_id=doc.id,
+        content=content,
+        file_ext=file_ext,
+        collection_name=collection_name,
+    )
+
+    return templates.TemplateResponse(
+        request,
+        "partials/documents/row.html",
+        web_context(request, **_doc_context(doc)),
+    )
+
+
 @router.delete("/{document_id}", response_class=Response)
 async def documents_delete(
     request: Request,

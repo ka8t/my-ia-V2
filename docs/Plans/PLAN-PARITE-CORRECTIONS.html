@@ -49,7 +49,7 @@
         <td><span class="badge badge-danger">P0 Critique</span></td>
         <td>Bugs prod / fonctionnalit&eacute;s centrales</td>
         <td>5</td>
-        <td>2/5</td>
+        <td>3/5</td>
         <td>3-5 jours</td>
         <td><span class="badge badge-warning">En cours</span></td>
       </tr>
@@ -174,24 +174,34 @@
   <!-- P0.3 -->
   <h3 id="p0-3">P0.3 &mdash; UX statut "Indexation&hellip;" infinie</h3>
   <ul class="checklist">
-    <li data-done="false"><strong>P0.3 livr&eacute;</strong> &mdash; <code>_doc_status()</code> consulte ReindexManager + colonnes BDD <code>indexing_status/error</code></li>
+    <li data-done="true"><strong>P0.3.a livr&eacute;</strong> &mdash; <code>_doc_status()</code> consulte ReindexManager + UI affiche erreur + arr&ecirc;te polling + bouton R&eacute;essayer</li>
+    <li data-done="false"><strong>P0.3.b reste &agrave; faire</strong> &mdash; persister indexing_status/error en BDD via migration Alembic (survit aux restarts)</li>
   </ul>
-  <div class="callout callout-info">
-    <span class="callout-icon">&#x1F4DD;</span>
+  <div class="callout callout-success">
+    <span class="callout-icon">&#x2705;</span>
     <div>
-      <strong>P&eacute;rim&egrave;tre</strong> : (a) <code>_doc_status()</code> consulte
-      <code>get_doc_reindex_progress()</code> in-memory ; (b) si failed, afficher "Erreur d'indexation" +
-      bouton "R&eacute;essayer" + arr&ecirc;t du polling ; (c) ajouter colonnes <code>indexing_status</code> +
-      <code>indexing_error</code> sur <code>documents</code> avec migration Alembic pour persister
-      l'erreur au-del&agrave; d'un restart.
+      <strong>P0.3.a livr&eacute;</strong> :
+      <ul>
+        <li><code>_doc_status()</code> dans <code>app/web/documents.py</code> consulte
+            <code>get_doc_reindex_progress()</code> in-memory : si <code>status in {failed,error}</code>, retourne
+            <code>kind="error"</code> + <code>label="Erreur d'indexation"</code> + d&eacute;tail tronqu&eacute; &agrave; 120 chars.</li>
+        <li>Partial <code>partials/documents/row.html</code> : sur <code>kind=error</code> n'attache pas
+            <code>hx-trigger="every 4s"</code> (polling stopp&eacute;) et affiche un bouton "R&eacute;essayer".</li>
+        <li>Nouvelle route <code>POST /web/documents/{id}/reindex</code> : owner check (filtre <code>user_id</code>),
+            r&eacute;cup&egrave;re le content depuis storage, relance <code>_run_indexation_in_background</code>.</li>
+      </ul>
+      <strong>Fichiers</strong> : <code>app/web/documents.py</code> ; <code>app/templates/partials/documents/row.html</code> ; <code>tests/integration/test_documents_reindex.py</code> (nouveau, 8 cases).
+      <br>
+      <strong>Suite int&eacute;gration</strong> : 214 &rarr; 222 tests passants.
+      <br>
+      <strong>Bug fix collat&eacute;ral</strong> : NLTK datasets pr&eacute;-t&eacute;l&eacute;charg&eacute;s dans le Dockerfile
+      (sans &ccedil;a, <code>partition_xlsx()</code> tente un download au runtime &rarr; HTTP 403/&eacute;chec offline). Commit <code>a8ad603</code>.
+      <br>
+      <strong>Commit P0.3</strong> : <em>(en cours)</em>
       <br><br>
-      <strong>Fichiers</strong> : <code>app/web/documents.py</code> (l. 72-81) ;
-      <code>app/templates/partials/documents/row.html</code> ; <code>app/models.py</code> ;
-      <code>app/alembic/versions/</code>.
-      <br>
-      <strong>Effort</strong> : 1 jour. <strong>Tests</strong> : +5 cases UX statut.
-      <br>
-      <strong>Commit(s)</strong> : <em>(&agrave; remplir)</em>
+      <strong>P0.3.b (suite)</strong> : ajouter colonnes <code>indexing_status</code> + <code>indexing_error</code>
+      sur <code>documents</code> avec migration Alembic pour persister l'erreur au-del&agrave; d'un restart container.
+      <em>D&eacute;cal&eacute; en P1</em> &mdash; non bloquant, ReindexManager in-memory suffit pour le cycle d'indexation actif.
     </div>
   </div>
 
