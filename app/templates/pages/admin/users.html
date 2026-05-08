@@ -5,7 +5,8 @@
 
 {% block admin_content %}
 <section x-data="{ selected: new Set(), showCreate: false, editing: null }"
-         hx-on:users-refresh="window.location.reload()">
+         hx-on:users-refresh="window.location.reload()"
+         x-on:user-edit-success.window="editing = null">
 
 <header class="admin-page__head">
   <div class="admin-page__eyebrow"><span>Console / 01</span></div>

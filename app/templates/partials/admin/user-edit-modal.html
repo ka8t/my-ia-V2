@@ -22,11 +22,13 @@
      x-on:keydown.escape.window="editing = null"
      x-data="{ resetPwd: false }">
 
+  {# Sur succès du PATCH (status 2xx) : émet 'edit-success' qui ferme le modal
+     côté parent (Alpine x-on:edit-success.window="editing = null"). #}
   <form class="admin-modal__panel"
         hx-patch="/web/admin/users/{{ user_row.id }}"
         hx-target="#user-{{ user_row.id }}"
         hx-swap="outerHTML"
-        hx-on::after-request="if (event.detail.successful) { editing = null; }">
+        hx-on::after-request="if (event.detail.successful) { window.dispatchEvent(new CustomEvent('user-edit-success')); }">
     {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
 
     <header class="admin-modal__head">

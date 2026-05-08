@@ -144,7 +144,9 @@ async def _load_roles(db: AsyncSession) -> list[Role]:
 async def admin_users(
     request: Request,
     status: str | None = None,
-    role: int | None = None,
+    # ⚠ Accepte str pour gérer le cas "role=" (form GET avec select non choisi).
+    # Pydantic ferait un int_parsing 422 sur "" → on parse manuellement ci-dessous.
+    role: str | None = None,
     q: str | None = None,
     active: str | None = None,
     verified: str | None = None,
@@ -157,12 +159,17 @@ async def admin_users(
     """Liste paginée + filtrée + triée + recherche (parité V1 users.js)."""
     from sqlalchemy.orm import joinedload as _joinedload
     page_size = 25
+    # Parse role param (str → int|None) en tolérant "" (form GET non sélectionné)
+    role_id: int | None = None
+    if role and role.strip().isdigit():
+        role_id = int(role.strip())
+
     # Eager-load preferences (utilisé dans le partial pour voice_to_text)
     query = select(User).options(_joinedload(User.preferences))
     if status in {"pending", "approved", "rejected"}:
         query = query.where(User.approval_status == status)
-    if role is not None:
-        query = query.where(User.role_id == role)
+    if role_id is not None:
+        query = query.where(User.role_id == role_id)
     if active in {"true", "false"}:
         query = query.where(User.is_active == (active == "true"))
     if verified in {"true", "false"}:
@@ -218,7 +225,7 @@ async def admin_users(
             roles=roles,
             user_has_collection=user_has_collection,
             filter_status=status,
-            filter_role=role,
+            filter_role=role_id,
             q=q or "",
             active=active or "",
             verified=verified or "",

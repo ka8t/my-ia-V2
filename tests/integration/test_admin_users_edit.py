@@ -279,3 +279,37 @@ async def test_edit_unknown_user_returns_404(
         },
     )
     assert r.status_code == 404
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  Régression — filtres GET avec params vides (était 422 int_parsing)
+# ─────────────────────────────────────────────────────────────────────────────
+async def test_users_list_empty_role_filter_does_not_422(
+    admin_client: AsyncClient,
+) -> None:
+    """Bug observé : ?role= (vide depuis form GET) → 422 Pydantic int_parsing.
+    Correction : route accepte str|None et parse manuellement."""
+    r = await admin_client.get("/web/admin/users?role=")
+    assert r.status_code == 200, r.text[:300]
+
+
+async def test_users_list_all_empty_filters(admin_client: AsyncClient) -> None:
+    """Submit du form filtres avec tous les selects à vide."""
+    r = await admin_client.get(
+        "/web/admin/users?status=&q=&role=&active=&verified=&sort=date&order=desc"
+    )
+    assert r.status_code == 200
+
+
+async def test_users_list_role_filter_applies(admin_client: AsyncClient) -> None:
+    """Sanity : role=2 (User) renvoie bien les utilisateurs avec ce rôle."""
+    r = await admin_client.get("/web/admin/users?role=2")
+    assert r.status_code == 200
+
+
+async def test_users_list_invalid_role_string_treated_as_none(
+    admin_client: AsyncClient,
+) -> None:
+    """Si quelqu'un envoie role=abc (URL forgée), pas de 500 → ignoré."""
+    r = await admin_client.get("/web/admin/users?role=abc")
+    assert r.status_code == 200
