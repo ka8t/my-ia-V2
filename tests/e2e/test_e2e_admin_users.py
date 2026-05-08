@@ -126,3 +126,46 @@ async def test_edit_user_modal_closes_via_cancel_button(admin_page: Page) -> Non
     cancel_btn = modal.locator('button:has-text("Annuler")')
     await cancel_btn.click()
     await expect(modal).to_be_hidden(timeout=2000)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  Régression bug select-all (signalé en QA)
+# ─────────────────────────────────────────────────────────────────────────────
+async def test_select_all_checks_all_row_checkboxes(admin_page: Page) -> None:
+    """Bug observé : clic sur la checkbox header 'Tout sélectionner' ne cochait
+    rien (mismatch entre `.js-row-checkbox` dans la macro et `.js-bulk-checkbox`
+    sur les rows). Vérifier qu'après clic, toutes les checkboxes des rows sont
+    cochées et la bulkbar apparaît."""
+    await admin_page.goto("/web/admin/users", wait_until="domcontentloaded")
+    # Attendre que les rows soient chargées
+    await admin_page.locator(".admin-user-row.admin-table-row").first.wait_for(
+        state="visible", timeout=5000
+    )
+    rows = admin_page.locator(".admin-user-row.admin-table-row .js-bulk-checkbox")
+    n = await rows.count()
+    assert n >= 4, f"attendu >=4 users seedés, vu {n}"
+
+    # Bulkbar invisible avant
+    bulkbar = admin_page.locator(".admin-bulkbar").first
+    await expect(bulkbar).to_be_hidden()
+
+    # Cocher la select-all
+    select_all = admin_page.locator(".admin-row__select-all").first
+    await select_all.check()
+
+    # Toutes les rows doivent maintenant être cochées
+    checked_count = await admin_page.locator(
+        ".admin-user-row.admin-table-row .js-bulk-checkbox:checked"
+    ).count()
+    assert checked_count == n, f"attendu {n} cochées, vu {checked_count}"
+
+    # Bulkbar doit s'afficher
+    await expect(bulkbar).to_be_visible(timeout=2000)
+
+    # Décocher : tout doit redevenir vide
+    await select_all.uncheck()
+    checked_count = await admin_page.locator(
+        ".admin-user-row.admin-table-row .js-bulk-checkbox:checked"
+    ).count()
+    assert checked_count == 0
+    await expect(bulkbar).to_be_hidden(timeout=2000)

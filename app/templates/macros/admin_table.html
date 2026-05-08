@@ -19,11 +19,12 @@
  # Le scope Alpine doit avoir une propri&eacute;t&eacute; `selected: new Set()`.
  # ────────────────────────────────────────────────────────────────────── #}
 
-{# select_all_checkbox(target_class) — header checkbox qui coche/d&eacute;coche
- # toutes les checkboxes ayant la classe pass&eacute;e en argument, et synchronise
- # l'&eacute;tat avec `selected` (Alpine Set du scope parent).
+{# select_all_checkbox(target_class) — header checkbox qui coche/décoche
+ # toutes les checkboxes ayant la classe passée en argument, et synchronise
+ # l'état avec `selected` (Alpine Set du scope parent).
+ # Utilise `.js-bulk-checkbox` par défaut (cohérent avec les rows admin).
  #}
-{% macro select_all_checkbox(target_class='.js-row-checkbox', title='Tout s&eacute;lectionner') %}
+{% macro select_all_checkbox(target_class='.js-bulk-checkbox', title='Tout sélectionner') %}
 <input type="checkbox"
        class="admin-row__select-all"
        x-on:change="
