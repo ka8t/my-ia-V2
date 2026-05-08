@@ -30,6 +30,11 @@ RUN pip install --no-cache-dir --upgrade pip && \
 RUN rm -rf /root/.cache/pip && \
     find /usr/local/lib/python3.12 -type d -name __pycache__ -exec rm -r {} + 2>/dev/null || true
 
+# NLTK datasets pré-téléchargés (utilisés par unstructured pour chunker xlsx/docx/pptx).
+# Sans ça, partition_xlsx() tente un download au runtime → HTTP 403/échec offline.
+ENV NLTK_DATA=/usr/local/share/nltk_data
+RUN python -m nltk.downloader -d "$NLTK_DATA" punkt punkt_tab averaged_perceptron_tagger averaged_perceptron_tagger_eng stopwords
+
 # Utilisateur non-root
 RUN addgroup --system appuser && adduser --system --ingroup appuser appuser
 
