@@ -237,11 +237,21 @@ async def admin_users(
 async def _render_user_row(
     request: Request, db: AsyncSession, target: User
 ) -> HTMLResponse:
+    # Re-fetch eager-loaded pour éviter MissingGreenlet sur preferences
+    # (le partial accède user_row.preferences.voice_to_text_enabled).
+    from sqlalchemy.orm import joinedload as _joinedload
+    fresh = (
+        await db.execute(
+            select(User)
+            .options(_joinedload(User.preferences))
+            .where(User.id == target.id)
+        )
+    ).unique().scalar_one()
     roles = await _load_roles(db)
     return templates.TemplateResponse(
         request,
         "partials/admin/user-row.html",
-        web_context(request, user_row=target, roles=roles),
+        web_context(request, user_row=fresh, roles=roles),
     )
 
 
@@ -846,6 +856,31 @@ async def admin_user_create(
     )
 
 
+@router.get("/users/{user_id}/edit", response_class=HTMLResponse)
+async def admin_user_edit_form(
+    request: Request,
+    user_id: uuid.UUID,
+    user: dict = Depends(require_web_admin),
+    db: AsyncSession = Depends(get_async_session),
+) -> HTMLResponse:
+    """Retourne le modal d'édition utilisateur, pré-rempli avec les valeurs actuelles."""
+    target = await _get_user_or_404(db, user_id)
+    if target is None:
+        return HTMLResponse("", status_code=404)
+
+    from app.models import Country
+    countries_result = await db.execute(
+        select(Country).where(Country.is_active == True).order_by(Country.name)  # noqa: E712
+    )
+    countries = list(countries_result.scalars().all())
+
+    return templates.TemplateResponse(
+        request,
+        "partials/admin/user-edit-modal.html",
+        web_context(request, user_row=target, countries=countries),
+    )
+
+
 @router.patch("/users/{user_id}", response_class=HTMLResponse)
 async def admin_user_edit(
     request: Request,
@@ -855,12 +890,23 @@ async def admin_user_edit(
     first_name: Annotated[str | None, Form()] = None,
     last_name: Annotated[str | None, Form()] = None,
     phone: Annotated[str | None, Form()] = None,
+    address_line1: Annotated[str | None, Form()] = None,
+    address_line2: Annotated[str | None, Form()] = None,
+    city_id: Annotated[int | None, Form()] = None,
+    country_code: Annotated[str | None, Form()] = None,
+    is_verified: Annotated[str | None, Form()] = None,
     new_password: Annotated[str | None, Form()] = None,
     csrf_token: Annotated[str | None, Form()] = None,
     user: dict = Depends(require_web_admin),
     db: AsyncSession = Depends(get_async_session),
 ) -> HTMLResponse:
-    """Édition complète d'un utilisateur (parité V1 users.js:editUser)."""
+    """Édition complète d'un utilisateur (parité V1 users.js:editUser).
+
+    Champs gérés ici : email, username, profil (first_name, last_name, phone),
+    adresse (address_line1/2, city_id, country_code), is_verified, reset
+    password admin. Les toggles is_active, voice_to_text_enabled, role_id et
+    approval_status passent par leurs routes inline dédiées (boutons row).
+    """
     if (err := _csrf_or_400(request, csrf_token)):
         return err
     target = await _get_user_or_404(db, user_id)
@@ -896,6 +942,22 @@ async def admin_user_edit(
         target.last_name = last_name.strip() or None
     if phone is not None:
         target.phone = phone.strip() or None
+    if address_line1 is not None:
+        target.address_line1 = address_line1.strip() or None
+    if address_line2 is not None:
+        target.address_line2 = address_line2.strip() or None
+    if city_id is not None:
+        # 0 ou vide → reset à NULL
+        target.city_id = city_id if city_id > 0 else None
+    if country_code is not None:
+        cc = country_code.strip().upper()
+        target.country_code = cc[:2] if cc else None
+
+    # Checkbox HTML : présent → "true"/"on", absent → None.
+    # On ne touche le flag que si la clé est explicitement transmise.
+    if is_verified is not None:
+        target.is_verified = is_verified.lower() in {"true", "on", "1", "yes"}
+
     if new_password:
         target.hashed_password = _admin_pwd_helper.hash(new_password)
 

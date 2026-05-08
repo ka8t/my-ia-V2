@@ -121,6 +121,17 @@
     </form>
     {% endif %}
 
+    <button type="button"
+            class="admin-action"
+            x-on:click="editing = '{{ user_row.id }}'"
+            hx-get="/web/admin/users/{{ user_row.id }}/edit"
+            hx-target="#user-edit-modal-slot"
+            hx-swap="innerHTML"
+            title="Éditer le profil"
+            aria-label="Éditer">
+      {{ icon('settings', 14) }}
+    </button>
+
     <form hx-post="/web/admin/users/{{ user_row.id }}/active"
           hx-target="#user-{{ user_row.id }}" hx-swap="outerHTML"
           class="admin-action-form">

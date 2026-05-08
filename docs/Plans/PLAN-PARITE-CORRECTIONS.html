@@ -49,9 +49,9 @@
         <td><span class="badge badge-danger">P0 Critique</span></td>
         <td>Bugs prod / fonctionnalit&eacute;s centrales</td>
         <td>5</td>
-        <td>0/5</td>
+        <td>2/5</td>
         <td>3-5 jours</td>
-        <td><span class="badge badge-warning">&Agrave; faire</span></td>
+        <td><span class="badge badge-warning">En cours</span></td>
       </tr>
       <tr>
         <td><span class="badge badge-warning">P1 Majeur</span></td>
@@ -124,45 +124,50 @@
   <!-- P0.1 -->
   <h3 id="p0-1">P0.1 &mdash; &Eacute;dition utilisateur en admin</h3>
   <ul class="checklist">
-    <li data-done="false"><strong>P0.1 livr&eacute;</strong> &mdash; UI &eacute;dition + 13 champs + reset password</li>
+    <li data-done="true"><strong>P0.1 livr&eacute;</strong> &mdash; UI &eacute;dition + champs profil/adresse/v&eacute;rifi&eacute;/password + 11 tests</li>
   </ul>
-  <div class="callout callout-info">
-    <span class="callout-icon">&#x1F4DD;</span>
+  <div class="callout callout-success">
+    <span class="callout-icon">&#x2705;</span>
     <div>
-      <strong>P&eacute;rim&egrave;tre</strong> : ajouter bouton "&Eacute;diter" dans <code>partials/admin/user-row.html</code>,
-      cr&eacute;er <code>partials/admin/user-edit-modal.html</code> avec les 13 champs V1
-      (email, username, first_name, last_name, phone, address_line1/2, city_id, country_code, role,
-      is_active, is_verified, voice_to_text_enabled, approval_status), compl&eacute;ter route
-      <code>POST /web/admin/users/{id}</code>, ajouter section "Reset password admin".
+      <strong>P&eacute;rim&egrave;tre livr&eacute;</strong> :
+      <ul>
+        <li>Nouvelle route <code>GET /web/admin/users/{id}/edit</code> &mdash; rend le modal pr&eacute;-rempli avec liste des pays.</li>
+        <li>Route <code>PATCH /web/admin/users/{id}</code> &eacute;tendue : ajout de <code>address_line1</code>, <code>address_line2</code>, <code>city_id</code>, <code>country_code</code>, <code>is_verified</code> (+ ce qui existait : email, username, first_name, last_name, phone, new_password).</li>
+        <li>Bouton "&Eacute;diter" (icon settings) ajout&eacute; dans <code>user-row.html</code>, ouvre le modal via HTMX <code>hx-get</code>.</li>
+        <li>Nouveau partial <code>user-edit-modal.html</code> &mdash; form avec fieldsets Identit&eacute;/Profil/Adresse/Compte/S&eacute;curit&eacute;.</li>
+        <li>Slot <code>#user-edit-modal-slot</code> ajout&eacute; dans <code>users.html</code> avec Alpine <code>x-show="editing !== null"</code>.</li>
+        <li>Bug fix collat&eacute;ral : <code>_render_user_row</code> faisait lazy-load de <code>preferences</code> (MissingGreenlet). Ajout&eacute; <code>joinedload(User.preferences)</code>.</li>
+      </ul>
+      <strong>Choix design</strong> : les toggles (<code>is_active</code>, <code>voice_to_text</code>, <code>role_id</code>, <code>approval_status</code>) restent en routes inline d&eacute;di&eacute;es (boutons row) &mdash; meilleur que la V1 monolithique.
       <br><br>
-      <strong>Fichiers</strong> : <code>app/web/admin.py</code> (l. 850-912) ;
-      <code>app/templates/pages/admin/users.html</code> ;
-      <code>app/templates/partials/admin/user-row.html</code> ;
-      <code>app/templates/partials/admin/user-edit-modal.html</code> (nouveau).
+      <strong>Fichiers modifi&eacute;s</strong> : <code>app/web/admin.py</code> ; <code>app/templates/pages/admin/users.html</code> ; <code>app/templates/partials/admin/user-row.html</code> ; <code>app/templates/partials/admin/user-edit-modal.html</code> (nouveau) ; <code>tests/integration/test_admin_users_edit.py</code> (nouveau, 11 cases).
       <br>
-      <strong>Effort</strong> : 1 jour. <strong>Tests</strong> : +10 cases <code>tests/integration/test_admin_users_edit.py</code>.
+      <strong>Suite int&eacute;gration</strong> : 203 &rarr; 214 tests passants.
       <br>
-      <strong>Commit(s)</strong> : <em>(&agrave; remplir apr&egrave;s livraison)</em>
+      <strong>Commit</strong> : <em>(suit le commit P0.2)</em>
     </div>
   </div>
 
   <!-- P0.2 -->
   <h3 id="p0-2">P0.2 &mdash; Ingestion xlsx : deps + redeploy</h3>
   <ul class="checklist">
-    <li data-done="false"><strong>P0.2 livr&eacute;</strong> &mdash; <code>unstructured[xlsx,docx,pptx]</code> install&eacute; + tests</li>
+    <li data-done="true"><strong>P0.2 livr&eacute;</strong> &mdash; <code>unstructured[xlsx,docx,pptx]</code> install&eacute; + tests</li>
   </ul>
-  <div class="callout callout-info">
-    <span class="callout-icon">&#x1F4DD;</span>
+  <div class="callout callout-success">
+    <span class="callout-icon">&#x2705;</span>
     <div>
       <strong>P&eacute;rim&egrave;tre</strong> : <code>requirements.txt</code> :
       <code>unstructured==0.15.13</code> &rarr; <code>unstructured[xlsx,docx,pptx]==0.15.13</code>.
-      Rebuild image V2 + redeploy. Tester upload xlsx/docx/pptx.
+      Rebuild image V2 local valid&eacute;. Tests <code>partition_{xlsx,docx,pptx}</code> import + end-to-end xlsx parse OK.
       <br><br>
-      <strong>Fichiers</strong> : <code>requirements.txt</code> ; <code>Dockerfile</code> (rebuild requis).
+      <strong>Fichiers modifi&eacute;s</strong> : <code>requirements.txt</code> ;
+      <code>tests/integration/test_ingestion_formats.py</code> (nouveau, 4 cases).
       <br>
-      <strong>Effort</strong> : 0.5 jour. <strong>Tests</strong> : +3 cases <code>tests/integration/test_ingestion_formats.py</code>.
+      <strong>Suite int&eacute;gration</strong> : 199 &rarr; 203 tests passants.
       <br>
-      <strong>Commit(s)</strong> : <em>(&agrave; remplir)</em>
+      <strong>Commit</strong> : <code>13d9dcf</code> &mdash; "P0.2 &mdash; Fix ingestion xlsx/docx/pptx".
+      <br>
+      <strong>Reste &agrave; faire</strong> : redeploy VPS (push + <code>./scripts/deploy.sh remote</code>).
     </div>
   </div>
 

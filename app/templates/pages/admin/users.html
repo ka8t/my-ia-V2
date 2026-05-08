@@ -155,6 +155,9 @@
 </nav>
 {% endif %}
 
+{# ─── Slot Modal Edit user (chargé en HTMX par le bouton Éditer du row) ─── #}
+<div id="user-edit-modal-slot" x-show="editing !== null" x-cloak></div>
+
 {# ─── Modal Create user ─── #}
 <div class="admin-modal" x-show="showCreate" x-cloak role="dialog" x-on:click.self="showCreate = false" x-on:keydown.escape.window="showCreate = false">
   <form class="admin-modal__panel"

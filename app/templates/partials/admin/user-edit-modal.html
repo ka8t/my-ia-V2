@@ -1,0 +1,133 @@
+{# ─────────────────────────────────────────────────────────────────────
+ # partials/admin/user-edit-modal.html
+ # Modal d'édition utilisateur (P0.1 — parité V1 user-form.js).
+ # Chargé via hx-get /web/admin/users/{id}/edit, swap dans
+ # #user-edit-modal-slot ; ferme via x-on:htmx:after-request si succès
+ # (status 200) en réinitialisant editing=null.
+ # Champs gérés :
+ #   - Identité : email, username
+ #   - Profil    : first_name, last_name, phone
+ #   - Adresse   : address_line1/2, city_id, country_code
+ #   - Compte    : is_verified
+ #   - Sécurité  : new_password (reset admin, optionnel)
+ # Les toggles is_active, voice_to_text, role et approval_status sont
+ # gérés en boutons inline dans la ligne du tableau.
+ # ────────────────────────────────────────────────────────────────────── #}
+
+<div class="admin-modal admin-modal--edit-user"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="edit-user-title"
+     x-on:click.self="editing = null"
+     x-on:keydown.escape.window="editing = null"
+     x-data="{ resetPwd: false }">
+
+  <form class="admin-modal__panel"
+        hx-patch="/web/admin/users/{{ user_row.id }}"
+        hx-target="#user-{{ user_row.id }}"
+        hx-swap="outerHTML"
+        hx-on::after-request="if (event.detail.successful) { editing = null; }">
+    {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+
+    <header class="admin-modal__head">
+      <h2 id="edit-user-title">Éditer l'utilisateur</h2>
+      <button type="button" class="admin-modal__close"
+              x-on:click="editing = null"
+              aria-label="Fermer">✕</button>
+    </header>
+
+    <div class="admin-modal__body">
+
+      <fieldset class="admin-form__fieldset">
+        <legend>Identité</legend>
+        <label>
+          <span>Email <em aria-hidden="true">*</em></span>
+          <input type="email" name="email" value="{{ user_row.email }}" required>
+        </label>
+        <label>
+          <span>Identifiant <em aria-hidden="true">*</em></span>
+          <input type="text" name="username" value="{{ user_row.username }}" required minlength="3" maxlength="100">
+        </label>
+      </fieldset>
+
+      <fieldset class="admin-form__fieldset">
+        <legend>Profil</legend>
+        <label>
+          <span>Prénom</span>
+          <input type="text" name="first_name" value="{{ user_row.first_name or '' }}">
+        </label>
+        <label>
+          <span>Nom</span>
+          <input type="text" name="last_name" value="{{ user_row.last_name or '' }}">
+        </label>
+        <label>
+          <span>Téléphone</span>
+          <input type="tel" name="phone" value="{{ user_row.phone or '' }}">
+        </label>
+      </fieldset>
+
+      <fieldset class="admin-form__fieldset">
+        <legend>Adresse</legend>
+        <label>
+          <span>Ligne 1</span>
+          <input type="text" name="address_line1" value="{{ user_row.address_line1 or '' }}">
+        </label>
+        <label>
+          <span>Ligne 2</span>
+          <input type="text" name="address_line2" value="{{ user_row.address_line2 or '' }}">
+        </label>
+        <label>
+          <span>Ville (id)</span>
+          <input type="number" name="city_id" min="0"
+                 value="{{ user_row.city_id or '' }}"
+                 placeholder="Laisser vide pour aucune">
+        </label>
+        <label>
+          <span>Pays</span>
+          <select name="country_code">
+            <option value="">— Aucun —</option>
+            {% for c in countries %}
+            <option value="{{ c.code }}" {% if user_row.country_code == c.code %}selected{% endif %}>
+              {{ c.name }} ({{ c.code }})
+            </option>
+            {% endfor %}
+          </select>
+        </label>
+      </fieldset>
+
+      <fieldset class="admin-form__fieldset">
+        <legend>Compte</legend>
+        <label class="admin-form__checkbox">
+          <input type="checkbox" name="is_verified" value="true"
+                 {% if user_row.is_verified %}checked{% endif %}>
+          <span>Email vérifié</span>
+        </label>
+        <p class="admin-form__hint">
+          Activation/désactivation, rôle, validation du compte et voice-to-text
+          se gèrent depuis les boutons en ligne du tableau.
+        </p>
+      </fieldset>
+
+      <fieldset class="admin-form__fieldset">
+        <legend>Sécurité</legend>
+        <label class="admin-form__checkbox">
+          <input type="checkbox" x-model="resetPwd">
+          <span>Définir un nouveau mot de passe</span>
+        </label>
+        <label x-show="resetPwd" x-cloak>
+          <span>Nouveau mot de passe</span>
+          <input type="password" name="new_password" minlength="8"
+                 x-bind:required="resetPwd"
+                 autocomplete="new-password">
+        </label>
+      </fieldset>
+
+    </div>
+
+    <footer class="admin-modal__foot">
+      <button type="button" class="btn btn--ghost btn--sm" x-on:click="editing = null">Annuler</button>
+      <button type="submit" class="btn btn--primary btn--sm">Enregistrer</button>
+    </footer>
+  </form>
+
+</div>
