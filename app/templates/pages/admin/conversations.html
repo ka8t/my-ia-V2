@@ -34,9 +34,9 @@
   {% if q %}<a href="/web/admin/conversations{% if archived %}?archived={{ archived }}{% endif %}" class="btn btn--ghost btn--sm">Reset</a>{% endif %}
 </form>
 
-{# Bulk bar — actions: archive, unarchive, delete (P1.4)
-   Utilise fetch() Alpine au lieu de hx-on::config-request pour avoir
-   accès au scope `selected` (Alpine variable). #}
+{# Bulk bar — actions archive, unarchive, delete (P1.4) #}
+{# Note : conversations a un cas particulier (URL différente pour delete vs archive),
+   donc on garde un inline dédié au lieu d'utiliser la macro générique bulkbar. #}
 <div class="admin-bulkbar"
      x-show="selected.size > 0" x-cloak
      x-data="{ bulkAction: 'archive' }">
@@ -46,7 +46,7 @@
     <option value="unarchive">Désarchiver</option>
     <option value="delete">Supprimer</option>
   </select>
-  <button type="button" class="btn btn--primary btn--sm"
+  <button type="button" class="btn btn--sm"
           x-bind:class="bulkAction === 'delete' ? 'btn--danger' : 'btn--primary'"
           x-on:click="
             if (bulkAction === 'delete' && !confirm('Supprimer ' + selected.size + ' conversation(s) ?')) return;

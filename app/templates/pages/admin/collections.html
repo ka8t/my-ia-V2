@@ -40,29 +40,16 @@
   {% if q %}<a href="/web/admin/collections{% if type_filter %}?type_filter={{ type_filter }}{% endif %}" class="btn btn--ghost btn--sm">Reset</a>{% endif %}
 </form>
 
-{# Bulk bar — fetch() Alpine #}
-<div class="admin-bulkbar"
-     x-show="selected.size > 0" x-cloak>
-  <span><span x-text="selected.size"></span> sélectionnée(s)</span>
-  <button type="button" class="btn btn--danger btn--sm"
-          x-on:click="
-            if (!confirm('Supprimer ' + selected.size + ' collection(s) ?')) return;
-            const fd = new FormData();
-            Array.from(selected).forEach(id => fd.append('collection_ids', id));
-            fd.append('csrf_token', '{{ csrf_token }}');
-            fetch('/web/admin/collections/bulk-delete', { method: 'POST', body: fd })
-              .then(r => r.text().then(t => ({ status: r.status, text: t })))
-              .then(({ status, text }) => {
-                document.getElementById('bulk-result').innerHTML = text;
-                if (status === 200) {
-                  selected = new Set();
-                  setTimeout(() => window.location.reload(), 600);
-                }
-              });
-          ">Supprimer</button>
-  <button type="button" class="btn btn--ghost btn--sm" x-on:click="selected = new Set()">Annuler</button>
-</div>
-<div id="bulk-result" aria-live="polite"></div>
+{# Bulk bar — via macro (delete simple, pas d'action select).
+   La macro crée déjà le div#bulk-result, partagé avec sync-all et clear. #}
+{% from "macros/admin_table.html" import bulkbar %}
+{{ bulkbar(
+  url='/web/admin/collections/bulk-delete',
+  id_field='collection_ids',
+  csrf_token=csrf_token,
+  item_label='collection',
+  button_label='Supprimer',
+) }}
 
 {% from "macros/admin_table.html" import select_all_checkbox, pagination %}
 {# Table #}

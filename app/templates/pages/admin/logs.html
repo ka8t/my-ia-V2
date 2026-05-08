@@ -86,29 +86,15 @@
   </div>
 </form>
 
-{# ─── Bulk action bar (P1.7) — visible si au moins 1 ligne sélectionnée ─── #}
-<div class="admin-bulkbar"
-     x-show="selected.size > 0" x-cloak>
-  <span><span x-text="selected.size"></span> sélectionné(s)</span>
-  <button type="button" class="btn btn--danger btn--sm"
-          x-on:click="
-            if (!confirm('Supprimer définitivement les ' + selected.size + ' log(s) sélectionné(s) ?')) return;
-            const fd = new FormData();
-            Array.from(selected).forEach(id => fd.append('log_ids', id));
-            fd.append('csrf_token', '{{ csrf_token }}');
-            fetch('/web/admin/logs/bulk-delete', { method: 'POST', body: fd })
-              .then(r => r.text().then(t => ({ status: r.status, text: t })))
-              .then(({ status, text }) => {
-                document.getElementById('bulk-result').innerHTML = text;
-                if (status === 200) {
-                  selected = new Set();
-                  setTimeout(() => window.location.reload(), 600);
-                }
-              });
-          ">Supprimer la sélection</button>
-  <button type="button" class="btn btn--ghost btn--sm" x-on:click="selected = new Set()">Annuler</button>
-</div>
-<div id="bulk-result" aria-live="polite"></div>
+{# ─── Bulk action bar (P1.7) — via macro réutilisable ─── #}
+{% from "macros/admin_table.html" import bulkbar %}
+{{ bulkbar(
+  url='/web/admin/logs/bulk-delete',
+  id_field='log_ids',
+  csrf_token=csrf_token,
+  item_label='log',
+  button_label='Supprimer la sélection',
+) }}
 
 <div class="admin-table-wrap">
   <div class="admin-table-head admin-logs-row admin-logs-row--with-select">

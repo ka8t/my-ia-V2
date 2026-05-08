@@ -46,38 +46,20 @@
   <button type="button" class="btn btn--primary btn--sm" x-on:click="showUpload = true" style="margin-left:auto">+ Upload</button>
 </form>
 
-{# Bulk action bar — fetch() Alpine #}
-<div class="admin-bulkbar"
-     x-show="selected.size > 0" x-cloak
-     x-data="{ bulkAction: 'delete' }">
-  <span><span x-text="selected.size"></span> sélectionné(s)</span>
-  <select x-model="bulkAction" class="admin-toolbar__select">
-    <option value="delete">Supprimer</option>
-    <option value="toggle-public">Rendre public</option>
-    <option value="toggle-private">Rendre privé</option>
-    <option value="clear-index">Vider l'index</option>
-  </select>
-  <button type="button" class="btn btn--primary btn--sm"
-          x-bind:class="bulkAction === 'delete' ? 'btn--danger' : 'btn--primary'"
-          x-on:click="
-            if (bulkAction === 'delete' && !confirm('Supprimer ' + selected.size + ' document(s) ?')) return;
-            const fd = new FormData();
-            Array.from(selected).forEach(id => fd.append('doc_ids', id));
-            fd.append('action', bulkAction);
-            fd.append('csrf_token', '{{ csrf_token }}');
-            fetch('/web/admin/documents/bulk-action', { method: 'POST', body: fd })
-              .then(r => r.text().then(t => ({ status: r.status, text: t })))
-              .then(({ status, text }) => {
-                document.getElementById('bulk-result').innerHTML = text;
-                if (status === 200) {
-                  selected = new Set();
-                  setTimeout(() => window.location.reload(), 600);
-                }
-              });
-          ">Appliquer</button>
-  <button type="button" class="btn btn--ghost btn--sm" x-on:click="selected = new Set()">Annuler</button>
-</div>
-<div id="bulk-result" aria-live="polite"></div>
+{# Bulk action bar — via macro réutilisable #}
+{% from "macros/admin_table.html" import bulkbar %}
+{{ bulkbar(
+  url='/web/admin/documents/bulk-action',
+  id_field='doc_ids',
+  csrf_token=csrf_token,
+  actions=[
+    ('toggle-public', 'Rendre public', false),
+    ('toggle-private', 'Rendre privé', false),
+    ('clear-index', "Vider l'index", false),
+    ('delete', 'Supprimer', true),
+  ],
+  item_label='document',
+) }}
 
 {% from "macros/admin_table.html" import select_all_checkbox %}
 {# Table 9 colonnes (checkbox + 8) #}

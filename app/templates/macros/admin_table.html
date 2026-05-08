@@ -58,3 +58,79 @@
 </nav>
 {% endif %}
 {% endmacro %}
+
+
+{# bulkbar(url, id_field, csrf_token, actions, item_label='item', extra_form_field=None)
+ #
+ # G&eacute;n&egrave;re une bulkbar Alpine + fetch() POST avec :
+ #   - compteur "X s&eacute;lectionn&eacute;(s)"
+ #   - select des actions (si actions est une liste de tuples [(value, label, danger), ...])
+ #   - bouton Appliquer (ou label personnalis&eacute;) qui :
+ #       * confirme via window.confirm() si l'action est marqu&eacute;e danger=True
+ #       * construit un FormData avec id_field[] + csrf_token + action
+ #       * POST sur url, met &agrave; jour #bulk-result, reset selected, reload page
+ #   - bouton Annuler qui vide selected
+ #
+ # Args :
+ #   url           : str, URL POST cible (str ou expression x-bind:hx-post)
+ #   id_field      : str, nom du champ form pour les IDs (user_ids, doc_ids, etc.)
+ #   csrf_token    : str, token CSRF
+ #   actions       : list[tuple(value, label, danger)] OU None pour bouton simple delete
+ #   item_label    : str, label item (ex: "utilisateur", "document")
+ #   button_label  : str, label du bouton (default "Appliquer", peut &ecirc;tre "Supprimer")
+ #
+ # Le scope Alpine parent doit avoir `selected: new Set()`.
+ #}
+{% macro bulkbar(url, id_field, csrf_token, actions=None, item_label='item', button_label='Appliquer') %}
+<div class="admin-bulkbar"
+     x-show="selected.size > 0" x-cloak
+     {% if actions %}x-data="{ bulkAction: '{{ actions[0][0] }}' }"{% endif %}>
+  <span><span x-text="selected.size"></span> s&eacute;lectionn&eacute;(s)</span>
+
+  {% if actions %}
+  <select x-model="bulkAction" class="admin-toolbar__select">
+    {% for value, label, _danger in actions %}
+    <option value="{{ value }}">{{ label }}</option>
+    {% endfor %}
+  </select>
+  {% endif %}
+
+  <button type="button"
+          class="btn btn--sm"
+          {% if actions %}
+          x-bind:class="[
+            {% for value, _label, danger in actions %}
+            bulkAction === '{{ value }}' ? '{{ "btn--danger" if danger else "btn--primary" }}' : (
+            {% endfor %}
+            'btn--primary'
+            {% for _ in actions %}){% endfor %}
+          ]"
+          {% else %}
+          class="btn btn--danger btn--sm"
+          {% endif %}
+          x-on:click="
+            {% if actions %}
+            const dangerActions = [{% for value, _label, danger in actions if danger %}'{{ value }}',{% endfor %}];
+            if (dangerActions.includes(bulkAction) && !confirm('Confirmer cette action sur ' + selected.size + ' {{ item_label }}(s) ?')) return;
+            {% else %}
+            if (!confirm('Confirmer la suppression de ' + selected.size + ' {{ item_label }}(s) ?')) return;
+            {% endif %}
+            const fd = new FormData();
+            Array.from(selected).forEach(id => fd.append('{{ id_field }}', id));
+            fd.append('csrf_token', '{{ csrf_token }}');
+            {% if actions %}fd.append('action', bulkAction);{% endif %}
+            fetch('{{ url }}', { method: 'POST', body: fd })
+              .then(r => r.text().then(t => ({ status: r.status, text: t })))
+              .then(({ status, text }) => {
+                document.getElementById('bulk-result').innerHTML = text;
+                if (status === 200) {
+                  selected = new Set();
+                  setTimeout(() => window.location.reload(), 600);
+                }
+              });
+          ">{{ button_label }}</button>
+
+  <button type="button" class="btn btn--ghost btn--sm" x-on:click="selected = new Set()">Annuler</button>
+</div>
+<div id="bulk-result" aria-live="polite"></div>
+{% endmacro %}

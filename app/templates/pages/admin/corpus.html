@@ -72,37 +72,19 @@
   {% if q %}<a href="/web/admin/corpus" class="btn btn--ghost btn--sm">Reset</a>{% endif %}
 </form>
 
-{# Bulk bar — fetch() Alpine #}
-<div class="admin-bulkbar"
-     x-show="selected.size > 0" x-cloak
-     x-data="{ bulkAction: 'reindex' }">
-  <span><span x-text="selected.size"></span> sélectionné(s)</span>
-  <select x-model="bulkAction" class="admin-toolbar__select">
-    <option value="reindex">Réindexer</option>
-    <option value="clear-index">Vider l'index</option>
-    <option value="delete">Supprimer</option>
-  </select>
-  <button type="button" class="btn btn--primary btn--sm"
-          x-bind:class="bulkAction === 'delete' ? 'btn--danger' : 'btn--primary'"
-          x-on:click="
-            if (bulkAction === 'delete' && !confirm('Supprimer ' + selected.size + ' corpus ?')) return;
-            const fd = new FormData();
-            Array.from(selected).forEach(id => fd.append('corpus_ids', id));
-            fd.append('action', bulkAction);
-            fd.append('csrf_token', '{{ csrf_token }}');
-            fetch('/web/admin/corpus/bulk-action', { method: 'POST', body: fd })
-              .then(r => r.text().then(t => ({ status: r.status, text: t })))
-              .then(({ status, text }) => {
-                document.getElementById('bulk-result').innerHTML = text;
-                if (status === 200) {
-                  selected = new Set();
-                  setTimeout(() => window.location.reload(), 600);
-                }
-              });
-          ">Appliquer</button>
-  <button type="button" class="btn btn--ghost btn--sm" x-on:click="selected = new Set()">Annuler</button>
-</div>
-<div id="bulk-result" aria-live="polite"></div>
+{# Bulk bar — via macro réutilisable #}
+{% from "macros/admin_table.html" import bulkbar %}
+{{ bulkbar(
+  url='/web/admin/corpus/bulk-action',
+  id_field='corpus_ids',
+  csrf_token=csrf_token,
+  actions=[
+    ('reindex', 'Réindexer', false),
+    ('clear-index', "Vider l'index", false),
+    ('delete', 'Supprimer', true),
+  ],
+  item_label='corpus',
+) }}
 
 {% from "macros/admin_table.html" import select_all_checkbox, pagination %}
 {# ─── Table ─── #}
