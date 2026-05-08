@@ -34,36 +34,41 @@
   {% if q %}<a href="/web/admin/conversations{% if archived %}?archived={{ archived }}{% endif %}" class="btn btn--ghost btn--sm">Reset</a>{% endif %}
 </form>
 
-{# Bulk bar — actions: archive, unarchive, delete (P1.4) #}
-<form class="admin-bulkbar"
-      x-show="selected.size > 0" x-cloak
-      x-data="{ bulkAction: 'archive' }"
-      x-on:submit="
-        if (bulkAction === 'delete' && !confirm('Supprimer ' + selected.size + ' conversation(s) ?')) {
-          $event.preventDefault();
-        }
-      "
-      x-bind:hx-post="bulkAction === 'delete'
-        ? '/web/admin/conversations/bulk-delete'
-        : '/web/admin/conversations/bulk-archive'"
-      hx-target="#bulk-result" hx-swap="innerHTML"
-      hx-on::config-request="
-        event.detail.parameters['conversation_ids'] = Array.from(selected);
-        event.detail.parameters['csrf_token'] = '{{ csrf_token }}';
-        if (bulkAction !== 'delete') {
-          event.detail.parameters['action'] = bulkAction;
-        }
-      ">
+{# Bulk bar — actions: archive, unarchive, delete (P1.4)
+   Utilise fetch() Alpine au lieu de hx-on::config-request pour avoir
+   accès au scope `selected` (Alpine variable). #}
+<div class="admin-bulkbar"
+     x-show="selected.size > 0" x-cloak
+     x-data="{ bulkAction: 'archive' }">
   <span><span x-text="selected.size"></span> sélectionnée(s)</span>
   <select x-model="bulkAction" class="admin-toolbar__select">
     <option value="archive">Archiver</option>
     <option value="unarchive">Désarchiver</option>
     <option value="delete">Supprimer</option>
   </select>
-  <button type="submit" class="btn btn--primary btn--sm"
-          x-bind:class="bulkAction === 'delete' ? 'btn--danger' : 'btn--primary'">Appliquer</button>
+  <button type="button" class="btn btn--primary btn--sm"
+          x-bind:class="bulkAction === 'delete' ? 'btn--danger' : 'btn--primary'"
+          x-on:click="
+            if (bulkAction === 'delete' && !confirm('Supprimer ' + selected.size + ' conversation(s) ?')) return;
+            const url = bulkAction === 'delete'
+              ? '/web/admin/conversations/bulk-delete'
+              : '/web/admin/conversations/bulk-archive';
+            const fd = new FormData();
+            Array.from(selected).forEach(id => fd.append('conversation_ids', id));
+            fd.append('csrf_token', '{{ csrf_token }}');
+            if (bulkAction !== 'delete') fd.append('action', bulkAction);
+            fetch(url, { method: 'POST', body: fd })
+              .then(r => r.text().then(t => ({ status: r.status, text: t })))
+              .then(({ status, text }) => {
+                document.getElementById('bulk-result').innerHTML = text;
+                if (status === 200) {
+                  selected = new Set();
+                  setTimeout(() => window.location.reload(), 600);
+                }
+              });
+          ">Appliquer</button>
   <button type="button" class="btn btn--ghost btn--sm" x-on:click="selected = new Set()">Annuler</button>
-</form>
+</div>
 <div id="bulk-result" aria-live="polite"></div>
 
 {% from "macros/admin_table.html" import select_all_checkbox %}

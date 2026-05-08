@@ -131,6 +131,38 @@ async def test_edit_user_modal_closes_via_cancel_button(admin_page: Page) -> Non
 # ─────────────────────────────────────────────────────────────────────────────
 #  Régression bug select-all (signalé en QA)
 # ─────────────────────────────────────────────────────────────────────────────
+async def test_bulk_action_apply_sends_correct_params(admin_page: Page) -> None:
+    """Bug observé : clic sur 'Appliquer' bulk envoyait user_ids et action
+    vides → 422 'Field required'. Cause : hx-on::config-request ne voyait
+    pas le scope Alpine. Fix : fetch() avec FormData via @click Alpine.
+    Vérifier que la requête réseau contient bien les params."""
+    await admin_page.goto("/web/admin/users", wait_until="domcontentloaded")
+    await admin_page.locator(".admin-user-row.admin-table-row").first.wait_for(
+        state="visible", timeout=5000
+    )
+
+    # Sélectionner toutes les lignes via select-all
+    await admin_page.locator(".admin-row__select-all").first.check()
+    bulkbar = admin_page.locator(".admin-bulkbar").first
+    await expect(bulkbar).to_be_visible()
+
+    # Choisir une action sans effet de bord destructif (activate → idempotent)
+    await bulkbar.locator('select').first.select_option(value="activate")
+
+    # Capturer la requête bulk-action et vérifier le payload
+    async with admin_page.expect_request(
+        lambda r: "/web/admin/users/bulk-action" in r.url and r.method == "POST"
+    ) as req_info:
+        await bulkbar.locator('button:has-text("Appliquer")').click()
+    req = await req_info.value
+    body = req.post_data or ""
+    # multipart/form-data : chercher les name= puis les valeurs
+    assert 'name="action"' in body, f"action absent du form-data: {body[:300]}"
+    assert "activate" in body, f"valeur action absente: {body[:300]}"
+    assert 'name="user_ids"' in body, f"user_ids absents du form-data: {body[:300]}"
+    assert 'name="csrf_token"' in body, f"csrf absent: {body[:300]}"
+
+
 async def test_select_all_checks_all_row_checkboxes(admin_page: Page) -> None:
     """Bug observé : clic sur la checkbox header 'Tout sélectionner' ne cochait
     rien (mismatch entre `.js-row-checkbox` dans la macro et `.js-bulk-checkbox`

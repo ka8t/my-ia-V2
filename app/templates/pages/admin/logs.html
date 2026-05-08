@@ -87,22 +87,27 @@
 </form>
 
 {# ─── Bulk action bar (P1.7) — visible si au moins 1 ligne sélectionnée ─── #}
-<form class="admin-bulkbar"
-      x-show="selected.size > 0"
-      x-cloak
-      hx-post="/web/admin/logs/bulk-delete"
-      hx-target="#bulk-result"
-      hx-swap="innerHTML"
-      hx-on::config-request="
-        const params = event.detail.parameters;
-        params['log_ids'] = Array.from(selected);
-        params['csrf_token'] = '{{ csrf_token }}';
-      "
-      hx-confirm="Supprimer définitivement les logs sélectionnés ?">
+<div class="admin-bulkbar"
+     x-show="selected.size > 0" x-cloak>
   <span><span x-text="selected.size"></span> sélectionné(s)</span>
-  <button type="submit" class="btn btn--danger btn--sm">Supprimer la sélection</button>
+  <button type="button" class="btn btn--danger btn--sm"
+          x-on:click="
+            if (!confirm('Supprimer définitivement les ' + selected.size + ' log(s) sélectionné(s) ?')) return;
+            const fd = new FormData();
+            Array.from(selected).forEach(id => fd.append('log_ids', id));
+            fd.append('csrf_token', '{{ csrf_token }}');
+            fetch('/web/admin/logs/bulk-delete', { method: 'POST', body: fd })
+              .then(r => r.text().then(t => ({ status: r.status, text: t })))
+              .then(({ status, text }) => {
+                document.getElementById('bulk-result').innerHTML = text;
+                if (status === 200) {
+                  selected = new Set();
+                  setTimeout(() => window.location.reload(), 600);
+                }
+              });
+          ">Supprimer la sélection</button>
   <button type="button" class="btn btn--ghost btn--sm" x-on:click="selected = new Set()">Annuler</button>
-</form>
+</div>
 <div id="bulk-result" aria-live="polite"></div>
 
 <div class="admin-table-wrap">

@@ -72,28 +72,36 @@
   {% if q %}<a href="/web/admin/corpus" class="btn btn--ghost btn--sm">Reset</a>{% endif %}
 </form>
 
-{# Bulk bar #}
-<form class="admin-bulkbar"
-      x-show="selected.size > 0" x-cloak
-      x-data="{ bulkAction: 'reindex' }"
-      hx-post="/web/admin/corpus/bulk-action"
-      hx-target="#bulk-result" hx-swap="innerHTML"
-      hx-on::config-request="
-        const params = event.detail.parameters;
-        params['corpus_ids'] = Array.from(selected);
-        params['csrf_token'] = '{{ csrf_token }}';
-        params['action'] = bulkAction;
-      ">
+{# Bulk bar — fetch() Alpine #}
+<div class="admin-bulkbar"
+     x-show="selected.size > 0" x-cloak
+     x-data="{ bulkAction: 'reindex' }">
   <span><span x-text="selected.size"></span> sélectionné(s)</span>
   <select x-model="bulkAction" class="admin-toolbar__select">
     <option value="reindex">Réindexer</option>
     <option value="clear-index">Vider l'index</option>
     <option value="delete">Supprimer</option>
   </select>
-  <button type="submit" class="btn btn--primary btn--sm"
-          x-on:click="if (bulkAction === 'delete' && !confirm('Supprimer ' + selected.size + ' corpus ?')) $event.preventDefault()">Appliquer</button>
+  <button type="button" class="btn btn--primary btn--sm"
+          x-bind:class="bulkAction === 'delete' ? 'btn--danger' : 'btn--primary'"
+          x-on:click="
+            if (bulkAction === 'delete' && !confirm('Supprimer ' + selected.size + ' corpus ?')) return;
+            const fd = new FormData();
+            Array.from(selected).forEach(id => fd.append('corpus_ids', id));
+            fd.append('action', bulkAction);
+            fd.append('csrf_token', '{{ csrf_token }}');
+            fetch('/web/admin/corpus/bulk-action', { method: 'POST', body: fd })
+              .then(r => r.text().then(t => ({ status: r.status, text: t })))
+              .then(({ status, text }) => {
+                document.getElementById('bulk-result').innerHTML = text;
+                if (status === 200) {
+                  selected = new Set();
+                  setTimeout(() => window.location.reload(), 600);
+                }
+              });
+          ">Appliquer</button>
   <button type="button" class="btn btn--ghost btn--sm" x-on:click="selected = new Set()">Annuler</button>
-</form>
+</div>
 <div id="bulk-result" aria-live="polite"></div>
 
 {% from "macros/admin_table.html" import select_all_checkbox, pagination %}

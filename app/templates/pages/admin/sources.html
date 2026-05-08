@@ -26,18 +26,10 @@
   {% if q %}<a href="/web/admin/sources" class="btn btn--ghost btn--sm">Reset</a>{% endif %}
 </form>
 
-{# Bulk bar #}
-<form class="admin-bulkbar"
-      x-show="selected.size > 0" x-cloak
-      x-data="{ bulkAction: 'enable' }"
-      hx-post="/web/admin/sources/bulk-action"
-      hx-target="#bulk-result" hx-swap="innerHTML"
-      hx-on::config-request="
-        const params = event.detail.parameters;
-        params['source_ids'] = Array.from(selected);
-        params['csrf_token'] = '{{ csrf_token }}';
-        params['action'] = bulkAction;
-      ">
+{# Bulk bar — fetch() Alpine pour avoir accès à `selected` (cf. logs/users) #}
+<div class="admin-bulkbar"
+     x-show="selected.size > 0" x-cloak
+     x-data="{ bulkAction: 'enable' }">
   <span><span x-text="selected.size"></span> sélectionnée(s)</span>
   <select x-model="bulkAction" class="admin-toolbar__select">
     <option value="enable">Activer</option>
@@ -46,10 +38,26 @@
     <option value="clear-index">Vider l'index</option>
     <option value="delete">Supprimer</option>
   </select>
-  <button type="submit" class="btn btn--primary btn--sm"
-          x-on:click="if (bulkAction === 'delete' && !confirm('Supprimer ' + selected.size + ' source(s) ?')) $event.preventDefault()">Appliquer</button>
+  <button type="button" class="btn btn--primary btn--sm"
+          x-bind:class="bulkAction === 'delete' ? 'btn--danger' : 'btn--primary'"
+          x-on:click="
+            if (bulkAction === 'delete' && !confirm('Supprimer ' + selected.size + ' source(s) ?')) return;
+            const fd = new FormData();
+            Array.from(selected).forEach(id => fd.append('source_ids', id));
+            fd.append('action', bulkAction);
+            fd.append('csrf_token', '{{ csrf_token }}');
+            fetch('/web/admin/sources/bulk-action', { method: 'POST', body: fd })
+              .then(r => r.text().then(t => ({ status: r.status, text: t })))
+              .then(({ status, text }) => {
+                document.getElementById('bulk-result').innerHTML = text;
+                if (status === 200) {
+                  selected = new Set();
+                  setTimeout(() => window.location.reload(), 600);
+                }
+              });
+          ">Appliquer</button>
   <button type="button" class="btn btn--ghost btn--sm" x-on:click="selected = new Set()">Annuler</button>
-</form>
+</div>
 <div id="bulk-result" aria-live="polite"></div>
 
 {# ─── Actions globales ─── #}
