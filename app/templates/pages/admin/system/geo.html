@@ -63,10 +63,19 @@
            style="width:120px" class="admin-toolbar__search">
     <button type="submit" class="btn btn--ghost btn--sm">⬇ Importer villes</button>
   </form>
-  <p style="font-size:var(--text-xs); color:var(--color-fg-muted); margin-top:var(--space-2)">
-    Toggle activation par pays : voir API
-    <code>/api/admin/geo/countries/{code}/toggle-active</code>.
+</section>
+
+{# ─── Pays activés / désactivés (P2.2) ─── #}
+<section class="admin-fieldset">
+  <legend>Pays</legend>
+  <p style="font-size:var(--text-xs); color:var(--color-fg-muted); margin-bottom:var(--space-2)">
+    Activer/désactiver un pays détermine sa disponibilité dans le sélecteur
+    inscription utilisateur.
   </p>
+  <div id="geo-countries"
+       hx-get="/web/admin/system/geo/countries"
+       hx-trigger="load"
+       hx-swap="innerHTML">Chargement…</div>
 </section>
 
 {% endblock %}

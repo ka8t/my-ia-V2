@@ -310,6 +310,7 @@ async def documents_upload(
     background_tasks: BackgroundTasks,
     file: Annotated[UploadFile, File()],
     collection_id: Annotated[str | None, Form()] = None,
+    visibility_public: Annotated[str | None, Form()] = None,
     csrf_token: Annotated[str | None, Form()] = None,
     user: dict = Depends(require_web_auth),
     db: AsyncSession = Depends(get_async_session),
@@ -366,7 +367,15 @@ async def documents_upload(
         target_collection = col
 
     corp = await _get_or_create_user_corpus(db, user_uuid)
-    visibility = "public" if (target_collection and target_collection.type == "public") else "private"
+    # Visibilité (P2.6) :
+    #   - Si la collection cible est privée → toujours private (sécurité).
+    #   - Si la collection cible est publique → respecte le choix user
+    #     (checkbox visibility_public). Default privé pour limiter
+    #     l'exposition par défaut.
+    if target_collection and target_collection.type == "public":
+        visibility = "public" if (visibility_public or "").lower() in {"true", "on", "1"} else "private"
+    else:
+        visibility = "private"
 
     from app.core.deps import get_storage_service
     from app.features.ingestion.router import _run_indexation_in_background, set_doc_reindex_progress

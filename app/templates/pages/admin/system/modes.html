@@ -14,31 +14,73 @@
 
 {{ flash(success=success, error=error) }}
 
-{# ─── Liste des modes existants ─── #}
-<section class="admin-section">
+{# ─── Liste des modes existants (P2.1 — édition inline via Alpine) ─── #}
+<section class="admin-section" x-data="{ editingId: null }">
   <h2 class="admin-section__title">{{ icon('settings', 16) }} Modes existants ({{ modes|length }})</h2>
   {% if modes %}
   <ul class="admin-bare-list">
     {% for m in modes %}
     <li class="admin-bare-list__item" id="mode-{{ m.id }}">
-      <span class="admin-bare-list__main">
-        {{ m.display_name }}
-        <span class="admin-corpus__slug">{{ m.name }}</span>
-      </span>
-      <span class="admin-bare-list__meta">
-        {% if m.description %}{{ m.description }}{% else %}—{% endif %}
-      </span>
-      <span class="admin-bare-list__actions">
-        <button type="button"
-                class="admin-action admin-action--danger"
-                hx-delete="/web/admin/system/modes/{{ m.id }}"
-                hx-confirm="Supprimer le mode « {{ m.display_name }} » ?"
-                hx-target="#mode-{{ m.id }}"
-                hx-swap="outerHTML"
-                title="Supprimer">
-          {{ icon('alert-circle', 14) }}
-        </button>
-      </span>
+      <div x-show="editingId !== {{ m.id }}" style="display:contents">
+        <span class="admin-bare-list__main">
+          {{ m.display_name }}
+          <span class="admin-corpus__slug">{{ m.name }}</span>
+        </span>
+        <span class="admin-bare-list__meta">
+          {% if m.description %}{{ m.description }}{% else %}—{% endif %}
+        </span>
+        <span class="admin-bare-list__actions">
+          <button type="button"
+                  class="admin-action"
+                  x-on:click="editingId = {{ m.id }}"
+                  title="Éditer">
+            {{ icon('settings', 14) }}
+          </button>
+          <button type="button"
+                  class="admin-action admin-action--danger"
+                  hx-delete="/web/admin/system/modes/{{ m.id }}"
+                  hx-confirm="Supprimer le mode « {{ m.display_name }} » ?"
+                  hx-target="#mode-{{ m.id }}"
+                  hx-swap="outerHTML"
+                  title="Supprimer">
+            {{ icon('alert-circle', 14) }}
+          </button>
+        </span>
+      </div>
+
+      {# Formulaire édition inline (P2.1). PATCH attend display_name,
+         description, system_prompt — pas le slug `name` (immuable). #}
+      <form x-show="editingId === {{ m.id }}" x-cloak
+            class="admin-form admin-form--stacked"
+            style="grid-column: 1 / -1; padding: var(--space-2) 0"
+            hx-patch="/web/admin/system/modes/{{ m.id }}"
+            hx-target="#mode-edit-result-{{ m.id }}"
+            hx-swap="innerHTML"
+            hx-on::after-request="if (event.detail.successful) setTimeout(() => window.location.reload(), 600)">
+        {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endif %}
+        <label class="admin-form__field">
+          <span class="admin-form__label">Libellé</span>
+          <input type="text" name="display_name" value="{{ m.display_name }}" required>
+        </label>
+        <label class="admin-form__field">
+          <span class="admin-form__label">Description</span>
+          <input type="text" name="description" value="{{ m.description or '' }}">
+        </label>
+        <label class="admin-form__field">
+          <span class="admin-form__label">System prompt</span>
+          <textarea name="system_prompt" rows="5"
+                    class="admin-form__textarea admin-form__textarea--code"
+                    spellcheck="false">{{ m.system_prompt or '' }}</textarea>
+        </label>
+        <div class="admin-form__actions">
+          <button type="submit" class="admin-btn admin-btn--primary">
+            {{ icon('check-circle', 12) }} Enregistrer
+          </button>
+          <button type="button" class="admin-btn admin-btn--ghost"
+                  x-on:click="editingId = null">Annuler</button>
+        </div>
+        <div id="mode-edit-result-{{ m.id }}" aria-live="polite"></div>
+      </form>
     </li>
     {% endfor %}
   </ul>

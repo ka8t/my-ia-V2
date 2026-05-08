@@ -122,8 +122,12 @@
   </fieldset>
   {% endmacro %}
 
-  {{ mode_section('fast', 'Fast') }}
-  {{ mode_section('full', 'Full') }}
+  {# Modes dynamiques (P2.3) — boucle sur les modes configurés en BDD
+     plutôt que de hardcoder fast/full. Permet d'ajouter de nouveaux
+     modes via /admin/system/modes sans toucher ce template. #}
+  {% for mode in modes %}
+  {{ mode_section(mode, mode|capitalize) }}
+  {% endfor %}
 
   {{ form_actions() }}
 </form>

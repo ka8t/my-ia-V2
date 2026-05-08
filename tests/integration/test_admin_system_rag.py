@@ -209,25 +209,40 @@ async def test_behavior_post_checked_means_true(
 #  RAG · Overrides
 # ─────────────────────────────────────────────────────────────────────────────
 async def test_overrides_get_renders(admin_client: AsyncClient) -> None:
+    """Vérifie que la page rend les sections providers (fixes) et au moins
+    un mode dynamique en BDD. Les noms exacts des modes (chatbot/assistant
+    selon seed) varient — on vérifie juste qu'au moins un mode.* est rendu."""
     r = await admin_client.get("/web/admin/system/rag/overrides")
     assert r.status_code == 200
     assert "rag.ollama.top_k" in r.text
     assert "rag.llamacpp.temperature" in r.text
-    assert "rag.mode.fast.top_k" in r.text
-    assert "rag.mode.full.rerank_enabled" in r.text
+    # P2.3 : modes dynamiques depuis BDD (avant : hardcoded fast/full).
+    # Au moins une section "Mode · X" doit exister si la BDD a des modes.
+    import re
+    assert re.search(r"rag\.mode\.[a-z_]+\.top_k", r.text), (
+        "aucune section mode dynamique rendue — vérifier le seed des modes en BDD"
+    )
 
 
 async def test_overrides_post_saves_subset(
     admin_client: AsyncClient, admin_csrf: str
 ) -> None:
-    """Le formulaire envoie seulement quelques clés, le reste n'est pas modifié."""
+    """Le formulaire envoie quelques clés, le reste n'est pas modifié.
+    P2.3 : les overrides per-mode dépendent maintenant des modes en BDD ;
+    on récupère un slug existant pour le test."""
+    # Récupérer un mode existant en BDD (au moins chatbot d'après seed)
+    from app.models import ConversationMode
+    async with async_session_maker() as s:
+        mode = (await s.execute(select(ConversationMode).limit(1))).scalar_one()
+        mode_slug = mode.name
+
     r = await admin_client.post(
         "/web/admin/system/rag/overrides",
         data={
             "rag.ollama.top_k": "5",
             "rag.ollama.temperature": "0.3",
-            "rag.mode.fast.max_context_tokens": "4096",
-            "rag.mode.fast.rerank_enabled": "true",
+            f"rag.mode.{mode_slug}.max_context_tokens": "4096",
+            f"rag.mode.{mode_slug}.rerank_enabled": "true",
             "csrf_token": admin_csrf,
         },
     )
@@ -236,8 +251,8 @@ async def test_overrides_post_saves_subset(
         svc = SystemConfigService(s)
         assert await svc.get("rag.ollama.top_k") == 5
         assert await svc.get("rag.ollama.temperature") == 0.3
-        assert await svc.get("rag.mode.fast.max_context_tokens") == 4096
-        assert await svc.get("rag.mode.fast.rerank_enabled") is True
+        assert await svc.get(f"rag.mode.{mode_slug}.max_context_tokens") == 4096
+        assert await svc.get(f"rag.mode.{mode_slug}.rerank_enabled") is True
 
 
 async def test_overrides_csrf_invalid_400(admin_client: AsyncClient) -> None:

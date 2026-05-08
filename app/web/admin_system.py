@@ -14,6 +14,7 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, Response
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_async_session
@@ -519,6 +520,32 @@ def _mode_override_keys(mode: str) -> list[str]:
     )]
 
 
+async def _all_mode_slugs(db: AsyncSession) -> list[str]:
+    """Slugs de tous les modes de conversation actifs.
+    Utilisé pour générer dynamiquement les clés rag.mode.{slug}.* (P2.3).
+    Avant : hardcoded ['fast', 'full']."""
+    from app.models import ConversationMode
+    res = await db.execute(
+        select(ConversationMode.name).order_by(ConversationMode.id)
+    )
+    return [name for (name,) in res.all() if name]
+
+
+async def _rag_overrides_keys(db: AsyncSession) -> list[str]:
+    """Liste blanche des clés acceptées sur la page RAG overrides.
+    Combine providers fixes (ollama, llamacpp) et modes dynamiques (BDD)."""
+    keys = (
+        _provider_override_keys("ollama")
+        + _provider_override_keys("llamacpp")
+    )
+    for slug in await _all_mode_slugs(db):
+        keys.extend(_mode_override_keys(slug))
+    return keys
+
+
+# Compat : ancienne constante hardcoded (fast/full) — conservée pour les
+# tests qui s'appuient sur cette liste statique. Les routes runtime utilisent
+# `_rag_overrides_keys(db)` qui inclut tous les modes BDD.
 RAG_OVERRIDES_KEYS = (
     _provider_override_keys("ollama")
     + _provider_override_keys("llamacpp")
@@ -533,10 +560,12 @@ async def rag_overrides_get(
     user: dict = Depends(require_web_admin),
     db: AsyncSession = Depends(get_async_session),
 ) -> HTMLResponse:
+    keys = await _rag_overrides_keys(db)
     return await _render_page(
         request, "pages/admin/system/rag-overrides.html",
         title="RAG · Overrides", active_section="system_rag_overrides", user=user,
-        values=await _load_keys(db, RAG_OVERRIDES_KEYS),
+        values=await _load_keys(db, keys),
+        extra={"modes": await _all_mode_slugs(db)},
     )
 
 
@@ -550,15 +579,16 @@ async def rag_overrides_post(
     """Sauvegarde générique : itère sur les champs reçus.
 
     Le formulaire envoie les clés sous leur nom complet (rag.ollama.top_k, ...).
-    On filtre sur la liste blanche RAG_OVERRIDES_KEYS pour éviter d'écrire
-    des clés inattendues.
+    On filtre sur la liste blanche dynamique (générée selon les modes en BDD)
+    pour éviter d'écrire des clés inattendues.
     """
     if (err := _csrf_or_400(request, csrf_token)):
         return err
 
+    keys = await _rag_overrides_keys(db)
     form = await request.form()
     updates: dict[str, Any] = {}
-    for key in RAG_OVERRIDES_KEYS:
+    for key in keys:
         if key not in form:
             # Champ booléen non coché → False, sinon on laisse la valeur actuelle
             if key.endswith(("rerank_enabled", "use_corpus", "require_sources")):
@@ -581,7 +611,8 @@ async def rag_overrides_post(
     return await _render_page(
         request, "pages/admin/system/rag-overrides.html",
         title="RAG · Overrides", active_section="system_rag_overrides", user=user,
-        values=await _load_keys(db, RAG_OVERRIDES_KEYS),
+        values=await _load_keys(db, keys),
+        extra={"modes": await _all_mode_slugs(db)},
         success=f"{saved} clé(s) enregistrée(s)." if not errors else None,
         error=" ; ".join(errors) if errors else None,
     )
@@ -1943,6 +1974,49 @@ async def geo_export_countries(
     return HTMLResponse(f"<div class='toast toast--success'>{n} pays exportés vers <code>{path}</code>.</div>")
 
 
+@router.get("/geo/countries", response_class=HTMLResponse)
+async def geo_list_countries(
+    request: Request,
+    user: dict = Depends(require_web_admin),
+    db=Depends(get_async_session),
+) -> HTMLResponse:
+    """Liste HTML des pays avec leur statut actif/inactif (P2.2).
+
+    Rendu en partial pour insertion HTMX dans la page /geo. Chaque pays
+    a un bouton toggle qui cible cette même URL (re-render du partial
+    après toggle pour refléter l'état).
+    """
+    from app.models import Country
+    res = await db.execute(select(Country).order_by(Country.code))
+    countries = list(res.unique().scalars().all())
+    if not countries:
+        return HTMLResponse(
+            "<p style='color:var(--color-fg-muted)'>"
+            "Aucun pays en BDD. Cliquez sur « Importer pays » pour seed."
+            "</p>"
+        )
+    rows = []
+    for c in countries:
+        status_class = "admin-status--approved" if c.is_active else "admin-status--inactive"
+        status_label = "actif" if c.is_active else "inactif"
+        rows.append(
+            f'<div class="admin-geo-country-row">'
+            f'<span class="admin-table-cell__mono">{c.code}</span>'
+            f'<span>{c.name}</span>'
+            f'<span class="admin-status {status_class}">{status_label}</span>'
+            f'<form hx-post="/web/admin/system/geo/countries/{c.code}/toggle" '
+            f'hx-target="#geo-countries" hx-swap="innerHTML" '
+            f'style="display:inline">'
+            f'<input type="hidden" name="csrf_token" value="{request.scope.get("csrf_token") or ""}">'
+            f'<button type="submit" class="btn btn--ghost btn--sm">'
+            f'{"Désactiver" if c.is_active else "Activer"}'
+            f'</button>'
+            f'</form>'
+            f'</div>'
+        )
+    return HTMLResponse('<div class="admin-geo-countries">' + "".join(rows) + "</div>")
+
+
 @router.post("/geo/countries/{code}/toggle", response_class=HTMLResponse)
 async def geo_toggle_country(
     request: Request,
@@ -1958,10 +2032,9 @@ async def geo_toggle_country(
         await GeoAdminService.toggle_country_active(db, code.upper())
     except Exception as exc:
         return HTMLResponse(f"<div class='toast toast--error'>Échec : {exc}</div>", status_code=500)
-    return HTMLResponse(
-        f"<div class='toast toast--success'>{code.upper()} basculé.</div>",
-        headers={"HX-Trigger": "geo-stats-refresh"},
-    )
+    # Rendre la liste à jour (HTMX swap dans #geo-countries) plutôt qu'un toast
+    # — l'utilisateur voit immédiatement le nouveau statut du pays.
+    return await geo_list_countries(request, user=user, db=db)
 
 
 # --- Indexation page (nouvelle, BLOQUANT V1 absent) ---

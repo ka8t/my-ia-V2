@@ -96,6 +96,25 @@
       </span>
     </label>
 
+    {# Visibilité explicite (P2.6 — parité V1 upload.js).
+       Désactivé si la collection cible est de type privé (visibilité forcée). #}
+    <div class="docs-upload__visibility"
+         x-data="{
+           selectedColType() {
+             const opt = $el.parentElement.querySelector('select[name=\'collection_id\'] option:checked');
+             if (!opt) return 'private';
+             const txt = opt.textContent.toLowerCase();
+             return txt.includes('publique') || txt.includes('public') ? 'public' : 'private';
+           }
+         }">
+      <label class="docs-upload__visibility-toggle">
+        <input type="checkbox" name="visibility_public" value="true"
+               x-bind:disabled="selectedColType() === 'private'"
+               title="Disponible uniquement si la collection cible est publique">
+        <span>Document public (sinon privé)</span>
+      </label>
+    </div>
+
     <div class="docs-upload__actions">
       {{ button(t('upload'), block=False, lg=False, arrow=True) }}
     </div>
