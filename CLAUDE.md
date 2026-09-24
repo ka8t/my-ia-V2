@@ -11,7 +11,7 @@ Refonte 100% Python de [my-ia](https://github.com/ka8t/my-ia). Stack : FastAPI +
 - **Validation** : Expliquer + lister fichiers → attendre "oui/ok/valide"
 - **Tests** : Exécuter après chaque modif jusqu'à succès, sans demander
 - **Code** : Afficher le code complet généré
-- **Commits** : Auteur KL, jamais de référence Claude/Co-Authored-By. **TOUJOURS demander avant de commit**
+- **Commits** : Auteur Ka8t. **TOUJOURS demander avant de commit**
 
 ## Architecture
 
